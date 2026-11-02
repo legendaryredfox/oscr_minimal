@@ -200,3 +200,21 @@ A ligação ao computador deve ser USB-C. A foto do Mega que o usuário mostrou 
 ### Pendente para a fase 6 (e para você)
 - Abrir `hardware/dumper.kicad_pcb` no KiCad e olhar o roteamento a olho (o Freerouting não separa sinais rápidos; o barramento é lento, mas confira os CLK0..2 do Si5351 e o D7/D16).
 - Gerbers e `docs/bom.md` na fase 6. Confirmar medidas de slots e módulo antes de fabricar (D17, D23, D27).
+
+## Fase 6 — fabricação (2026-11-02)
+
+### D32 — Arquivos e verificação
+- `hardware/fab/dumper-v1.0-jlcpcb.zip`: F.Cu, B.Cu, F/B máscara, F/B silk, Edge.Cuts (formato Protel/`.gtl`...), `PTH.drl` e `NPTH.drl` (Excellon métrico, separados). Sem camadas de pasta (montagem manual). Também em `hardware/fab/gerbers/`: `.gbrjob` e mapas de furação (fora do zip). `hardware/fab/bom.csv` vem do esquemático; `docs/bom.md` é a BOM completa.
+- Conferido com `gerbonara`: 7 camadas reconhecidas, contorno **144,05 × 108,05 mm**, 915 furos metalizados (= 530 vias + 385 pads THT da placa) e 12 não metalizados. Brocas: 0,30, 0,40, 0,75, 0,762, 0,80, 0,90, 1,00, 1,016 mm (PTH) e 2,2 e 3,2 mm (NPTH); a menor, 0,3 mm, é o mínimo da JLCPCB.
+- **Não** consegui olhar os gerbers num visualizador gráfico (nem `gerbv` nem o visualizador do KiCad estão disponíveis em modo texto, e o render do `gerbonara` ficou ilegível). A conferência visual foi feita na placa (render 3D do KiCad) e pelos números acima. **Abra o zip no visualizador de gerbers do KiCad ou da própria JLCPCB antes de pedir.**
+- Anel mínimo de todos os pads THT ≥ 0,25 mm (o CLAUDE.md pede isso). O `MCP1700` no footprint `TO-92_Inline` tinha anel de 0,15 mm: troquei pelo footprint `TO-92` escalonado (pads de 1,3 mm, furo 0,75 mm, anel 0,275 mm), que aceita os mesmos pinos. Refiz a trilha local e o DRC.
+- Ajustes da fase 5 repetidos aqui: 4 pads de GND com conexão sólida, ilhas de cobre sem GND ligadas por vias de costura (agora 530 vias no total, contra 336 do roteador), e vias duplicadas removidas.
+
+### DRC final (placa fabricável)
+`kicad-cli pcb drc --schematic-parity`: **0 erros, 0 ligações abertas**, 4 avisos `lib_footprint_mismatch` (furos de canto). Paridade só com diferenças cosméticas (campos Datasheet/Description, `PWR_FLAG` sem footprint, furos só na PCB).
+
+### Riscos que sobram (para a conferência com as peças)
+1. Medidas dos slots, do módulo Si5351 e do espaçamento mecânico (D17, D23, D25).
+2. Direção da etiqueta (D27, D28).
+3. Slot GBA SMD: pads de 1 mm; a máscara de solda do KiCad entre pads de 1,5 mm de passo funciona na JLCPCB, mas a solda é delicada.
+4. A placa passa de 100 × 100 mm: o preço do lote é bem maior que o do lote pequeno.

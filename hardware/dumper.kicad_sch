@@ -8442,7 +8442,7 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" "Package_TO_SOT_THT:TO-92_Inline"
+			(property "Footprint" "Package_TO_SOT_THT:TO-92"
 				(at 0 -5.08 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -14752,7 +14752,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_THT:TO-92_Inline"
+		(property "Footprint" "Package_TO_SOT_THT:TO-92"
 			(at 1099.82 144.78 0)
 			(hide yes)
 			(show_name no)
