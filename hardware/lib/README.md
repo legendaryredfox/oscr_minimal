@@ -1,0 +1,14 @@
+# hardware/lib — símbolos e footprints do dumper
+
+Gerado por `tools/build_lib.py` (não edite à mão).
+
+| Item | Origem |
+|---|---|
+| `SNES_Slot`, `NES_Slot`, `FC_Slot`, `MD_Slot` (símbolo + footprint) | Copiados do OSCR (`sanni/cartreader`, `hardware/`), **CC BY 4.0**, de sanni e comunidade. Alterações: footprint ganhou courtyard, contorno Fab, rótulo e marca do pino 1; símbolo aponta para `dumper:<nome>`. |
+| `GBA_Slot` (símbolo + footprint) | Footprint do OSCR (SMD, 32 pads 5 × 1 mm a 1,5 mm, 2 pads de blindagem, 2 furos de 2,2 mm), CC BY 4.0. O símbolo é próprio, com os pads de blindagem nomeados `SHIELD_3`/`SHIELD_4`. **3,3 V apenas.** |
+| `Mega2560_R3_Shield` (símbolo + footprint) | Gerado a partir das cotas oficiais do Arduino Mega 2560 R3 (docs.arduino.cc/hardware/mega-2560). 85 pads de header + 6 furos de 3,2 mm. |
+| `Si5351_Module` (símbolo) | Próprio. Header 1x7 do módulo: VIN, GND, SDA, SCL, CLK2, CLK1, CLK0. Usa o footprint padrão `PinSocket_1x07_P2.54mm_Vertical`. |
+
+Atribuição: "Based on Open Source Cartridge Reader by sanni — CC BY 4.0".
+
+O corpo dos slots é ESTIMADO (12 mm de largura, vão dos pads + 8 mm, ~16 mm de altura; ver `docs/decisoes.md` D17). Medir os slots comprados e ajustar `BODY_W`/`BODY_END` em `tools/build_lib.py`.

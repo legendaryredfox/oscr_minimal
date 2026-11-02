@@ -1,0 +1,11 @@
+# Clones do upstream (referência, somente leitura). Ver README.md para recriar.
+vendor/oscr/
+# Gerados pelo KiCad / MCP
+hardware/.mcp-backups/
+hardware/*_drc_violations.json
+hardware/*.kicad_prl
+hardware/fp-info-cache
+hardware/*-backups/
+*.bak
+__pycache__/
+*.pyc

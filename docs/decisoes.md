@@ -1,0 +1,165 @@
+# Log de decisões e desvios
+
+## Fase 1 — referência e pinmap (2026-11-02)
+
+### Ambiente
+- **MCP kicad** não conectava: faltava `dist/index.js`. Corrigido com `git pull` (v2.8.2 → v2.8.3), `npm install`, `npm run build` em `~/development/llms/KiCAD-MCP-Server`. Handshake testado em node 18 e 24. KiCad instalado: 9.0.9.
+- `kicad-cli` usado para exportar as netlists do OSCR (`sch export netlist --format kicadxml`), via `tools/gen_pinmap.py`.
+
+### D1 — Upstream mudou de estrutura (desvio da seção 2 do CLAUDE.md)
+`github.com/oscartreader/cartreader` não existe. O upstream atual é dividido:
+- `oscartreader/oscr-firmware`: firmware novo (reescrito, `src/` + `include/`, PlatformIO). Clonado em `vendor/oscr/firmware/`.
+- `oscartreader/oscr-hardware`: **repositório vazio**.
+- `sanni/cartreader`: repositório antigo, com `pinout.ods`, `hardware/` (KiCad) e `Cart_Reader/*.ino`. Clonado em `vendor/oscr/legacy/`.
+
+Pinmap foi extraído do `legacy/` (única fonte com as 3 fontes juntas). Do firmware novo só conferi o LED (PD7).
+**Decidido (usuário, 2026-11-02):** a base do firmware é o original (`legacy/Cart_Reader`), removendo só o que não for usado. `vendor/oscr/firmware/` (oscr-firmware) fica só como referência.
+
+### D0 — Git
+Usuário: sem git por enquanto. Sem `git init`; as "fases" não geram commit até ele pedir.
+
+### D2 — HW5 usa "Mega Pro", este projeto usa Mega R3
+O footprint do HW5 é `MEGA2560_PRO_MINI`. Os nomes dos pinos (`D22`, `A0`…) são os nomes Arduino do ATmega2560, idênticos no Mega R3. A tabela porta/bit AVR do script foi conferida contra a coluna `ATMega2560` do `pinout.ods` (sem divergência).
+
+### D3 — Tensão
+HW5 tem chave 3V/5V (`SW1`) e TPS2113 para escolher USB/bateria. Aqui: VCC dos slots direto no 5V (decisão da seção 1). Sem `U1` (TPS2113), `SW1`, `SW2`, `BT1`, `DS3231` (RTC), LCD (`J8`, `J9`), GBA (`J10`), SMD. No adaptador, o pino 3 do header liga em VCC; no `six_slot_adapter` essa net é +12V (só N64). Irrelevante: sem N64.
+
+### D4 — /CART do Mega Drive em D40 (divergência entre fontes)
+- `six_slot_adapter`: `MD1.B32 (/CART)` ligado em **D40**.
+- `megadrive_adapter`: B32 **sem ligação**. `pinout.ods`: coluna Megadrive vazia em D40. `MD.ino`: não usa PG1 (D40).
+- D40 também é "Reset In" do CIC SNES (pino 4 do PIC).
+
+**Decidido (usuário, 2026-11-02):** B32 sem ligação, como no adaptador individual e no firmware. Evita dividir D40 entre MD e PIC.
+
+### D5 — D0/D1
+O HW5 leva `D0`/`D1` (RX0/TX0, serial USB) até J4.2/J4.3, mas os 4 adaptadores deixam esses pinos sem ligação no slot. Aqui `D0`/`D1` **não** vão a nenhum slot, pois são a USB do Mega.
+
+### D6 — Diferenças só de nome (mesmo pino)
+- SNES `D42..D49`: `ods` diz `A23..A16`; esquemático diz `BA7..BA0`. Mesmo pino físico (PL7..PL0).
+- Mega Drive `D6`, `D7`, `D8`, `D9`: `ods` diz `CS`, `WR HIGH`, `WR LOW`, `OE`; esquemático diz `/CE_0`, `/UWR`, `/LWR`, `/CAS0`.
+- SNES `D6`: `ods` `CS`, esquemático `/Cart`.
+
+### D7 — `-fw` no Mega Drive
+`MD.ino` não toca em `D2`, `D3`, `D5` (PE4, PE5, PE3: `/YS`, `/CAS2`, `EDCLK`). O HW5 e o `ods` os ligam. Mantidos como no HW5.
+
+### D8 — Clock
+- Só o SNES (SA-1) usa o Si5351 no firmware (`SNES.ino`). NES/Famicom/MD não.
+- `nes_adapter` liga `CLK0` ao pino 37 (`CLK`) do NES; `famicom_adapter` e `megadrive_adapter` não ligam CLK0..2 ao slot. `ods` não lista CLK0 na coluna NES. Mantido como no adaptador NES (inofensivo).
+- Pinagem do header do Si5351 no HW5 (`J7`, 7 pinos): 1=VCC, 2=GND, 3=SDA(D20), 4=SCL(D21), 5=CLK2, 6=CLK1, 7=CLK0. **PENDENTE:** o módulo indicado (AliExpress 1005012905974177) não pôde ser lido (a página carrega por JavaScript; o fetch só trouxe o rodapé do site). Falta a ordem dos pinos, o passo e as dimensões do módulo. Nada foi presumido.
+
+### D9 — Pull-up
+`pinout.ods` marca `D7 (1K Pullup)`. Só o `six_slot_adapter` tem o resistor (`R1`, 1 kΩ, VCC → D7, junto à linha /IRQ do SNES). Será incluído.
+
+### D10 — LED de status
+HW5: `D1` (3 mm) com ânodo em VCC e cátodo via `R1` 220 Ω em **D38 (PD7)**: **ativo em nível baixo** (`statusLED(true)` faz `PORTD &= ~(1<<7)`). No HW5, D38 também vai ao `VSNS` do TPS2113 e ao botão 1 (LCD). Aqui só o LED.
+
+### D11 — Pinos do slot sem ligação
+SNES 31/62 (áudio), NES `EXP_0..9` e `Security1..4`, e os não ligados dos outros slots ficam sem ligação, como no OSCR.
+
+### D12 — Famicom
+Não há coluna Famicom no `pinout.ods`: a coluna NES foi usada (os sinais PRG/CHR/M2/IRQ/CIRAM são os mesmos). Sources: esquemático `famicom_adapter` + `six_slot_adapter` + `NES.ino`.
+
+## Fase 2 — footprints (2026-11-02)
+
+### D13 — Slots de cartucho
+Usuário: usar os mesmos slots e espaçamentos do OSCR. Copiados de `!OSCR.pretty` / `!OSCR.kicad_sym`. Conferido por script:
+
+| Slot | Pads | Passo | Entre fileiras | Pad / furo |
+|---|---|---|---|---|
+| SNES | 62 | 2,5 mm (salto de 7,5 mm no meio) | 5,0 mm | 1,524 / 0,762 mm |
+| NES | 72 | 2,5 mm | 5,0 mm | 1,524 / 0,762 mm |
+| Famicom | 60 | 2,54 mm | 5,08 mm | 1,524 / 0,762 mm |
+| Mega Drive | 64 | 2,54 mm | 5,08 mm | 1,524 / 0,762 mm |
+
+Anel = 0,381 mm (mínimo 0,25 ✓). Nomes dos pads = pinos do símbolo (verificado: conjuntos idênticos). Os footprints originais **só têm pads**: sem contorno do corpo, sem 3D. Os courtyards são só a caixa dos pads + 1,3 mm (7,5 × 87,5 SNES, 7,5 × 90 NES, 7,6 × 76,2 Famicom, 7,6 × 81,3 Mega Drive).
+**PENDENTE:** largura × profundidade × altura do corpo real de cada slot comprado. Preciso antes da fase 4 (posicionamento).
+
+### D14 — Mega 2560 R3
+Footprint e símbolo gerados por script com as cotas oficiais do Arduino (usuário confirmou usar o Mega oficial): contorno 101,6 × 53,34 mm, furos de 3,2 mm em (13,97; 2,54), (15,24; 50,8), (66,04; 7,62), (66,04; 35,56), (90,17; 50,8), (96,52; 2,54). Origem no canto inferior esquerdo. Headers: potência (7), analógicos A0..A15, digitais D0..D21 + SCL/SDA/AREF/GND, 2x18 (5V, D22..D53, GND) = 85 pads. Sem ICSP. Motivo de não reaproveitar a biblioteca `alarm-siren` já instalada no KiCad: não achei a licença dela localmente; as cotas são fatos do desenho oficial.
+Todos os pads de header devem ter pino macho longo (rigidez mecânica), mesmo os sem sinal.
+
+### D15 — Módulo Si5351 (fotos do usuário)
+Header de 7 furos, na ordem (de VIN, pino quadrado, até a ponta): **VIN, GND, SDA, SCL, 2, 1, 0**. Igual ao `J7` do HW5 (VCC, GND, SDA, SCL, CLK2, CLK1, CLK0). Header fêmea 1x7, 2,54 mm. As saídas CLK0..2 também têm pads retangulares na borda, não usados.
+**PENDENTE:** dimensões da placa do módulo e posição dos furos de fixação (para a fase 4).
+
+### D16 — Peças THT padrão
+Footprints do KiCad: resistores `R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` (220 Ω LED, 1 kΩ D7), LED `LED_D3.0mm`, eletrolítico `CP_Radial_D8.0mm_P3.50mm` (470 µF/16 V, como no HW5), cerâmicos 100 nF disco THT, PIC `DIP-8_W7.62mm_Socket`.
+
+### D17 — Medidas dos slots e cartuchos (pesquisa; usuário autorizou best guess)
+GitHub: só achei forks do próprio OSCR (`oscrusergroup/hardware`, `elettronike/EN022_CARTRIDGE_READER`) e um footprint de cartucho SNES de 46 pinos (`pdaehne/SNES-LoROM-Cartridge-wo-Save`, outro assunto). GitLab: nada. Nenhum projeto publica o corpo dos slots; só os pads. Então:
+
+**Corpo do slot (ESTIMATIVA, ±3 mm, medir quando chegar):** 12 mm no eixo das fileiras × (vão dos pads + 8 mm) no comprimento × ~16 mm de altura acima da placa. Os courtyards dos footprints usam isso: SNES 12 × 93, NES 12 × 95,5, Famicom 12 × 81,7, Mega Drive 12 × 86,7 mm.
+
+**Layout de referência (medido no `six_slot_adapter.kicad_pcb` do OSCR, 100 × 100 mm):** 6 slots paralelos, fileiras de pads a cada 15,7 a 20,9 mm (NES→Famicom 16,7; Famicom→SNES 17,7; SNES→N64 20,9; N64→Mega Drive 15,7; Mega Drive→SMS 16). Como só um cartucho fica inserido por vez, as carcaças podem se sobrepor acima da placa. **Passo mínimo adotado: 17 mm** entre fileiras de slots vizinhos.
+
+**Carcaças (para a zona livre acima dos slots):**
+
+| Cartucho | Dimensões (A × L × E, mm) | Fonte |
+|---|---|---|
+| SNES NTSC | 88 × 136 × 20 | Wikipedia (Game Pak) |
+| SNES PAL/JP | 86 × 130 × 20 | Wikipedia |
+| NES | 133 × 120 × ~20 | espelho da Wikipedia (12 × 13,3 × 2 cm); nesdev não tem a carcaça |
+| Famicom | 108 × ~70 × 17 | ConsoleMods / Wikipedia (largura 69-71, discordam) |
+| Mega Drive | **sem fonte**; chute ~ 108 × 56 × 20 | memória; medir |
+
+Placas (nesdev): NES 100 mm de largura, borda 93,5 mm, 14,5 mm de profundidade, 1,2 mm de espessura. Famicom: placa 90 mm, borda 78,4 mm, 1,27 mm de espessura. Os 85 mm do vão de pads do SNES e 87,5 do NES são compatíveis.
+
+Os cartuchos são mais largos que o vão dos slots (sobram ~ 20 mm de cada lado no NES). Nada alto pode ficar sob esse balanço, na altura do topo do slot.
+
+### D18 — Si5351 com pin headers (usuário)
+Módulo entra por header fêmea 1x7 2,54 mm (pinos machos do módulo). Sem furos de fixação na placa. Dimensões do módulo (listagens: ~31 × 22 mm, Adafruit/clones): reservar 32 × 23 mm de área sem peças altas ao redor do header. Estimativa.
+
+## Fase 3 — esquemático (2026-11-02)
+
+### D19 — KiCad atualizado de 9.0.9 para 10.0.8 (autorizado pelo usuário)
+Motivo: o MCP (v2.8.3) grava esquemáticos no formato do KiCad 10 (`version 20260101`), que o `kicad-cli` 9.0.9 não abria. PPA `ppa:kicad/kicad-10.0-releases` adicionado, PPA 9.0 removido, pacotes 9.x removidos. Conferido: `kicad-cli version` = 10.0.8; `pcbnew` do venv do MCP = 10.0.8. As tabelas globais de bibliotecas do 10.0 (`~/.config/kicad/10.0/{fp,sym}-lib-table`) não existiam; copiadas de `/usr/share/kicad/template/`. As bibliotecas do projeto (`hardware/lib`) foram geradas em formato 9 e abrem no 10.
+O CLAUDE.md pede "KiCad 9.0+": 10.0.8 atende.
+
+### D20 — Limites do MCP descobertos
+- Cada chamada tem limite de 30 s. `batch_connect` com ~35 pinos estoura; usar lotes de até 25.
+- Quando uma chamada estoura no meio da gravação, o `.kicad_sch` pode ficar com **0 bytes** (a escrita não é atômica). Aconteceu uma vez; o esquemático foi recriado do zero (nada perdido além de tempo; sem git, sem backup). Regra: copiar o `.kicad_sch` para o scratchpad a cada 2-3 lotes.
+- `create_project` gerou o `.kicad_sch` com formato 10, ok agora.
+
+### D21 — Esquemático (`hardware/dumper.kicad_sch`, folha A0)
+- Ref. `A1` = Mega2560_R3_Shield; `SNES1`, `NES1`, `FC1`, `MD1` = slots; `U1` = Si5351 (header 1x7); `U2` = PIC12F629 em soquete DIP-8; `D1`+`R1` LED em D38 (ânodo no +5V, ativo em nível baixo); `R2` 1 kΩ pull-up em D7; `C1` 470 µF/16 V; `C2..C5` 100 nF (um por slot); `C6` 100 nF (PIC); `FLG1/FLG2` = PWR_FLAG em +5V/GND.
+- Ligações por rótulo de net, mesmo nome do HW5 (`D22`, `A0`, `CLK0`, `+5V`, `GND`, `CIC_DATA_0/1`, `CIC_RESET`, `LED_K`). Mega: 5V1/5V3/5V4 em +5V; GND1, GND2, GND3, GND5, GND6 em GND.
+- 45 pinos marcados "sem ligação": os dos slots que o OSCR deixa livres, B32 do Mega Drive (D4), e os pinos do Mega não usados (D0, D1, D10..D13, D18, D19, D39, D50..D53, 3V3, VIN, RST1, IORF, AREF, SCL, SDA).
+- Os caps de 100 nF foram colocados em +5V/GND sem posição física; "junto ao VCC de cada slot" é restrição da fase 4.
+
+### Verificações
+- ERC (`kicad-cli sch erc`): **0 violações** (0 erros, 0 avisos).
+- `tools/check_netlist.py`: **OK**, 66 nets e 333 ligações conferem com `docs/pinmap.md`; 25 pinos de slot sem ligação conferidos. Teste negativo (uma etiqueta trocada de D37 para D36 numa cópia) é detectado: o script lista 3 divergências e sai com código 1.
+
+## Fase 4 — posicionamento (2026-11-02)
+
+### D22 — GBA incluído (pedido do usuário), com ressalvas
+- Slot: footprint do OSCR (`!OSCR.pretty/GBA_Slot`, SMD: 32 pads de 5 × 1 mm a 1,5 mm + 2 pads de blindagem + 2 furos-guia de 2,2 mm; corpo ~17,5 × 57 mm). **É a única peça SMD da placa**, aprovada pelo usuário ao pedir o GBA. Soldar com ferro de ponta fina e fluxo (pads de 1 mm). Símbolo próprio (`dumper:GBA_Slot`) para casar os nomes dos pads de blindagem.
+- Alimentação: `U3` MCP1700-3302E/TO (TO-92, 3,3 V, 250 mA) com `C7` 1 µF na entrada (5V), `C8` 1 µF na saída e `C9` 100 nF no VCC do slot. O VCC do GBA (`+3V3`) nunca encosta no 5V (o verificador checa).
+- Lógica: o Mega fala a 5V com o cartucho a 3,3 V, direto, sem conversor, como no HW5 (conferi: não há conversor de nível na netlist do `main_pcb_hw5`). É o comportamento do OSCR; risco aceito. Um conversor seria um módulo (usuário pediu para evitar).
+- Pinos: GBA1.1=VCC(3V3), 2=CLK→D16, 3=WR→D8, 4=RD→D9, 5=CS1→D6, 6..21=AD0..AD15→A0..A15, 22..29=D0_A16..D7_A23→D37..D30, 30=RST_CS2→D17, 32 e blindagens=GND. Fonte: `main_pcb_hw5` J10 + ods coluna GBA + `GBA.ino` (usa PH0, PH3, PH5, PH6).
+- **Desvio:** o pino 31 (AUD_IRQ → D7) fica **sem ligação**. No HW5 vai ao D7; aqui D7 tem o pull-up de 1 kΩ para 5V (do SNES) e levaria 5V a um pino de cartucho 3,3 V. `GBA.ino` não usa PH4 (D7).
+- O slot GBA também aceita cartuchos GB com adaptador, como no OSCR. Não foi verificado aqui.
+- CLAUDE.md atualizado: tabela de decisões (tecnologia, tensão, slots) e seção 4.
+
+### D23 — Placa e layout
+- Placa **144 × 108 mm** (retângulo, 2 camadas). Origem do quadro "Mega": canto inferior esquerdo do Mega; PCB = (20 + x_m, 20 + 91 − y_m). Calculado por `tools/plan_layout.py`.
+- Mega R3 (footprint) em x_m 0..101,6 / y_m 0..53,34. Slots paralelos ao lado maior, pino 1 à esquerda (como o OSCR), em y_m: Mega Drive −8, Famicom 21,6, NES 61, SNES 82. Os centros respeitam as faixas proibidas pelos furos do Mega (porcas de 7 mm); por isso os slots ficam fora da faixa do Mega (y_m −1..11, 32..39, 47..54), exceto o Famicom que cabe entre elas.
+- Passo mínimo entre slots vizinhos: 21 mm (NES→SNES); com cartuchos de 20 mm de espessura sobra 1 mm entre carcaças, mesmo com os quatro inseridos.
+- Faixa direita (x_m 102..144): GBA (x_m 114..141, y_m −10..48), coluna de peças (Si5351 header, PIC DIP-8, LED, R1, R2, C1, U3, C6..C9), módulo Si5351 acima (reserva ~23 × 33 mm, centro do header em y_m 74).
+- 4 furos de canto M3 (3,2 mm) a 3 mm da borda, para os pés. Furos do Mega (6) no footprint do shield.
+- Caps de 100 nF de cada slot ao lado do corpo do slot, perto do pino de VCC (SNES 27, NES 36, Famicom 30, Mega Drive A2).
+
+### D24 — Silkscreen
+Texto: "UM CARTUCHO POR VEZ"; "SNES / NES / FAMICOM / MEGA DRIVE v1.0 2026-11-02"; "Projeto original: github.com/sanni/cartreader"; "Adaptado por: github.com/legendaryredfox/oscr_minimal" (link informado pelo usuário, com `oscr`); "Based on Open Source Cartridge Reader by sanni — CC BY 4.0"; nomes dos slots e pino 1 nos footprints; "GBA 3V3 / SOMENTE GBA - 3,3 V"; "Si5351 pino 1 = VIN".
+**Pendente:** lado da etiqueta do cartucho em cada slot (CLAUDE.md seção 5). Não dá para inferir do OSCR nem do footprint; confirmar com o slot físico. Silk de pino 1 do header do Si5351, do DIP-8 e do LED vêm dos footprints padrão do KiCad.
+
+### D25 — Mecânica (a validar)
+Shield apoiado nos 6 furos do Mega com espaçadores M3 fêmea-fêmea de ~12 mm (o USB-B e o jack do Mega chegam a ~11 mm) e pinos macho longos (cauda ≥ 10 mm) em todos os pads de header. O conjunto não tem parafuso por cima dos furos internos do Mega (x=66,04), porque ficam entre os slots. O Mega fica mais alto que a mesa: os pés de borracha dos cantos da placa precisam de espaçadores de comprimento a definir na fase 7.
+
+### D26 — DRC (`kicad-cli pcb drc`, sem trilhas ainda)
+0 erros. 12 avisos, justificados: 5 `silk_overlap` e 2 `silk_over_copper` (referências/contorno de silk perto de pads; ajustar na fase 5), 4 `lib_footprint_mismatch` (furos de fixação criados pelo MCP; pad NPTH de 4,2 mm vs 3,2 mm da biblioteca; sem efeito), 1 `silk_edge_clearance`. 306 ligações ainda não roteadas (esperado: fase 5).
+
+### D27 — Orientação da etiqueta (resposta do usuário)
+Usuário: o cartucho fica "de frente" para o USB; a posição dos slots não importa, desde que a direção esteja indicada no silk; os slots devem ser paralelos, exceto o GB/GBA.
+Como os slots correm no sentido do lado maior do Mega, o cartucho entra de perfil; a etiqueta só pode olhar para os lados de cima ou de baixo da placa. Escolhi **para baixo** (lado em que ficam o USB e o jack do Mega, no canto inferior esquerdo). Silk: "ETIQUETA DO CARTUCHO PARA BAIXO (LADO DO USB)" e "v v ETIQUETA v v" no lado de baixo de cada slot (SNES, NES, Famicom, Mega Drive). O GBA fica sem indicação.
+**A CONFIRMAR com o slot físico:** a direção real da etiqueta depende da peça (de que lado do slot o cartucho encaixa em relação ao pino 1). Se estiver ao contrário, basta girar o slot 180° (o pino 1 vai para a outra ponta; as nets não mudam) ou trocar o texto. Também falta definir a direção do GBA.
