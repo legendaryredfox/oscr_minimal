@@ -78,6 +78,24 @@ struct AvrNesBus : NesBus {   // NES e Famicom
     _delay_us(1);
     return PINK;
   }
+  void prg_write(uint16_t a, uint8_t v) override {                       // write_prg_byte do OSCR
+    PORTF &= ~(1 << 0);                                                 // PHI2 baixo
+    PORTF |= (1 << 1);                                                  // ROMSEL alto
+    DDRK = 0xFF;                                                        // MODE_WRITE
+    PORTF &= ~(1 << 7);                                                 // PRG_WRITE
+    PORTK = v;
+    set_address(a);
+    PORTF |= (1 << 0);                                                  // PHI2 alto
+    if (a & 0x8000) PORTF &= ~(1 << 1); else PORTF |= (1 << 1);
+    _delay_us(1);
+    PORTF &= ~(1 << 0);                                                 // PHI2 baixo
+    _delay_us(1);
+    PORTF |= (1 << 1);                                                  // ROMSEL alto
+    PORTF |= (1 << 7);                                                  // PRG_READ
+    PORTK = 0xFF; DDRK = 0;                                             // MODE_READ
+    set_address(0);
+    PORTF |= (1 << 0);
+  }
   uint8_t chr(uint16_t a) override {
     PORTK = 0xFF; DDRK = 0;
     PORTF |= (1 << 0);                                                  // PHI2 alto

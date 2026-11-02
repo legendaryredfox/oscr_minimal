@@ -32,7 +32,7 @@ offset  tamanho  campo
 |---|---|---|
 | `0x01` | `INFO` | vazio |
 | `0x02` | `DETECT` | `u8 sistema` |
-| `0x03` | `DUMP_ROM` | `u8 sistema`, `u16 bloco` (0 = padrão 512) |
+| `0x03` | `DUMP_ROM` | `u8 sistema`, `u16 bloco` (0 = padrão 512); opcional, só NES/Famicom: `u16 mapper`, `u16 prg_kb`, `u16 chr_kb` (0 = automático/NROM) |
 | `0x04` | `READ_SAVE` | `u8 sistema`, `u16 bloco` (0 = padrão 512) |
 | `0x05` | `WRITE_SAVE` | `u8 sistema`, `u32 tamanho`, `u16 bloco` (0 = padrão 512) |
 | `0x06` | `ACK` | `u32 offset` do bloco confirmado |
@@ -70,6 +70,10 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 5 | GBA (3,3 V) | `.gba` |
 | 6 | Game Boy (reservado, via adaptador no slot GBA) | `.gb` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções de `DUMP_ROM` para NES/Famicom
+
+O cartucho de NES não tem cabeçalho com o mapper. Para mappers diferentes de 0 o host informa `mapper`, `prg_kb` (múltiplo de 16) e `chr_kb` (múltiplo de 8, 0 se o cartucho usa CHR-RAM). Mappers aceitos: 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4, 7 (mappers 2 e 7 só com CHR 0). `ERRO 0x0002` = mapper não suportado; `ERRO 0x0004` = tamanhos inválidos. O arquivo sai com cabeçalho iNES de 16 bytes (mapper nos nibbles dos bytes 6 e 7; espelhamento e bateria ficam 0). Os valores corretos vêm do banco do No-Intro/NESCartDB ou de uma ROM já conhecida do mesmo jogo.
 
 ## 5. `DETECT_RESP`
 

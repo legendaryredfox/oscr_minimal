@@ -71,3 +71,7 @@ def test_sistema_sem_suporte_e_erro_2(client):
 
 def test_dois_dumps_seguidos_no_mesmo_firmware(client):
     assert client.dump_rom(255).data == client.dump_rom(255).data == P.mock_data()
+
+
+def test_firmware_aceita_opcoes_de_mapper_sem_quebrar(client):
+    assert client.dump_rom(255, 0, mapper=4, prg_kb=128, chr_kb=128).data == P.mock_data()

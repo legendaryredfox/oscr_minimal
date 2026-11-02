@@ -48,7 +48,10 @@ Hoje só o **SNES** tem leitura/gravação de save. Faça o backup **antes** de 
 ### 2.5 Testar o cabo e o computador sem cartucho
 Grave o firmware de teste (`OSCR_MOCK`). Selecione `mock`, **Ler ROM**: deve dar 32.768 bytes e CRC32 `D1DF4327`. Se funcionar, cabo, driver e permissões estão certos.
 
-### 2.6 Usar vários sistemas na mesma sessão
+### 2.6 Ler uma ROM de NES/Famicom com mapper
+Exemplo (Mega Man 3, MMC3, 256 KB de PRG e 128 KB de CHR): `dumper.py dump -s nes --mapper 4 --prg 256 --chr 128 -o megaman3`. Se os tamanhos estiverem errados a ROM sai com o CRC32 errado: confira no banco. Se `0x0002` (mapper não suportado) ou `0x0004` (tamanho inválido), veja a seção 4.
+
+### 2.7 Usar vários sistemas na mesma sessão
 Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1). SNES, NES e Famicom usam 5 V; GBA 3,3 V. Nunca com dois cartuchos nos slots.
 
 ## 3. Cenários por sistema (o que é suportado hoje)
@@ -56,8 +59,8 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | Sistema | ROM | Save | Observações |
 |---|---|---|---|
 | SNES/SFC | LoROM e HiROM até 4 MB | SRAM (ler e gravar) | Detecta pelo checksum do cabeçalho. **Não** lê SA-1, ExHiROM, S-DD1, SuperFX e outros chips especiais. |
-| NES | mapper 0 (NROM) | não | Gera cabeçalho iNES. O espelhamento sai como "horizontal" (confira em jogos que usam vertical). CHR-RAM é detectada como "sem CHR". |
-| Famicom | mapper 0 (NROM) | não | Mesmo código do NES. |
+| NES | mappers 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4 (MMC3) e 7 | não | Mapper 0 é automático. Para os demais, **informe mapper, PRG e CHR em KB** (GUI: campos "Opções NES/Famicom"; CLI: `--mapper 4 --prg 128 --chr 128`), de uma fonte confiável (No-Intro/NESCartDB). Gera cabeçalho iNES (espelhamento e bateria saem 0; ajuste no emulador se preciso). Mappers 2 e 7 usam CHR-RAM (`--chr 0`). |
+| Famicom | os mesmos do NES | não | Mesmo código do NES. |
 | Mega Drive | ROM até 4 MB (tamanho do cabeçalho) | não | Precisa da palavra "SEGA" no cabeçalho. Jogos com mapper (SSF2) e SRAM ainda não. |
 | GBA | ROM de 256 KB até 32 MB (tamanho por espelhamento) | não | Só cartuchos GBA, 3,3 V. Save (SRAM/Flash/EEPROM) ainda não. |
 | GB/GBC | não | não | Reservado (precisa de adaptador no slot GBA). |
@@ -71,7 +74,8 @@ Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (
 | Nenhuma porta aparece | cabo só de carga; falta de permissão; driver | Troque o cabo; Linux: grupo `dialout`; clone com CH340 pede driver (Windows/macOS). Em `ls /dev/ttyUSB* /dev/ttyACM*` o clone aparece como `ttyUSB0`. |
 | "sem resposta do dispositivo" ao conectar | firmware não gravado; baud errado; porta ocupada | Regrave o firmware; tente `--baud 115200`; feche monitor serial/IDE; reconecte o cabo. |
 | Detecta "nenhum cartucho" | encaixe, contatos, sistema errado | Encaixe até o fim; limpe com álcool isopropílico; confira o sistema na lista; teste outro cartucho. |
-| "sistema não suportado" | chip especial / mapper fora da lista | Veja a seção 3. |
+| "sistema não suportado" (`0x0002`) | chip especial / mapper fora da lista | Veja a seção 3. NES: mappers 0, 1, 2, 3, 4 e 7. |
+| NES: "argumento inválido" (`0x0004`) | PRG/CHR errados para o mapper | PRG múltiplo de 16 KB (7: de 32 KB), CHR múltiplo de 8 KB; mappers 2 e 7 sem CHR; MMC1 até 256 KB. |
 | CRC32 diferente do No-Intro | contato sujo; revisão diferente; ROM não suportada | Limpe, leia 3 vezes (se mudar a cada leitura, é contato); confira região/revisão no DAT. |
 | Leitura trava ou dá "reenvios excedidos" (`0x0005`) | cabo ruim, hub USB, ruído | Cabo curto e direto no PC; evite hubs; tente `--baud 115200`. |
 | "CRC32 do arquivo não confere" (`0x0006`) | corrupção no USB | Repita a operação; troque o cabo. |
@@ -102,7 +106,7 @@ Faça nesta ordem e anote o resultado em `docs/decisoes.md`:
 1. Firmware de teste (`OSCR_MOCK`): `dumper.py dump -s mock` dá CRC32 `D1DF4327`.
 2. Firmware real. `dumper.py info` mostra "sistemas: snes, nes, famicom, md, gba".
 3. **SNES LoROM simples:** `detect -s snes`, depois `dump`. Compare com o No-Intro.
-4. **NES mapper 0** (por exemplo, Super Mario Bros.): idem. Compare o CRC32 da ROM completa (com cabeçalho iNES de 16 bytes, o No-Intro mostra o CRC do conjunto PRG+CHR sem cabeçalho: confira os dois).
+4. **NES mapper 0** (por exemplo, Super Mario Bros.): idem. Depois um de cada mapper 1, 2, 3, 4 e 7. Compare o CRC32 da ROM completa (com cabeçalho iNES de 16 bytes, o No-Intro mostra o CRC do conjunto PRG+CHR sem cabeçalho: confira os dois).
 5. Mega Drive, Famicom e GBA.
 6. Save SNES: leia, faça backup, grave de volta o mesmo arquivo e leia de novo (devem ser iguais).
 

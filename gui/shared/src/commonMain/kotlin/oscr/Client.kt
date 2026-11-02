@@ -110,8 +110,12 @@ class OscrClient(
         }
     }
 
-    fun dumpRom(system: CartSystem, block: Int = 0, progress: Progress? = null) =
-        streamIn(Proto.T_DUMP_ROM, byteArrayOf(system.id.toByte()) + le16(block), progress)
+    /** NES/Famicom: `mapper`, `prgKb` e `chrKb` são opcionais (0 = automático/NROM); ver docs/protocolo.md. */
+    fun dumpRom(system: CartSystem, block: Int = 0, mapper: Int = 0, prgKb: Int = 0, chrKb: Int = 0, progress: Progress? = null): DumpResult {
+        var p = byteArrayOf(system.id.toByte()) + le16(block)
+        if (mapper != 0 || prgKb != 0 || chrKb != 0) p += le16(mapper) + le16(prgKb) + le16(chrKb)
+        return streamIn(Proto.T_DUMP_ROM, p, progress)
+    }
 
     fun readSave(system: CartSystem, block: Int = 0, progress: Progress? = null) =
         streamIn(Proto.T_READ_SAVE, byteArrayOf(system.id.toByte()) + le16(block), progress)

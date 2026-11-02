@@ -127,8 +127,9 @@ class Client:
                 self._send(P.T_ACK, P.build_offset(0), seq)
             # T_PROGRESSO e outros: ignorados
 
-    def dump_rom(self, system: int, block: int = 0, progress: Optional[Progress] = None) -> DumpResult:
-        return self._stream_in(P.T_DUMP_ROM, P.build_dump(system, block), progress)
+    def dump_rom(self, system: int, block: int = 0, progress: Optional[Progress] = None,
+                 mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> DumpResult:
+        return self._stream_in(P.T_DUMP_ROM, P.build_dump(system, block, mapper, prg_kb, chr_kb), progress)
 
     def read_save(self, system: int, block: int = 0, progress: Optional[Progress] = None) -> DumpResult:
         return self._stream_in(P.T_READ_SAVE, P.build_dump(system, block), progress)

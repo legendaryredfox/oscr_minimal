@@ -34,6 +34,8 @@ class Backend {
   // Lê `len` bytes sequenciais a partir de `off` (as chamadas são sempre crescentes).
   virtual bool read(uint8_t system, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) = 0;
   virtual void close_read() {}
+  // Opções opcionais de DUMP_ROM (NES/Famicom): mapper e tamanhos em KB. 0 = automático.
+  virtual void set_options(uint16_t mapper, uint16_t prg_kb, uint16_t chr_kb) { (void)mapper; (void)prg_kb; (void)chr_kb; }
   virtual bool write_begin(uint8_t system, uint32_t size, uint16_t& err) = 0;
   virtual bool write_block(uint32_t off, const uint8_t* buf, uint16_t len) = 0;
   virtual bool write_commit() = 0;   // chamado só depois do CRC32 conferir
@@ -79,7 +81,7 @@ class Session {
   void handle();
   void do_info(uint8_t seq);
   void do_detect(uint8_t seq, uint8_t sys);
-  void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block);
+  void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len);
   // 1 = ACK(off), 0 = NAK/timeout, -1 = ABORT
   int wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms);

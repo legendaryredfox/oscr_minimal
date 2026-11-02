@@ -121,8 +121,11 @@ def build_detect(system: int) -> bytes:
     return struct.pack("<B", system)
 
 
-def build_dump(system: int, block: int = 0) -> bytes:
-    return struct.pack("<BH", system, block)
+def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
+    base = struct.pack("<BH", system, block)
+    if mapper or prg_kb or chr_kb:      # opções do NES/Famicom (docs/protocolo.md)
+        base += struct.pack("<HHH", mapper, prg_kb, chr_kb)
+    return base
 
 
 def build_write_save(system: int, size: int, block: int = 0) -> bytes:

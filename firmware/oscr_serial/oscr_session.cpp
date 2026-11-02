@@ -84,7 +84,7 @@ void Session::handle() {
     case T_DETECT: do_detect(seq, len >= 1 ? p[0] : 0); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
-      do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0);
+      do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
       break;
     case T_WRITE_SAVE: do_write(seq, p, len); break;
     case T_ABORT: send_offset(T_D_ACK, seq, 0); break;
@@ -125,8 +125,11 @@ int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {
   }
 }
 
-void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block) {
+void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len) {
   if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
+  // campos opcionais no fim do payload: u16 mapper, u16 prg_kb, u16 chr_kb (copiados antes de reusar o buffer)
+  uint16_t mapper = opt_len >= 2 ? get_u16(opt) : 0, prg_kb = opt_len >= 4 ? get_u16(opt + 2) : 0, chr_kb = opt_len >= 6 ? get_u16(opt + 4) : 0;
+  be_.set_options(mapper, prg_kb, chr_kb);
   if (block == 0) block = DEFAULT_BLOCK;
   if (block > OSCR_MAX_PAYLOAD - 4 || !in_tx_ok(uint16_t(block + 4))) { send_error(seq, E_ARGUMENTO, "bloco"); return; }
   uint8_t kind = (type == T_DUMP_ROM) ? KIND_ROM : KIND_SAVE;

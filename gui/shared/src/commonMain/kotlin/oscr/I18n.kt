@@ -17,10 +17,16 @@ enum class S {
     HELP_TITLE, HELP_USE_TITLE, HELP_FIX_TITLE, HELP_USE_1, HELP_USE_2, HELP_USE_3,
     HELP_USE_4, HELP_USE_5, HELP_USE_6, HELP_FIX_1, HELP_FIX_2, HELP_FIX_3,
     HELP_FIX_4, HELP_FIX_5, HELP_FIX_6, HELP_FIX_7, HELP_FIX_8,
+    NES_OPTIONS, MAPPER, PRG_KB, CHR_KB, NES_HINT,
 }
 
 object I18n {
     private val pt = mapOf(
+        S.NES_OPTIONS to "Opções NES/Famicom",
+        S.MAPPER to "Mapper",
+        S.PRG_KB to "PRG (KB)",
+        S.CHR_KB to "CHR (KB)",
+        S.NES_HINT to "Mapper 0: deixe tudo em 0. Outros (1, 2, 3, 4, 7): informe mapper, PRG e CHR (do No-Intro/NESCartDB).",
         S.TITLE to "Dumper de cartuchos",
         S.LANGUAGE to "Idioma",
         S.PORT to "Porta serial",
@@ -65,7 +71,7 @@ object I18n {
         S.HELP_USE_3 to "Restaurar o save: Gravar save com um arquivo do tamanho exato do save. A gravação é conferida (CRC32 e leitura de volta).",
         S.HELP_USE_4 to "Conferir um cartucho (compra ou venda): Detectar mostra título e tamanhos; o CRC32 mostra se a ROM é a esperada.",
         S.HELP_USE_5 to "Testar sem cartucho: com o firmware em modo de teste, o sistema MOCK devolve dados conhecidos e confirma cabo, driver e permissões.",
-        S.HELP_USE_6 to "Limites atuais: SNES LoROM/HiROM, NES e Famicom mapper 0, Mega Drive (ROM) e GBA (ROM). SA-1, ExHiROM e outros mappers ainda não.",
+        S.HELP_USE_6 to "Limites atuais: SNES LoROM/HiROM, NES e Famicom mappers 0, 1, 2, 3, 4 e 7 (informe mapper e tamanhos), Mega Drive (ROM) e GBA (ROM). SA-1 e ExHiROM ainda não.",
         S.HELP_FIX_1 to "Nenhuma porta aparece: use um cabo USB de dados (não só de carga); no Linux entre no grupo dialout; no Windows/macOS instale o driver CH340 se o Mega for clone.",
         S.HELP_FIX_2 to "Não conecta ou dá tempo esgotado: feche outros programas que usem a porta, reconecte o cabo e tente 115200 baud.",
         S.HELP_FIX_3 to "Cartucho não detectado: encaixe até o fim, um cartucho por vez, limpe os contatos com álcool isopropílico e confira o sistema escolhido.",
@@ -76,6 +82,11 @@ object I18n {
         S.HELP_FIX_8 to "Para no meio da leitura: troque o cabo, evite hubs USB e tente 115200 baud.",
     )
     private val en = mapOf(
+        S.NES_OPTIONS to "NES/Famicom options",
+        S.MAPPER to "Mapper",
+        S.PRG_KB to "PRG (KB)",
+        S.CHR_KB to "CHR (KB)",
+        S.NES_HINT to "Mapper 0: leave all at 0. Others (1, 2, 3, 4, 7): enter mapper, PRG and CHR (from No-Intro/NESCartDB).",
         S.TITLE to "Cartridge dumper",
         S.LANGUAGE to "Language",
         S.PORT to "Serial port",
@@ -120,7 +131,7 @@ object I18n {
         S.HELP_USE_3 to "Restore a save: Write save with a file of the exact save size. The write is verified (CRC32 and read-back).",
         S.HELP_USE_4 to "Check a cartridge (buying or selling): Detect shows the title and sizes; the CRC32 tells whether the ROM is the expected one.",
         S.HELP_USE_5 to "Test without a cartridge: with the firmware in test mode, the MOCK system returns known data and confirms cable, driver and permissions.",
-        S.HELP_USE_6 to "Current limits: SNES LoROM/HiROM, NES and Famicom mapper 0, Mega Drive (ROM) and GBA (ROM). SA-1, ExHiROM and other mappers are not supported yet.",
+        S.HELP_USE_6 to "Current limits: SNES LoROM/HiROM, NES and Famicom mappers 0, 1, 2, 3, 4 and 7 (enter mapper and sizes), Mega Drive (ROM) and GBA (ROM). SA-1 and ExHiROM are not supported yet.",
         S.HELP_FIX_1 to "No port appears: use a data USB cable (not charge-only); on Linux join the dialout group; on Windows/macOS install the CH340 driver if the Mega is a clone.",
         S.HELP_FIX_2 to "Cannot connect or times out: close other programs using the port, replug the cable and try 115200 baud.",
         S.HELP_FIX_3 to "Cartridge not detected: insert it fully, one cartridge at a time, clean the contacts with isopropyl alcohol and check the selected system.",
@@ -131,6 +142,11 @@ object I18n {
         S.HELP_FIX_8 to "Stops in the middle of a dump: change the cable, avoid USB hubs and try 115200 baud.",
     )
     private val ru = mapOf(
+        S.NES_OPTIONS to "Параметры NES/Famicom",
+        S.MAPPER to "Маппер",
+        S.PRG_KB to "PRG (КБ)",
+        S.CHR_KB to "CHR (КБ)",
+        S.NES_HINT to "Mapper 0: оставьте всё равным 0. Другие (1, 2, 3, 4, 7): укажите маппер, PRG и CHR (из No-Intro/NESCartDB).",
         S.TITLE to "Дамп картриджей",
         S.LANGUAGE to "Язык",
         S.PORT to "Последовательный порт",
@@ -175,7 +191,7 @@ object I18n {
         S.HELP_USE_3 to "Восстановление сохранения: «Записать сохранение» файлом точного размера. Запись проверяется (CRC32 и обратное чтение).",
         S.HELP_USE_4 to "Проверка картриджа (покупка или продажа): «Определить» показывает название и размеры; CRC32 покажет, та ли это ROM.",
         S.HELP_USE_5 to "Проверка без картриджа: при прошивке в тестовом режиме система MOCK возвращает известные данные и проверяет кабель, драйвер и права.",
-        S.HELP_USE_6 to "Текущие ограничения: SNES LoROM/HiROM, NES и Famicom mapper 0, Mega Drive (ROM) и GBA (ROM). SA-1, ExHiROM и другие мапперы пока не поддерживаются.",
+        S.HELP_USE_6 to "Текущие ограничения: SNES LoROM/HiROM, NES и Famicom мапперы 0, 1, 2, 3, 4 и 7 (укажите маппер и размеры), Mega Drive (ROM) и GBA (ROM). SA-1 и ExHiROM пока не поддерживаются.",
         S.HELP_FIX_1 to "Порт не появляется: используйте USB-кабель для данных (не только зарядный); в Linux добавьте себя в группу dialout; в Windows/macOS установите драйвер CH340, если Mega — клон.",
         S.HELP_FIX_2 to "Не подключается или тайм-аут: закройте другие программы, использующие порт, переподключите кабель и попробуйте 115200 бод.",
         S.HELP_FIX_3 to "Картридж не обнаружен: вставьте до упора, только один картридж, очистите контакты изопропиловым спиртом и проверьте выбранную систему.",
@@ -186,6 +202,11 @@ object I18n {
         S.HELP_FIX_8 to "Останавливается посреди чтения: смените кабель, избегайте USB-хабов и попробуйте 115200 бод.",
     )
     private val zh = mapOf(
+        S.NES_OPTIONS to "NES/Famicom 选项",
+        S.MAPPER to "Mapper",
+        S.PRG_KB to "PRG (KB)",
+        S.CHR_KB to "CHR (KB)",
+        S.NES_HINT to "Mapper 0：全部保持为 0。其他（1、2、3、4、7）：填写 mapper、PRG 和 CHR（取自 No-Intro/NESCartDB）。",
         S.TITLE to "卡带读取器",
         S.LANGUAGE to "语言",
         S.PORT to "串口",
@@ -230,7 +251,7 @@ object I18n {
         S.HELP_USE_3 to "恢复存档：用大小完全一致的文件点击“写入存档”。写入会被校验（CRC32 与回读）。",
         S.HELP_USE_4 to "检查卡带（买卖时）：“检测”会显示标题和大小；CRC32 可判断 ROM 是否正确。",
         S.HELP_USE_5 to "无卡带测试：固件处于测试模式时，MOCK 主机返回已知数据，可确认线缆、驱动和权限。",
-        S.HELP_USE_6 to "当前限制：SNES LoROM/HiROM、NES 与 Famicom mapper 0、Mega Drive（ROM）、GBA（ROM）。暂不支持 SA-1、ExHiROM 及其他 mapper。",
+        S.HELP_USE_6 to "当前限制：SNES LoROM/HiROM、NES 与 Famicom 的 mapper 0、1、2、3、4、7（需填写 mapper 和大小）、Mega Drive（ROM）、GBA（ROM）。暂不支持 SA-1 与 ExHiROM。",
         S.HELP_FIX_1 to "没有串口：请使用数据线（非仅充电线）；Linux 需加入 dialout 组；若 Mega 是克隆板，Windows/macOS 需安装 CH340 驱动。",
         S.HELP_FIX_2 to "无法连接或超时：关闭占用该串口的其他程序，重新插拔线缆，并尝试 115200 波特率。",
         S.HELP_FIX_3 to "检测不到卡带：插到底，一次只插一个，用异丙醇清洁触点，并确认所选主机正确。",

@@ -252,3 +252,9 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 
 ### D40 — Documentação de uso
 `docs/uso.md`: preparação, casos de uso (ler ROM e conferir CRC32, backup e restauração de save, conferir cartucho, teste sem cartucho, vários sistemas), tabela do que cada sistema suporta, solução de problemas, limites/segurança e o roteiro de primeira validação com hardware.
+
+### D41 — NES/Famicom: mappers 1, 2, 3, 4 e 7
+- O cartucho de NES não traz o mapper; o host informa `mapper`, `prg_kb` e `chr_kb` (opções opcionais de `DUMP_ROM`, `docs/protocolo.md`). Mapper 0 continua automático.
+- Implementação em `oscr_carts.cpp`: MMC1 (modo PRG 3 e CHR em 4 KB, 5 escritas seriais; PRG até 256 KB), UxROM (2), CNROM (3), MMC3 (4: PRG em modo 0, CHR sem inversão) e AxROM (7). Mappers com conflito de barramento (2, 3, 7) escrevem os registradores num endereço da ROM cujo byte é igual ao valor. `NesBus` ganhou `prg_write` (HAL: `write_prg_byte` do OSCR).
+- Testes: modelos independentes do hardware de cada mapper (com conflito de barramento) em `tests/test_carts.cpp`: 8 configurações de PRG/CHR, dump byte a byte igual ao original; opções inválidas (mapper desconhecido, PRG 0, CHR em mapper 2). 89 verificações no total. Host (40 testes) e Kotlin (16 testes) cobrem o transporte das opções; CLI `--mapper/--prg/--chr` e GUI (campos NES/Famicom).
+- **Não validado em hardware.** Fora do escopo ainda: MMC1 de PRG > 256 KB (SUROM/SXROM), MMC3 com CHR-RAM, mappers 5, 9, 10, 11, 19, 24/26, 66, 69, 71 e outros; saves e PRG-RAM; espelhamento e bateria no cabeçalho iNES.

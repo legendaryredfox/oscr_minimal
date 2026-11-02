@@ -46,6 +46,9 @@ fun App() {
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
     var busy by remember { mutableStateOf(false) }
     var showHelp by remember { mutableStateOf(false) }
+    var mapper by remember { mutableStateOf("0") }
+    var prgKb by remember { mutableStateOf("0") }
+    var chrKb by remember { mutableStateOf("0") }
     var progress by remember { mutableStateOf(0f) }
     val log = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
@@ -104,6 +107,15 @@ fun App() {
             systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
         }
         if (system == CartSystem.GBA) Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
+        if (system == CartSystem.NES || system == CartSystem.FAMICOM) {
+            Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(mapper, { mapper = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.MAPPER)) }, singleLine = true, modifier = Modifier.width(110.dp))
+                OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.PRG_KB)) }, singleLine = true, modifier = Modifier.width(130.dp))
+                OutlinedTextField(chrKb, { chrKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.CHR_KB)) }, singleLine = true, modifier = Modifier.width(130.dp))
+            }
+            Text(t(S.NES_HINT), style = MaterialTheme.typography.bodySmall)
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(enabled = c != null && !busy, onClick = {
@@ -116,7 +128,7 @@ fun App() {
 
             Button(enabled = c != null && !busy, onClick = {
                 run {
-                    val res = withContext(Dispatchers.IO) { c!!.dumpRom(system, 0) { d, tot -> progress = d.toFloat() / tot } }
+                    val res = withContext(Dispatchers.IO) { c!!.dumpRom(system, 0, mapper.toIntOrNull() ?: 0, prgKb.toIntOrNull() ?: 0, chrKb.toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
                     val f = pickFile(t(S.CHOOSE_FILE), true, "rom_${system.name.lowercase()}${system.ext}")
                     if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
                     else say("CRC32 ${res.crcHex}")

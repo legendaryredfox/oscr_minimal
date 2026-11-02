@@ -26,6 +26,7 @@ class MockDevice:
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
         self.drop_next_acks = 0    # quantos ACK do host serão ignorados
         self.log: list[str] = []
+        self.last_options = None   # (mapper, prg_kb, chr_kb) do último DUMP_ROM
         self._dec = P.FrameDecoder()
         self._q: list[P.Frame] = []
 
@@ -98,6 +99,8 @@ class MockDevice:
             if sysid not in (0, 255):
                 self._error(t, f.seq, 3, "sem cartucho")
                 return
+            if len(f.payload) >= 9:
+                self.last_options = tuple(int.from_bytes(f.payload[3 + 2 * i:5 + 2 * i], "little") for i in range(3))
             block = block or P.DEFAULT_BLOCK
             if block > P.MAX_PAYLOAD - 4:
                 self._error(t, f.seq, 4, "bloco grande")

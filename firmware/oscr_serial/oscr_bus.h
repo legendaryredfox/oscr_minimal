@@ -20,6 +20,7 @@ struct NesBus {  // NES e Famicom: mesmo barramento
   virtual void end() = 0;
   virtual uint8_t prg(uint16_t addr) = 0;  // CPU $0000-$FFFF (ROM em $8000-$FFFF)
   virtual uint8_t chr(uint16_t addr) = 0;  // PPU $0000-$1FFF
+  virtual void prg_write(uint16_t addr, uint8_t value) = 0;  // escrita de registrador do mapper ($8000-$FFFF)
 };
 
 struct MdBus {  // dados de 16 bits (PA = D8..D15, PC = D0..D7)

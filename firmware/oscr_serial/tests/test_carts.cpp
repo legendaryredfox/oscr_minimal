@@ -51,6 +51,67 @@ struct SimNes : NesBus {
   void begin() override {} void end() override {}
   uint8_t prg(uint16_t a) override { if (absent || a < 0x8000) return 0xFF; return prgrom[(a - 0x8000) % prgrom.size()]; }
   uint8_t chr(uint16_t a) override { if (absent || chrrom.empty()) return 0xFF; return chrrom[a % chrrom.size()]; }
+  void prg_write(uint16_t, uint8_t) override {}
+};
+
+// NES com mapper: modelo do hardware (com conflito de barramento nos mappers 2, 3 e 7)
+struct SimMapper : NesBus {
+  int m; std::vector<uint8_t> prgrom, chrrom;
+  int reg = 0;                                  // 2, 3, 7
+  uint8_t sh = 0, cnt = 0, mm1[4] = {0x0C, 0, 0, 0};   // MMC1
+  uint8_t sel = 0, r[8] = {0, 2, 0, 0, 0, 0, 0, 1};   // MMC3
+  SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
+    prgrom.resize(p); chrrom.resize(c);
+    for (size_t i = 0; i < p; i++) prgrom[i] = pat(uint32_t(i) + 11 * mp);
+    for (size_t i = 0; i < c; i++) chrrom[i] = pat(uint32_t(i) + 77 * mp);
+  }
+  void begin() override {} void end() override {}
+  size_t n16() const { return prgrom.size() / 16384; }
+  uint8_t prg(uint16_t a) override {
+    if (a < 0x8000) return 0xFF;
+    size_t N = prgrom.size();
+    switch (m) {
+      case 0: case 3: return prgrom[(a - 0x8000) % N];
+      case 2: return a < 0xC000 ? prgrom[(size_t(reg) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+      case 7: return prgrom[(size_t(reg) * 32768 + (a & 0x7FFF)) % N];
+      case 1: { int mode = (mm1[0] >> 2) & 3;
+        if (mode >= 2) return a < 0xC000 ? prgrom[(size_t(mm1[3] & 0x0F) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+        return prgrom[(size_t(mm1[3] & 0x0E) * 16384 + (a & 0x7FFF)) % N]; }
+      case 4: { size_t n8 = N / 8192, bank;
+        if (a < 0xA000) bank = r[6]; else if (a < 0xC000) bank = r[7]; else if (a < 0xE000) bank = n8 - 2; else bank = n8 - 1;
+        return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
+    }
+    return 0xFF;
+  }
+  uint8_t chr(uint16_t a) override {
+    if (chrrom.empty()) return 0xFF;
+    size_t C = chrrom.size();
+    switch (m) {
+      case 0: return chrrom[a % C];
+      case 3: return chrrom[(size_t(reg) * 8192 + a) % C];
+      case 1: { if (!(mm1[0] & 0x10)) return chrrom[((size_t(mm1[1] & 0x1E)) * 4096 + a) % C];
+        return chrrom[((a < 0x1000 ? size_t(mm1[1]) : size_t(mm1[2])) * 4096 + (a & 0xFFF)) % C]; }
+      case 4: { size_t b;
+        if (a < 0x0800) b = (r[0] & ~1) + (a >> 10); else if (a < 0x1000) b = (r[1] & ~1) + ((a - 0x800) >> 10);
+        else b = r[2 + ((a - 0x1000) >> 10)];
+        return chrrom[((b * 1024) + (a & 0x3FF)) % C]; }
+    }
+    return 0xFF;
+  }
+  void prg_write(uint16_t a, uint8_t v) override {
+    if (a < 0x8000) return;
+    switch (m) {
+      case 2: case 3: case 7: reg = v & prg(a); break;                       // conflito: valor E byte da ROM
+      case 1:
+        if (v & 0x80) { cnt = 0; sh = 0; mm1[0] |= 0x0C; break; }
+        sh |= (v & 1) << cnt;
+        if (++cnt == 5) { mm1[(a >> 13) & 3] = sh; cnt = 0; sh = 0; }
+        break;
+      case 4:
+        if ((a & 1) == 0) sel = v; else r[sel & 7] = v;
+        break;
+    }
+  }
 };
 
 // ---------------------------------------------------------------- Mega Drive simulado
@@ -120,6 +181,34 @@ static void test_nes() {
   DetectInfo d; be.detect(SYS_NES, d); CHECK(d.status == 1);
 }
 
+static void test_nes_mappers() {
+  struct Cfg { int m; uint32_t prg, chr; };
+  const Cfg cfgs[] = {{1, 128 << 10, 64 << 10}, {1, 256 << 10, 0}, {2, 128 << 10, 0}, {3, 32 << 10, 32 << 10},
+                      {4, 128 << 10, 128 << 10}, {4, 256 << 10, 256 << 10}, {7, 128 << 10, 0}, {0, 32 << 10, 8 << 10}};
+  for (const Cfg& c : cfgs) {
+    SimMapper s(c.m, c.prg, c.chr); CartBackend be(nullptr, &s, nullptr, nullptr);
+    be.set_options(uint16_t(c.m), uint16_t(c.prg >> 10), uint16_t(c.chr >> 10));
+    uint32_t size = 0; uint16_t err = 0;
+    bool ok = be.open_read(SYS_NES, KIND_ROM, size, err);
+    CHECK(ok && size == 16 + c.prg + c.chr);
+    if (!ok) { printf("  mapper %d: erro %u\n", c.m, err); continue; }
+    std::vector<uint8_t> out(size);
+    for (uint32_t off = 0; off < size; off += 512) { uint16_t n = size - off < 512 ? uint16_t(size - off) : 512; be.read(SYS_NES, KIND_ROM, off, &out[off], n); }
+    be.close_read();
+    CHECK(out[0] == 'N' && out[4] == c.prg / 16384 && out[5] == c.chr / 8192 && out[6] == uint8_t((c.m & 0x0F) << 4));
+    bool prg_ok = memcmp(&out[16], s.prgrom.data(), c.prg) == 0;
+    bool chr_ok = c.chr == 0 || memcmp(&out[16 + c.prg], s.chrrom.data(), c.chr) == 0;
+    CHECK(prg_ok); CHECK(chr_ok);
+    if (!prg_ok || !chr_ok) printf("  mapper %d prg %uK chr %uK: prg_ok=%d chr_ok=%d\n", c.m, c.prg >> 10, c.chr >> 10, prg_ok, chr_ok);
+  }
+  // opções inválidas
+  SimMapper s(4, 128 << 10, 128 << 10); CartBackend be(nullptr, &s, nullptr, nullptr);
+  uint32_t size; uint16_t err;
+  be.set_options(99, 128, 128); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);
+  be.set_options(4, 0, 128);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
+  be.set_options(2, 128, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
+}
+
 static void test_md() {
   SimMd s(0x100000); CartBackend be(nullptr, nullptr, &s, nullptr);
   DetectInfo d; be.detect(SYS_MD, d);
@@ -147,7 +236,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_md(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

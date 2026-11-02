@@ -117,3 +117,22 @@ def test_cli_save_roundtrip(tmp_path, capsys):
     assert main(["--simulate", "save-write", "-s", "mock", "-i", str(src)]) == 0
     assert main(["--simulate", "save-read", "-s", "mock", "-o", str(tmp_path / "s")]) == 0
     assert (tmp_path / "s.sav").stat().st_size == 8192
+
+
+def test_opcoes_de_mapper_chegam_ao_dispositivo(env):
+    c, dev = env
+    c.dump_rom(255, 512, mapper=4, prg_kb=128, chr_kb=128)
+    assert dev.last_options == (4, 128, 128)
+    c.dump_rom(255)
+    assert dev.last_options == (4, 128, 128)       # sem opções: o payload não as inclui
+
+
+def test_build_dump_so_inclui_opcoes_quando_pedidas():
+    assert len(P.build_dump(2, 512)) == 3
+    assert P.build_dump(2, 512, 4, 128, 64) == bytes([2, 0, 2]) + (4).to_bytes(2, "little") + (128).to_bytes(2, "little") + (64).to_bytes(2, "little")
+
+
+def test_cli_aceita_mapper(tmp_path):
+    from oscr_host.cli import main
+
+    assert main(["--simulate", "dump", "-s", "mock", "--mapper", "1", "--prg", "128", "--chr", "64", "-o", str(tmp_path / "m")]) == 0
