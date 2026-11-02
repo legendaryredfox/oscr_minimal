@@ -35,6 +35,8 @@ struct GbaBus {  // AD0..15 multiplexado (PF/PK), A16..A23 em PC
   virtual void begin() = 0;
   virtual void end() = 0;
   virtual uint16_t word(uint32_t byte_addr) = 0;  // endereço em bytes (par)
+  virtual uint8_t sram_read(uint16_t addr) = 0;   // SRAM (/CS2): endereço em AD0-15, dado em D0-D7
+  virtual void sram_write(uint16_t addr, uint8_t value) = 0;
 };
 
 }  // namespace oscr

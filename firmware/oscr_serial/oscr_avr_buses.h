@@ -137,7 +137,7 @@ struct AvrMdBus : MdBus {
 
 struct AvrGbaBus : GbaBus {
   void begin() override {
-    DDRH |= (1 << 3) | (1 << 5) | (1 << 6); PORTH |= (1 << 3) | (1 << 5) | (1 << 6);   // CS, WR, RD altos
+    DDRH |= (1 << 0) | (1 << 3) | (1 << 5) | (1 << 6); PORTH |= (1 << 0) | (1 << 3) | (1 << 5) | (1 << 6);   // CS2, CS, WR, RD altos
     DDRF = 0xFF; DDRK = 0xFF; DDRC = 0xFF;
     delay(500);
   }
@@ -153,6 +153,24 @@ struct AvrGbaBus : GbaBus {
     uint16_t w = (uint16_t(PINK) << 8) | PINF;
     PORTH |= (1 << 6); PORTH |= (1 << 3);
     return w;
+  }
+  uint8_t sram_read(uint16_t a) override {                              // readByte_GBA do OSCR
+    DDRF = 0xFF; DDRK = 0xFF; DDRC = 0x00;
+    PORTF = a & 0xFF; PORTK = a >> 8;
+    PORTH &= ~(1 << 6); PORTH &= ~(1 << 0);                             // RD e CS2 baixos
+    OSCR_NOP4; OSCR_NOP4;
+    uint8_t v = PINC;
+    PORTH |= (1 << 0); PORTH |= (1 << 6);
+    return v;
+  }
+  void sram_write(uint16_t a, uint8_t v) override {                     // writeByte_GBA do OSCR
+    DDRF = 0xFF; DDRK = 0xFF; DDRC = 0xFF;
+    PORTF = a & 0xFF; PORTK = a >> 8; PORTC = v;
+    OSCR_NOP4; OSCR_NOP4;
+    PORTH &= ~(1 << 5); PORTH &= ~(1 << 0);                             // WR e CS2 baixos
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    PORTH |= (1 << 5); PORTH |= (1 << 0);
+    DDRC = 0x00;
   }
 };
 

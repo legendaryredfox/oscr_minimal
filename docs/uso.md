@@ -62,7 +62,7 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | NES | mappers 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4 (MMC3) e 7 | não | Mapper 0 é automático. Para os demais, **informe mapper, PRG e CHR em KB** (GUI: campos "Opções NES/Famicom"; CLI: `--mapper 4 --prg 128 --chr 128`), de uma fonte confiável (No-Intro/NESCartDB). Gera cabeçalho iNES (espelhamento e bateria saem 0; ajuste no emulador se preciso). Mappers 2 e 7 usam CHR-RAM (`--chr 0`). |
 | Famicom | os mesmos do NES | não | Mesmo código do NES. |
 | Mega Drive | ROM até 4 MB (tamanho do cabeçalho) | não | Precisa da palavra "SEGA" no cabeçalho. Jogos com mapper (SSF2) e SRAM ainda não. |
-| GBA | ROM de 256 KB até 32 MB (tamanho por espelhamento) | não | Só cartuchos GBA, 3,3 V. Save (SRAM/Flash/EEPROM) ainda não. |
+| GBA | ROM de 256 KB até 32 MB (tamanho por espelhamento) | só **leitura** de 32 KB, assumindo SRAM | Só cartuchos GBA, 3,3 V. O firmware não sabe se o save é SRAM, Flash ou EEPROM: em jogos com Flash ou EEPROM o arquivo lido **não vale**. Gravação de save do GBA não é suportada (risco com cartuchos Flash). |
 | GB/GBC | não | não | Reservado (precisa de adaptador no slot GBA). |
 
 Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (código `0x0002`).

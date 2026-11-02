@@ -147,6 +147,8 @@ bool CartBackend::probe(uint8_t sys, Cart& o) {
       if (mirror) { sz = cand; break; }
     }
     o.rom = sz;
+    o.save = 32768;                 // só a SRAM de 32 KB é lida; o tipo real (SRAM/Flash/EEPROM) é desconhecido
+    o.save_type = 255;
     o.status = 0;
     c_ = o;
     return true;
@@ -239,7 +241,7 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
   Cart c;
   if (!probe(sys, c)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (kind == KIND_SAVE) {
-    if (sys != SYS_SNES || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+    if ((sys != SYS_SNES && sys != SYS_GBA) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
     size = c_.save;
   } else {
     size = c_.rom;
@@ -255,7 +257,9 @@ void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) cons
 bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) {
   if (active_ != sys) return false;
   for (uint16_t i = 0; i < len; i++) {
-    if (kind == KIND_SAVE) {
+    if (kind == KIND_SAVE && sys == SYS_GBA) {
+      buf[i] = gba_->sram_read(uint16_t(off + i));
+    } else if (kind == KIND_SAVE) {
       uint8_t bank; uint16_t addr;
       snes_save_addr(off + i, bank, addr);
       buf[i] = snes_->read(bank, addr);

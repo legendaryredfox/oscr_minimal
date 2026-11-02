@@ -131,6 +131,9 @@ struct SimGba : GbaBus {
     const uint8_t logo[4] = {0x24, 0xFF, 0xAE, 0x51}; memcpy(&rom[4], logo, 4); memset(&rom[0xA0], ' ', 12); memcpy(&rom[0xA0], "GBA TESTE", 9); }
   void begin() override {} void end() override {}
   uint16_t word(uint32_t ba) override { if (absent) return 0xFFFF; uint32_t i = (ba & ~1UL) % rom.size(); return uint16_t(rom[i + 1] << 8) | rom[i]; }
+  std::vector<uint8_t> sram = std::vector<uint8_t>(32768, 0);
+  uint8_t sram_read(uint16_t a) override { return sram[a & 0x7FFF]; }
+  void sram_write(uint16_t a, uint8_t v) override { sram[a & 0x7FFF] = v; }
 };
 
 static void dump(CartBackend& be, uint8_t sys, uint8_t kind, std::vector<uint8_t>& out, uint16_t& err) {
@@ -225,6 +228,12 @@ static void test_gba() {
     CHECK(d.status == 0 && d.rom_size == (mb << 20) && strcmp(d.name, "GBA TESTE") == 0);
     std::vector<uint8_t> out; uint16_t err; dump(be, SYS_GBA, KIND_ROM, out, err);
     CHECK(out.size() == s.rom.size() && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+    // SRAM de 32 KB (somente leitura)
+    for (size_t i = 0; i < s.sram.size(); i++) s.sram[i] = pat(uint32_t(i) + 4242);
+    CHECK(d.save_size == 32768 && d.save_type == 255);
+    dump(be, SYS_GBA, KIND_SAVE, out, err);
+    CHECK(out == s.sram);
+    uint16_t e2 = 0; CHECK(!be.write_begin(SYS_GBA, 32768, e2) && e2 == E_SEM_SAVE);   // gravação do GBA não suportada
   }
   SimGba s(1 << 20); s.absent = true; CartBackend be(nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GBA, d); CHECK(d.status == 1);
 }
