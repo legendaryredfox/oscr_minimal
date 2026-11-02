@@ -218,3 +218,10 @@ A ligação ao computador deve ser USB-C. A foto do Mega que o usuário mostrou 
 2. Direção da etiqueta (D27, D28).
 3. Slot GBA SMD: pads de 1 mm; a máscara de solda do KiCad entre pads de 1,5 mm de passo funciona na JLCPCB, mas a solda é delicada.
 4. A placa passa de 100 × 100 mm: o preço do lote é bem maior que o do lote pequeno.
+
+## Fase 7 e 8 — estado (2026-11-02)
+
+- **Fase 7:** `docs/montagem.md` escrito (ordem de solda, testes, primeira energização, solução de problemas, GBA SMD e regulador de 3,3 V). Falta a revisão do usuário.
+- **Fase 8, feito e testado:** `docs/protocolo.md` (v1); `host/` em Python (`dumper.py detect|dump|save-read|save-write|info|ports`, `--simulate`), 36 testes `pytest` passando, incluindo o teste cruzado do cliente Python contra o código real do firmware compilado no PC; `firmware/oscr_serial` (protocolo + modo MOCK), 16 verificações C++ passando.
+- **Fase 8, NÃO feito:** sketch do Mega e compilação AVR; cópia reduzida do `Cart_Reader` (o upstream usa `myFile` do SdFat ~280 vezes nos 4 sistemas; a ponte "sink" precisa ser feita com cuidado e validada com cartuchos reais; o upstream tem o modo `SERIAL_MONITOR` com menu em texto, mas ainda grava no SD); GUI Kotlin Multiplatform (`gui/`, pt-BR e en); `docs/` da GUI.
+- Ferramentas já disponíveis na máquina: `arduino-cli` com `arduino:avr` instalado, Gradle 9.7 e Kotlin 2.4.

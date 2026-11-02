@@ -1,0 +1,18 @@
+[project]
+name = "oscr-host"
+version = "0.1.0"
+description = "CLI do PC para o dumper de cartuchos oscr_minimal (protocolo serial v1)"
+requires-python = ">=3.11"
+dependencies = ["pyserial>=3.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+dumper = "oscr_host.cli:main"
+
+[tool.setuptools]
+packages = ["oscr_host"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

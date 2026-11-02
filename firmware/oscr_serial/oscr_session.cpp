@@ -1,0 +1,212 @@
+#include "oscr_session.h"
+
+#include <string.h>
+
+namespace oscr {
+
+// ---------------------------------------------------------------- MockBackend
+void MockBackend::detect(uint8_t s, DetectInfo& o) {
+  if (!supports(s)) { o.status = 2; return; }
+  o.status = 0; o.rom_size = kRomSize; o.save_size = kSaveSize; o.save_type = 1;
+  strcpy(o.name, "MOCK");
+}
+bool MockBackend::open_read(uint8_t s, uint8_t kind, uint32_t& size, uint16_t& err) {
+  if (!supports(s)) { err = E_SISTEMA; return false; }
+  size = (kind == KIND_ROM) ? kRomSize : kSaveSize;
+  return true;
+}
+bool MockBackend::read(uint8_t, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) {
+  for (uint16_t i = 0; i < len; i++) buf[i] = (kind == KIND_ROM) ? rom_byte(off + i) : save_byte(off + i);
+  return true;
+}
+bool MockBackend::write_begin(uint8_t s, uint32_t size, uint16_t& err) {
+  if (!supports(s)) { err = E_SISTEMA; return false; }
+  if (size == 0 || size > (1UL << 20)) { err = E_ARGUMENTO; return false; }
+  return true;
+}
+
+// ---------------------------------------------------------------- Session
+void Session::send(uint8_t type, uint8_t seq, const uint8_t* payload, uint16_t len) {
+  size_t n = encode_frame(tx_, type, seq, payload, len);
+  io_.write(io_.ctx, tx_, n);
+}
+
+void Session::send_error(uint8_t seq, uint16_t code, const char* text) {
+  uint8_t p[3 + 32];
+  uint8_t n = 0;
+  while (text[n] && n < 32) { p[3 + n] = uint8_t(text[n]); n++; }
+  put_u16(p, code); p[2] = n;
+  send(T_ERRO, seq, p, 3 + n);
+}
+
+void Session::send_offset(uint8_t type, uint8_t seq, uint32_t off) {
+  uint8_t p[4];
+  put_u32(p, off);
+  send(type, seq, p, 4);
+}
+
+bool Session::next_frame(uint32_t timeout_ms) {
+  uint32_t start = io_.now_ms(io_.ctx);
+  for (;;) {
+    uint32_t now = io_.now_ms(io_.ctx);
+    uint32_t left = (now - start >= timeout_ms) ? 0 : timeout_ms - (now - start);
+    int b = io_.read_byte(io_.ctx, left > 20 ? 20 : left);
+    if (b < 0) {
+      if (!dec_.idle() && io_.now_ms(io_.ctx) - last_byte_ms_ > 200) dec_.reset();  // quadro parado no meio
+      if (io_.now_ms(io_.ctx) - start >= timeout_ms) return false;
+      continue;
+    }
+    last_byte_ms_ = io_.now_ms(io_.ctx);
+    if (dec_.push(uint8_t(b))) return true;
+  }
+}
+
+void Session::poll() {
+  // consome sem bloquear até achar um quadro
+  for (;;) {
+    int b = io_.read_byte(io_.ctx, 0);
+    if (b < 0) {
+      if (!dec_.idle() && io_.now_ms(io_.ctx) - last_byte_ms_ > 200) dec_.reset();
+      return;
+    }
+    last_byte_ms_ = io_.now_ms(io_.ctx);
+    if (dec_.push(uint8_t(b))) { handle(); return; }
+  }
+}
+
+void Session::handle() {
+  uint8_t seq = dec_.seq;
+  const uint8_t* p = dec_.payload();
+  uint16_t len = dec_.len;
+  switch (dec_.type) {
+    case T_INFO: do_info(seq); break;
+    case T_DETECT: do_detect(seq, len >= 1 ? p[0] : 0); break;
+    case T_DUMP_ROM:
+    case T_READ_SAVE:
+      do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0);
+      break;
+    case T_WRITE_SAVE: do_write(seq, p, len); break;
+    case T_ABORT: send_offset(T_D_ACK, seq, 0); break;
+    default: send_error(seq, E_COMANDO, "cmd"); break;
+  }
+}
+
+void Session::do_info(uint8_t seq) {
+  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, be_.flags(), 0, 0, 0, 0};
+  put_u16(p + 5, be_.systems());
+  put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/protocolo.md, seção 3)
+  send(T_INFO_RESP, seq, p, 9);
+}
+
+void Session::do_detect(uint8_t seq, uint8_t sys) {
+  DetectInfo d;
+  be_.detect(sys, d);
+  uint8_t p[12 + 32];
+  uint8_t n = uint8_t(strlen(d.name));
+  p[0] = sys; p[1] = d.status;
+  put_u32(p + 2, d.rom_size); put_u32(p + 6, d.save_size);
+  p[10] = d.save_type; p[11] = n;
+  memcpy(p + 12, d.name, n);
+  send(T_DETECT_RESP, seq, p, 12 + n);
+}
+
+int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {
+  uint32_t start = io_.now_ms(io_.ctx);
+  for (;;) {
+    uint32_t el = io_.now_ms(io_.ctx) - start;
+    if (el >= timeout_ms) return 0;
+    if (!next_frame(timeout_ms - el)) return 0;
+    if (dec_.type == T_ABORT) return -1;
+    if (dec_.seq != seq || dec_.len < 4) continue;
+    if (get_u32(dec_.payload()) != off) continue;
+    if (dec_.type == T_ACK) return 1;
+    if (dec_.type == T_NAK) return 0;
+  }
+}
+
+void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block) {
+  if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
+  if (block == 0) block = DEFAULT_BLOCK;
+  if (block > OSCR_MAX_PAYLOAD - 4 || !in_tx_ok(uint16_t(block + 4))) { send_error(seq, E_ARGUMENTO, "bloco"); return; }
+  uint8_t kind = (type == T_DUMP_ROM) ? KIND_ROM : KIND_SAVE;
+  uint32_t size = 0;
+  uint16_t err = E_CARTUCHO_IO;
+  if (!be_.open_read(sys, kind, size, err)) { send_error(seq, err); return; }
+
+  uint8_t bp[7] = {kind, 0, 0, 0, 0, 0, 0};
+  put_u32(bp + 1, size); put_u16(bp + 5, block);
+  int r = 0;
+  for (int t = 0; t < 4 && r == 0; t++) {
+    send(T_BEGIN, seq, bp, 7);
+    r = wait_ack(seq, 0, 500);
+  }
+  if (r <= 0) { be_.close_read(); send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+
+  uint32_t crc = 0;
+  for (uint32_t off = 0; off < size; off += block) {
+    uint16_t n = (size - off < block) ? uint16_t(size - off) : block;
+    put_u32(tx_ + 6, off);
+    if (!be_.read(sys, kind, off, tx_ + 10, n)) { be_.close_read(); send_error(seq, E_CARTUCHO_IO); return; }
+    crc = crc32_update(crc, tx_ + 10, n);
+    // monta o quadro DATA já com os dados lidos (cabeçalho + offset + dados + CRC32)
+    tx_[0] = MAGIC0; tx_[1] = MAGIC1; tx_[2] = T_DATA; tx_[3] = seq;
+    put_u16(tx_ + 4, uint16_t(4 + n));
+    put_u32(tx_ + 6 + 4 + n, crc32_update(0, tx_ + 2, 4 + 4 + n));
+    size_t frame = size_t(10) + 4 + n;
+    r = 0;
+    for (int t = 0; t < 4 && r == 0; t++) {
+      io_.write(io_.ctx, tx_, frame);   // o mesmo buffer é reenviado em caso de NAK/timeout
+      r = wait_ack(seq, off, 400);
+    }
+    if (r <= 0) { be_.close_read(); send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "bloco"); return; }
+  }
+  be_.close_read();
+  uint8_t ep[8];
+  put_u32(ep, size); put_u32(ep + 4, crc);
+  r = 0;
+  for (int t = 0; t < 4 && r == 0; t++) {
+    send(T_END, seq, ep, 8);
+    r = wait_ack(seq, size, 500);
+  }
+  if (r <= 0) send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "end");
+}
+
+void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len) {
+  if (len < 7) { send_error(seq, E_ARGUMENTO); return; }
+  uint8_t sys = p[0];
+  uint32_t size = get_u32(p + 1);
+  if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
+  uint16_t err = E_CARTUCHO_IO;
+  if (!be_.write_begin(sys, size, err)) { send_error(seq, err); return; }
+  send_offset(T_D_ACK, seq, 0);
+  uint32_t expected = 0, crc = 0;
+  uint32_t last = io_.now_ms(io_.ctx);
+  while (io_.now_ms(io_.ctx) - last < 5000) {
+    if (!next_frame(200)) continue;
+    if (dec_.type == T_ABORT) { be_.write_abort(); send_offset(T_D_ACK, seq, 0); return; }
+    if (dec_.seq != seq) continue;
+    last = io_.now_ms(io_.ctx);
+    if (dec_.type == T_H_DATA && dec_.len >= 4) {
+      uint32_t off = get_u32(dec_.payload());
+      uint16_t n = dec_.len - 4;
+      if (off == expected && uint32_t(off) + n <= size) {
+        if (!be_.write_block(off, dec_.payload() + 4, n)) { be_.write_abort(); send_error(seq, E_CARTUCHO_IO); return; }
+        crc = crc32_update(crc, dec_.payload() + 4, n);
+        expected += n;
+        send_offset(T_D_ACK, seq, off);
+      } else if (off < expected) {
+        send_offset(T_D_ACK, seq, off);
+      }
+    } else if (dec_.type == T_H_END && dec_.len >= 8) {
+      uint32_t total = get_u32(dec_.payload()), hcrc = get_u32(dec_.payload() + 4);
+      if (total != size || expected != size || hcrc != crc) { be_.write_abort(); send_error(seq, E_CRC); return; }
+      if (!be_.write_commit()) { send_error(seq, E_CARTUCHO_IO); return; }
+      send_offset(T_D_ACK, seq, total);
+      return;
+    }
+  }
+  be_.write_abort();
+  send_error(seq, E_REENVIOS, "timeout");
+}
+
+}  // namespace oscr
