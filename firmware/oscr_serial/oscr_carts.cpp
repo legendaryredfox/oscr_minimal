@@ -41,6 +41,8 @@ void CartBackend::acquire(uint8_t sys) {
 }
 
 void CartBackend::release() {
+  if (active_ == SYS_MD && md_sram_on_) md_sram(false);
+  md_bank_ = -1;
   switch (active_) {
     case SYS_SNES: snes_->end(); break;
     case SYS_NES: case SYS_FAMICOM: nes_->end(); break;
@@ -65,7 +67,16 @@ uint8_t CartBackend::byte_at(uint8_t sys, uint32_t off) {
       uint32_t o = off - 16;
       return o < c_.prg ? nes_prg_byte(o) : nes_chr_byte(o - c_.prg);
     }
-    case SYS_MD: { uint16_t w = md_->word(off >> 1); return (off & 1) ? uint8_t(w & 0xFF) : uint8_t(w >> 8); }
+    case SYS_MD: {
+      uint32_t a = off;
+      if (c_.ssf && off >= 0x80000UL) {                                // SSF2: janela 1 ($080000-$0FFFFF) varre os bancos de 512 KB
+        int16_t bank = int16_t(off >> 19);
+        if (bank != md_bank_) { md_->map_write(0x509879UL, uint16_t(bank)); md_bank_ = bank; }
+        a = 0x80000UL + (off & 0x7FFFFUL);
+      }
+      uint16_t w = md_->word(a >> 1);
+      return (a & 1) ? uint8_t(w & 0xFF) : uint8_t(w >> 8);
+    }
     case SYS_GBA: { uint16_t w = gba_->word(off & ~1UL); return (off & 1) ? uint8_t(w >> 8) : uint8_t(w & 0xFF); }
   }
   return 0xFF;
@@ -121,14 +132,32 @@ bool CartBackend::probe(uint8_t sys, Cart& o) {
     return true;
   }
   if (sys == SYS_MD) {
-    for (uint8_t i = 0; i < 4; i++) { uint16_t w = md_->word(0x80 + i / 2); h[i] = (i & 1) ? uint8_t(w) : uint8_t(w >> 8); }
+    for (uint8_t i = 0; i < 8; i += 2) { uint16_t w = md_->word(0x80 + i / 2); h[i] = uint8_t(w >> 8); h[i + 1] = uint8_t(w); }
     if (memcmp(h, "SEGA", 4) != 0) { o.status = 1; return false; }
+    o.ssf = memcmp(h, "SEGA SSF", 8) == 0;
     uint8_t t[48];
     for (uint8_t i = 0; i < 48; i += 2) { uint16_t w = md_->word((0x150 + i) >> 1); t[i] = uint8_t(w >> 8); t[i + 1] = uint8_t(w); }
     copy_ascii(o.name, t, 48);
     uint32_t end = 0;
     for (uint8_t i = 0; i < 4; i += 2) { uint16_t w = md_->word((0x1A4 + i) >> 1); end = (end << 16) | w; }
-    o.rom = (end >= 0x1FF && end < 0x400000UL) ? end + 1 : 0x400000UL;   // tamanho do cabeçalho; se inválido, 4 MB
+    uint32_t cap = o.ssf ? 0x800000UL : 0x400000UL;
+    o.rom = (end >= 0x1FF && end < cap) ? end + 1 : cap;                // tamanho do cabeçalho; se inválido, o máximo
+    // SRAM: "RA" + tipo em $1B0, início em $1B4 e fim em $1B8 (lógica do OSCR)
+    if (md_->word(0xD8) == 0x5241) {
+      uint16_t type = md_->word(0xD9);
+      uint32_t base = (uint32_t(md_->word(0xDA)) << 16) | md_->word(0xDB);
+      uint32_t last = (uint32_t(md_->word(0xDC)) << 16) | md_->word(0xDD);
+      if (type == 0xF820 || type == 0xF840) {
+        if (base == 0x20000020UL && last == 0x00010020UL) { base = 0x200001UL; last = 0x203FFFUL; }   // Psy-o-blade
+        if (base == 0x200001UL || base == 0x300001UL || base == 0x3C0001UL) { o.md_save = 1; o.save = (last - base + 2) / 2; o.md_base = base >> 1; }
+        else if (base == 0x200000UL) { o.md_save = 2; o.save = (last - base + 1) / 2; o.md_base = base / 2; }
+      } else if (type == 0xE020) {
+        if (base == 0x200001UL) { o.md_save = 3; o.save = last - base + 2; o.md_base = base >> 1; }
+        else if (base == 0x200000UL) { o.md_save = 3; o.save = last - base + 1; o.md_base = base >> 1; }
+      }
+      if (o.save > 0x10000UL) { o.save = 0; o.md_save = 0; }              // proteção contra cabeçalho inválido
+      if (o.save) o.save_type = 1;
+    }
     o.status = 0;
     c_ = o;
     return true;
@@ -241,7 +270,8 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
   Cart c;
   if (!probe(sys, c)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (kind == KIND_SAVE) {
-    if ((sys != SYS_SNES && sys != SYS_GBA) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+    if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+    if (sys == SYS_MD) md_sram(true);
     size = c_.save;
   } else {
     size = c_.rom;
@@ -257,7 +287,9 @@ void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) cons
 bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) {
   if (active_ != sys) return false;
   for (uint16_t i = 0; i < len; i++) {
-    if (kind == KIND_SAVE && sys == SYS_GBA) {
+    if (kind == KIND_SAVE && sys == SYS_MD) {
+      buf[i] = md_save_byte(off + i);
+    } else if (kind == KIND_SAVE && sys == SYS_GBA) {
       buf[i] = gba_->sram_read(uint16_t(off + i));
     } else if (kind == KIND_SAVE) {
       uint8_t bank; uint16_t addr;
@@ -270,18 +302,50 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
   return true;
 }
 
+// ---------------------------------------------------------------- Mega Drive: SRAM
+void CartBackend::md_sram(bool on) {
+  md_->map_write(0x509878UL, on ? 1 : 0);        // $A130F1 bit 0: liga a SRAM em $200000-$3FFFFF
+  md_sram_on_ = on;
+}
+
+uint8_t CartBackend::md_save_byte(uint32_t i) {
+  if (c_.md_save == 3) { uint16_t w = md_->word(c_.md_base + (i >> 1)); return (i & 1) ? uint8_t(w & 0xFF) : uint8_t(w >> 8); }
+  uint16_t w = md_->word(c_.md_base + i);
+  return c_.md_save == 1 ? uint8_t(w & 0xFF) : uint8_t(w >> 8);
+}
+
+void CartBackend::md_save_set(uint32_t i, uint8_t v) {
+  if (c_.md_save == 1) md_->write_word(c_.md_base + i, v);
+  else if (c_.md_save == 2) md_->write_word(c_.md_base + i, uint16_t(v) << 8);
+  else {                                          // ambos os bytes: monta a palavra (alto, baixo)
+    if ((i & 1) == 0) md_hi_ = v;
+    else md_->write_word(c_.md_base + (i >> 1), uint16_t(md_hi_ << 8) | v);
+  }
+}
+
 // ---------------------------------------------------------------- escrita de save (SNES SRAM)
 bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
-  if (sys != SYS_SNES) { err = E_SEM_SAVE; return false; }
+  if (sys != SYS_SNES && sys != SYS_MD) { err = E_SEM_SAVE; return false; }
   Cart c;
   if (!probe(sys, c)) { release(); err = (c.status == 2) ? E_SISTEMA : E_SEM_CARTUCHO; return false; }
   if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
+  if (sys == SYS_MD) md_sram(true);
   return true;
 }
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
+  if (active_ == SYS_MD) {
+    for (uint16_t i = 0; i < len; i++) {
+      md_save_set(off + i, buf[i]);
+      if ((i & 1) || c_.md_save != 3) {                           // confere; no modo "ambos" a palavra só fecha no 2º byte
+        if (md_save_byte(off + i) != buf[i]) return false;
+        if (c_.md_save == 3 && md_save_byte(off + i - 1) != buf[i - 1]) return false;
+      }
+    }
+    return true;
+  }
   if (active_ != SYS_SNES) return false;
   for (uint16_t i = 0; i < len; i++) {
     uint8_t bank; uint16_t addr;

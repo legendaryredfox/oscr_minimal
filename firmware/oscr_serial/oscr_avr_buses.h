@@ -133,6 +133,32 @@ struct AvrMdBus : MdBus {
     OSCR_NOP4;
     return w;
   }
+  static void data_out() { DDRC = 0xFF; DDRA = 0xFF; }
+  static void data_in() { DDRC = 0x00; DDRA = 0x00; PORTC = 0xFF; PORTA = 0xFF; }
+  void write_word(uint32_t a, uint16_t w) override {                    // writeWord_MD do OSCR
+    data_out();
+    PORTF = a & 0xFF; PORTK = (a >> 8) & 0xFF; PORTL = (a >> 16) & 0xFF;
+    PORTC = w & 0xFF; PORTA = (w >> 8) & 0xFF;
+    OSCR_NOP; OSCR_NOP;
+    PORTH &= ~(1 << 5); PORTH &= ~(1 << 3);                             // /LWR e /CE0 baixos
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    PORTH |= (1 << 3); PORTH |= (1 << 5);
+    OSCR_NOP4; OSCR_NOP; OSCR_NOP;
+    data_in();
+  }
+  void map_write(uint32_t a, uint16_t w) override {                     // writeSSF2Map do OSCR
+    data_out();
+    PORTJ |= (1 << 0);
+    PORTL = (a >> 16) & 0xFF; PORTK = (a >> 8) & 0xFF; PORTF = a & 0xFF;
+    PORTC = w & 0xFF; PORTA = (w >> 8) & 0xFF;
+    OSCR_NOP; OSCR_NOP;
+    PORTJ &= ~(1 << 0);                                                 // /TIME baixo
+    PORTH &= ~(1 << 5);                                                 // /LWR baixo
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    PORTH |= (1 << 5);
+    PORTJ |= (1 << 0);
+    data_in();
+  }
 };
 
 struct AvrGbaBus : GbaBus {

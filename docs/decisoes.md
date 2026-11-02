@@ -261,3 +261,10 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 
 ### D42 — GBA: leitura da SRAM de 32 KB
 `GbaBus` ganhou `sram_read/sram_write` (HAL: `readByte_GBA`/`writeByte_GBA` do OSCR, com /CS2 em PH0; `begin()` agora também coloca PH0 como saída alta). `READ_SAVE` do GBA lê 32 KB assumindo SRAM; `DETECT` informa `tipo_save = 255` (desconhecido) para avisar. **Gravação não suportada** (`E_SEM_SAVE`): em cartuchos Flash, escritas na faixa da SRAM podem ser tratadas como comandos. Saber o tipo de save exigiria procurar as strings `SRAM_V`/`FLASH_V`/`EEPROM_V` na ROM inteira (minutos). 98 verificações de cartuchos simulados passando; firmware real compila (14,9 KB de flash). Não validado em hardware.
+
+### D43 — Mega Drive: SRAM e mapper SSF2
+- **SRAM:** lida do cabeçalho (`"RA"` em $1B0, tipo F820/F840/E020, início e fim), com a mesma lógica do OSCR para bytes ímpares, pares e ambos (incluindo as bases $300001 e $3C0001 e o conserto do Psy-o-blade); tamanho máximo aceito 64 KB. O registrador $A130F1 bit 0 liga a SRAM em $200000-$3FFFFF e é desligado ao terminar (a ROM não pode vazar com a SRAM ligada). A gravação usa `writeWord_MD` do OSCR e confere cada byte; no modo "ambos" a palavra é montada com dois bytes.
+- **SSF2:** cabeçalho `"SEGA SSF"`; a janela 1 ($080000-$0FFFFF) varre os bancos de 512 KB pelo registrador $A130F3 (`writeSSF2Map` do OSCR, com /TIME). ROM de até 8 MB nesse modo; sem o mapper o tamanho é limitado a 4 MB.
+- `MdBus` ganhou `write_word` e `map_write`. HAL com as sequências do OSCR (não validado em hardware).
+- Testes: o simulador do Mega Drive modela SRAM nos 3 tipos (liga/desliga), registradores de banco e a máscara de bytes. 126 verificações de cartuchos simuladas passando. Firmware real: Arduino e PlatformIO compilam.
+- **Fora do escopo:** EEPROM serial, Pier Solar, lock-on (Sonic & Knuckles), mappers piratas, saves de bateria de 16 bits fora dos endereços conhecidos.

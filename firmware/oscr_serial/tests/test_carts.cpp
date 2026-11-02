@@ -116,12 +116,48 @@ struct SimMapper : NesBus {
 
 // ---------------------------------------------------------------- Mega Drive simulado
 struct SimMd : MdBus {
-  std::vector<uint8_t> rom; bool absent = false;
-  explicit SimMd(uint32_t size) { rom.resize(size); for (size_t i = 0; i < size; i++) rom[i] = pat(uint32_t(i) + 7);
-    memcpy(&rom[0x100], "SEGA MEGA DRIVE ", 16); memset(&rom[0x150], ' ', 48); memcpy(&rom[0x150], "JOGO DE TESTE", 13);
-    uint32_t end = size - 1; rom[0x1A4] = end >> 24; rom[0x1A5] = end >> 16; rom[0x1A6] = end >> 8; rom[0x1A7] = end; }
+  std::vector<uint8_t> rom; bool absent = false, ssf = false, sram_on = false;
+  int save_kind = 0;                                // 0 nenhum, 1 ímpares, 2 pares, 3 ambos
+  std::vector<uint16_t> sram = std::vector<uint16_t>(0x10000, 0xFFFF);
+  uint8_t bank[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  explicit SimMd(uint32_t size, int kind = 0, bool is_ssf = false, uint32_t ssram = 8192) : ssf(is_ssf), save_kind(kind) {
+    rom.resize(size); for (size_t i = 0; i < size; i++) rom[i] = pat(uint32_t(i) + 7);
+    memcpy(&rom[0x100], is_ssf ? "SEGA SSF        " : "SEGA MEGA DRIVE ", 16); memset(&rom[0x150], ' ', 48); memcpy(&rom[0x150], "JOGO DE TESTE", 13);
+    uint32_t end = size - 1; rom[0x1A4] = end >> 24; rom[0x1A5] = end >> 16; rom[0x1A6] = end >> 8; rom[0x1A7] = end;
+    if (kind) {
+      uint32_t base = kind == 2 ? 0x200000 : 0x200001, last = kind == 1 ? base + ssram * 2 - 2 : (kind == 2 ? base + ssram * 2 - 1 : base + ssram - 2 + (0));
+      if (kind == 3) { base = 0x200001; last = base + ssram - 2 + 1 - 1 + 0; last = base + ssram - 2; }
+      rom[0x1B0] = 'R'; rom[0x1B1] = 'A'; rom[0x1B2] = kind == 3 ? 0xE0 : 0xF8; rom[0x1B3] = 0x20;
+      for (int i = 0; i < 4; i++) { rom[0x1B4 + i] = base >> (24 - 8 * i); rom[0x1B8 + i] = last >> (24 - 8 * i); }
+    }
+  }
   void begin() override {} void end() override {}
-  uint16_t word(uint32_t wa) override { if (absent) return 0xFFFF; uint32_t b = (wa * 2) % rom.size(); return uint16_t(rom[b] << 8) | rom[b + 1]; }
+  uint16_t word(uint32_t wa) override {
+    if (absent) return 0xFFFF;
+    uint32_t b = wa * 2;
+    if (sram_on && b >= 0x200000 && b < 0x400000) {
+      uint16_t w = sram[(b - 0x200000) / 2];
+      if (save_kind == 1) return 0xFF00 | (w & 0xFF);
+      if (save_kind == 2) return (w & 0xFF00) | 0xFF;
+      return w;
+    }
+    uint32_t o = b;
+    if (ssf && b >= 0x80000 && b < 0x400000) o = uint32_t(bank[b >> 19]) * 0x80000 + (b & 0x7FFFF);
+    o %= rom.size();
+    return uint16_t(rom[o] << 8) | rom[o + 1];
+  }
+  void write_word(uint32_t wa, uint16_t w) override {
+    uint32_t b = wa * 2;
+    if (sram_on && b >= 0x200000 && b < 0x400000) {
+      uint16_t& cell = sram[(b - 0x200000) / 2];
+      if (save_kind == 1) cell = (cell & 0xFF00) | (w & 0xFF); else if (save_kind == 2) cell = (cell & 0x00FF) | (w & 0xFF00); else cell = w;
+    }
+  }
+  void map_write(uint32_t wa, uint16_t w) override {
+    uint32_t b = wa * 2;
+    if (b == 0xA130F0) sram_on = w & 1;
+    else if (b >= 0xA130F2 && b <= 0xA130FE) bank[(b - 0xA130F0) / 2] = w & 0xFF;
+  }
 };
 
 // ---------------------------------------------------------------- GBA simulado
@@ -221,6 +257,43 @@ static void test_md() {
   s.absent = true; be.detect(SYS_MD, d); CHECK(d.status == 1);
 }
 
+static void test_md_sram_ssf() {
+  for (int kind = 1; kind <= 3; kind++) {
+    SimMd s(0x100000, kind); CartBackend be(nullptr, nullptr, &s, nullptr);
+    DetectInfo d; be.detect(SYS_MD, d);
+    CHECK(d.status == 0 && d.save_size == 8192 && d.save_type == 1);
+    for (size_t i = 0; i < s.sram.size(); i++) s.sram[i] = uint16_t(pat(uint32_t(i) + 31) << 8 | pat(uint32_t(i) + 32));
+    // SRAM só aparece com o registrador ligado; a leitura liga e desliga
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_MD, KIND_SAVE, out, err);
+    CHECK(out.size() == 8192 && !s.sram_on);
+    bool same = true;
+    for (uint32_t i = 0; i < 8192 && same; i++) {
+      uint16_t w = s.sram[kind == 3 ? i / 2 : i];
+      uint8_t want = kind == 1 ? uint8_t(w) : (kind == 2 ? uint8_t(w >> 8) : ((i & 1) ? uint8_t(w) : uint8_t(w >> 8)));
+      same = out[i] == want;
+    }
+    CHECK(same);
+    // gravação: padrão novo, lido de volta pelo próprio caminho de leitura
+    std::vector<uint8_t> save(8192); for (size_t i = 0; i < save.size(); i++) save[i] = pat(uint32_t(i) + 900);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_MD, 8192, e2));
+    bool ok = true; for (uint32_t off = 0; off < 8192; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit() && !s.sram_on);
+    dump(be, SYS_MD, KIND_SAVE, out, err); CHECK(out == save);
+    CHECK(!be.write_begin(SYS_MD, 4096, e2) && e2 == E_ARGUMENTO);
+    // a ROM continua igual (a SRAM não pode vazar para a leitura da ROM)
+    dump(be, SYS_MD, KIND_ROM, out, err); CHECK(out.size() == s.rom.size() && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+  }
+  SimMd nosave(0x100000, 0); CartBackend b2(nullptr, nullptr, &nosave, nullptr);
+  std::vector<uint8_t> o; uint16_t err; dump(b2, SYS_MD, KIND_SAVE, o, err); CHECK(err == E_SEM_SAVE);
+  // SSF2: 5 MB com bancos de 512 KB
+  SimMd ssf(0x500000, 0, true); CartBackend b3(nullptr, nullptr, &ssf, nullptr);
+  DetectInfo d; b3.detect(SYS_MD, d); CHECK(d.status == 0 && d.rom_size == 0x500000);
+  dump(b3, SYS_MD, KIND_ROM, o, err);
+  CHECK(o.size() == ssf.rom.size() && memcmp(o.data(), ssf.rom.data(), o.size()) == 0);
+  // sem o mapper, uma ROM de 5 MB no cabeçalho é limitada a 4 MB
+  SimMd big(0x500000, 0, false); CartBackend b4(nullptr, nullptr, &big, nullptr); b4.detect(SYS_MD, d); CHECK(d.rom_size == 0x400000);
+}
+
 static void test_gba() {
   for (uint32_t mb : {1u, 4u, 16u}) {
     SimGba s(mb << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
@@ -245,7 +318,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_md_sram_ssf(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

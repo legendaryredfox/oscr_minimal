@@ -33,11 +33,20 @@ class CartBackend : public Backend {
     char name[33] = {0};
     bool hirom = false;          // SNES
     uint32_t prg = 0, chr = 0;   // NES (bytes)
+    bool ssf = false;            // Mega Drive: mapper SSF2 (ROM acima de 4 MB)
+    uint8_t md_save = 0;         // Mega Drive: 0 nenhum, 1 bytes ímpares, 2 bytes pares, 3 ambos
+    uint32_t md_base = 0;        // endereço em palavras do início da SRAM
   };
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
   Cart c_;
   uint8_t active_ = 0;           // sistema com barramento aberto (0 = nenhum)
   uint16_t opt_mapper_ = 0, opt_prg_ = 0, opt_chr_ = 0;   // opções do NES/Famicom (set_options)
+  bool md_sram_on_ = false;
+  uint8_t md_hi_ = 0;                                     // byte alto pendente (SRAM "ambos")
+  int16_t md_bank_ = -1;                                  // banco SSF2 já selecionado na janela 1
+  void md_sram(bool on);
+  uint8_t md_save_byte(uint32_t i);
+  void md_save_set(uint32_t i, uint8_t v);
   uint16_t mapper_ = 0;                                   // mapper em uso na leitura
   int16_t cur_prg_ = -1, cur_chr_ = -1;                   // banco já selecionado (-1 = nenhum)
   void nes_setup_mapper();
