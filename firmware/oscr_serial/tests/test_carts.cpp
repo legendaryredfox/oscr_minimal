@@ -61,11 +61,15 @@ struct SimMapper : NesBus {
   uint8_t sh = 0, cnt = 0, mm1[4] = {0x0C, 0, 0, 0};   // MMC1
   uint8_t sel = 0, r[8] = {0, 2, 0, 0, 0, 0, 0, 1};   // MMC3
   std::vector<uint8_t> ram = std::vector<uint8_t>(8192, 0xFF); bool has_ram = true, mmc3_ram_en = false;
+  uint8_t xp = 0, xfd = 0, xfe = 0; bool xlatch = false;                // 9 e 10 (MMC2/MMC4): PRG, bancos CHR dos latches FD e FE, latch
+  uint8_t fcmd = 0, f[16] = {0};                                         // 69 (FME-7): comando e registradores 0-15
+  uint8_t m5[0x40] = {0}; bool m5_prg_set = false;                       // 5 (MMC5): registradores $5100-$513F
   bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : false)); }
   SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
     prgrom.resize(p); chrrom.resize(c);
     for (size_t i = 0; i < p; i++) prgrom[i] = pat(uint32_t(i) + 11 * mp);
     for (size_t i = 0; i < c; i++) chrrom[i] = pat(uint32_t(i) + 77 * mp);
+    if (mp == 5) { m5[0] = 3; m5[0x14] = m5[0x15] = 0xFF; m5[1] = 3; }   // MMC5 liga em PRG modo 3 (últimos bancos) e CHR modo 3 (1 KB)
   }
   void begin() override {} void end() override {}
   size_t n16() const { return prgrom.size() / 16384; }
@@ -83,6 +87,20 @@ struct SimMapper : NesBus {
       case 4: { size_t n8 = N / 8192, bank;
         if (a < 0xA000) bank = r[6]; else if (a < 0xC000) bank = r[7]; else if (a < 0xE000) bank = n8 - 2; else bank = n8 - 1;
         return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
+      case 66: return prgrom[(size_t((reg >> 4) & 3) * 32768 + (a & 0x7FFF)) % N];
+      case 11: return prgrom[(size_t(reg & 3) * 32768 + (a & 0x7FFF)) % N];
+      case 71: return a < 0xC000 ? prgrom[(size_t(reg) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+      case 10: return a < 0xC000 ? prgrom[(size_t(xp & 0x0F) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+      case 9: { size_t n8 = N / 8192;
+        if (a < 0xA000) return prgrom[(size_t(xp & 0x0F) % n8) * 8192 + (a & 0x1FFF)];
+        return prgrom[(n8 - 3 + ((a - 0xA000) >> 13)) * 8192 + (a & 0x1FFF)]; }
+      case 69: { size_t n8 = N / 8192, bank;
+        if (a < 0xA000) bank = f[9] & 0x3F; else if (a < 0xC000) bank = f[10] & 0x3F; else if (a < 0xE000) bank = f[11] & 0x3F; else bank = n8 - 1;
+        return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
+      case 5: { size_t n8 = N / 8192, bank;
+        if (m5[0] != 3) return 0xFF;                                    // sem $5100 = 3 o modelo não troca bancos de 8 KB
+        if (a < 0xA000) bank = m5[0x14] & 0x7F; else if (a < 0xC000) bank = m5[0x15] & 0x7F; else if (a < 0xE000) bank = n8 - 2; else bank = n8 - 1;
+        return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
     }
     return 0xFF;
   }
@@ -98,14 +116,32 @@ struct SimMapper : NesBus {
         if (a < 0x0800) b = (r[0] & ~1) + (a >> 10); else if (a < 0x1000) b = (r[1] & ~1) + ((a - 0x800) >> 10);
         else b = r[2 + ((a - 0x1000) >> 10)];
         return chrrom[((b * 1024) + (a & 0x3FF)) % C]; }
+      case 66: return chrrom[(size_t(reg & 3) * 8192 + a) % C];
+      case 11: return chrrom[(size_t(reg >> 4) * 8192 + a) % C];
+      case 9: case 10: {
+        uint8_t v;
+        if (a < 0x1000) { v = xlatch ? xfe : xfd; } else v = 0;
+        uint8_t out = chrrom[((size_t(v & 0x1F) * 4096) + (a & 0xFFF)) % C];
+        if (a >= 0x0FD8 && a <= 0x0FDF) xlatch = false;                  // latch troca depois da leitura
+        if (a >= 0x0FE8 && a <= 0x0FEF) xlatch = true;
+        return out; }
+      case 69: return chrrom[((size_t(f[a >> 10]) * 1024) + (a & 0x3FF)) % C];
+      case 5: { if (m5[1] != 0) return 0xFF;                            // $5101 = 0: modo de 8 KB, banco em $5127 (unidades de 8 KB)
+        return chrrom[((size_t(m5[0x30] & 3) << 8 | m5[0x27]) * 8192 + a) % C]; }
     }
     return 0xFF;
   }
   void prg_write(uint16_t a, uint8_t v) override {
+    if (m == 5 && a >= 0x5100 && a < 0x5140) { m5[a - 0x5100] = v; return; }
     if (a >= 0x6000 && a < 0x8000) { if (ram_enabled()) ram[a - 0x6000] = v; return; }
     if (a < 0x8000) return;
     switch (m) {
-      case 2: case 3: case 7: reg = v & prg(a); break;                       // conflito: valor E byte da ROM
+      case 2: case 3: case 7: case 11: case 66: reg = v & prg(a); break;     // conflito: valor E byte da ROM
+      case 71: if (a >= 0xC000) reg = v; break;                              // sem conflito
+      case 9: case 10:
+        if (a >= 0xA000 && a < 0xB000) xp = v; else if (a >= 0xB000 && a < 0xC000) xfd = v; else if (a >= 0xC000 && a < 0xD000) xfe = v;
+        break;
+      case 69: if (a < 0xA000) fcmd = v & 0x0F; else if (a < 0xC000) f[fcmd] = v; break;
       case 1:
         if (v & 0x80) { cnt = 0; sh = 0; mm1[0] |= 0x0C; break; }
         sh |= (v & 1) << cnt;
@@ -360,7 +396,11 @@ static void test_nes() {
 static void test_nes_mappers() {
   struct Cfg { int m; uint32_t prg, chr; };
   const Cfg cfgs[] = {{1, 128 << 10, 64 << 10}, {1, 256 << 10, 0}, {2, 128 << 10, 0}, {3, 32 << 10, 32 << 10},
-                      {4, 128 << 10, 128 << 10}, {4, 256 << 10, 256 << 10}, {7, 128 << 10, 0}, {0, 32 << 10, 8 << 10}};
+                      {4, 128 << 10, 128 << 10}, {4, 256 << 10, 256 << 10}, {7, 128 << 10, 0}, {0, 32 << 10, 8 << 10},
+                      {66, 128 << 10, 32 << 10}, {66, 64 << 10, 16 << 10}, {11, 128 << 10, 128 << 10}, {11, 32 << 10, 16 << 10},
+                      {71, 128 << 10, 0}, {71, 256 << 10, 0}, {9, 128 << 10, 128 << 10}, {9, 64 << 10, 32 << 10},
+                      {10, 128 << 10, 64 << 10}, {10, 256 << 10, 128 << 10}, {69, 128 << 10, 128 << 10}, {69, 256 << 10, 256 << 10},
+                      {5, 128 << 10, 128 << 10}, {5, 512 << 10, 256 << 10}};
   for (const Cfg& c : cfgs) {
     SimMapper s(c.m, c.prg, c.chr); CartBackend be(nullptr, &s, nullptr, nullptr);
     be.set_options(uint16_t(c.m), uint16_t(c.prg >> 10), uint16_t(c.chr >> 10));
@@ -371,7 +411,7 @@ static void test_nes_mappers() {
     std::vector<uint8_t> out(size);
     for (uint32_t off = 0; off < size; off += 512) { uint16_t n = size - off < 512 ? uint16_t(size - off) : 512; be.read(SYS_NES, KIND_ROM, off, &out[off], n); }
     be.close_read();
-    CHECK(out[0] == 'N' && out[4] == c.prg / 16384 && out[5] == c.chr / 8192 && out[6] == uint8_t((c.m & 0x0F) << 4));
+    CHECK(out[0] == 'N' && out[4] == c.prg / 16384 && out[5] == c.chr / 8192 && out[6] == uint8_t((c.m & 0x0F) << 4) && out[7] == uint8_t(c.m & 0xF0));
     bool prg_ok = memcmp(&out[16], s.prgrom.data(), c.prg) == 0;
     bool chr_ok = c.chr == 0 || memcmp(&out[16 + c.prg], s.chrrom.data(), c.chr) == 0;
     CHECK(prg_ok); CHECK(chr_ok);
@@ -382,6 +422,10 @@ static void test_nes_mappers() {
   uint32_t size; uint16_t err;
   be.set_options(99, 128, 128); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);
   be.set_options(4, 0, 128);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
+  be.set_options(71, 128, 8);  CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);   // Camerica: CHR-RAM
+  be.set_options(66, 48, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);   // GxROM: PRG múltiplo de 32
+  be.set_options(66, 256, 8);  CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // além dos 2 bits
+  be.set_options(9, 256, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // MMC2: até 128 KB
   be.set_options(2, 128, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
 }
 

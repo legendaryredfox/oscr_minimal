@@ -1,6 +1,6 @@
 # Continuação — estado do projeto e como retomar
 
-Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D49).
+Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D50).
 
 ## 1. Onde estamos
 
@@ -12,21 +12,21 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Host (Python) | CLI `dumper.py` completa, 49 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi a gravação da EEPROM do Mega Drive, D49). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi o conjunto de mappers do NES, D50). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
 | Sistema | ROM | Save |
 |---|---|---|
 | SNES | LoROM e HiROM | SRAM: ler e gravar (com conferência) |
-| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 7; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1 e 4: ler e gravar |
+| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1 e 4: ler e gravar |
 | Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC | não | não |
 
 Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D49 de `docs/decisoes.md`.
 
-**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers 5, 9, 10, 11, 66, 69, 71 e RAM de 16/32 KB; GB/GBC; Pier Solar, lock-on, mappers piratas.
+**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers além da lista acima, save do 5 e do 69, RAM de 16/32 KB do MMC1; GB/GBC; Pier Solar, lock-on, mappers piratas.
 
 ## 3. Mapa do código
 
@@ -52,7 +52,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 535 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 595 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 49 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -115,9 +115,9 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mappers do NES (5, 9, 10, 11, 66, 69, 71), RAM de 16/32 KB do MMC1, SNES ExHiROM e SA-1, GB/GBC.
 
-**Próximo passo combinado (pedido do usuário: "e depois nes"): mais mappers do NES.** Ainda não iniciado. Ordem sugerida: 66 (GxROM), 11 (Color Dreams), 71 (Camerica), 9/10 (MMC2/MMC4), depois 69 (FME-7) e 5 (MMC5). Ler `vendor/oscr/legacy/Cart_Reader/NES.ino` para os registradores de troca de banco; estender `nes_setup_mapper`, `nes_prg_byte`, `nes_chr_byte` e a lista `known` em `probe` (`oscr_carts.cpp`); acrescentar o mapper simulado em `SimMapper` (`tests/test_carts.cpp`); atualizar dicas do host/GUI, `docs/uso.md`, `docs/protocolo.md`, `docs/decisoes.md` (próxima entrada: D50) e `firmware/README.md`. Depois rodar os três conjuntos de testes, compilar Arduino e PlatformIO, commitar e dar push nos dois remotes.
+**Próximo passo sugerido:** ciclo C de novo: RAM de 16/32 KB do MMC1 (SOROM/SXROM), save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 535 de cartuchos, 49 do host. Os testes do Gradle não foram rodados depois da gravação de EEPROM do Mega Drive (só mudou firmware e docs).
+Estado dos testes na última verificação: 16 do protocolo + 595 de cartuchos, 49 do host. Os testes do Gradle não foram rodados depois da gravação de EEPROM do Mega Drive (só mudou firmware e docs).
 
 Armadilha nova: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 

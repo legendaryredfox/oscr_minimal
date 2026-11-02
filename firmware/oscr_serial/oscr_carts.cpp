@@ -146,12 +146,14 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
       strcpy(o.name, "NROM (mapper 0)");
     } else {                                                          // mapper e tamanhos informados
       uint16_t m = opt_mapper_;
-      bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 7;
+      bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 9 || m == 10 || m == 11 || m == 66 || m == 69 || m == 71;
       if (!known) { o.status = 2; return false; }
       if (opt_prg_ == 0 || opt_prg_ % 16 != 0 || opt_chr_ % 8 != 0) { o.status = 3; return false; }
-      if ((m == 2 || m == 7) && opt_chr_ != 0) { o.status = 3; return false; }              // CHR-RAM
+      if ((m == 2 || m == 7 || m == 71) && opt_chr_ != 0) { o.status = 3; return false; }   // CHR-RAM
       if (m == 1 && opt_prg_ > 256) { o.status = 2; return false; }                          // SUROM etc.
-      if (m == 7 && opt_prg_ % 32 != 0) { o.status = 3; return false; }
+      if ((m == 7 || m == 11 || m == 66) && opt_prg_ % 32 != 0) { o.status = 3; return false; }
+      if ((m == 9 && opt_prg_ > 128) || (m == 10 && opt_prg_ > 256) || (m == 11 && (opt_prg_ > 128 || opt_chr_ > 128))
+          || (m == 66 && (opt_prg_ > 128 || opt_chr_ > 32)) || (m == 69 && opt_prg_ > 512) || (m == 5 && opt_prg_ > 1024)) { o.status = 2; return false; }   // além do registrador
       o.prg = uint32_t(opt_prg_) * 1024UL; o.chr = uint32_t(opt_chr_) * 1024UL;
       mapper_ = m;
       strcpy(o.name, "mapper ");
@@ -275,7 +277,7 @@ void CartBackend::detect(uint8_t sys, DetectInfo& out) {
   strncpy(out.name, c.name, 32); out.name[32] = 0;
 }
 
-// ---------------------------------------------------------------- NES: mappers 0, 1, 2, 3, 4, 7
+// ---------------------------------------------------------------- NES: mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71
 void CartBackend::nes_ram(bool on) {
   if (mapper_ == 1) mmc1_write(0xE000, on ? 0x00 : 0x10);          // PRG reg bit 4: 0 liga, 1 desliga a RAM (MMC1B)
   else if (mapper_ == 4) nes_->prg_write(0xA001, on ? 0x80 : 0x00);  // MMC3: bit 7 liga; desliga ao terminar
@@ -303,24 +305,51 @@ void CartBackend::mmc3_write(uint8_t reg, uint8_t v) {
 void CartBackend::nes_setup_mapper() {
   cur_prg_ = cur_chr_ = -1;
   if (mapper_ == 1) { nes_->prg_write(0x8000, 0x80); mmc1_write(0x8000, 0x1C); }   // reset; PRG modo 3, CHR 4 KB
+  else if (mapper_ == 5) { nes_->prg_write(0x5100, 3); nes_->prg_write(0x5101, 0); }   // MMC5: PRG em bancos de 8 KB, CHR em 8 KB
+  else if (mapper_ == 69) { nes_->prg_write(0x8000, 8); nes_->prg_write(0xA000, 0); }  // FME-7: $6000 = ROM banco 0 (RAM desligada)
 }
 
 uint8_t CartBackend::nes_prg_byte(uint32_t o) {
   uint32_t fixed = c_.prg > 16384UL ? c_.prg - 16384UL : 0;          // início do último banco de 16 KB
   switch (mapper_) {
     case 0: case 3: return nes_->prg(uint16_t(0x8000 + o));
-    case 7: {
+    case 7: case 11: case 66: {                                      // 32 KB por vez; 7 e 11 e 66 têm conflito de barramento
       int16_t bank = int16_t(o >> 15);
-      if (bank != cur_prg_) { nes_reg(uint8_t(bank), 0x8000, 2048); cur_prg_ = bank; }
+      if (bank != cur_prg_) {
+        uint8_t v = mapper_ == 66 ? uint8_t(bank << 4) : uint8_t(bank);   // 66: bits 4-5; 7 e 11: bits 0-1/0-2
+        nes_reg(v, 0x8000, 2048); cur_prg_ = bank;
+      }
       return nes_->prg(uint16_t(0x8000 + (o & 0x7FFF)));
     }
-    case 2: case 1: case 4: {
+    case 2: case 1: case 4: case 10: case 71: {
       if (o >= fixed) return nes_->prg(uint16_t(0xC000 + (o - fixed)));
       int16_t bank = int16_t(o >> 14);
       if (bank != cur_prg_) {
         if (mapper_ == 2) nes_reg(uint8_t(bank), 0xC000, 2048);
         else if (mapper_ == 1) mmc1_write(0xE000, uint8_t(bank));
+        else if (mapper_ == 10) nes_->prg_write(0xA000, uint8_t(bank));
+        else if (mapper_ == 71) nes_->prg_write(0xC000, uint8_t(bank));
         else { mmc3_write(6, uint8_t(bank * 2)); mmc3_write(7, uint8_t(bank * 2 + 1)); }
+        cur_prg_ = bank;
+      }
+      return nes_->prg(uint16_t(0x8000 + (o & 0x3FFF)));
+    }
+    case 9: {                                                        // MMC2: 8 KB em $8000; os 3 últimos bancos ficam fixos em $A000
+      uint32_t fixed9 = c_.prg > 24576UL ? c_.prg - 24576UL : 0;
+      if (o >= fixed9) return nes_->prg(uint16_t(0xA000 + (o - fixed9)));
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_prg_) { nes_->prg_write(0xA000, uint8_t(bank)); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0x8000 + (o & 0x1FFF)));
+    }
+    case 69: {                                                       // FME-7: comando 9 = banco de 8 KB em $8000
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_prg_) { nes_->prg_write(0x8000, 9); nes_->prg_write(0xA000, uint8_t(bank)); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0x8000 + (o & 0x1FFF)));
+    }
+    case 5: {                                                        // MMC5, modo 3: dois bancos de 8 KB (bit 7 = ROM) em $8000-$BFFF
+      int16_t bank = int16_t(o >> 14);
+      if (bank != cur_prg_) {
+        nes_->prg_write(0x5114, uint8_t((bank * 2) | 0x80)); nes_->prg_write(0x5115, uint8_t((bank * 2 + 1) | 0x80));
         cur_prg_ = bank;
       }
       return nes_->prg(uint16_t(0x8000 + (o & 0x3FFF)));
@@ -332,9 +361,24 @@ uint8_t CartBackend::nes_prg_byte(uint32_t o) {
 uint8_t CartBackend::nes_chr_byte(uint32_t o) {
   switch (mapper_) {
     case 0: return nes_->chr(uint16_t(o));
-    case 3: {
+    case 3: case 66: case 11: {                                      // 8 KB por vez; conflito de barramento
       int16_t bank = int16_t(o >> 13);
-      if (bank != cur_chr_) { nes_reg(uint8_t(bank), 0x8000, 2048); cur_chr_ = bank; }
+      if (bank != cur_chr_) { nes_reg(mapper_ == 11 ? uint8_t(bank << 4) : uint8_t(bank), 0x8000, 2048); cur_chr_ = bank; }
+      return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 9: case 10: {                                               // MMC2/MMC4: 4 KB em $0000; os dois latches (FD/FE) recebem o mesmo banco
+      int16_t k = int16_t(o >> 12);
+      if (k != cur_chr_) { nes_->prg_write(0xB000, uint8_t(k)); nes_->prg_write(0xC000, uint8_t(k)); cur_chr_ = k; }
+      return nes_->chr(uint16_t(o & 0x0FFF));
+    }
+    case 69: {                                                       // FME-7: comando 0 = banco de 1 KB em $0000
+      int16_t k = int16_t(o >> 10);
+      if (k != cur_chr_) { nes_->prg_write(0x8000, 0); nes_->prg_write(0xA000, uint8_t(k)); cur_chr_ = k; }
+      return nes_->chr(uint16_t(o & 0x03FF));
+    }
+    case 5: {                                                        // MMC5, modo 0: 8 KB; $5130 = bits altos do banco (0)
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_chr_) { nes_->prg_write(0x5130, 0); nes_->prg_write(0x5127, uint8_t(bank)); cur_chr_ = bank; }
       return nes_->chr(uint16_t(o & 0x1FFF));
     }
     case 1: {
