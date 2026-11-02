@@ -62,6 +62,13 @@ void CartBackend::acquire(uint8_t sys) {
 }
 
 void CartBackend::release() {
+  if (active_ == SYS_SNES && snes_) {                               // devolve os registradores dos chips especiais ao valor original
+    if (sdd1_cur_ >= 0) snes_->write(0, 0x4807, uint8_t(sdd1_init_));
+    if (spc_touched_) { snes_->write(0, 0x4833, 2); snes_->write(0, 0x4834, 0); }
+    if (spc_sram_) snes_->write(0, 0x4830, 0);
+    if (cx4_touched_) snes_->write(0, 0x7F52, cx4_orig_);
+  }
+  sdd1_cur_ = -1; spc_region_ = -1; spc_touched_ = spc_sram_ = cx4_touched_ = false;
   if (clocks_on_ && snes_) { snes_->cpu_clock(false); snes_->clocks_stop(); clocks_on_ = false; }
   if (active_ == SYS_MD && md_sram_on_) md_sram(false);
   if ((active_ == SYS_NES || active_ == SYS_FAMICOM) && nes_ram_on_) nes_ram(false);
@@ -81,11 +88,24 @@ void CartBackend::release() {
 uint8_t CartBackend::byte_at(uint8_t sys, uint32_t off) {
   switch (sys) {
     case SYS_SNES:
+      if (c_.sdd1) {                                                    // S-DD1: o registrador $4807 escolhe qual 1 MB aparece em $F0-$FF
+        int16_t m = int16_t(off >> 20);
+        if (m != sdd1_cur_) { snes_->write(0, 0x4807, uint8_t(m)); sdd1_cur_ = m; }
+        return snes_->read(uint8_t(0xF0 + ((off >> 16) & 0xF)), uint16_t(off & 0xFFFF));
+      }
+      if (c_.spc7110) {                                                 // SPC7110: 0-2 MB em $C0-$DF; depois $E0-$EF e $F0-$FF (duas vezes) com $4833/$4834
+        if (off < 0x200000UL) return snes_->read(uint8_t(0xC0 + (off >> 16)), uint16_t(off & 0xFFFF));
+        int8_t r = off < 0x300000UL ? 1 : (off < 0x400000UL ? 2 : 3);
+        if (r != spc_region_) { snes_->write(0, 0x4834, 0xFF); snes_->write(0, 0x4833, r == 3 ? 3 : 2); spc_region_ = r; spc_touched_ = true; }
+        uint8_t bank = r == 1 ? uint8_t(0xE0 + ((off - 0x200000UL) >> 16)) : uint8_t(0xF0 + ((off >> 16) & 0xF));
+        return snes_->read(bank, uint16_t(off & 0xFFFF));
+      }
       if (c_.exhirom) {                                                  // ExHiROM: A22 invertido: os primeiros 4 MB em $C0-$FF, o resto em $40-$7D
         if (off < 0x400000UL) return snes_->read(uint8_t(0xC0 + (off >> 16)), uint16_t(off & 0xFFFF));
         return snes_->read(uint8_t(0x40 + ((off - 0x400000UL) >> 16)), uint16_t(off & 0xFFFF));
       }
       if (c_.hirom) return snes_->read(uint8_t(0xC0 + (off >> 16)), uint16_t(off & 0xFFFF));
+      if (c_.rom > 0x300000UL) return snes_->read(uint8_t(0x80 + (off >> 15)), uint16_t(0x8000 | (off & 0x7FFF)));   // LoROM de mais de 3 MB: $7E-$7F são a WRAM, usa $80+ (como o OSCR)
       return snes_->read(uint8_t(off >> 15), uint16_t(0x8000 | (off & 0x7FFF)));
     case SYS_NES: case SYS_FAMICOM: {
       if (off < 16) {                                  // cabeçalho iNES sintético
@@ -135,21 +155,42 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
     }
     if (clocks_on_) snes_->clocks_run();                              // clocks normais do console
     bool ex = (mode == 5);                                           // ExHiROM: $25 / $35 (cabeçalho em $40FFC0, visível em $00:FFC0)
-    if ((mode > 1 && !ex && !sa1) || rs == 0 || rs > (ex ? 13 : 12)) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // SA-1 etc.
-    o.hirom = (mode == 1) || ex || sa1;                              // SA-1 lê a ROM como HiROM ($C0-$FF)
-    o.sa1 = sa1;
+    uint8_t chips = h[0x16];
+    bool sfx = (chips == 0x13 || chips == 0x14 || chips == 0x15 || chips == 0x1A);
+    bool sdd1 = (chips == 0x43 || chips == 0x45);
+    bool spc = ((chips == 0xF5 || chips == 0xF9) && mode == 0x0A);
+    uint8_t cx4 = (chips == 0xF3) ? uint8_t(h[9] & 0x0F) : 0;
+    if (cx4 != 2 && cx4 != 3) cx4 = 0;
+    bool special = sdd1 || spc;                                      // tamanho fixo pelo chip, como o OSCR
+    if ((mode > 1 && !ex && !sa1 && !special) || (!special && (rs == 0 || rs > (ex ? 13 : 12)))) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // chips sem suporte
+    o.hirom = (mode == 1) || ex || sa1 || special;                   // SA-1 lê a ROM como HiROM ($C0-$FF); a SRAM de S-DD1 e SPC7110 também é de HiROM
+    o.sa1 = sa1; o.sfx = sfx; o.sdd1 = sdd1; o.spc7110 = spc; o.cx4 = cx4;
     o.exhirom = ex;
     o.rom = 1024UL << rs;
+    if (sdd1) o.rom = (chips == 0x45) ? 6144UL * 1024UL : 4096UL * 1024UL;       // 48 Mbit / 32 Mbit
+    if (spc) o.rom = (chips == 0xF5) ? 3072UL * 1024UL : 5120UL * 1024UL;       // 24 Mbit / 40 Mbit
+    if (cx4 == 2) o.rom = 1536UL * 1024UL; else if (cx4 == 3) o.rom = 2048UL * 1024UL;   // X2 12 Mbit, X3 16 Mbit
     if (ex && rs == 13) o.rom = 6144UL * 1024UL;                    // cabeçalho "8 MB": os ExHiROM conhecidos de mais de 4 MB têm 6 MB (48 Mbit); outro valor, informe o tamanho
     if (ex && opt_prg_ != 0) {                                      // tamanho informado (KB)
       if (opt_prg_ % 64 != 0 || opt_prg_ > 8064) { o.status = 3; return false; }   // $40-$7D vão até $7DFFFF; $7E-$7F são a WRAM do console
       o.rom = uint32_t(opt_prg_) * 1024UL;
+    }
+    if (sfx) {                                                       // SuperFX: o campo de RAM do cabeçalho não vale; $FFBD se o mapa for $33, senão 32 KB (Star Fox 2: 64 KB)
+      char nm[9]; copy_ascii(nm, h, 8);
+      ss = (h[0x1A] == 0x33) ? snes_->read(0x00, 0xFFBD) : (strncmp(nm, "STARFOX2", 8) == 0 ? 6 : 5);
     }
     o.save = (ss >= 1 && ss <= 8) ? (1024UL << ss) : 0;
     o.save_type = o.save ? 1 : 0;
     copy_ascii(o.name, h, 21);
     o.status = 0;
     c_ = o;
+    // registradores dos chips (devolvidos ao valor original em release)
+    if (sdd1) { sdd1_init_ = snes_->read(0, 0x4807); sdd1_cur_ = -1; }
+    if (cx4) {
+      cx4_orig_ = snes_->read(0, 0x7F52);
+      if (cx4 == 2 && cx4_orig_ != 0) { snes_->write(0, 0x7F52, 0); cx4_touched_ = true; }       // X2: mapeamento 0
+      else if (cx4 == 3 && cx4_orig_ == 0) { snes_->write(0, 0x7F52, 1); cx4_touched_ = true; }  // X3: mapeamento 1
+    }
     return true;
   }
   if (sys == SYS_NES || sys == SYS_FAMICOM) {
@@ -452,7 +493,8 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
     if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
     if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
     if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
-    if (sys == SYS_SNES && c_.hirom) snes_->cs(true);
+    if (sys == SYS_SNES && c_.hirom && !c_.spc7110) snes_->cs(true);
+    if (sys == SYS_SNES && c_.spc7110) { snes_->write(0, 0x4830, 0x80); spc_sram_ = true; }   // SPC7110: libera a SRAM (sem CS alto)
     size = c_.save;
   } else {
     size = c_.rom;
@@ -461,7 +503,8 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
 }
 
 void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) const {
-  if (c_.sa1) { bank = uint8_t(0x40 + (i >> 16)); addr = uint16_t(i & 0xFFFF); }   // BW-RAM: 64 KB por banco a partir de $40
+  if (c_.sfx) { bank = uint8_t(0x70 + (i >> 16)); addr = uint16_t(i & 0xFFFF); }   // SuperFX: bancos de 64 KB
+  else if (c_.sa1) { bank = uint8_t(0x40 + (i >> 16)); addr = uint16_t(i & 0xFFFF); }   // BW-RAM: 64 KB por banco a partir de $40
   else if (c_.exhirom) { bank = uint8_t(0xB0 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
   else if (c_.hirom) { bank = uint8_t(0x30 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
   else { bank = uint8_t(0x70 + (i >> 15)); addr = uint16_t(i & 0x7FFF); }
@@ -751,7 +794,8 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
-  if (sys == SYS_SNES && c_.hirom && !c_.sa1) snes_->cs(true);
+  if (sys == SYS_SNES && c_.hirom && !c_.sa1 && !c_.spc7110) snes_->cs(true);
+  if (sys == SYS_SNES && c_.spc7110) { snes_->write(0, 0x4830, 0x80); spc_sram_ = true; }
   if (sys == SYS_SNES && c_.sa1) {                                   // BW-RAM do SA-1: com o clock do CPU ligado, janela em $6000 pelo registrador $2224
     snes_->cpu_clock(true);
     snes_->write(0, 0x2224, 0);                                      // BMAPS: bloco 0

@@ -16,6 +16,8 @@ static uint8_t pat(uint32_t i) { return uint8_t((i * 2654435761u) >> 24) ^ uint8
 // ---------------------------------------------------------------- SNES simulado
 struct SimSnes : SnesBus {
   std::vector<uint8_t> rom, sram; bool hirom; bool absent = false, ex = false, cs_high = false;
+  int special = 0;                                       // 1 SuperFX (BW-RAM em bancos de 64 KB), 2 S-DD1, 3 SPC7110, 4 Cx4
+  uint8_t sdd1map = 5, r4830 = 0, r4833 = 2, r4834 = 0, cx4reg = 1, cx4want = 0; int cx4bad = 0;   // registradores dos chips
   void cs(bool high) override { cs_high = high; }
   SimSnes(bool hi, uint8_t rsz, uint8_t ssz, bool bad = false, bool exhi = false) : hirom(hi || exhi), ex(exhi) {
     rom.resize(1024UL << rsz); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i));
@@ -29,8 +31,9 @@ struct SimSnes : SnesBus {
   void begin() override {} void end() override {}
   size_t sram_index(uint8_t b, uint16_t a, bool& ok) {
     ok = false;
-    if (hirom && cs_high && !ex && b >= 0x30 && b <= 0x3F && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0x30) * 0x2000 + (a - 0x6000); }   // HiROM: só com CS alto
+    if (hirom && (special == 3 ? r4830 == 0x80 : cs_high) && !ex && b >= 0x30 && b <= 0x3F && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0x30) * 0x2000 + (a - 0x6000); }   // HiROM: só com CS alto
     if (ex && cs_high && b >= 0xB0 && b <= 0xBF && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0xB0) * 0x2000 + (a - 0x6000); }
+    if (special == 1 && b >= 0x70 && b <= 0x7D) { ok = true; return (size_t(b - 0x70) << 16) | a; }               // SuperFX: 64 KB por banco
     if (!hirom && b >= 0x70 && b <= 0x7D && a < 0x8000) { ok = true; return size_t(b - 0x70) * 0x8000 + a; }
     return 0;
   }
@@ -39,6 +42,17 @@ struct SimSnes : SnesBus {
     bool ok; size_t si = sram_index(b, a, ok);
     if (ok) return si < sram.size() ? sram[si] : 0xFF;
     size_t off;
+    if (special == 4 && b == 0 && a == 0x7F52) return cx4reg;
+    if (special == 4 && b != 0 && cx4reg != cx4want) cx4bad++;
+    if (special == 2 && b == 0 && a == 0x4807) return sdd1map;
+    if (special == 2 && b >= 0xF0) return rom[(((size_t(sdd1map) << 20) | (size_t(b - 0xF0) << 16)) | a) % rom.size()];
+    if (special == 3 && b >= 0xC0) {                       // SPC7110
+      if (b < 0xE0) off = (size_t(b - 0xC0) << 16) | a;
+      else if (b < 0xF0) off = (r4834 == 0xFF ? 0x200000 : 0) + ((size_t(b - 0xE0) << 16) | a);
+      else off = (r4834 == 0xFF ? (r4833 == 3 ? 0x400000 : 0x300000) : 0) + ((size_t(b - 0xF0) << 16) | a);
+      return rom[off % rom.size()];
+    }
+    if (!hirom && !ex && (b == 0x7E || b == 0x7F)) return 0xFF;   // WRAM do console
     if (ex) {                                              // ExHiROM: A22 invertido
       if (b >= 0xC0) off = (size_t(b - 0xC0) << 16) | a;
       else if (b >= 0x40 && b <= 0x7D) off = 0x400000 + ((size_t(b - 0x40) << 16) | a);
@@ -50,7 +64,16 @@ struct SimSnes : SnesBus {
     else { if (a < 0x8000) return 0xFF; off = (size_t(b & 0x7F) << 15) | (a & 0x7FFF); }
     return off < rom.size() ? rom[off] : rom[off % rom.size()];
   }
-  void write(uint8_t b, uint16_t a, uint8_t v) override { bool ok; size_t si = sram_index(b, a, ok); if (ok && si < sram.size()) sram[si] = v; }
+  void write(uint8_t b, uint16_t a, uint8_t v) override {
+    if (b == 0) {
+      if (special == 2 && a == 0x4807) sdd1map = v;
+      if (special == 3 && a == 0x4830) r4830 = v;
+      if (special == 3 && a == 0x4833) r4833 = v;
+      if (special == 3 && a == 0x4834) r4834 = v;
+      if (special == 4 && a == 0x7F52) cx4reg = v;
+    }
+    bool ok; size_t si = sram_index(b, a, ok); if (ok && si < sram.size()) sram[si] = v;
+  }
 };
 
 // SA-1 simulado: o cabeçalho só aparece depois de clocks_boot (Si5351 + CIC); a ROM em $C0+ só com os clocks normais;
@@ -467,6 +490,68 @@ static void test_snes_exhirom() {
   CHECK(ok && bh.write_commit() && hi.sram == sv);
 }
 
+static void test_snes_chips() {
+  uint16_t err = 0; std::vector<uint8_t> out;
+  // LoROM de 4 MB: os bancos $7E-$7F são a WRAM, a ROM tem que sair de $80+
+  { SimSnes s(false, 12, 0); CartBackend be(&s, nullptr, nullptr, nullptr);
+    dump(be, SYS_SNES, KIND_ROM, out, err);
+    CHECK(out.size() == s.rom.size() && memcmp(out.data(), s.rom.data(), out.size()) == 0); }
+  // SuperFX: RAM de 32 KB por padrão, 64 KB no Star Fox 2, e pelo byte $FFBD quando o mapa é $33; bancos de 64 KB em $70
+  for (int v = 0; v < 3; v++) {
+    SimSnes s(false, 10, 0); s.special = 1; size_t h = 0x7FC0;
+    s.rom[h + 0x16] = 0x15; if (v == 1) memcpy(&s.rom[h], "STARFOX2  ", 10);
+    if (v == 2) { s.rom[h + 0x1A] = 0x33; s.rom[0x7FBD] = 7; }
+    uint32_t want = v == 1 ? 65536 : (v == 2 ? 131072 : 32768);
+    s.sram.assign(want, 0);
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    DetectInfo d; be.detect(SYS_SNES, d);
+    CHECK(d.status == 0 && d.save_size == want && d.rom_size == 1024UL * 1024);
+    for (size_t i = 0; i < s.sram.size(); i++) s.sram[i] = pat(uint32_t(i) + 17);
+    dump(be, SYS_SNES, KIND_SAVE, out, err); CHECK(out == s.sram);
+    std::vector<uint8_t> sv(want); for (size_t i = 0; i < want; i++) sv[i] = pat(uint32_t(i) + 99);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_SNES, want, e2));
+    bool ok = true; for (uint32_t off = 0; off < want; off += 512) ok = ok && be.write_block(off, &sv[off], 512);
+    CHECK(ok && be.write_commit() && s.sram == sv);
+  }
+  // S-DD1: 4 MB (chips $43) e 6 MB (chips $45), janelas de 1 MB em $F0-$FF; o registrador $4807 volta ao valor original
+  for (uint8_t chips : {0x43, 0x45}) {
+    SimSnes s(false, 13, 0); s.special = 2; s.sdd1map = 5; s.rom[0x7FC0 + 0x16] = chips; s.rom[0x7FC0 + 0x15] = 0x32;
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    DetectInfo d; be.detect(SYS_SNES, d);
+    uint32_t want = chips == 0x45 ? 6144UL * 1024 : 4096UL * 1024;
+    CHECK(d.status == 0 && d.rom_size == want);
+    dump(be, SYS_SNES, KIND_ROM, out, err);
+    bool same = out.size() == want;
+    for (uint32_t i = 0; same && i < want; i++) if (out[i] != s.rom[i]) same = false;
+    CHECK(same); CHECK(s.sdd1map == 5);
+  }
+  // SPC7110: 3 MB ($F5) e 5 MB ($F9); $4833/$4834 voltam a 2 e 0; a SRAM pede $4830 = $80 (e não sobe o CS)
+  for (uint8_t chips : {0xF5, 0xF9}) {
+    SimSnes s(true, 13, 3); s.special = 3; size_t h = 0xFFC0; s.rom[h + 0x15] = 0x3A; s.rom[h + 0x16] = chips;
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    uint32_t want = chips == 0xF5 ? 3072UL * 1024 : 5120UL * 1024;
+    DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 0 && d.rom_size == want && d.save_size == 8192);
+    dump(be, SYS_SNES, KIND_ROM, out, err);
+    bool ok = out.size() == want;
+    for (uint32_t i = 0; ok && i < want; i++) {                      // regiões: 0-2 MB, 2-3 MB, 3-4 MB, 4-5 MB do arquivo
+      uint32_t expect = i;                                           // o simulador mapeia cada região para o mesmo deslocamento do arquivo
+      if (out[i] != s.rom[expect]) ok = false;
+    }
+    CHECK(ok); CHECK(s.r4833 == 2 && s.r4834 == 0);
+    for (size_t i = 0; i < s.sram.size(); i++) s.sram[i] = pat(uint32_t(i) + 3);
+    dump(be, SYS_SNES, KIND_SAVE, out, err); CHECK(out == s.sram && s.r4830 == 0 && !s.cs_high);
+  }
+  // Cx4: X2 pede $7F52 = 0 e X3 pede 1 durante a leitura; o valor original volta
+  for (int type : {2, 3}) {
+    SimSnes s(false, 11, 0); s.special = 4; s.rom[0x7FC0 + 0x16] = 0xF3; s.rom[0x7FC0 + 9] = uint8_t(type);
+    s.cx4reg = type == 2 ? 1 : 0; s.cx4want = type == 2 ? 0 : 1;
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    uint8_t orig = s.cx4reg;
+    dump(be, SYS_SNES, KIND_ROM, out, err);
+    CHECK(out.size() == (type == 2 ? 1536UL : 2048UL) * 1024 && s.cx4bad == 0 && s.cx4reg == orig);
+  }
+}
+
 static void test_snes_sa1() {
   {
     SimSa1 s(10, 5);                                                   // 1 MB, BW-RAM de 32 KB
@@ -853,7 +938,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_snes_exhirom(); test_snes_sa1(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_snes_exhirom(); test_snes_sa1(); test_snes_chips(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

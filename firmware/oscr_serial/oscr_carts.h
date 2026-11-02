@@ -32,6 +32,10 @@ class CartBackend : public Backend {
     uint8_t save_type = 0;
     char name[33] = {0};
     bool hirom = false;          // SNES
+    bool sfx = false;            // SNES SuperFX (chips $13-$15, $1A): ROM como LoROM; BW-RAM em $70 com bancos de 64 KB
+    bool sdd1 = false;           // SNES S-DD1 (chips $43/$45): ROM em janelas de 1 MB pelo registrador $4807
+    bool spc7110 = false;        // SNES SPC7110 (mapa $3A, chips $F5/$F9): ROM em 4 regiões pelos registradores $4833/$4834
+    uint8_t cx4 = 0;             // SNES Cx4 (chips $F3): 2 = X2 (12 Mbit), 3 = X3 (16 Mbit); mapeamento em $7F52
     bool sa1 = false;            // SNES SA-1 (mapa $23, chips $34/$35): precisa do Si5351 e do CIC
     bool exhirom = false;        // SNES ExHiROM (mapa $25/$35): ROM de até 8 MB, cabeçalho em $40FFC0
     uint32_t prg = 0, chr = 0;   // NES (bytes)
@@ -46,6 +50,10 @@ class CartBackend : public Backend {
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
   Cart c_;
   void clear_options() { opt_mapper_ = opt_prg_ = opt_chr_ = 0; }
+  int16_t sdd1_cur_ = -1, sdd1_init_ = 0;   // S-DD1: janela de 1 MB mapeada ($4807) e valor original
+  int8_t spc_region_ = -1;                  // SPC7110: região de ROM mapeada
+  bool spc_touched_ = false, spc_sram_ = false;
+  uint8_t cx4_orig_ = 0; bool cx4_touched_ = false;   // Cx4: valor original de $7F52
   bool clocks_on_ = false;       // SNES: Si5351 e CIC ligados (SA-1)
   void snes_clocks_boot();       // clocks lentos + CIC, e lê 1 KB do banco $C0 ("primeira leitura" do OSCR)
   uint8_t sa1_first_[16] = {0};  // SA-1: 16 primeiros bytes do save, regravados no fim

@@ -1,6 +1,6 @@
 # Continuação — estado do projeto e como retomar
 
-Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D54).
+Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D55).
 
 ## 1. Onde estamos
 
@@ -12,21 +12,21 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Host (Python) | CLI `dumper.py` completa, 50 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi o SNES SA-1, D54). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi o SNES com SuperFX, S-DD1, SPC7110 e Cx4, D55). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
 | Sistema | ROM | Save |
 |---|---|---|
-| SNES | LoROM, HiROM, ExHiROM (até 8064 KB) e SA-1 (precisa do Si5351 e do PIC) | SRAM: ler e gravar (com conferência) |
+| SNES | LoROM, HiROM, ExHiROM (até 8064 KB), SA-1 (precisa do Si5351 e do PIC), SuperFX, S-DD1, SPC7110, Cx4 | SRAM: ler e gravar (com conferência) |
 | NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1, 4, 5 e 69, 16/32 KB nos mappers 1 e 5 (`--ram`): ler e gravar |
 | Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC | não | não |
 
-Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D54 de `docs/decisoes.md`.
+Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D55 de `docs/decisoes.md`.
 
-**Ainda não existe:** SNES com S-DD1, SuperFX, SPC7110 e outros chips especiais; NES mappers além da lista acima, outros mappers com save; GB/GBC; Pier Solar, lock-on, mappers piratas.
+**Ainda não existe:** SNES com Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110; NES mappers além da lista acima, outros mappers com save; GB/GBC; Pier Solar, lock-on, mappers piratas.
 
 ## 3. Mapa do código
 
@@ -52,7 +52,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 674 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 703 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -115,9 +115,9 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
-**Próximo passo sugerido:** ciclo C de novo: GB/GBC, SNES com chips especiais (S-DD1, SuperFX, SPC7110). Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
+**Próximo passo sugerido:** ciclo C de novo: GB/GBC (o CLAUDE.md exclui o slot de GB clássico; só viria por adaptador no slot GBA, perguntar antes), SNES com os chips raros acima. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 674 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
+Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 703 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 
