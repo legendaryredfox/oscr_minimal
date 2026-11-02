@@ -64,6 +64,12 @@ struct SimMapper : NesBus {
   uint8_t xp = 0, xfd = 0, xfe = 0; bool xlatch = false;                // 9 e 10 (MMC2/MMC4): PRG, bancos CHR dos latches FD e FE, latch
   uint8_t fcmd = 0, f[16] = {0};                                         // 69 (FME-7): comando e registradores 0-15
   uint8_t m5[0x40] = {0}; bool m5_prg_set = false;                       // 5 (MMC5): registradores $5100-$513F
+  size_t ram_off() const {                                              // MMC1 SOROM/SXROM: banco de RAM pelo registrador CHR 0 (mm1[1])
+    if (m != 1) return 0;
+    if (ram.size() == 32768) return size_t((mm1[1] >> 2) & 3) * 8192;
+    if (ram.size() == 16384) return size_t((mm1[1] >> 3) & 1) * 8192;
+    return 0;
+  }
   bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : false)); }
   SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
     prgrom.resize(p); chrrom.resize(c);
@@ -74,7 +80,7 @@ struct SimMapper : NesBus {
   void begin() override {} void end() override {}
   size_t n16() const { return prgrom.size() / 16384; }
   uint8_t prg(uint16_t a) override {
-    if (a >= 0x6000 && a < 0x8000) return ram_enabled() ? ram[a - 0x6000] : 0xFF;
+    if (a >= 0x6000 && a < 0x8000) return ram_enabled() ? ram[ram_off() + a - 0x6000] : 0xFF;
     if (a < 0x8000) return 0xFF;
     size_t N = prgrom.size();
     switch (m) {
@@ -133,7 +139,7 @@ struct SimMapper : NesBus {
   }
   void prg_write(uint16_t a, uint8_t v) override {
     if (m == 5 && a >= 0x5100 && a < 0x5140) { m5[a - 0x5100] = v; return; }
-    if (a >= 0x6000 && a < 0x8000) { if (ram_enabled()) ram[a - 0x6000] = v; return; }
+    if (a >= 0x6000 && a < 0x8000) { if (ram_enabled()) ram[ram_off() + a - 0x6000] = v; return; }
     if (a < 0x8000) return;
     switch (m) {
       case 2: case 3: case 7: case 11: case 66: reg = v & prg(a); break;     // conflito: valor E byte da ROM
@@ -445,6 +451,22 @@ static void test_nes_saves() {
     // cartucho sem RAM: a gravação falha na conferência
     SimMapper nr(m, 128 << 10, 64 << 10); nr.has_ram = false; CartBackend b2(nullptr, &nr, nullptr, nullptr);
     b2.set_options(uint16_t(m), 0, 0); CHECK(b2.write_begin(SYS_NES, 8192, e2)); CHECK(!b2.write_block(0, &save[0], 512)); b2.write_abort();
+  }
+  // MMC1 com RAM de 16 KB (SOROM) e 32 KB (SXROM): bancos de 8 KB pelo registrador CHR 0
+  for (uint32_t kb : {16u, 32u}) {
+    uint32_t n = kb * 1024;
+    SimMapper s(1, 256 << 10, 0); s.ram.assign(n, 0); CartBackend be(nullptr, &s, nullptr, nullptr);
+    for (size_t i = 0; i < n; i++) s.ram[i] = pat(uint32_t(i) + 55);
+    be.set_options(1, uint16_t(kb), 0);
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_NES, KIND_SAVE, out, err);
+    CHECK(out.size() == n && out == s.ram && !s.ram_enabled());
+    std::vector<uint8_t> save(n); for (size_t i = 0; i < n; i++) save[i] = pat(uint32_t(i) + 901);
+    uint16_t e2 = 0; be.set_options(1, uint16_t(kb), 0); CHECK(be.write_begin(SYS_NES, n, e2));
+    bool ok = true; for (uint32_t off = 0; off < n; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit() && s.ram == save && !s.ram_enabled());
+    be.set_options(1, 8, 0); CHECK(!be.write_begin(SYS_NES, n, e2) && e2 == E_ARGUMENTO);     // tamanho do arquivo != RAM informada
+    uint32_t size = 0; be.set_options(1, 24, 0); CHECK(!be.open_read(SYS_NES, KIND_SAVE, size, err) && err == E_ARGUMENTO);
+    be.set_options(4, uint16_t(kb), 0); CHECK(!be.open_read(SYS_NES, KIND_SAVE, size, err) && err == E_ARGUMENTO);   // MMC3: só 8 KB
   }
   SimMapper s2(2, 128 << 10, 0); CartBackend be2(nullptr, &s2, nullptr, nullptr);
   std::vector<uint8_t> o; uint16_t err;

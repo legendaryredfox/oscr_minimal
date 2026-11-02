@@ -81,6 +81,7 @@ class CartBackend : public Backend {
   bool nes_ram_on_ = false;
   void nes_ram(bool on);                                  // liga/desliga a PRG-RAM com bateria (MMC1, MMC3)
   void nes_setup_mapper();
+  uint16_t nes_ram_addr(uint32_t off);                    // endereço em $6000-$7FFF de um byte do save; troca o banco de RAM do MMC1 de 16/32 KB
   void nes_reg(uint8_t value, uint16_t first_addr, uint16_t scan);  // escreve evitando conflito de barramento
   void mmc1_write(uint16_t addr, uint8_t v);
   void mmc3_write(uint8_t reg, uint8_t v);

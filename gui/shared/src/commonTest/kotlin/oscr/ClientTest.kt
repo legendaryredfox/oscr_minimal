@@ -63,6 +63,16 @@ class ClientTest {
         assertEquals(9, visto.size); assertEquals(4, visto.u16(3)); assertEquals(128, visto.u16(5)); assertEquals(64, visto.u16(7))
     }
 
+    @Test fun ramDoSaveViajaNoReadSave() {
+        var visto = ByteArray(0)
+        val espiao = object : Transport {
+            override fun write(data: ByteArray) { FrameDecoder().feed(data).forEach { if (it.type == Proto.T_READ_SAVE) visto = it.payload } }
+            override fun read(max: Int, timeoutMs: Long) = ByteArray(0)
+        }
+        runCatching { OscrClient(espiao, 5, 10, retries = 0).readSave(CartSystem.NES, 512, 1, 32) }
+        assertEquals(9, visto.size); assertEquals(1, visto.u16(3)); assertEquals(32, visto.u16(5)); assertEquals(0, visto.u16(7))
+    }
+
     @Test fun info() {
         val i = OscrClient(FakeDevice(), 50, 500).info()
         assertEquals(1, i.proto); assertEquals(true, i.mock); assertEquals(1024, i.maxPayload)

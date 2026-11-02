@@ -148,6 +148,17 @@ def test_mapper_chega_no_save_read_e_write(env):
     assert dev.last_write_mapper == 0
 
 
+def test_ram_do_save_chega_no_read_e_write(env):
+    c, dev = env[0], env[1]
+    c.read_save(255, 0, None, 1, 32)
+    assert dev.last_options == (1, 32, 0)
+    c.write_save(255, bytes(range(64)), 512, None, 1, 16)
+    assert (dev.last_write_mapper, dev.last_write_ram_kb) == (1, 16)
+    c.write_save(255, bytes(range(64)))
+    assert dev.last_write_ram_kb == 0
+
+
 def test_build_write_save_opcional():
     assert len(P.build_write_save(2, 8192, 512)) == 7
     assert len(P.build_write_save(2, 8192, 512, 4)) == 13
+    assert P.build_write_save(2, 32768, 512, 1, 32)[7:] == bytes([1, 0, 32, 0, 0, 0])

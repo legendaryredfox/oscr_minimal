@@ -133,7 +133,7 @@ def cmd_dump(args) -> int:
 
 def cmd_save_read(args) -> int:
     c, t, _ = connect(args)
-    res = c.read_save(system_id(args.system), args.block, _progress("save"), args.mapper)
+    res = c.read_save(system_id(args.system), args.block, _progress("save"), args.mapper, args.ram)
     t.close()
     rc = _save_result(args, res, ".sav", f"save_{args.system}")
     if system_id(args.system) == 5 and args.mapper == 2 and eeprom_is_4k(res.data):
@@ -144,7 +144,7 @@ def cmd_save_read(args) -> int:
 def cmd_save_write(args) -> int:
     data = Path(args.input).read_bytes()
     c, t, _ = connect(args)
-    crc = c.write_save(system_id(args.system), data, args.block or P.DEFAULT_BLOCK, _progress("gravando"), args.mapper)
+    crc = c.write_save(system_id(args.system), data, args.block or P.DEFAULT_BLOCK, _progress("gravando"), args.mapper, args.ram)
     t.close()
     print(f"save gravado: {len(data)} bytes  CRC32 {crc:08X}")
     return 0
@@ -180,6 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
     for sp in (add("save-read", cmd_save_read, "lê o save", out=True), add("save-write", cmd_save_write, "grava o save", inp=True)):
         sp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: mapper do cartucho (1 ou 4 têm save com bateria)")
+        sp.add_argument("--ram", type=int, default=0, help="NES/Famicom: RAM do save em KB (8, 16 ou 32; 16 e 32 só no mapper 1; 0 = 8)")
     return ap
 
 

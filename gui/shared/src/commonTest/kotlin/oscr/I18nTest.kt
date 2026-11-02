@@ -26,7 +26,7 @@ class I18nTest {
     @Test fun russoEChinesTraduzidos() {
         assertEquals("Прочитать ROM", I18n.t(Lang.RU, S.DUMP_ROM)); assertEquals("读取 ROM", I18n.t(Lang.ZH, S.DUMP_ROM))
         for (k in S.entries) { // nenhuma tradução pode ficar igual ao inglês, salvo siglas
-            if (k in setOf(S.ROM_LABEL, S.BAUD, S.MAPPER, S.PRG_KB, S.CHR_KB)) continue  // siglas iguais em todos os idiomas
+            if (k in setOf(S.ROM_LABEL, S.BAUD, S.MAPPER, S.PRG_KB, S.CHR_KB, S.RAM_KB)) continue  // siglas iguais em todos os idiomas
             assertTrue(I18n.t(Lang.RU, k) != I18n.t(Lang.EN, k) && I18n.t(Lang.ZH, k) != I18n.t(Lang.EN, k), "sem tradução: $k")
         }
     }

@@ -28,6 +28,7 @@ class MockDevice:
         self.log: list[str] = []
         self.last_options = None   # (mapper, prg_kb, chr_kb) do último DUMP_ROM/READ_SAVE
         self.last_write_mapper = None
+        self.last_write_ram_kb = None
         self._dec = P.FrameDecoder()
         self._q: list[P.Frame] = []
 
@@ -152,6 +153,7 @@ class MockDevice:
         sysid = f.payload[0]
         size = int.from_bytes(f.payload[1:5], "little")
         self.last_write_mapper = int.from_bytes(f.payload[7:9], "little") if len(f.payload) >= 9 else 0
+        self.last_write_ram_kb = int.from_bytes(f.payload[9:11], "little") if len(f.payload) >= 11 else 0
         if sysid not in (0, 255) or size > 1 << 20:
             return self._error(t, f.seq, 2 if sysid not in (0, 255) else 4)
         self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
