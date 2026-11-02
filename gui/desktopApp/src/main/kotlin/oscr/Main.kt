@@ -105,7 +105,7 @@ fun App() {
         val c = client
         Text("${t(S.SYSTEM)}:")
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            val systems = if (info?.mock == true) CartSystem.entries else CartSystem.entries.filter { it != CartSystem.MOCK }
+            val systems = CartSystem.entries.filter { it != CartSystem.GB && (info?.mock == true || it != CartSystem.MOCK) }   // GB: o firmware ainda não lê
             systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
         }
         if (system == CartSystem.GBA) {
@@ -114,7 +114,7 @@ fun App() {
             Text(t(S.GBA_SAVE_HINT), style = MaterialTheme.typography.bodySmall)
         }
         if (system == CartSystem.MD || system == CartSystem.SNES) {
-            OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, modifier = Modifier.width(260.dp))
+            OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, modifier = Modifier.width(380.dp))
         }
         if (system == CartSystem.NES || system == CartSystem.FAMICOM) {
             Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)

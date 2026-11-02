@@ -108,7 +108,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 4. Pedir os logs. Pontos mais prováveis de ajuste: `oscr_avr_buses.h` (tempos), EEPROM do GBA (`eeprom_block`, `eeprom_write_block`), gravação de Flash do GBA, EEPROM do Mega Drive (bits por tipo em `eep_state`), troca de banco do GBA.
 
 **B. Pequenos itens de software.**
-- Abrir a GUI numa tela e corrigir o que aparecer (nunca foi aberta).
+- ~~Abrir a GUI numa tela~~ Feito em 2026-11-02 num display virtual (Xvfb; renderizador por software, o GL do Skiko falha lá): a janela abre, troca de idioma, mostra as opções do NES e a ajuda. Corrigidos: textos de ajuda desatualizados (4 idiomas), chip GB sem suporte (escondido), rótulo do campo de tamanho cortado. **Não testado:** conexão com porta serial (sem porta no Xvfb; o jSerialComm não lista pty), progresso, seleção de arquivo. Para repetir: `Xvfb :97 -screen 0 1280x900x24 -ac &` e `DISPLAY=:97 ./gradlew :desktopApp:run`, captura com `import -window root`.
 - Conferir o jSerialComm a 1.000.000 baud no Linux, macOS e Windows.
 - Revisão das traduções ru e zh por falante nativo.
 - Empacotamento (deb/AppImage, dmg, msi), previsto para depois.
