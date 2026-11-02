@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package oscr
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.awt.FileDialog
+import java.awt.Frame
+import java.io.File
+import java.util.Locale
+
+private fun pickFile(title: String, save: Boolean, name: String = ""): File? {
+    val d = FileDialog(null as Frame?, title, if (save) FileDialog.SAVE else FileDialog.LOAD)
+    if (name.isNotEmpty()) d.file = name
+    d.isVisible = true
+    return d.file?.let { File(d.directory, it) }
+}
+
+fun main() = application {
+    Window(onCloseRequest = ::exitApplication, title = "oscr_minimal") {
+        MaterialTheme { App() }
+    }
+}
+
+@Composable
+fun App() {
+    var lang by remember { mutableStateOf(I18n.fromLocale(Locale.getDefault().toString())) }
+    fun t(k: S) = I18n.t(lang, k)
+
+    var ports by remember { mutableStateOf(SerialTransport.ports()) }
+    var port by remember { mutableStateOf(ports.firstOrNull() ?: "") }
+    var baud by remember { mutableStateOf(1_000_000) }
+    var system by remember { mutableStateOf(CartSystem.SNES) }
+    var client by remember { mutableStateOf<OscrClient?>(null) }
+    var transport by remember { mutableStateOf<Transport?>(null) }
+    var info by remember { mutableStateOf<DeviceInfo?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    val log = remember { mutableStateListOf<String>() }
+    val scope = rememberCoroutineScope()
+
+    fun say(s: String) { log += s }
+
+    fun run(block: suspend () -> Unit) {
+        scope.launch {
+            busy = true; progress = 0f
+            try { block() } catch (e: Exception) { say("${t(S.ERROR)}: ${e.message}") } finally { busy = false }
+        }
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(t(S.TITLE), style = MaterialTheme.typography.headlineSmall)
+        Text(t(S.ONE_CART_ONLY), style = MaterialTheme.typography.bodySmall)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(t(S.LANGUAGE))
+            Lang.entries.forEach { l -> FilterChip(selected = lang == l, onClick = { lang = l }, label = { Text(l.label) }) }
+        }
+
+        // ---- conexão
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(t(S.PORT))
+            ports.forEach { p -> FilterChip(selected = port == p, onClick = { port = p }, label = { Text(p) }) }
+            OutlinedButton(onClick = { ports = SerialTransport.ports(); if (port !in ports) port = ports.firstOrNull() ?: "" }) { Text(t(S.REFRESH)) }
+        }
+        if (ports.isEmpty()) Text(t(S.NO_PORTS), color = MaterialTheme.colorScheme.error)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(t(S.BAUD))
+            listOf(1_000_000, 115_200).forEach { b -> FilterChip(selected = baud == b, onClick = { baud = b }, label = { Text("$b") }) }
+            if (client == null) {
+                Button(enabled = port.isNotEmpty() && !busy, onClick = {
+                    run {
+                        val (tr, c, i) = withContext(Dispatchers.IO) {
+                            val tr = SerialTransport(port, baud); val c = OscrClient(tr, 500)
+                            Triple(tr, c, try { c.info() } catch (e: Exception) { tr.close(); throw e })
+                        }
+                        transport = tr; client = c; info = i
+                        say("${t(S.CONNECTED)}: ${t(S.DEVICE_INFO)} ${i.firmware}" + if (i.mock) " — ${t(S.MOCK_MODE)}" else "")
+                    }
+                }) { Text(t(S.CONNECT)) }
+            } else {
+                Button(enabled = !busy, onClick = { transport?.close(); client = null; transport = null; info = null; say(t(S.NOT_CONNECTED)) }) { Text(t(S.DISCONNECT)) }
+            }
+        }
+
+        // ---- operações
+        val c = client
+        Text("${t(S.SYSTEM)}:")
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            val systems = if (info?.mock == true) CartSystem.entries else CartSystem.entries.filter { it != CartSystem.MOCK }
+            systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
+        }
+        if (system == CartSystem.GBA) Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(enabled = c != null && !busy, onClick = {
+                run {
+                    val r = withContext(Dispatchers.IO) { c!!.detect(system) }
+                    val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; else -> S.CART_HW_ERROR }
+                    say(t(st) + if (r.status == 0) " — ${t(S.TITLE_LABEL)}: ${r.name.ifEmpty { "?" }}, ${t(S.ROM_LABEL)}: ${r.romSize}, ${t(S.SAVE_LABEL)}: ${r.saveSize}" else "")
+                }
+            }) { Text(t(S.DETECT)) }
+
+            Button(enabled = c != null && !busy, onClick = {
+                run {
+                    val res = withContext(Dispatchers.IO) { c!!.dumpRom(system, 0) { d, tot -> progress = d.toFloat() / tot } }
+                    val f = pickFile(t(S.CHOOSE_FILE), true, "rom_${system.name.lowercase()}${system.ext}")
+                    if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
+                    else say("CRC32 ${res.crcHex}")
+                }
+            }) { Text(t(S.DUMP_ROM)) }
+
+            Button(enabled = c != null && !busy, onClick = {
+                run {
+                    val res = withContext(Dispatchers.IO) { c!!.readSave(system, 0) { d, tot -> progress = d.toFloat() / tot } }
+                    val f = pickFile(t(S.CHOOSE_FILE), true, "save_${system.name.lowercase()}.sav")
+                    if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
+                }
+            }) { Text(t(S.READ_SAVE)) }
+
+            Button(enabled = c != null && !busy, onClick = {
+                run {
+                    val f = pickFile(t(S.CHOOSE_FILE), false)
+                    if (f != null) {
+                        val data = f.readBytes()
+                        val crc = withContext(Dispatchers.IO) { c!!.writeSave(system, data) { d, tot -> progress = d.toFloat() / tot } }
+                        say("${t(S.DONE)}: ${data.size} bytes, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+                    }
+                }
+            }) { Text(t(S.WRITE_SAVE)) }
+
+            OutlinedButton(enabled = busy, onClick = { c?.abort() }) { Text(t(S.ABORT)) }
+        }
+
+        Text(t(S.PROGRESS))
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+        Divider()
+        log.asReversed().forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+    }
+}
