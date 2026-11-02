@@ -274,6 +274,36 @@ struct AvrGbaBus : GbaBus {
     interrupts();
     delayMicroseconds(200);
   }
+  // writeBlock_EEP do OSCR para um bloco de 8 bytes. NÃO validado em hardware.
+  bool eeprom_write_block(uint16_t block, bool big, const uint8_t in[8]) override {
+    DDRH |= (1 << 3) | (1 << 5) | (1 << 6); DDRF |= (1 << 0); DDRC |= (1 << 7);
+    PORTH |= (1 << 3) | (1 << 5) | (1 << 6); PORTF |= (1 << 0); PORTC |= (1 << 7);
+    OSCR_NOP; OSCR_NOP;
+    noInterrupts();
+    PORTH &= ~(1 << 3);                                                 // CS_ROM baixo
+    PORTF |= (1 << 0);                                                  // pedido de escrita "10"
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    PORTF &= ~(1 << 0);
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    eeprom_send(block, big ? 14 : 6);
+    OSCR_NOP4; OSCR_NOP4;
+    for (uint8_t j = 0; j < 8; j++) eeprom_send(in[j], 8);
+    PORTF &= ~(1 << 0);                                                 // bit de parada
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    PORTH |= (1 << 3);
+    DDRF &= ~(1 << 0);                                                  // A0 vira entrada: pronto quando sobe
+    bool ready = false;
+    for (uint32_t n = 0; n < 100000UL && !ready; n++) {                 // o OSCR espera para sempre; aqui há limite
+      PORTH &= ~((1 << 3) | (1 << 6));
+      PORTH |= (1 << 3) | (1 << 6);
+      ready = (PINF & 1) != 0;
+    }
+    DDRF |= (1 << 0);
+    interrupts();
+    delayMicroseconds(200);
+    return ready;
+  }
+  void wait_ms(uint16_t ms) override { delay(ms); }
 };
 
 }  // namespace oscr

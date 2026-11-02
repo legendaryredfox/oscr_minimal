@@ -143,7 +143,7 @@ class Client:
             raise P.ProtocolError("ACK inicial com offset diferente de 0")
         for off in range(0, len(data), block):
             chunk = data[off:off + block]
-            self._request(P.T_H_DATA, P.build_data(off, chunk), seq, {P.T_D_ACK}, self.timeout,
+            self._request(P.T_H_DATA, P.build_data(off, chunk), seq, {P.T_D_ACK}, self.long_timeout,   # EEPROM/Flash demoram para gravar
                           accept=lambda fr, o=off: P.parse_offset(fr.payload) == o)
             if progress:
                 progress(off + len(chunk), len(data))

@@ -130,7 +130,7 @@ class OscrClient(
         var off = 0
         while (off < data.size) {
             val n = minOf(block, data.size - off); val o = off
-            request(Proto.T_H_DATA, le32(o) + data.copyOfRange(o, o + n), seq, setOf(Proto.T_D_ACK), timeoutMs) { it.payload.u32(0) == o }
+            request(Proto.T_H_DATA, le32(o) + data.copyOfRange(o, o + n), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == o }
             off += n; progress?.invoke(off.toLong(), data.size.toLong())
         }
         val crc = crc32(data)

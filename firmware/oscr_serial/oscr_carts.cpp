@@ -252,6 +252,9 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
       static const uint8_t ty_[6] = {0, 3, 3, 1, 2, 2};
       if (opt_mapper_ > 5) { o.status = 3; return false; }
       o.gba_type = t; o.save = sz_[t]; o.save_type = ty_[t];
+      uint16_t g0 = gba_->word(0xAC), g1 = gba_->word(0xAE);       // código do jogo: e-Reader não deixa gravar os últimos 128 bytes
+      char code[5] = {char(g0 & 0xFF), char(g0 >> 8), char(g1 & 0xFF), char(g1 >> 8), 0};
+      o.gba_skip = (t == 4 && strcmp(code, "PEAJ") == 0) || (t == 5 && (strcmp(code, "PSAE") == 0 || strcmp(code, "PSAJ") == 0));
     }
     o.status = 0;
     c_ = o;
@@ -386,6 +389,81 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
       buf[i] = snes_->read(bank, addr);
     } else {
       buf[i] = byte_at(sys, off + i);
+    }
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------- GBA: gravação de SRAM, Flash e EEPROM
+void CartBackend::gba_cmd(uint8_t c) {
+  gba_->sram_write(0x5555, 0xAA); gba_->sram_write(0x2AAA, 0x55); gba_->sram_write(0x5555, c);
+}
+
+uint16_t CartBackend::gba_flash_id() {                     // idFlash_GBA + resetFLASH_GBA do OSCR
+  gba_cmd(0x90);
+  uint16_t id = uint16_t(gba_->sram_read(0) << 8);
+  id |= gba_->sram_read(1);
+  gba_->sram_write(0x5555, 0xAA); gba_->sram_write(0x2AAA, 0x55); gba_->sram_write(0x5555, 0xF0); gba_->sram_write(0x5555, 0xF0);
+  gba_->wait_ms(100);
+  return id;
+}
+
+bool CartBackend::gba_blank_check() {                      // blankcheckFLASH_GBA do OSCR (pula o que o e-Reader não deixa gravar)
+  for (uint32_t i = 0; i < c_.save; i++) {
+    if (c_.gba_skip && (i & 0xFFFF) >= 0xFF80) continue;
+    if (gba_save_byte(i) != 0xFF) return false;
+  }
+  return true;
+}
+
+bool CartBackend::gba_flash_prepare() {
+  uint16_t id = gba_flash_id();
+  bool known = c_.gba_type == 4 ? (id == 0x1F3D || id == 0xBFD4 || id == 0xC21C || id == 0x321B)   // Atmel, SST, Macronix, Panasonic
+                                : (id == 0xC209 || id == 0x6213);                                  // Macronix, Sanyo (128 KB)
+  if (!known) return false;                                // chip desconhecido: não arrisca comandos de apagar
+  gba_atmel_ = (id == 0x1F3D);
+  if (gba_atmel_) return true;                             // a página Atmel se apaga sozinha
+  gba_cmd(0x80); gba_cmd(0x10);                            // apaga o chip inteiro
+  for (uint16_t n = 0; n < 500; n++) {                     // DQ7 = 1 quando termina (até 5 s)
+    gba_->wait_ms(10);
+    if (gba_->sram_read(0) == 0xFF) break;
+  }
+  if (c_.gba_type == 5 && gba_bank_ != 0) gba_flash_bank(0);
+  return gba_blank_check();
+}
+
+bool CartBackend::gba_flash_program(uint32_t off, uint8_t v) {
+  if (c_.gba_skip && (off & 0xFFFF) >= 0xFF80) return true;
+  if (c_.gba_type == 5) { uint8_t bank = uint8_t(off >> 16); if (bank != gba_bank_) gba_flash_bank(bank); }
+  uint16_t a = uint16_t(off & 0xFFFF);
+  gba_cmd(0xA0);
+  gba_->sram_write(a, v);
+  for (uint16_t n = 0; n < 5000; n++) if (gba_->sram_read(a) == v) return true;   // o OSCR espera para sempre; aqui há limite
+  return false;
+}
+
+bool CartBackend::gba_write(uint32_t off, const uint8_t* buf, uint16_t len) {
+  uint8_t unit = (c_.gba_type == 1 || c_.gba_type == 2) ? 8 : (c_.gba_type == 4 && gba_atmel_ ? 128 : 0);
+  for (uint16_t i = 0; i < len; i++) {
+    uint32_t o = off + i;
+    if (unit == 0) {
+      if (c_.gba_type == 3) { gba_->sram_write(uint16_t(o), buf[i]); if (gba_->sram_read(uint16_t(o)) != buf[i]) return false; }
+      else if (!gba_flash_program(o, buf[i])) return false;
+      continue;
+    }
+    wbuf_[o % unit] = buf[i];
+    if ((o + 1) % unit != 0) continue;                     // unidade ainda incompleta
+    uint32_t base = o + 1 - unit;
+    if (unit == 8) {                                       // EEPROM: bloco de 8 bytes, conferido na hora
+      uint8_t back[8]; bool big = c_.gba_type == 2; uint16_t blk = uint16_t(base / 8);
+      if (!gba_->eeprom_write_block(blk, big, wbuf_)) return false;
+      gba_->eeprom_block(blk, big, back);
+      if (memcmp(back, wbuf_, 8) != 0) return false;
+    } else {                                               // Flash Atmel: página de 128 bytes
+      gba_cmd(0xA0);
+      for (uint8_t k = 0; k < 128; k++) gba_->sram_write(uint16_t(base + k), wbuf_[k]);
+      gba_->wait_ms(15);
+      for (uint8_t k = 0; k < 128; k++) if (gba_->sram_read(uint16_t(base + k)) != wbuf_[k]) return false;
     }
   }
   return true;
@@ -529,17 +607,19 @@ void CartBackend::md_save_set(uint32_t i, uint8_t v) {
 // ---------------------------------------------------------------- escrita de save (SNES SRAM)
 bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
-  if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) { err = E_SEM_SAVE; return false; }
+  if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM && sys != SYS_GBA) { err = E_SEM_SAVE; return false; }
   Cart c;
-  if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : E_SEM_CARTUCHO; return false; }
+  if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (c_.save == 0 || (sys == SYS_MD && c_.md_save == 4)) { release(); err = E_SEM_SAVE; return false; }   // EEPROM serial: só leitura
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
+  if (sys == SYS_GBA && (c_.gba_type == 4 || c_.gba_type == 5) && !gba_flash_prepare()) { release(); err = E_CARTUCHO_IO; return false; }
   return true;
 }
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
+  if (active_ == SYS_GBA) return gba_write(off, buf, len);
   if (active_ == SYS_NES || active_ == SYS_FAMICOM) {
     for (uint16_t i = 0; i < len; i++) {
       uint16_t a = uint16_t(0x6000 + off + i);

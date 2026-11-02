@@ -77,7 +77,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 
 **Saves do NES/Famicom** (`READ_SAVE` e `WRITE_SAVE`): só o `mapper` conta, e só 1 (MMC1) e 4 (MMC3) têm PRG-RAM com bateria aceita (8 KB em $6000-$7FFF). Qualquer outro: `ERRO 0x000A`. A gravação confere cada byte; cartucho sem RAM ou com RAM protegida dá `ERRO 0x0007`.
 
-**Saves do GBA** (`READ_SAVE`): o campo `mapper` é o **tipo de save**, com a numeração do OSCR: 0 ou 3 = SRAM/FRAM 32 KB (padrão), 1 = EEPROM 512 bytes, 2 = EEPROM 8 KB, 4 = Flash 64 KB, 5 = Flash 128 KB (dois bancos de 64 KB, trocados pelo comando AA/55/B0). Outro valor: `ERRO 0x0004`. `DETECT` continua sem saber o tipo (`tipo_save` 255, 32 KB). O host acha o tipo na ROM já lida procurando `FLASH1M_V`, `FLASH512_V`, `FLASH_V`, `EEPROM_V`, `SRAM_F_V` ou `SRAM_V`. `WRITE_SAVE` do GBA dá `ERRO 0x000A`.
+**Saves do GBA** (`READ_SAVE` e `WRITE_SAVE`): o campo `mapper` é o **tipo de save**, com a numeração do OSCR: 0 ou 3 = SRAM/FRAM 32 KB (padrão), 1 = EEPROM 512 bytes, 2 = EEPROM 8 KB, 4 = Flash 64 KB, 5 = Flash 128 KB (dois bancos de 64 KB, trocados pelo comando AA/55/B0). Outro valor: `ERRO 0x0004`. `DETECT` continua sem saber o tipo (`tipo_save` 255, 32 KB). O host acha o tipo na ROM já lida procurando `FLASH1M_V`, `FLASH512_V`, `FLASH_V`, `EEPROM_V`, `SRAM_F_V` ou `SRAM_V`. `WRITE_SAVE` do GBA usa o mesmo campo `mapper` (tipos 0 e 3 a 5 e 1/2 como acima; ver D48): `ERRO 0x0004` se o tamanho não bate com o tipo, `ERRO 0x0007` se o chip Flash é desconhecido, não apaga ou a conferência falha. Cada `DATA` pode levar até ~1 s (EEPROM), por isso o host espera `long_timeout` pelo `ACK`.
 
 **NES/Famicom:**
 

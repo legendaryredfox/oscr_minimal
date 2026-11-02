@@ -163,7 +163,7 @@ fun App() {
                     val f = pickFile(t(S.CHOOSE_FILE), false)
                     if (f != null) {
                         val data = f.readBytes()
-                        val crc = withContext(Dispatchers.IO) { c!!.writeSave(system, data, Proto.DEFAULT_BLOCK, mapper.toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
+                        val crc = withContext(Dispatchers.IO) { c!!.writeSave(system, data, Proto.DEFAULT_BLOCK, (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
                         say("${t(S.DONE)}: ${data.size} bytes, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
                     }
                 }

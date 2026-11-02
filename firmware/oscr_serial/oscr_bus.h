@@ -47,6 +47,9 @@ struct GbaBus {  // AD0..15 multiplexado (PF/PK), A16..A23 em PC
   // EEPROM serial pelo barramento da ROM (A23 alto, bit a bit): lê o bloco de 8 bytes de índice `block`.
   // big = false: 4 Kbit (512 bytes, endereço de 6 bits); true: 64 Kbit (8 KB, endereço de 14 bits).
   virtual void eeprom_block(uint16_t block, bool big, uint8_t out[8]) = 0;
+  // Grava o bloco de 8 bytes e espera o fim do ciclo de escrita (writeBlock_EEP do OSCR). false = a EEPROM não ficou pronta.
+  virtual bool eeprom_write_block(uint16_t block, bool big, const uint8_t in[8]) = 0;
+  virtual void wait_ms(uint16_t ms) = 0;
 };
 
 }  // namespace oscr

@@ -38,6 +38,7 @@ class CartBackend : public Backend {
     uint32_t md_base = 0;        // endereço em palavras do início da SRAM
     uint8_t md_eep = 0;          // Mega Drive: tipo da EEPROM serial (1 Acclaim 1, 2 Acclaim 2, 3 Capcom/Sega, 4 EA, 5 Codemasters)
     uint16_t md_eep_size = 0;    // bytes
+    bool gba_skip = false;       // GBA: e-Reader, não grava os últimos 128 bytes de cada banco de 64 KB
     uint8_t gba_type = 0;        // GBA, tipo de save pedido: 1 EEPROM 4K, 2 EEPROM 64K, 3 SRAM, 4 Flash 64K, 5 Flash 128K
   };
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
@@ -49,6 +50,14 @@ class CartBackend : public Backend {
   int32_t gba_eep_blk_ = -1;                              // GBA EEPROM: bloco de 8 bytes em cache
   uint8_t gba_eep_[8] = {0};
   void gba_flash_bank(uint8_t bank);
+  bool gba_atmel_ = false;                                // Flash Atmel de 64 KB: grava páginas de 128 bytes, sem apagar
+  uint8_t wbuf_[128];                                     // acumula 8 bytes (EEPROM) ou 128 (Atmel) até fechar a unidade
+  void gba_cmd(uint8_t c);                                // AA@5555, 55@2AAA, c@5555
+  uint16_t gba_flash_id();
+  bool gba_flash_prepare();                               // identifica o chip, apaga e confere
+  bool gba_blank_check();
+  bool gba_flash_program(uint32_t off, uint8_t v);
+  bool gba_write(uint32_t off, const uint8_t* buf, uint16_t len);
   uint8_t gba_save_byte(uint32_t i);
   bool md_sram_on_ = false;
   uint8_t md_hi_ = 0;                                     // byte alto pendente (SRAM "ambos")
