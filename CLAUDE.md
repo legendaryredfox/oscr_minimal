@@ -34,6 +34,7 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 ├── vendor/oscr/              # clone do upstream (somente leitura, referência)
 ├── docs/
 │   ├── pinmap.md             # FONTE DA VERDADE: sinal do slot → pino do Mega
+│   ├── uso.md                # guia de uso: casos de uso, cenários, troubleshooting
 │   ├── bom.md
 │   ├── montagem.md           # gerado na fase 7
 │   └── decisoes.md           # log de decisões e desvios
@@ -147,7 +148,7 @@ Rode o script ao fim das fases 3 e 5. Uma placa com divergência não segue para
 Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o código de leitura de cartuchos do OSCR.
 
 ### Firmware (`firmware/`)
-- Copie o `Cart_Reader` do upstream.
+- (Desvio decidido em 2026-11-02, ver `docs/decisoes.md` D38) O `Cart_Reader` do upstream **não** foi copiado: o firmware é novo e enxuto (`firmware/oscr_serial`), com as sequências de porta do OSCR no HAL. Tela, SD, RTC e outros consoles não existem.
 - Use as opções existentes em `Config.h` para habilitar só SNES, NES/Famicom e Mega Drive. Verifique se o upstream já tem um modo de interface serial antes de escrever um novo.
 - Isole duas camadas, com o mínimo de mudanças no resto:
   - **Interface:** menus do LCD e botões → comandos pela serial.

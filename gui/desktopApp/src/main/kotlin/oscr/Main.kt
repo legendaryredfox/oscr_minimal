@@ -45,6 +45,7 @@ fun App() {
     var transport by remember { mutableStateOf<Transport?>(null) }
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0f) }
     val log = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
@@ -65,7 +66,9 @@ fun App() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(t(S.LANGUAGE))
             Lang.entries.forEach { l -> FilterChip(selected = lang == l, onClick = { lang = l }, label = { Text(l.label) }) }
+            OutlinedButton(onClick = { showHelp = !showHelp }) { Text(t(S.HELP_BUTTON)) }
         }
+        if (showHelp) HelpPanel(lang)
 
         // ---- conexão
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -146,5 +149,21 @@ fun App() {
         LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
         Divider()
         log.asReversed().forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@Composable
+fun HelpPanel(lang: Lang) {
+    fun t(k: S) = I18n.t(lang, k)
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(t(S.HELP_TITLE), style = MaterialTheme.typography.titleMedium)
+            Text(t(S.HELP_USE_TITLE), style = MaterialTheme.typography.titleSmall)
+            listOf(S.HELP_USE_1, S.HELP_USE_2, S.HELP_USE_3, S.HELP_USE_4, S.HELP_USE_5, S.HELP_USE_6)
+                .forEach { Text("• " + t(it), style = MaterialTheme.typography.bodySmall) }
+            Text(t(S.HELP_FIX_TITLE), style = MaterialTheme.typography.titleSmall)
+            listOf(S.HELP_FIX_1, S.HELP_FIX_2, S.HELP_FIX_3, S.HELP_FIX_4, S.HELP_FIX_5, S.HELP_FIX_6, S.HELP_FIX_7, S.HELP_FIX_8)
+                .forEach { Text("• " + t(it), style = MaterialTheme.typography.bodySmall) }
+        }
     }
 }

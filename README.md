@@ -3,8 +3,8 @@
 Shield para **Arduino Mega 2560 (R3)** que lê ROMs e saves de cartuchos pela USB, direto para o PC.
 Sem LCD, sem cartão SD. Somente um cartucho por vez.
 
-> **Estado:** hardware fases 1 a 5 (pinmap, bibliotecas, esquemático, posicionamento e roteamento; DRC 0 erros).
-> Gerbers, BOM, montagem, firmware e GUI ainda não foram feitos.
+> **Estado:** hardware pronto para fabricar (DRC 0 erros), documentação de montagem e uso, firmware (protocolo + leitura de SNES, NES/Famicom, Mega Drive, GBA), CLI Python e GUI (pt-BR, en, ru, zh).
+> **Falta validar com as peças e os cartuchos reais** (firmware e GUI foram testados só no PC).
 
 ## Atribuição
 
@@ -25,6 +25,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `docs/pinmap.md` | **Fonte da verdade:** pino do slot → pino do Mega (gerado) |
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
 | `hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) e `lib/` (símbolos e footprints) |
+| `docs/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
 | `tools/` | `gen_pinmap.py`, `check_netlist.py`, `build_lib.py`, `plan_layout.py`, `gen_connections.py`, `fill_zones.py`, `sync_net_names.py` |
 
 ## Verificação

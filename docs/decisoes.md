@@ -235,3 +235,20 @@ A ligação ao computador deve ser USB-C. A foto do Mega que o usuário mostrou 
 - **Firmware (D36):** `firmware/arduino/oscr_dumper` (Arduino, compilado com `arduino-cli` para o Mega: 8.582 bytes de flash, 1.415 de RAM) e `firmware/platformio` (PlatformIO, `pio run` OK). Ambos usam a biblioteca `firmware/oscr_serial`, em modo MOCK. O `INFO_RESP` ganhou `max_payload` (AVR = 520).
 - **GUI (D37):** `gui/` com Gradle 9.7 e Kotlin 2.4.0: `shared` (protocolo, cliente, textos pt-BR/en, testes) e `desktopApp` (Compose Desktop 1.9.3 + jSerialComm 2.11.4). Compila e os testes passam; a janela não foi executada.
 - **Ainda falta:** cópia reduzida do `Cart_Reader` e a ponte da leitura real com o protocolo (`Backend` por sistema), e os testes com hardware.
+
+## Fase 8 — firmware dos cartuchos, GUI em 4 idiomas, documentação de uso (2026-11-02)
+
+### D38 — Firmware: leitores novos, em vez de copiar o Cart_Reader
+O `Cart_Reader` do OSCR é um monolito: menus, LCD/OLED, SD (~280 usos de `myFile` nos 4 sistemas), banco de dados no SD e estado global espalhado entre os `.ino`. Adaptá-lo sem hardware seria um risco sem verificação possível. Em vez disso (e atendendo ao pedido de remover tela e outros consoles):
+- `firmware/oscr_serial` ganhou `oscr_bus.h` (interfaces), `oscr_carts.{h,cpp}` (`CartBackend`) e `oscr_avr_buses.h` (HAL do ATmega2560, sequências de porta copiadas do OSCR).
+- **Suportado:** SNES LoROM/HiROM (ROM até 4 MB; SRAM lida e gravada, com leitura de volta); NES e Famicom mapper 0 (cabeçalho iNES sintético, espelhamento "horizontal"); Mega Drive (ROM pelo tamanho do cabeçalho, até 4 MB); GBA (ROM, tamanho por espelhamento).
+- **Não suportado ainda:** SA-1, ExHiROM e chips especiais do SNES; outros mappers do NES e saves do NES; mappers e SRAM do Mega Drive; saves do GBA; GB/GBC.
+- **Testes:** 54 verificações em C++ com cartuchos simulados (dump byte a byte, cabeçalho inválido = sem cartucho, SRAM). Os dois projetos (Arduino e PlatformIO) compilam: real 12,9 KB de flash e 1,6 KB de RAM; modo de teste `-DOSCR_MOCK` 8,6 KB e 1,4 KB.
+- **Não validado em hardware.** Os pontos mais prováveis de ajuste: tempos (`nop`s e `_delay_us`) e linhas de controle em `oscr_avr_buses.h`. Roteiro: `docs/uso.md`, seção 7.
+
+### D39 — GUI: russo e chinês, ajuda embutida
+`Lang` agora tem PT, EN, **RU** e **ZH** (chinês simplificado). Todos os textos continuam em `I18n.kt` (53 chaves × 4 idiomas), com teste de completude e de que RU/ZH não ficaram iguais ao inglês. A janela tem o botão **Ajuda** com casos de uso e problemas comuns nos 4 idiomas. 15 testes Kotlin passando. A janela não foi aberta (sem display aqui), então a renderização dos caracteres chineses e cirílicos não foi vista; o Compose usa as fontes do sistema.
+Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
+
+### D40 — Documentação de uso
+`docs/uso.md`: preparação, casos de uso (ler ROM e conferir CRC32, backup e restauração de save, conferir cartucho, teste sem cartucho, vários sistemas), tabela do que cada sistema suporta, solução de problemas, limites/segurança e o roteiro de primeira validação com hardware.
