@@ -228,6 +228,21 @@ struct AvrNesBus : NesBus {   // NES e Famicom
     set_address(0);
     PORTF |= (1 << 0);
   }
+  void reg_write_safe(uint16_t a, uint8_t v) override {                  // write_reg_byte do OSCR: ROMSEL/M2 trocados direto na porta
+    PORTF &= ~(1 << 0);                                                 // PHI2 baixo
+    PORTF |= (1 << 1);                                                  // ROMSEL alto
+    DDRK = 0xFF;                                                        // MODE_WRITE
+    PORTF &= ~(1 << 7);                                                 // PRG_WRITE
+    PORTK = v;
+    set_address(a);
+    PORTF = 0b01111101;                                                 // ROMSEL baixo, M2 alto
+    PORTF = 0b01111110;                                                 // ROMSEL alto, M2 baixo
+    _delay_us(1);
+    PORTF |= (1 << 7);                                                  // PRG_READ
+    PORTK = 0xFF; DDRK = 0;                                             // MODE_READ
+    set_address(0);
+    PORTF |= (1 << 0);                                                  // PHI2 alto
+  }
   uint8_t ram(uint16_t a) override {                                     // dumpMMC5RAM do OSCR: PHI2 baixo antes de cada leitura
     PORTF &= ~(1 << 0);
     return prg(a);

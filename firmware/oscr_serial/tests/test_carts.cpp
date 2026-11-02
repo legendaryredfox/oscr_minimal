@@ -194,6 +194,8 @@ struct SimMapper : NesBus {
   uint8_t sel = 0, r[8] = {0, 2, 0, 0, 0, 0, 0, 1};   // MMC3
   std::vector<uint8_t> ram = std::vector<uint8_t>(8192, 0xFF); bool has_ram = true, mmc3_ram_en = false;
   uint8_t xp = 0, xfd = 0, xfe = 0; bool xlatch = false;                // 9 e 10 (MMC2/MMC4): PRG, bancos CHR dos latches FD e FE, latch
+  uint8_t r79 = 0, r87 = 0, r78 = 0, r75[4] = {0, 0, 0, 0}, r33[4] = {0, 1, 0, 0};   // 79, 87, 78/70, 75 ($8000/$A000/$C000/$E000 + $9000 em r9000), 33/48
+  uint8_t r9000 = 0;
   uint8_t fcmd = 0, f[16] = {0};                                         // 69 (FME-7): comando e registradores 0-15
   uint8_t m5[0x40] = {0}; bool m5_prg_set = false;                       // 5 (MMC5): registradores $5100-$513F
   size_t ram_off() const {                                              // MMC1 SOROM/SXROM: banco de RAM pelo registrador CHR 0 (mm1[1])
@@ -206,7 +208,7 @@ struct SimMapper : NesBus {
     if (ram.size() == 16384) return size_t((mm1[1] >> 3) & 1) * 8192;
     return 0;
   }
-  bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : (m == 5 ? true : (m == 69 ? (f[8] & 0xC0) == 0xC0 : false)))); }
+  bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : ((m == 4 || m == 118) ? mmc3_ram_en : (m == 5 ? true : (m == 69 ? (f[8] & 0xC0) == 0xC0 : false)))); }
   SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
     prgrom.resize(p); chrrom.resize(c);
     for (size_t i = 0; i < p; i++) prgrom[i] = pat(uint32_t(i) + 11 * mp);
@@ -226,8 +228,18 @@ struct SimMapper : NesBus {
       case 1: { int mode = (mm1[0] >> 2) & 3;
         if (mode >= 2) return a < 0xC000 ? prgrom[(size_t(mm1[3] & 0x0F) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
         return prgrom[(size_t(mm1[3] & 0x0E) * 16384 + (a & 0x7FFF)) % N]; }
-      case 4: { size_t n8 = N / 8192, bank;
+      case 4: case 118: case 206: { size_t n8 = N / 8192, bank;
         if (a < 0xA000) bank = r[6]; else if (a < 0xC000) bank = r[7]; else if (a < 0xE000) bank = n8 - 2; else bank = n8 - 1;
+        return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
+      case 87: return prgrom[(a - 0x8000) % N];
+      case 79: return prgrom[(size_t((r79 >> 3) & 1) * 32768 + (a & 0x7FFF)) % N];
+      case 78: return a < 0xC000 ? prgrom[(size_t(r78 & 7) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+      case 70: return a < 0xC000 ? prgrom[(size_t(r78 >> 4) % n16()) * 16384 + (a & 0x3FFF)] : prgrom[N - 16384 + (a & 0x3FFF)];
+      case 75: { size_t n8 = N / 8192, bank;
+        if (a < 0xA000) bank = r75[0] & 0x0F; else if (a < 0xC000) bank = r75[1] & 0x0F; else if (a < 0xE000) bank = r75[2] & 0x0F; else bank = n8 - 1;
+        return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
+      case 33: case 48: { size_t n8 = N / 8192, bank;
+        if (a < 0xA000) bank = r33[0] & 0x3F; else if (a < 0xC000) bank = r33[1] & 0x3F; else if (a < 0xE000) bank = n8 - 2; else bank = n8 - 1;
         return prgrom[(bank % n8) * 8192 + (a & 0x1FFF)]; }
       case 66: return prgrom[(size_t((reg >> 4) & 3) * 32768 + (a & 0x7FFF)) % N];
       case 11: return prgrom[(size_t(reg & 3) * 32768 + (a & 0x7FFF)) % N];
@@ -254,10 +266,16 @@ struct SimMapper : NesBus {
       case 3: return chrrom[(size_t(reg) * 8192 + a) % C];
       case 1: { if (!(mm1[0] & 0x10)) return chrrom[((size_t(mm1[1] & 0x1E)) * 4096 + a) % C];
         return chrrom[((a < 0x1000 ? size_t(mm1[1]) : size_t(mm1[2])) * 4096 + (a & 0xFFF)) % C]; }
-      case 4: { size_t b;
+      case 4: case 118: case 206: { size_t b;
         if (a < 0x0800) b = (r[0] & ~1) + (a >> 10); else if (a < 0x1000) b = (r[1] & ~1) + ((a - 0x800) >> 10);
         else b = r[2 + ((a - 0x1000) >> 10)];
         return chrrom[((b * 1024) + (a & 0x3FF)) % C]; }
+      case 87: return chrrom[(size_t(((r87 & 1) << 1) | ((r87 >> 1) & 1)) * 8192 + a) % C];
+      case 79: return chrrom[(size_t(r79 & 7) * 8192 + a) % C];
+      case 78: return chrrom[(size_t(r78 >> 4) * 8192 + a) % C];
+      case 70: return chrrom[(size_t(r78 & 0x0F) * 8192 + a) % C];
+      case 75: { size_t b = a < 0x1000 ? (size_t(r75[3] & 0x0F) | (size_t(r9000 & 2) << 3)) : 0; return chrrom[(b * 4096 + (a & 0xFFF)) % C]; }
+      case 33: case 48: { size_t b = a < 0x800 ? r33[2] : (a < 0x1000 ? r33[3] : 0); return chrrom[(b * 2048 + (a & 0x7FF)) % C]; }
       case 66: return chrrom[(size_t(reg & 3) * 8192 + a) % C];
       case 11: return chrrom[(size_t(reg >> 4) * 8192 + a) % C];
       case 9: case 10: {
@@ -273,13 +291,24 @@ struct SimMapper : NesBus {
     }
     return 0xFF;
   }
+  void reg_write_safe(uint16_t a, uint8_t v) override { safe_write = true; prg_write(a, v); safe_write = false; }
+  bool safe_write = false; int corrupted = 0;
   void prg_write(uint16_t a, uint8_t v) override {
+    if (m == 1 && a >= 0xE000 && !safe_write && has_ram && !(mm1[3] & 0x10)) { ram[0] ^= 0xFF; corrupted++; }   // escrita em $E000+ sem a sequência segura estraga a RAM
     if (m == 5 && a >= 0x5100 && a < 0x5140) { m5[a - 0x5100] = v; return; }
+    if (m == 79 && a >= 0x4100 && a < 0x6000 && (a & 0x100)) { r79 = v; return; }
+    if (m == 87 && a >= 0x6000 && a < 0x8000) { r87 = v; return; }
     if (a >= 0x6000 && a < 0x8000) { if (ram_enabled() && (m != 5 || (m5[2] == 2 && m5[3] == 1))) ram[ram_off() + a - 0x6000] = v; return; }   // MMC5: só com $5102=2 e $5103=1
     if (a < 0x8000) return;
     switch (m) {
       case 2: case 3: case 7: case 11: case 66: reg = v & prg(a); break;     // conflito: valor E byte da ROM
-      case 71: if (a >= 0xC000) reg = v; break;                              // sem conflito
+      case 71: if (a >= 0xC000) reg = v; break;
+      case 78: case 70: r78 = v & prg(a); break;                              // conflito de barramento
+      case 75:
+        if (a >= 0xE000) r75[3] = v; else if (a >= 0xC000 && a < 0xD000) r75[2] = v; else if (a >= 0xA000 && a < 0xB000) r75[1] = v;
+        else if (a >= 0x9000 && a < 0xA000) r9000 = v; else if (a < 0x9000) r75[0] = v;
+        break;
+      case 33: case 48: if (a < 0xA000) r33[a & 3] = v; break;                              // sem conflito
       case 9: case 10:
         if (a >= 0xA000 && a < 0xB000) xp = v; else if (a >= 0xB000 && a < 0xC000) xfd = v; else if (a >= 0xC000 && a < 0xD000) xfe = v;
         break;
@@ -289,7 +318,7 @@ struct SimMapper : NesBus {
         sh |= (v & 1) << cnt;
         if (++cnt == 5) { mm1[(a >> 13) & 3] = sh; cnt = 0; sh = 0; }
         break;
-      case 4:
+      case 4: case 118: case 206:
         if (a < 0xA000) { if ((a & 1) == 0) sel = v; else r[sel & 7] = v; }
         else if (a < 0xC000 && (a & 1)) mmc3_ram_en = (v & 0x80) != 0;
         break;
@@ -715,7 +744,10 @@ static void test_nes_mappers() {
                       {66, 128 << 10, 32 << 10}, {66, 64 << 10, 16 << 10}, {11, 128 << 10, 128 << 10}, {11, 32 << 10, 16 << 10},
                       {71, 128 << 10, 0}, {71, 256 << 10, 0}, {9, 128 << 10, 128 << 10}, {9, 64 << 10, 32 << 10},
                       {10, 128 << 10, 64 << 10}, {10, 256 << 10, 128 << 10}, {69, 128 << 10, 128 << 10}, {69, 256 << 10, 256 << 10},
-                      {5, 128 << 10, 128 << 10}, {5, 512 << 10, 256 << 10}};
+                      {5, 128 << 10, 128 << 10}, {5, 512 << 10, 256 << 10},
+                      {118, 128 << 10, 128 << 10}, {206, 32 << 10, 32 << 10}, {206, 64 << 10, 64 << 10}, {79, 64 << 10, 32 << 10}, {79, 32 << 10, 16 << 10},
+                      {87, 32 << 10, 32 << 10}, {87, 16 << 10, 8 << 10}, {78, 128 << 10, 128 << 10}, {70, 128 << 10, 128 << 10}, {70, 256 << 10, 64 << 10},
+                      {75, 128 << 10, 128 << 10}, {75, 64 << 10, 64 << 10}, {33, 128 << 10, 128 << 10}, {48, 256 << 10, 256 << 10}};
   for (const Cfg& c : cfgs) {
     SimMapper s(c.m, c.prg, c.chr); CartBackend be(nullptr, &s, nullptr, nullptr);
     be.set_options(uint16_t(c.m), uint16_t(c.prg >> 10), uint16_t(c.chr >> 10));
@@ -745,6 +777,15 @@ static void test_nes_mappers() {
 }
 
 static void test_nes_saves() {
+  // dumpar a ROM de um MMC1 com bateria não pode estragar a SRAM (escritas em $E000+ pela sequência segura)
+  { SimMapper s(1, 256 << 10, 0); CartBackend be(nullptr, &s, nullptr, nullptr);
+    for (size_t i = 0; i < s.ram.size(); i++) s.ram[i] = pat(uint32_t(i) + 4);
+    std::vector<uint8_t> before = s.ram, out; uint16_t err = 0;
+    be.set_options(1, 256, 0); dump(be, SYS_NES, KIND_ROM, out, err);
+    CHECK(out.size() == 16 + (256u << 10) && s.ram == before && s.corrupted == 0);
+    be.set_options(1, 0, 0); dump(be, SYS_NES, KIND_SAVE, out, err);
+    CHECK(out == before && s.corrupted == 0);
+  }
   for (int m : {1, 4}) {
     SimMapper s(m, 128 << 10, 64 << 10); CartBackend be(nullptr, &s, nullptr, nullptr);
     for (size_t i = 0; i < s.ram.size(); i++) s.ram[i] = pat(uint32_t(i) + 321);
