@@ -9,7 +9,7 @@ from pathlib import Path
 from . import __version__
 from . import protocol as P
 from .client import Client, TimeoutError_
-from .verify import verify_rom
+from .verify import eeprom_is_4k, gba_save_hint, verify_rom
 from .transport import SerialTransport, Transport
 
 BAUDS = (1_000_000, 115_200)
@@ -120,6 +120,14 @@ def cmd_dump(args) -> int:
     chk = verify_rom(sid, res.data)
     if chk.status != "na":
         print(("aviso: " if chk.status == "mismatch" else "") + str(chk))
+    if sid == 5:
+        hint = gba_save_hint(res.data)
+        if hint:
+            code, label, tag = hint
+            extra = " (se o save sair repetido a cada 512 bytes, use --mapper 1)" if code == 2 else ""
+            print(f"save do GBA: {tag}, {label}: use --mapper {code} em save-read{extra}")
+        else:
+            print("save do GBA: nenhuma cadeia de biblioteca de save na ROM (sem save, ou tipo desconhecido)")
     return rc
 
 
@@ -127,7 +135,10 @@ def cmd_save_read(args) -> int:
     c, t, _ = connect(args)
     res = c.read_save(system_id(args.system), args.block, _progress("save"), args.mapper)
     t.close()
-    return _save_result(args, res, ".sav", f"save_{args.system}")
+    rc = _save_result(args, res, ".sav", f"save_{args.system}")
+    if system_id(args.system) == 5 and args.mapper == 2 and eeprom_is_4k(res.data):
+        print("aviso: o conteúdo se repete a cada 512 bytes: é uma EEPROM de 512 bytes. Refaça com --mapper 1.")
+    return rc
 
 
 def cmd_save_write(args) -> int:

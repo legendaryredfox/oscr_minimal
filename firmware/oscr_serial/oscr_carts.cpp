@@ -44,6 +44,8 @@ void CartBackend::release() {
   if (active_ == SYS_MD && md_sram_on_) md_sram(false);
   if ((active_ == SYS_NES || active_ == SYS_FAMICOM) && nes_ram_on_) nes_ram(false);
   md_bank_ = -1;
+  if (active_ == SYS_GBA && gba_bank_ != 0) gba_flash_bank(0);     // volta ao banco 0 da Flash
+  gba_eep_blk_ = -1;
   switch (active_) {
     case SYS_SNES: snes_->end(); break;
     case SYS_NES: case SYS_FAMICOM: nes_->end(); break;
@@ -209,8 +211,15 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
       if (mirror) { sz = cand; break; }
     }
     o.rom = sz;
-    o.save = 32768;                 // só a SRAM de 32 KB é lida; o tipo real (SRAM/Flash/EEPROM) é desconhecido
+    o.save = 32768;                 // DETECT: o tipo real (SRAM/Flash/EEPROM) é desconhecido
     o.save_type = 255;
+    if (for_save) {                 // o tipo vem do usuário (campo mapper): numeração do OSCR
+      uint8_t t = opt_mapper_ ? uint8_t(opt_mapper_) : 3;
+      static const uint32_t sz_[6] = {0, 512, 8192, 32768, 65536, 131072};
+      static const uint8_t ty_[6] = {0, 3, 3, 1, 2, 2};
+      if (opt_mapper_ > 5) { o.status = 3; return false; }
+      o.gba_type = t; o.save = sz_[t]; o.save_type = ty_[t];
+    }
     o.status = 0;
     c_ = o;
     return true;
@@ -335,7 +344,7 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
     } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
     } else if (kind == KIND_SAVE && sys == SYS_GBA) {
-      buf[i] = gba_->sram_read(uint16_t(off + i));
+      buf[i] = gba_save_byte(off + i);
     } else if (kind == KIND_SAVE) {
       uint8_t bank; uint16_t addr;
       snes_save_addr(off + i, bank, addr);
@@ -345,6 +354,28 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
     }
   }
   return true;
+}
+
+// ---------------------------------------------------------------- GBA: SRAM, Flash e EEPROM (só leitura)
+void CartBackend::gba_flash_bank(uint8_t bank) {   // switchBank_GBA do OSCR (Macronix/Sanyo de 128 KB)
+  gba_->sram_write(0x5555, 0xAA); gba_->sram_write(0x2AAA, 0x55); gba_->sram_write(0x5555, 0xB0); gba_->sram_write(0x0000, bank);
+  gba_bank_ = bank;
+}
+
+uint8_t CartBackend::gba_save_byte(uint32_t i) {
+  switch (c_.gba_type) {
+    case 1: case 2: {                                    // EEPROM: blocos de 8 bytes
+      int32_t blk = int32_t(i >> 3);
+      if (blk != gba_eep_blk_) { gba_->eeprom_block(uint16_t(blk), c_.gba_type == 2, gba_eep_); gba_eep_blk_ = blk; }
+      return gba_eep_[i & 7];
+    }
+    case 5: {                                            // Flash 128 KB: dois bancos de 64 KB
+      uint8_t bank = uint8_t(i >> 16);
+      if (bank != gba_bank_) gba_flash_bank(bank);
+      return gba_->sram_read(uint16_t(i & 0xFFFF));
+    }
+    default: return gba_->sram_read(uint16_t(i));        // SRAM 32 KB e Flash 64 KB: leitura direta em /CS2
+  }
 }
 
 // ---------------------------------------------------------------- Mega Drive: SRAM

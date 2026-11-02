@@ -2,7 +2,7 @@
 import random
 
 from oscr_host import protocol as P
-from oscr_host.verify import verify_rom
+from oscr_host.verify import eeprom_is_4k, gba_save_hint, verify_rom
 
 
 def _rom(n, seed=1):
@@ -61,3 +61,25 @@ def test_sem_cabecalho_ou_sistema_sem_checksum():
     assert verify_rom(2, bytes(_rom(0x8000, 6))).status == "na"
     assert verify_rom(4, b"\x00" * 100).status == "na"
     assert verify_rom(255, P.mock_data()).status == "na"
+
+
+def test_gba_tipo_de_save_pela_rom():
+    d = bytearray(_rom(0x4000, 3))
+    assert gba_save_hint(bytes(d)) is None
+    d[0x1000:0x1000 + 12] = b"FLASH1M_V103"
+    assert gba_save_hint(bytes(d)) == (5, "Flash 128 KB", "FLASH1M_V103")
+    d[0x1000:0x1000 + 12] = b"\x00" * 12
+    d[0x2000:0x2000 + 12] = b"FLASH512_V13"
+    assert gba_save_hint(bytes(d))[0] == 4
+    d[0x2000:0x2000 + 12] = b"\x00" * 12
+    d[0x3000:0x3000 + 11] = b"EEPROM_V124"
+    assert gba_save_hint(bytes(d))[0] == 2
+    d[0x3000:0x3000 + 11] = b"SRAM_V113\x00\x00"
+    assert gba_save_hint(bytes(d)) == (3, "SRAM 32 KB", "SRAM_V113")
+
+
+def test_eeprom_4k_lida_como_8k_repete():
+    blk = bytes(_rom(512, 4))
+    assert eeprom_is_4k(blk * 16)
+    assert not eeprom_is_4k(bytes(_rom(8192, 5)))
+    assert not eeprom_is_4k(blk)

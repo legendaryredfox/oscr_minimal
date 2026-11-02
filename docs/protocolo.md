@@ -77,6 +77,8 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 
 **Saves do NES/Famicom** (`READ_SAVE` e `WRITE_SAVE`): só o `mapper` conta, e só 1 (MMC1) e 4 (MMC3) têm PRG-RAM com bateria aceita (8 KB em $6000-$7FFF). Qualquer outro: `ERRO 0x000A`. A gravação confere cada byte; cartucho sem RAM ou com RAM protegida dá `ERRO 0x0007`.
 
+**Saves do GBA** (`READ_SAVE`): o campo `mapper` é o **tipo de save**, com a numeração do OSCR: 0 ou 3 = SRAM/FRAM 32 KB (padrão), 1 = EEPROM 512 bytes, 2 = EEPROM 8 KB, 4 = Flash 64 KB, 5 = Flash 128 KB (dois bancos de 64 KB, trocados pelo comando AA/55/B0). Outro valor: `ERRO 0x0004`. `DETECT` continua sem saber o tipo (`tipo_save` 255, 32 KB). O host acha o tipo na ROM já lida procurando `FLASH1M_V`, `FLASH512_V`, `FLASH_V`, `EEPROM_V`, `SRAM_F_V` ou `SRAM_V`. `WRITE_SAVE` do GBA dá `ERRO 0x000A`.
+
 **NES/Famicom:**
 
 O cartucho de NES não tem cabeçalho com o mapper. Para mappers diferentes de 0 o host informa `mapper`, `prg_kb` (múltiplo de 16) e `chr_kb` (múltiplo de 8, 0 se o cartucho usa CHR-RAM). Mappers aceitos: 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4, 7 (mappers 2 e 7 só com CHR 0). `ERRO 0x0002` = mapper não suportado; `ERRO 0x0004` = tamanhos inválidos. O arquivo sai com cabeçalho iNES de 16 bytes (mapper nos nibbles dos bytes 6 e 7; espelhamento e bateria ficam 0). Os valores corretos vêm do banco do No-Intro/NESCartDB ou de uma ROM já conhecida do mesmo jogo.

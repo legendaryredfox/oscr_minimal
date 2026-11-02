@@ -50,3 +50,36 @@ fun verifyRom(system: CartSystem, data: ByteArray): Check = when (system) {
     CartSystem.SNES -> snes(data)
     else -> Check(CheckStatus.NA)
 }
+
+/** Tipo de save do GBA achado na ROM (mesma numeração do OSCR e do campo "tipo de save"). Igual a gba_save_hint em verify.py. */
+data class GbaSaveHint(val type: Int, val label: String, val tag: String)
+
+private val gbaSaveIds = listOf(
+    Triple("FLASH1M_V", 5, "Flash 128 KB"),
+    Triple("FLASH512_V", 4, "Flash 64 KB"),
+    Triple("FLASH_V", 4, "Flash 64 KB"),
+    Triple("EEPROM_V", 2, "EEPROM 512 B / 8 KB"),
+    Triple("SRAM_F_V", 3, "FRAM 32 KB"),
+    Triple("SRAM_V", 3, "SRAM 32 KB"),
+)
+
+private fun ByteArray.indexOfAscii(s: String): Int {
+    val n = s.length
+    outer@ for (i in 0..size - n) {
+        for (j in 0 until n) if (this[i + j] != s[j].code.toByte()) continue@outer
+        return i
+    }
+    return -1
+}
+
+fun gbaSaveHint(rom: ByteArray): GbaSaveHint? {
+    for ((needle, code, label) in gbaSaveIds) {
+        val i = rom.indexOfAscii(needle)
+        if (i >= 0) {
+            var end = i + needle.length
+            while (end < rom.size && end - i < 20 && rom[end] in 0x30..0x39) end++
+            return GbaSaveHint(code, label, String(CharArray(end - i) { (rom[i + it].toInt() and 0xFF).toChar() }))
+        }
+    }
+    return null
+}

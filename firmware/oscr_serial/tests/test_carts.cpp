@@ -173,8 +173,25 @@ struct SimGba : GbaBus {
   void begin() override {} void end() override {}
   uint16_t word(uint32_t ba) override { if (absent) return 0xFFFF; uint32_t i = (ba & ~1UL) % rom.size(); return uint16_t(rom[i + 1] << 8) | rom[i]; }
   std::vector<uint8_t> sram = std::vector<uint8_t>(32768, 0);
-  uint8_t sram_read(uint16_t a) override { return sram[a & 0x7FFF]; }
-  void sram_write(uint16_t a, uint8_t v) override { sram[a & 0x7FFF] = v; }
+  uint8_t sram_read(uint16_t a) override { return flash ? flash_data[(size_t(bank) << 16 | a) % flash_data.size()] : sram[a & 0x7FFF]; }
+  void sram_write(uint16_t a, uint8_t v) override {
+    // Flash de 128 KB: comando de troca de banco (AA, 55, B0 e o número do banco em $0000)
+    if (flash) {
+      if (st == 3 && a == 0) { bank = v & 1; st = 0; return; }
+      if (st == 0 && a == 0x5555 && v == 0xAA) { st = 1; return; }
+      if (st == 1 && a == 0x2AAA && v == 0x55) { st = 2; return; }
+      if (st == 2 && a == 0x5555 && v == 0xB0) { st = 3; return; }
+      st = 0; return;
+    }
+    sram[a & 0x7FFF] = v;
+  }
+  bool flash = false; int st = 0, bank = 0; int eep_reads = 0;
+  std::vector<uint8_t> flash_data;     // Flash: 64 ou 128 KB
+  std::vector<uint8_t> eep;
+  void eeprom_block(uint16_t block, bool big, uint8_t out[8]) override {
+    eep_reads++; size_t n = big ? 8192 : 512;
+    for (int i = 0; i < 8; i++) out[i] = eep[(size_t(block) * 8 + i) % n];
+  }
 };
 
 static void dump(CartBackend& be, uint8_t sys, uint8_t kind, std::vector<uint8_t>& out, uint16_t& err) {
@@ -340,6 +357,32 @@ static void test_md_tamanho() {
   SimMd one(0x100000); CartBackend b3(nullptr, nullptr, &one, nullptr); b3.detect(SYS_MD, d); CHECK(d.rom_size == 0x100000);
 }
 
+static void test_gba_saves() {
+  struct Case { uint16_t type; uint32_t size; uint8_t stype; };
+  const Case cases[] = {{1, 512, 3}, {2, 8192, 3}, {3, 32768, 1}, {4, 65536, 2}, {5, 131072, 2}};
+  for (const Case& k : cases) {
+    SimGba s(1 << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
+    for (size_t i = 0; i < s.sram.size(); i++) s.sram[i] = pat(uint32_t(i) + 77);
+    s.eep.resize(k.size); s.flash_data.resize(k.size);
+    for (uint32_t i = 0; i < k.size; i++) s.eep[i] = s.flash_data[i] = pat(i * 3 + 11);
+    s.flash = (k.type >= 4);
+    be.set_options(k.type, 0, 0);
+    uint32_t size = 0; uint16_t err = 0;
+    CHECK(be.open_read(SYS_GBA, KIND_SAVE, size, err) && size == k.size);
+    std::vector<uint8_t> out(size);
+    for (uint32_t off = 0; off < size; off += 512) be.read(SYS_GBA, KIND_SAVE, off, &out[off], 512 < size - off ? 512 : uint16_t(size - off));
+    be.close_read();
+    const std::vector<uint8_t>& want = (k.type == 3) ? s.sram : (k.type >= 4 ? s.flash_data : s.eep);
+    CHECK(out.size() == want.size() && memcmp(out.data(), want.data(), out.size()) == 0);
+    CHECK(s.bank == 0);                                    // Flash volta ao banco 0
+    if (k.type <= 2) CHECK(s.eep_reads == int(k.size / 8)); // um acesso por bloco de 8 bytes
+  }
+  SimGba s(1 << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
+  uint32_t size; uint16_t err = 0;
+  be.set_options(9, 0, 0); CHECK(!be.open_read(SYS_GBA, KIND_SAVE, size, err) && err == E_ARGUMENTO);
+  be.set_options(4, 0, 0); CHECK(!be.write_begin(SYS_GBA, 65536, err) && err == E_SEM_SAVE);  // gravação ainda não existe
+}
+
 static void test_gba() {
   for (uint32_t mb : {1u, 4u, 16u}) {
     SimGba s(mb << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
@@ -354,6 +397,7 @@ static void test_gba() {
     CHECK(out == s.sram);
     uint16_t e2 = 0; CHECK(!be.write_begin(SYS_GBA, 32768, e2) && e2 == E_SEM_SAVE);   // gravação do GBA não suportada
   }
+  test_gba_saves();
   SimGba s(1 << 20); s.absent = true; CartBackend be(nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GBA, d); CHECK(d.status == 1);
 }
 

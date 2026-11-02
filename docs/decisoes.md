@@ -281,3 +281,10 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - CLI: `save-read/save-write --mapper N`. GUI: o campo "Mapper" vale também para os botões de save. Host 47 testes, Kotlin compila e testa, firmware 148 verificações. Firmware real compila.
 - **Fora do escopo:** RAM de 16 e 32 KB (MMC1 SOROM/SXROM com troca de banco por registrador de CHR), MMC3 com 2 KB (MMC6), mapper 0 com RAM (Family BASIC), mappers de outros chips.
 - **Não validado em hardware.** Um ponto de atenção: algumas placas MMC1A não têm o bit de desligar a RAM; a RAM fica sempre ligada, o que não atrapalha a leitura nem a gravação.
+
+### D46 — GBA: leitura de saves Flash e EEPROM
+- `READ_SAVE` do GBA aceita tipo de save no campo `mapper` (numeração do OSCR: 1 EEPROM 512 B, 2 EEPROM 8 KB, 3 SRAM, 4 Flash 64 KB, 5 Flash 128 KB). Sem o campo, continua SRAM de 32 KB.
+- **Por que o usuário informa o tipo:** o OSCR usa um banco de dados no SD (`gba.txt`); sem SD não há como saber. Varrer a ROM no `DETECT` leva minutos (32 MB), mais que o tempo de espera do host. Por isso o host procura a cadeia da biblioteca de save (`FLASH1M_V` etc.) na ROM **já lida** e informa o tipo (CLI e GUI). EEPROM de 512 B e de 8 KB têm a mesma cadeia (`EEPROM_V`): o host avisa se o arquivo de 8 KB se repete a cada 512 bytes.
+- Flash: leitura em /CS2 como a SRAM; a de 128 KB troca de banco com AA/55/B0 (`switchBank_GBA` do OSCR) e volta ao banco 0 ao terminar. EEPROM: bit-bang pela ROM (`readBlock_EEP` do OSCR), blocos de 8 bytes.
+- **Fora do escopo:** gravação de Flash/EEPROM/SRAM (apagar setor, comandos por fabricante, risco de perder o save), o ajuste de preenchimento da ROM de 32 MB com EEPROM (`readROM_GBA` do OSCR), leitura de Flash em modo ID.
+- **Não validado em hardware.** A rotina de EEPROM no AVR (`eeprom_block`) tem tempos copiados do OSCR, mas o teste no PC usa um simulador que ignora os bits. Ela é a parte mais provável de precisar de ajuste.

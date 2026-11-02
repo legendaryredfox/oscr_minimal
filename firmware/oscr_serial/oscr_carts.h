@@ -36,12 +36,18 @@ class CartBackend : public Backend {
     bool ssf = false;            // Mega Drive: mapper SSF2 (ROM acima de 4 MB)
     uint8_t md_save = 0;         // Mega Drive: 0 nenhum, 1 bytes ímpares, 2 bytes pares, 3 ambos
     uint32_t md_base = 0;        // endereço em palavras do início da SRAM
+    uint8_t gba_type = 0;        // GBA, tipo de save pedido: 1 EEPROM 4K, 2 EEPROM 64K, 3 SRAM, 4 Flash 64K, 5 Flash 128K
   };
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
   Cart c_;
   void clear_options() { opt_mapper_ = opt_prg_ = opt_chr_ = 0; }
   uint8_t active_ = 0;           // sistema com barramento aberto (0 = nenhum)
   uint16_t opt_mapper_ = 0, opt_prg_ = 0, opt_chr_ = 0;   // opções do NES/Famicom (set_options)
+  int16_t gba_bank_ = 0;                                  // GBA Flash 128 KB: banco selecionado
+  int32_t gba_eep_blk_ = -1;                              // GBA EEPROM: bloco de 8 bytes em cache
+  uint8_t gba_eep_[8] = {0};
+  void gba_flash_bank(uint8_t bank);
+  uint8_t gba_save_byte(uint32_t i);
   bool md_sram_on_ = false;
   uint8_t md_hi_ = 0;                                     // byte alto pendente (SRAM "ambos")
   int16_t md_bank_ = -1;                                  // banco SSF2 já selecionado na janela 1

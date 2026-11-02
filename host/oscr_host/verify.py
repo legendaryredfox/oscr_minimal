@@ -74,3 +74,31 @@ def verify_rom(system: int, data: bytes) -> Check:
     if system == 1:
         return _snes(data)
     return Check("na")
+
+
+# Tipo de save do GBA, pelas cadeias que o SDK da Nintendo grava na ROM (mesma numeração do OSCR e do --mapper).
+_GBA_SAVE_IDS = (
+    (b"FLASH1M_V", 5, "Flash 128 KB"),
+    (b"FLASH512_V", 4, "Flash 64 KB"),
+    (b"FLASH_V", 4, "Flash 64 KB"),
+    (b"EEPROM_V", 2, "EEPROM (512 bytes ou 8 KB)"),
+    (b"SRAM_F_V", 3, "FRAM 32 KB"),
+    (b"SRAM_V", 3, "SRAM 32 KB"),
+)
+
+
+def gba_save_hint(rom: bytes) -> Optional[tuple[int, str, str]]:
+    """Procura a cadeia de biblioteca de save na ROM do GBA. -> (tipo, descrição, cadeia) ou None."""
+    for needle, code, label in _GBA_SAVE_IDS:
+        i = rom.find(needle)
+        if i >= 0:
+            end = i + len(needle)
+            while end < len(rom) and end - i < 20 and 0x30 <= rom[end] <= 0x39:
+                end += 1
+            return code, label, rom[i:end].decode("ascii", "replace")
+    return None
+
+
+def eeprom_is_4k(save: bytes) -> bool:
+    """Ler uma EEPROM de 512 bytes como se fosse de 8 KB repete os mesmos 512 bytes 16 vezes."""
+    return len(save) == 8192 and save == save[:512] * 16

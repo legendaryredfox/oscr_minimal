@@ -39,6 +39,9 @@ struct GbaBus {  // AD0..15 multiplexado (PF/PK), A16..A23 em PC
   virtual uint16_t word(uint32_t byte_addr) = 0;  // endereço em bytes (par)
   virtual uint8_t sram_read(uint16_t addr) = 0;   // SRAM (/CS2): endereço em AD0-15, dado em D0-D7
   virtual void sram_write(uint16_t addr, uint8_t value) = 0;
+  // EEPROM serial pelo barramento da ROM (A23 alto, bit a bit): lê o bloco de 8 bytes de índice `block`.
+  // big = false: 4 Kbit (512 bytes, endereço de 6 bits); true: 64 Kbit (8 KB, endereço de 14 bits).
+  virtual void eeprom_block(uint16_t block, bool big, uint8_t out[8]) = 0;
 };
 
 }  // namespace oscr

@@ -47,6 +47,7 @@ fun App() {
     var busy by remember { mutableStateOf(false) }
     var showHelp by remember { mutableStateOf(false) }
     var mapper by remember { mutableStateOf("0") }
+    var gbaType by remember { mutableStateOf("3") }
     var prgKb by remember { mutableStateOf("0") }
     var chrKb by remember { mutableStateOf("0") }
     var progress by remember { mutableStateOf(0f) }
@@ -106,7 +107,11 @@ fun App() {
             val systems = if (info?.mock == true) CartSystem.entries else CartSystem.entries.filter { it != CartSystem.MOCK }
             systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
         }
-        if (system == CartSystem.GBA) Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
+        if (system == CartSystem.GBA) {
+            Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
+            OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true, modifier = Modifier.width(180.dp))
+            Text(t(S.GBA_SAVE_HINT), style = MaterialTheme.typography.bodySmall)
+        }
         if (system == CartSystem.MD) {
             OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, modifier = Modifier.width(260.dp))
         }
@@ -138,12 +143,16 @@ fun App() {
                     val chk = verifyRom(system, res.data)
                     if (chk.status == CheckStatus.OK) say("${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})")
                     else if (chk.status == CheckStatus.MISMATCH) say("${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}")
+                    if (system == CartSystem.GBA) {
+                        val h = gbaSaveHint(res.data)
+                        say(if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE))
+                    }
                 }
             }) { Text(t(S.DUMP_ROM)) }
 
             Button(enabled = c != null && !busy, onClick = {
                 run {
-                    val res = withContext(Dispatchers.IO) { c!!.readSave(system, 0, mapper.toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
+                    val res = withContext(Dispatchers.IO) { c!!.readSave(system, 0, (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
                     val f = pickFile(t(S.CHOOSE_FILE), true, "save_${system.name.lowercase()}.sav")
                     if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
                 }

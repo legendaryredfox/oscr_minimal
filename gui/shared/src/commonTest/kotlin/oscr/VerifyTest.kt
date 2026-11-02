@@ -43,4 +43,14 @@ class VerifyTest {
         assertEquals(CheckStatus.NA, verifyRom(CartSystem.NES, rom(0x8000, 6)).status)
         assertEquals(CheckStatus.NA, verifyRom(CartSystem.MD, ByteArray(100)).status)
     }
+
+    @Test fun gbaSaveHintFindsLibraryString() {
+        val rom = ByteArray(0x4000) { (it * 7).toByte() }
+        assertEquals(null, gbaSaveHint(rom))
+        "FLASH1M_V103".forEachIndexed { i, c -> rom[0x1000 + i] = c.code.toByte() }
+        val h = gbaSaveHint(rom)!!
+        assertEquals(5, h.type); assertEquals("FLASH1M_V103", h.tag)
+        "EEPROM_V124".forEachIndexed { i, c -> rom[0x2000 + i] = c.code.toByte() }
+        assertEquals(5, gbaSaveHint(rom)!!.type)   // Flash tem prioridade, como no Python
+    }
 }

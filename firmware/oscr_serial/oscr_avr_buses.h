@@ -198,6 +198,39 @@ struct AvrGbaBus : GbaBus {
     PORTH |= (1 << 5); PORTH |= (1 << 0);
     DDRC = 0x00;
   }
+  // readBlock_EEP do OSCR para um bloco de 8 bytes. NÃO validado em hardware.
+  void eeprom_send(uint16_t v, uint8_t nbits) {                         // send_GBA do OSCR
+    for (uint8_t b = nbits; b > 0; b--) {
+      if ((v >> (b - 1)) & 1) PORTF |= (1 << 0); else PORTF &= ~(1 << 0);
+      PORTH &= ~(1 << 5); PORTH |= (1 << 5);                            // pulso em /WR
+    }
+  }
+  void eeprom_block(uint16_t block, bool big, uint8_t out[8]) override {
+    DDRH |= (1 << 3) | (1 << 5) | (1 << 6); DDRF |= (1 << 0); DDRC |= (1 << 7);
+    PORTH |= (1 << 3) | (1 << 5) | (1 << 6); PORTF |= (1 << 0); PORTC |= (1 << 7);
+    OSCR_NOP; OSCR_NOP;
+    noInterrupts();
+    PORTH &= ~(1 << 3);                                                 // CS_ROM baixo
+    PORTF |= (1 << 0);                                                  // pedido de leitura "11"
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    eeprom_send(block, big ? 14 : 6);
+    PORTF &= ~(1 << 0);                                                 // bit de parada
+    PORTH &= ~(1 << 5); PORTH |= (1 << 5);
+    PORTH |= (1 << 3);
+    OSCR_NOP4; OSCR_NOP4;
+    DDRF &= ~(1 << 0);                                                  // A0 vira entrada
+    PORTH &= ~(1 << 3);
+    for (uint8_t i = 0; i < 4; i++) { PORTH &= ~(1 << 6); PORTH |= (1 << 6); }   // ignora 4 bits
+    for (uint8_t j = 0; j < 8; j++) {
+      uint8_t v = 0;
+      for (uint8_t k = 0; k < 8; k++) { PORTH &= ~(1 << 6); PORTH |= (1 << 6); v = uint8_t((v << 1) | (PINF & 1)); }
+      out[j] = v;
+    }
+    PORTH |= (1 << 3); PORTF |= (1 << 0); DDRF |= (1 << 0);
+    interrupts();
+    delayMicroseconds(200);
+  }
 };
 
 }  // namespace oscr
