@@ -60,6 +60,8 @@ struct SimMapper : NesBus {
   int reg = 0;                                  // 2, 3, 7
   uint8_t sh = 0, cnt = 0, mm1[4] = {0x0C, 0, 0, 0};   // MMC1
   uint8_t sel = 0, r[8] = {0, 2, 0, 0, 0, 0, 0, 1};   // MMC3
+  std::vector<uint8_t> ram = std::vector<uint8_t>(8192, 0xFF); bool has_ram = true, mmc3_ram_en = false;
+  bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : false)); }
   SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
     prgrom.resize(p); chrrom.resize(c);
     for (size_t i = 0; i < p; i++) prgrom[i] = pat(uint32_t(i) + 11 * mp);
@@ -68,6 +70,7 @@ struct SimMapper : NesBus {
   void begin() override {} void end() override {}
   size_t n16() const { return prgrom.size() / 16384; }
   uint8_t prg(uint16_t a) override {
+    if (a >= 0x6000 && a < 0x8000) return ram_enabled() ? ram[a - 0x6000] : 0xFF;
     if (a < 0x8000) return 0xFF;
     size_t N = prgrom.size();
     switch (m) {
@@ -99,6 +102,7 @@ struct SimMapper : NesBus {
     return 0xFF;
   }
   void prg_write(uint16_t a, uint8_t v) override {
+    if (a >= 0x6000 && a < 0x8000) { if (ram_enabled()) ram[a - 0x6000] = v; return; }
     if (a < 0x8000) return;
     switch (m) {
       case 2: case 3: case 7: reg = v & prg(a); break;                       // conflito: valor E byte da ROM
@@ -108,7 +112,8 @@ struct SimMapper : NesBus {
         if (++cnt == 5) { mm1[(a >> 13) & 3] = sh; cnt = 0; sh = 0; }
         break;
       case 4:
-        if ((a & 1) == 0) sel = v; else r[sel & 7] = v;
+        if (a < 0xA000) { if ((a & 1) == 0) sel = v; else r[sel & 7] = v; }
+        else if (a < 0xC000 && (a & 1)) mmc3_ram_en = (v & 0x80) != 0;
         break;
     }
   }
@@ -248,6 +253,29 @@ static void test_nes_mappers() {
   be.set_options(2, 128, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
 }
 
+static void test_nes_saves() {
+  for (int m : {1, 4}) {
+    SimMapper s(m, 128 << 10, 64 << 10); CartBackend be(nullptr, &s, nullptr, nullptr);
+    for (size_t i = 0; i < s.ram.size(); i++) s.ram[i] = pat(uint32_t(i) + 321);
+    be.set_options(uint16_t(m), 0, 0);                                  // para save só o mapper importa
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_NES, KIND_SAVE, out, err);
+    CHECK(out.size() == 8192 && out == s.ram && !s.ram_enabled());      // lê e desliga a RAM
+    std::vector<uint8_t> save(8192); for (size_t i = 0; i < save.size(); i++) save[i] = pat(uint32_t(i) + 777);
+    be.set_options(uint16_t(m), 0, 0);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_FAMICOM, 8192, e2));
+    bool ok = true; for (uint32_t off = 0; off < 8192; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit() && s.ram == save && !s.ram_enabled());
+    be.set_options(uint16_t(m), 0, 0); CHECK(!be.write_begin(SYS_NES, 4096, e2) && e2 == E_ARGUMENTO);
+    // cartucho sem RAM: a gravação falha na conferência
+    SimMapper nr(m, 128 << 10, 64 << 10); nr.has_ram = false; CartBackend b2(nullptr, &nr, nullptr, nullptr);
+    b2.set_options(uint16_t(m), 0, 0); CHECK(b2.write_begin(SYS_NES, 8192, e2)); CHECK(!b2.write_block(0, &save[0], 512)); b2.write_abort();
+  }
+  SimMapper s2(2, 128 << 10, 0); CartBackend be2(nullptr, &s2, nullptr, nullptr);
+  std::vector<uint8_t> o; uint16_t err;
+  be2.set_options(2, 0, 0); dump(be2, SYS_NES, KIND_SAVE, o, err); CHECK(err == E_SEM_SAVE);       // UxROM não tem bateria
+  be2.set_options(0, 0, 0); dump(be2, SYS_NES, KIND_SAVE, o, err); CHECK(err == E_SEM_SAVE);       // sem mapper informado
+}
+
 static void test_md() {
   SimMd s(0x100000); CartBackend be(nullptr, nullptr, &s, nullptr);
   DetectInfo d; be.detect(SYS_MD, d);
@@ -336,7 +364,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

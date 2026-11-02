@@ -37,7 +37,7 @@ Sistemas: `snes`, `nes`, `famicom`, `md`, `gba` (`mock` só no firmware de teste
 5. A GUI e a CLI mostram o **CRC32** (8 dígitos hexadecimais). Compare com o banco No-Intro (por exemplo, no DAT do sistema). Igual = dump íntegro e idêntico ao original.
 
 ### 2.2 Fazer backup do save (jogos com bateria)
-Hoje **SNES** e **Mega Drive** têm leitura/gravação de save (o GBA só leitura de SRAM de 32 KB). Faça o backup **antes** de trocar a bateria do cartucho (a troca apaga a SRAM): **Ler save**, guarde o `.sav` em dois lugares.
+Hoje **SNES**, **Mega Drive** e **NES/Famicom** (mappers 1 e 4, 8 KB) têm leitura/gravação de save (o GBA só leitura de SRAM de 32 KB). No NES informe o mapper: `dumper.py save-read -s nes --mapper 4 -o jogo`. Outros tamanhos de RAM (16 e 32 KB do SOROM/SXROM) ainda não. Faça o backup **antes** de trocar a bateria do cartucho (a troca apaga a SRAM): **Ler save**, guarde o `.sav` em dois lugares.
 
 ### 2.3 Restaurar um save
 **Gravar save** com um arquivo **do tamanho exato** do save (o **Detectar** mostra o tamanho). O firmware só grava depois de conferir o CRC32 do arquivo e lê de volta o que gravou. Se algo falhar, a mensagem de erro diz onde.
@@ -59,8 +59,8 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | Sistema | ROM | Save | Observações |
 |---|---|---|---|
 | SNES/SFC | LoROM e HiROM até 4 MB | SRAM (ler e gravar) | Detecta pelo checksum do cabeçalho. **Não** lê SA-1, ExHiROM, S-DD1, SuperFX e outros chips especiais. |
-| NES | mappers 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4 (MMC3) e 7 | não | Mapper 0 é automático. Para os demais, **informe mapper, PRG e CHR em KB** (GUI: campos "Opções NES/Famicom"; CLI: `--mapper 4 --prg 128 --chr 128`), de uma fonte confiável (No-Intro/NESCartDB). Gera cabeçalho iNES (espelhamento e bateria saem 0; ajuste no emulador se preciso). Mappers 2 e 7 usam CHR-RAM (`--chr 0`). |
-| Famicom | os mesmos do NES | não | Mesmo código do NES. |
+| NES | mappers 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4 (MMC3) e 7 | **8 KB** de PRG-RAM com bateria nos mappers 1 e 4 (ler e gravar; informe o mapper) | Mapper 0 é automático. Para os demais, **informe mapper, PRG e CHR em KB** (GUI: campos "Opções NES/Famicom"; CLI: `--mapper 4 --prg 128 --chr 128`), de uma fonte confiável (No-Intro/NESCartDB). Gera cabeçalho iNES (espelhamento e bateria saem 0; ajuste no emulador se preciso). Mappers 2 e 7 usam CHR-RAM (`--chr 0`). |
+| Famicom | os mesmos do NES | os mesmos do NES | Mesmo código do NES. |
 | Mega Drive | ROM pelo tamanho do cabeçalho: até 4 MB; até 8 MB com mapper SSF2 (cabeçalho "SEGA SSF", como Super Street Fighter II) | SRAM de 8 bits (bytes ímpares ou pares) ou de 16 bits, **lida e gravada**, pelo que o cabeçalho declara | Precisa da palavra "SEGA" no cabeçalho. Se o cabeçalho declara mais do que a ROM tem (ROM espelhada), o firmware reduz sozinho; para forçar, informe o tamanho em KB (GUI: "Tamanho da ROM"; CLI: `--prg 512`). Sem suporte: EEPROM serial, Pier Solar, Sonic 3 / Sonic & Knuckles (lock-on) e mappers piratas. A gravação confere cada byte depois de gravar. |
 | GBA | ROM de 256 KB até 32 MB (tamanho por espelhamento) | só **leitura** de 32 KB, assumindo SRAM | Só cartuchos GBA, 3,3 V. O firmware não sabe se o save é SRAM, Flash ou EEPROM: em jogos com Flash ou EEPROM o arquivo lido **não vale**. Gravação de save do GBA não é suportada (risco com cartuchos Flash). |
 | GB/GBC | não | não | Reservado (precisa de adaptador no slot GBA). |

@@ -42,6 +42,7 @@ void CartBackend::acquire(uint8_t sys) {
 
 void CartBackend::release() {
   if (active_ == SYS_MD && md_sram_on_) md_sram(false);
+  if ((active_ == SYS_NES || active_ == SYS_FAMICOM) && nes_ram_on_) nes_ram(false);
   md_bank_ = -1;
   switch (active_) {
     case SYS_SNES: snes_->end(); break;
@@ -83,7 +84,7 @@ uint8_t CartBackend::byte_at(uint8_t sys, uint32_t off) {
 }
 
 // ---------------------------------------------------------------- detecção
-bool CartBackend::probe(uint8_t sys, Cart& o) {
+bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
   o = Cart();
   c_ = o;
   acquire(sys);
@@ -107,6 +108,14 @@ bool CartBackend::probe(uint8_t sys, Cart& o) {
     uint8_t a[64], b[64], ch[64];
     for (uint8_t i = 0; i < 64; i++) { a[i] = nes_->prg(uint16_t(0x8000 + i)); b[i] = nes_->prg(uint16_t(0xC000 + i)); ch[i] = nes_->chr(i); }
     if (all_same(a, 64) && all_same(b, 64) && (a[0] == 0xFF || a[0] == 0x00)) { o.status = 1; return false; }
+    if (for_save) {                                                   // save: só mapper 1 ou 4, tamanhos não importam
+      if (opt_mapper_ != 1 && opt_mapper_ != 4) { o.status = 0; o.save = 0; c_ = o; mapper_ = 0; return true; }
+      mapper_ = opt_mapper_; o.save = 8192; o.save_type = 1;
+      strcpy(o.name, mapper_ == 1 ? "mapper 1" : "mapper 4");
+      o.status = 0; c_ = o;
+      nes_setup_mapper();
+      return true;
+    }
     if (opt_mapper_ == 0 && opt_prg_ == 0) {                         // automático: NROM
       o.prg = (memcmp(a, b, 64) == 0) ? 16384UL : 32768UL;
       o.chr = (all_same(ch, 64) && (ch[0] == 0xFF || ch[0] == 0x00)) ? 0 : 8192UL;
@@ -222,6 +231,12 @@ void CartBackend::detect(uint8_t sys, DetectInfo& out) {
 }
 
 // ---------------------------------------------------------------- NES: mappers 0, 1, 2, 3, 4, 7
+void CartBackend::nes_ram(bool on) {
+  if (mapper_ == 1) mmc1_write(0xE000, on ? 0x00 : 0x10);          // PRG reg bit 4: 0 liga, 1 desliga a RAM (MMC1B)
+  else if (mapper_ == 4) nes_->prg_write(0xA001, on ? 0x80 : 0x00);  // MMC3: bit 7 liga; desliga ao terminar
+  nes_ram_on_ = on;
+}
+
 void CartBackend::nes_reg(uint8_t value, uint16_t first_addr, uint16_t scan) {
   // Evita conflito de barramento: escreve num endereço da ROM cujo byte já é igual ao valor.
   for (uint16_t i = 0; i < scan; i++) {
@@ -295,10 +310,11 @@ uint8_t CartBackend::nes_chr_byte(uint32_t o) {
 bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
   Cart c;
-  if (!probe(sys, c)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
+  if (!probe(sys, c, kind == KIND_SAVE)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (kind == KIND_SAVE) {
-    if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+    if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
     if (sys == SYS_MD) md_sram(true);
+    if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
     size = c_.save;
   } else {
     size = c_.rom;
@@ -314,7 +330,9 @@ void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) cons
 bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) {
   if (active_ != sys) return false;
   for (uint16_t i = 0; i < len; i++) {
-    if (kind == KIND_SAVE && sys == SYS_MD) {
+    if (kind == KIND_SAVE && (sys == SYS_NES || sys == SYS_FAMICOM)) {
+      buf[i] = nes_->prg(uint16_t(0x6000 + off + i));
+    } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
     } else if (kind == KIND_SAVE && sys == SYS_GBA) {
       buf[i] = gba_->sram_read(uint16_t(off + i));
@@ -353,16 +371,25 @@ void CartBackend::md_save_set(uint32_t i, uint8_t v) {
 // ---------------------------------------------------------------- escrita de save (SNES SRAM)
 bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
-  if (sys != SYS_SNES && sys != SYS_MD) { err = E_SEM_SAVE; return false; }
+  if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) { err = E_SEM_SAVE; return false; }
   Cart c;
-  if (!probe(sys, c)) { release(); err = (c.status == 2) ? E_SISTEMA : E_SEM_CARTUCHO; return false; }
+  if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : E_SEM_CARTUCHO; return false; }
   if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD) md_sram(true);
+  if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
   return true;
 }
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
+  if (active_ == SYS_NES || active_ == SYS_FAMICOM) {
+    for (uint16_t i = 0; i < len; i++) {
+      uint16_t a = uint16_t(0x6000 + off + i);
+      nes_->prg_write(a, buf[i]);
+      if (nes_->prg(a) != buf[i]) return false;                  // confere; sem RAM ou protegida = erro
+    }
+    return true;
+  }
   if (active_ == SYS_MD) {
     for (uint16_t i = 0; i < len; i++) {
       md_save_set(off + i, buf[i]);

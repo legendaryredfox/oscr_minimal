@@ -117,12 +117,16 @@ class OscrClient(
         return streamIn(Proto.T_DUMP_ROM, p, progress)
     }
 
-    fun readSave(system: CartSystem, block: Int = 0, progress: Progress? = null) =
-        streamIn(Proto.T_READ_SAVE, byteArrayOf(system.id.toByte()) + le16(block), progress)
+    /** NES/Famicom: `mapper` 1 ou 4 (PRG-RAM com bateria, 8 KB). */
+    fun readSave(system: CartSystem, block: Int = 0, mapper: Int = 0, progress: Progress? = null): DumpResult {
+        var p = byteArrayOf(system.id.toByte()) + le16(block)
+        if (mapper != 0) p += le16(mapper) + le16(0) + le16(0)
+        return streamIn(Proto.T_READ_SAVE, p, progress)
+    }
 
-    fun writeSave(system: CartSystem, data: ByteArray, block: Int = Proto.DEFAULT_BLOCK, progress: Progress? = null): Int {
+    fun writeSave(system: CartSystem, data: ByteArray, block: Int = Proto.DEFAULT_BLOCK, mapper: Int = 0, progress: Progress? = null): Int {
         val seq = nextSeq()
-        request(Proto.T_WRITE_SAVE, byteArrayOf(system.id.toByte()) + le32(data.size) + le16(block), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == 0 }
+        request(Proto.T_WRITE_SAVE, byteArrayOf(system.id.toByte()) + le32(data.size) + le16(block) + (if (mapper != 0) le16(mapper) + le16(0) + le16(0) else ByteArray(0)), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == 0 }
         var off = 0
         while (off < data.size) {
             val n = minOf(block, data.size - off); val o = off

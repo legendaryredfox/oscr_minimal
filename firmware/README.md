@@ -26,7 +26,7 @@ Tamanho medido no Mega 2560: real 12,9 KB de flash (5 %) e 1,6 KB de RAM (19 %);
 ## Testar no PC
 
 ```
-make -C firmware/oscr_serial test          # 16 verificações do protocolo + 134 de cartuchos simulados (inclui mappers de NES)
+make -C firmware/oscr_serial test          # 16 verificações do protocolo + 148 de cartuchos simulados (inclui mappers de NES)
 python -m pytest host                      # inclui o teste cruzado Python x firmware C++
 ```
 

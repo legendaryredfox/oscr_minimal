@@ -125,7 +125,7 @@ def cmd_dump(args) -> int:
 
 def cmd_save_read(args) -> int:
     c, t, _ = connect(args)
-    res = c.read_save(system_id(args.system), args.block, _progress("save"))
+    res = c.read_save(system_id(args.system), args.block, _progress("save"), args.mapper)
     t.close()
     return _save_result(args, res, ".sav", f"save_{args.system}")
 
@@ -133,7 +133,7 @@ def cmd_save_read(args) -> int:
 def cmd_save_write(args) -> int:
     data = Path(args.input).read_bytes()
     c, t, _ = connect(args)
-    crc = c.write_save(system_id(args.system), data, args.block or P.DEFAULT_BLOCK, _progress("gravando"))
+    crc = c.write_save(system_id(args.system), data, args.block or P.DEFAULT_BLOCK, _progress("gravando"), args.mapper)
     t.close()
     print(f"save gravado: {len(data)} bytes  CRC32 {crc:08X}")
     return 0
@@ -167,8 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 7)")
     dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive: tamanho da ROM em KB (0 = pelo cabeçalho)")
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
-    add("save-read", cmd_save_read, "lê o save", out=True)
-    add("save-write", cmd_save_write, "grava o save", inp=True)
+    for sp in (add("save-read", cmd_save_read, "lê o save", out=True), add("save-write", cmd_save_write, "grava o save", inp=True)):
+        sp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: mapper do cartucho (1 ou 4 têm save com bateria)")
     return ap
 
 

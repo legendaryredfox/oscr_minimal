@@ -131,13 +131,13 @@ class Client:
                  mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> DumpResult:
         return self._stream_in(P.T_DUMP_ROM, P.build_dump(system, block, mapper, prg_kb, chr_kb), progress)
 
-    def read_save(self, system: int, block: int = 0, progress: Optional[Progress] = None) -> DumpResult:
-        return self._stream_in(P.T_READ_SAVE, P.build_dump(system, block), progress)
+    def read_save(self, system: int, block: int = 0, progress: Optional[Progress] = None, mapper: int = 0) -> DumpResult:
+        return self._stream_in(P.T_READ_SAVE, P.build_dump(system, block, mapper), progress)
 
-    def write_save(self, system: int, data: bytes, block: int = 512, progress: Optional[Progress] = None) -> int:
+    def write_save(self, system: int, data: bytes, block: int = 512, progress: Optional[Progress] = None, mapper: int = 0) -> int:
         seq = self._next_seq()
         block = block or P.DEFAULT_BLOCK
-        f = self._request(P.T_WRITE_SAVE, P.build_write_save(system, len(data), block), seq,
+        f = self._request(P.T_WRITE_SAVE, P.build_write_save(system, len(data), block, mapper), seq,
                           {P.T_D_ACK}, self.long_timeout)
         if P.parse_offset(f.payload) != 0:
             raise P.ProtocolError("ACK inicial com offset diferente de 0")

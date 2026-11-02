@@ -136,3 +136,18 @@ def test_cli_aceita_mapper(tmp_path):
     from oscr_host.cli import main
 
     assert main(["--simulate", "dump", "-s", "mock", "--mapper", "1", "--prg", "128", "--chr", "64", "-o", str(tmp_path / "m")]) == 0
+
+
+def test_mapper_chega_no_save_read_e_write(env):
+    c, dev = env
+    c.read_save(255, 0, None, 4)
+    assert dev.last_options == (4, 0, 0)
+    c.write_save(255, bytes(range(64)), 512, None, 1)
+    assert dev.last_write_mapper == 1
+    c.write_save(255, bytes(range(64)))
+    assert dev.last_write_mapper == 0
+
+
+def test_build_write_save_opcional():
+    assert len(P.build_write_save(2, 8192, 512)) == 7
+    assert len(P.build_write_save(2, 8192, 512, 4)) == 13

@@ -180,6 +180,7 @@ void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len) {
   uint8_t sys = p[0];
   uint32_t size = get_u32(p + 1);
   if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
+  be_.set_options(len >= 9 ? get_u16(p + 7) : 0, len >= 11 ? get_u16(p + 9) : 0, len >= 13 ? get_u16(p + 11) : 0);   // NES/Famicom: mapper (opcional)
   uint16_t err = E_CARTUCHO_IO;
   if (!be_.write_begin(sys, size, err)) { send_error(seq, err); return; }
   send_offset(T_D_ACK, seq, 0);

@@ -34,7 +34,7 @@ offset  tamanho  campo
 | `0x02` | `DETECT` | `u8 sistema` |
 | `0x03` | `DUMP_ROM` | `u8 sistema`, `u16 bloco` (0 = padrão 512); opcional, só NES/Famicom: `u16 mapper`, `u16 prg_kb`, `u16 chr_kb` (0 = automático/NROM) |
 | `0x04` | `READ_SAVE` | `u8 sistema`, `u16 bloco` (0 = padrão 512) |
-| `0x05` | `WRITE_SAVE` | `u8 sistema`, `u32 tamanho`, `u16 bloco` (0 = padrão 512) |
+| `0x05` | `WRITE_SAVE` | `u8 sistema`, `u32 tamanho`, `u16 bloco` (0 = padrão 512); opcional, NES/Famicom: `u16 mapper`, `u16 0`, `u16 0` |
 | `0x06` | `ACK` | `u32 offset` do bloco confirmado |
 | `0x07` | `NAK` | `u32 offset` do bloco que precisa ser reenviado |
 | `0x08` | `ABORT` | vazio |
@@ -74,6 +74,8 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 ### Opções de `DUMP_ROM` para NES/Famicom e Mega Drive
 
 **Mega Drive:** só `prg_kb` conta e significa o **tamanho da ROM em KB** (0 = pelo cabeçalho, com redução automática quando a ROM aparece espelhada). Mínimo 32 KB; máximo 4 MB (8 MB com o mapper SSF2). `ERRO 0x0004` fora desses limites.
+
+**Saves do NES/Famicom** (`READ_SAVE` e `WRITE_SAVE`): só o `mapper` conta, e só 1 (MMC1) e 4 (MMC3) têm PRG-RAM com bateria aceita (8 KB em $6000-$7FFF). Qualquer outro: `ERRO 0x000A`. A gravação confere cada byte; cartucho sem RAM ou com RAM protegida dá `ERRO 0x0007`.
 
 **NES/Famicom:**
 

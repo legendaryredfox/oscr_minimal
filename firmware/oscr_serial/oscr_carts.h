@@ -50,6 +50,8 @@ class CartBackend : public Backend {
   void md_save_set(uint32_t i, uint8_t v);
   uint16_t mapper_ = 0;                                   // mapper em uso na leitura
   int16_t cur_prg_ = -1, cur_chr_ = -1;                   // banco já selecionado (-1 = nenhum)
+  bool nes_ram_on_ = false;
+  void nes_ram(bool on);                                  // liga/desliga a PRG-RAM com bateria (MMC1, MMC3)
   void nes_setup_mapper();
   void nes_reg(uint8_t value, uint16_t first_addr, uint16_t scan);  // escreve evitando conflito de barramento
   void mmc1_write(uint16_t addr, uint8_t v);
@@ -57,7 +59,7 @@ class CartBackend : public Backend {
   uint8_t nes_prg_byte(uint32_t o);
   uint8_t nes_chr_byte(uint32_t o);
 
-  bool probe(uint8_t sys, Cart& out);   // abre o barramento e lê o cabeçalho
+  bool probe(uint8_t sys, Cart& out, bool for_save = false);   // abre o barramento e lê o cabeçalho
   void acquire(uint8_t sys);
   void release();
   uint8_t snes_save_byte_read(uint32_t i);

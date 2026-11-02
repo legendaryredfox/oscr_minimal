@@ -274,3 +274,10 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - **Checksum do cabeçalho:** o host (Python, `oscr_host/verify.py`; Kotlin, `Verify.kt`) confere depois do dump: Mega Drive (soma de palavras de $200 ao fim vs $18E), SNES (soma dos bytes vs checksum, com espelhamento para tamanhos que não são potência de 2) e GBA (complemento em $BD). Aviso, não erro: há ROMs com checksum ruim de fábrica. GUI em 4 idiomas.
 - **Testes:** 134 verificações de cartuchos simulados (inclui espelhamento, tamanho forçado, limites, isolamento das opções); host 45; Kotlin 20.
 - **EEPROM serial do Mega Drive: não implementada.** O OSCR usa uma tabela de ~25 jogos por checksum e cinco famílias (Acclaim 1 e 2, Sega, EA, Codemasters) com ligações de SDA/SCL e tempos diferentes. Portar isso sem o hardware repetiria a minha leitura do código nos testes. Fica para quando houver os cartuchos para comparar. Também fora: Pier Solar, lock-on (Sonic & Knuckles) e mappers piratas.
+
+### D45 — NES/Famicom: saves de PRG-RAM (mappers 1 e 4)
+- `READ_SAVE`/`WRITE_SAVE` do NES e do Famicom, 8 KB em $6000-$7FFF, só com mapper 1 (MMC1) ou 4 (MMC3) informado. A RAM é ligada só durante a operação (MMC1: bit 4 do registrador de PRG em $E000; MMC3: bit 7 de $A001) e desligada ao terminar, para proteger a bateria contra queda de energia. O `DETECT` não anuncia save no NES (não há como saber sem o mapper).
+- A gravação confere cada byte lendo de volta; cartucho sem RAM, com RAM desligada ou protegida falha com `0x0007` sem deixar a RAM ligada. `WRITE_SAVE` ganhou o campo opcional `mapper` (docs/protocolo.md).
+- CLI: `save-read/save-write --mapper N`. GUI: o campo "Mapper" vale também para os botões de save. Host 47 testes, Kotlin compila e testa, firmware 148 verificações. Firmware real compila.
+- **Fora do escopo:** RAM de 16 e 32 KB (MMC1 SOROM/SXROM com troca de banco por registrador de CHR), MMC3 com 2 KB (MMC6), mapper 0 com RAM (Family BASIC), mappers de outros chips.
+- **Não validado em hardware.** Um ponto de atenção: algumas placas MMC1A não têm o bit de desligar a RAM; a RAM fica sempre ligada, o que não atrapalha a leitura nem a gravação.

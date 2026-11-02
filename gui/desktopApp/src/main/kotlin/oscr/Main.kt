@@ -143,7 +143,7 @@ fun App() {
 
             Button(enabled = c != null && !busy, onClick = {
                 run {
-                    val res = withContext(Dispatchers.IO) { c!!.readSave(system, 0) { d, tot -> progress = d.toFloat() / tot } }
+                    val res = withContext(Dispatchers.IO) { c!!.readSave(system, 0, mapper.toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
                     val f = pickFile(t(S.CHOOSE_FILE), true, "save_${system.name.lowercase()}.sav")
                     if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
                 }
@@ -154,7 +154,7 @@ fun App() {
                     val f = pickFile(t(S.CHOOSE_FILE), false)
                     if (f != null) {
                         val data = f.readBytes()
-                        val crc = withContext(Dispatchers.IO) { c!!.writeSave(system, data) { d, tot -> progress = d.toFloat() / tot } }
+                        val crc = withContext(Dispatchers.IO) { c!!.writeSave(system, data, Proto.DEFAULT_BLOCK, mapper.toIntOrNull() ?: 0) { d, tot -> progress = d.toFloat() / tot } }
                         say("${t(S.DONE)}: ${data.size} bytes, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
                     }
                 }
