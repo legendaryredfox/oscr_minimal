@@ -32,6 +32,7 @@ class CartBackend : public Backend {
     uint8_t save_type = 0;
     char name[33] = {0};
     bool hirom = false;          // SNES
+    bool exhirom = false;        // SNES ExHiROM (mapa $25/$35): ROM de até 8 MB, cabeçalho em $40FFC0
     uint32_t prg = 0, chr = 0;   // NES (bytes)
     bool ssf = false;            // Mega Drive: mapper SSF2 (ROM acima de 4 MB)
     uint8_t md_save = 0;         // Mega Drive: 0 nenhum, 1 bytes ímpares, 2 bytes pares, 3 ambos

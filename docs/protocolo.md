@@ -75,6 +75,8 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 
 **Mega Drive:** só `prg_kb` conta e significa o **tamanho da ROM em KB** (0 = pelo cabeçalho, com redução automática quando a ROM aparece espelhada). Mínimo 32 KB; máximo 4 MB (8 MB com o mapper SSF2). `ERRO 0x0004` fora desses limites.
 
+**SNES:** só no ExHiROM, `prg_kb` é o **tamanho da ROM em KB** (0 = pelo cabeçalho; cabeçalho de 8 MB vira 6 MB). Múltiplo de 64, máximo 8064; outro valor `ERRO 0x0004`. LoROM e HiROM ignoram as opções.
+
 **Saves do Mega Drive** (`READ_SAVE` e `WRITE_SAVE`): a SRAM ou a EEPROM serial, conforme o cabeçalho; sem opções. Na gravação da EEPROM cada `DATA` pode levar vários segundos (ver D49).
 
 **Saves do NES/Famicom** (`READ_SAVE` e `WRITE_SAVE`): contam o `mapper` e o segundo campo (`prg_kb`), que aqui é o **tamanho da RAM em KB** (0 = 8). Só 1 (MMC1), 4 (MMC3), 5 (MMC5) e 69 (FME-7) têm PRG-RAM com bateria aceita (8 KB em $6000-$7FFF). O mapper 1 aceita também 16 KB (SOROM) e 32 KB (SXROM), em bancos de 8 KB escolhidos pelo registrador CHR 0 do MMC1. O mapper 5 aceita 16 KB (dois chips de 8 KB, bancos 0 e 4 em `$5113`) e 32 KB (bancos 0 a 3 em `$5113`); a gravação libera a proteção (`$5102`/`$5103`) a cada byte e protege de novo no fim. O mapper 69 liga a RAM pelo comando 8 (`$A000 = $C0`) e desliga no fim. Outro tamanho, ou 16/32 nos mappers 4 e 69: `ERRO 0x0004`. Outro mapper: `ERRO 0x000A`. No `WRITE_SAVE` o tamanho do arquivo tem que bater com a RAM. A gravação confere cada byte; cartucho sem RAM ou com RAM protegida dá `ERRO 0x0007`.

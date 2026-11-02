@@ -12,6 +12,7 @@ struct SnesBus {  // 24 bits: banco (PL) + endereço (PF/PK), dado em PC
   virtual void end() = 0;
   virtual uint8_t read(uint8_t bank, uint16_t addr) = 0;
   virtual void write(uint8_t bank, uint16_t addr, uint8_t value) = 0;
+  virtual void cs(bool high) { (void)high; }   // CS (PH3): o OSCR o sobe para ler/gravar a SRAM de HiROM e ExHiROM; baixo para o resto
 };
 
 struct NesBus {  // NES e Famicom: mesmo barramento

@@ -80,6 +80,10 @@ void CartBackend::release() {
 uint8_t CartBackend::byte_at(uint8_t sys, uint32_t off) {
   switch (sys) {
     case SYS_SNES:
+      if (c_.exhirom) {                                                  // ExHiROM: A22 invertido: os primeiros 4 MB em $C0-$FF, o resto em $40-$7D
+        if (off < 0x400000UL) return snes_->read(uint8_t(0xC0 + (off >> 16)), uint16_t(off & 0xFFFF));
+        return snes_->read(uint8_t(0x40 + ((off - 0x400000UL) >> 16)), uint16_t(off & 0xFFFF));
+      }
       if (c_.hirom) return snes_->read(uint8_t(0xC0 + (off >> 16)), uint16_t(off & 0xFFFF));
       return snes_->read(uint8_t(off >> 15), uint16_t(0x8000 | (off & 0x7FFF)));
     case SYS_NES: case SYS_FAMICOM: {
@@ -113,13 +117,21 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
   acquire(sys);
   uint8_t h[48];
   if (sys == SYS_SNES) {
+    snes_->cs(false);                                                // volta ao padrão (ROM); a SRAM de HiROM/ExHiROM sobe o CS depois
     for (uint8_t i = 0; i < 32; i++) h[i] = snes_->read(0x00, uint16_t(0xFFC0 + i));
     uint16_t comp = h[0x1C] | (h[0x1D] << 8), sum = h[0x1E] | (h[0x1F] << 8);
     if (all_same(h, 32) || uint16_t(comp ^ sum) != 0xFFFF) { o.status = 1; return false; }  // sem cartucho
     uint8_t map = h[0x15], mode = map & 0x0F, rs = h[0x17], ss = h[0x18];
-    if (mode > 1 || rs == 0 || rs > 12) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // SA-1, ExHiROM etc.
-    o.hirom = (mode == 1);
+    bool ex = (mode == 5);                                           // ExHiROM: $25 / $35 (cabeçalho em $40FFC0, visível em $00:FFC0)
+    if ((mode > 1 && !ex) || rs == 0 || rs > (ex ? 13 : 12)) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // SA-1 etc.
+    o.hirom = (mode == 1) || ex;
+    o.exhirom = ex;
     o.rom = 1024UL << rs;
+    if (ex && rs == 13) o.rom = 6144UL * 1024UL;                    // cabeçalho "8 MB": os ExHiROM conhecidos de mais de 4 MB têm 6 MB (48 Mbit); outro valor, informe o tamanho
+    if (ex && opt_prg_ != 0) {                                      // tamanho informado (KB)
+      if (opt_prg_ % 64 != 0 || opt_prg_ > 8064) { o.status = 3; return false; }   // $40-$7D vão até $7DFFFF; $7E-$7F são a WRAM do console
+      o.rom = uint32_t(opt_prg_) * 1024UL;
+    }
     o.save = (ss >= 1 && ss <= 8) ? (1024UL << ss) : 0;
     o.save_type = o.save ? 1 : 0;
     copy_ascii(o.name, h, 21);
@@ -427,6 +439,7 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
     if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
     if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
     if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
+    if (sys == SYS_SNES && c_.hirom) snes_->cs(true);
     size = c_.save;
   } else {
     size = c_.rom;
@@ -435,7 +448,8 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
 }
 
 void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) const {
-  if (c_.hirom) { bank = uint8_t(0x30 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
+  if (c_.exhirom) { bank = uint8_t(0xB0 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
+  else if (c_.hirom) { bank = uint8_t(0x30 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
   else { bank = uint8_t(0x70 + (i >> 15)); addr = uint16_t(i & 0x7FFF); }
 }
 
@@ -707,6 +721,7 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
+  if (sys == SYS_SNES && c_.hirom) snes_->cs(true);
   if (sys == SYS_GBA && (c_.gba_type == 4 || c_.gba_type == 5) && !gba_flash_prepare()) { release(); err = E_CARTUCHO_IO; return false; }
   return true;
 }

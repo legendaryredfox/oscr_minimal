@@ -36,6 +36,7 @@ struct AvrSnesBus : SnesBus {
     delay(20);
   }
   void end() override { bus_release(); }
+  void cs(bool high) override { if (high) PORTH |= (1 << 3); else PORTH &= ~(1 << 3); }
   uint8_t read(uint8_t bank, uint16_t addr) override {
     PORTL = bank; PORTF = addr & 0xFF; PORTK = addr >> 8;
     OSCR_NOP4; OSCR_NOP; OSCR_NOP;                                      // ~375 ns, como no OSCR

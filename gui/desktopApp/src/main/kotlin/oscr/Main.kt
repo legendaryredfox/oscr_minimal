@@ -113,7 +113,7 @@ fun App() {
             OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true, modifier = Modifier.width(180.dp))
             Text(t(S.GBA_SAVE_HINT), style = MaterialTheme.typography.bodySmall)
         }
-        if (system == CartSystem.MD) {
+        if (system == CartSystem.MD || system == CartSystem.SNES) {
             OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, modifier = Modifier.width(260.dp))
         }
         if (system == CartSystem.NES || system == CartSystem.FAMICOM) {

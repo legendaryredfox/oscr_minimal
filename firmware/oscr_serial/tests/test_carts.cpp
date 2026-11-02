@@ -15,20 +15,22 @@ static uint8_t pat(uint32_t i) { return uint8_t((i * 2654435761u) >> 24) ^ uint8
 
 // ---------------------------------------------------------------- SNES simulado
 struct SimSnes : SnesBus {
-  std::vector<uint8_t> rom, sram; bool hirom; bool absent = false;
-  SimSnes(bool hi, uint8_t rsz, uint8_t ssz, bool bad = false) : hirom(hi) {
+  std::vector<uint8_t> rom, sram; bool hirom; bool absent = false, ex = false, cs_high = false;
+  void cs(bool high) override { cs_high = high; }
+  SimSnes(bool hi, uint8_t rsz, uint8_t ssz, bool bad = false, bool exhi = false) : hirom(hi || exhi), ex(exhi) {
     rom.resize(1024UL << rsz); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i));
     sram.assign(ssz ? 1024UL << ssz : 0, 0);
-    size_t h = hi ? 0xFFC0 : 0x7FC0;                       // posição do cabeçalho na ROM
+    size_t h = exhi ? 0x40FFC0 : (hi ? 0xFFC0 : 0x7FC0);   // posição do cabeçalho na ROM
     memset(&rom[h], ' ', 21); memcpy(&rom[h], "TESTE SNES", 10);
-    rom[h + 0x15] = hi ? 0x21 : 0x20; rom[h + 0x16] = ssz ? 2 : 0; rom[h + 0x17] = rsz; rom[h + 0x18] = ssz;
+    rom[h + 0x15] = exhi ? 0x35 : (hi ? 0x21 : 0x20); rom[h + 0x16] = ssz ? 2 : 0; rom[h + 0x17] = rsz; rom[h + 0x18] = ssz;
     uint16_t sum = 0x1234, comp = bad ? 0x0000 : uint16_t(~sum);
     rom[h + 0x1C] = comp & 0xFF; rom[h + 0x1D] = comp >> 8; rom[h + 0x1E] = sum & 0xFF; rom[h + 0x1F] = sum >> 8;
   }
   void begin() override {} void end() override {}
   size_t sram_index(uint8_t b, uint16_t a, bool& ok) {
     ok = false;
-    if (hirom && b >= 0x30 && b <= 0x3F && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0x30) * 0x2000 + (a - 0x6000); }
+    if (hirom && cs_high && !ex && b >= 0x30 && b <= 0x3F && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0x30) * 0x2000 + (a - 0x6000); }   // HiROM: só com CS alto
+    if (ex && cs_high && b >= 0xB0 && b <= 0xBF && a >= 0x6000 && a <= 0x7FFF) { ok = true; return size_t(b - 0xB0) * 0x2000 + (a - 0x6000); }
     if (!hirom && b >= 0x70 && b <= 0x7D && a < 0x8000) { ok = true; return size_t(b - 0x70) * 0x8000 + a; }
     return 0;
   }
@@ -37,7 +39,14 @@ struct SimSnes : SnesBus {
     bool ok; size_t si = sram_index(b, a, ok);
     if (ok) return si < sram.size() ? sram[si] : 0xFF;
     size_t off;
-    if (hirom) { if (b >= 0xC0 || (b <= 0x3F && a >= 0x8000)) off = (size_t(b & 0x3F) << 16) | a; else return 0xFF; }
+    if (ex) {                                              // ExHiROM: A22 invertido
+      if (b >= 0xC0) off = (size_t(b - 0xC0) << 16) | a;
+      else if (b >= 0x40 && b <= 0x7D) off = 0x400000 + ((size_t(b - 0x40) << 16) | a);
+      else if (b <= 0x3F && a >= 0x8000) off = 0x400000 + ((size_t(b) << 16) | a);
+      else if (b >= 0x80 && b <= 0xBF && a >= 0x8000) off = (size_t(b & 0x3F) << 16) | a;
+      else return 0xFF;
+    }
+    else if (hirom) { if (b >= 0xC0 || (b <= 0x3F && a >= 0x8000)) off = (size_t(b & 0x3F) << 16) | a; else return 0xFF; }
     else { if (a < 0x8000) return 0xFF; off = (size_t(b & 0x7F) << 15) | (a & 0x7FFF); }
     return off < rom.size() ? rom[off] : rom[off % rom.size()];
   }
@@ -386,6 +395,38 @@ static void test_snes() {
   std::vector<uint8_t> o; uint16_t err; dump(be, SYS_SNES, KIND_ROM, o, err); CHECK(err == E_SEM_CARTUCHO);
   SimSnes nosave(false, 9, 0); CartBackend b2(&nosave, nullptr, nullptr, nullptr);
   dump(b2, SYS_SNES, KIND_SAVE, o, err); CHECK(err == E_SEM_SAVE);
+}
+
+static void test_snes_exhirom() {
+  for (uint8_t ssz : {3, 5}) {                                         // SRAM de 8 KB e de 32 KB (4 bancos de 8 KB em $B0-$B3)
+    SimSnes s(false, 13, ssz, false, true);                            // 8 MB, cabeçalho em $40FFC0
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    DetectInfo d; be.detect(SYS_SNES, d);
+    CHECK(d.status == 0 && d.rom_size == 6144UL * 1024 && d.save_size == (1024u << ssz));   // cabeçalho 8 MB = 6 MB
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_SNES, KIND_ROM, out, err);
+    CHECK(out.size() == 6144UL * 1024 && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+    uint32_t n = 1024u << ssz;
+    std::vector<uint8_t> save(n); for (size_t i = 0; i < n; i++) save[i] = pat(uint32_t(i) + 640);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_SNES, n, e2));
+    bool ok = true; for (uint32_t off = 0; off < n; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit() && s.sram == save);
+    dump(be, SYS_SNES, KIND_SAVE, out, err); CHECK(out == save);
+    dump(be, SYS_SNES, KIND_ROM, out, err); CHECK(out.size() == 6144UL * 1024);   // a ROM volta a ler com CS baixo
+  }
+  SimSnes s(false, 13, 0, false, true); CartBackend be(&s, nullptr, nullptr, nullptr);          // 6 MB informados (cabeçalho diz 8 MB)
+  std::vector<uint8_t> out; uint16_t err = 0;
+  be.set_options(0, 6144, 0); dump(be, SYS_SNES, KIND_ROM, out, err);
+  CHECK(out.size() == 6144UL * 1024 && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+  uint32_t size = 0;
+  be.set_options(0, 8064, 0); dump(be, SYS_SNES, KIND_ROM, out, err);                          // máximo: até $7DFFFF
+  CHECK(out.size() == 8064UL * 1024 && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+  be.set_options(0, 100, 0);   CHECK(!be.open_read(SYS_SNES, KIND_ROM, size, err) && err == E_ARGUMENTO);   // múltiplo de 64 KB
+  be.set_options(0, 8128, 0);  CHECK(!be.open_read(SYS_SNES, KIND_ROM, size, err) && err == E_ARGUMENTO);   // acima de $7DFFFF
+  SimSnes hi(true, 9, 5); CartBackend bh(&hi, nullptr, nullptr, nullptr);                      // HiROM com SRAM de 32 KB (CS alto)
+  std::vector<uint8_t> sv(32768); for (size_t i = 0; i < sv.size(); i++) sv[i] = pat(uint32_t(i) + 9);
+  uint16_t e2 = 0; CHECK(bh.write_begin(SYS_SNES, 32768, e2));
+  bool ok = true; for (uint32_t off = 0; off < 32768; off += 512) ok = ok && bh.write_block(off, &sv[off], 512);
+  CHECK(ok && bh.write_commit() && hi.sram == sv);
 }
 
 static void test_nes() {
@@ -737,7 +778,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_snes_exhirom(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }
