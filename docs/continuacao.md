@@ -86,7 +86,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 - GitHub: `git push github main`, usa o alias SSH `github-legendaryredfox` (chave em `~/.ssh/legendaryredfox/`).
 - Codeberg: `git -c http.extraHeader="Authorization: token $(cat ~/.codeberg_token)" push codeberg main`. O token fica em `~/.codeberg_token`; **nunca** gravar o token numa URL de remoto, num arquivo do repositório ou na saída de um comando.
 - A conta ativa do `gh` é outra (romulofer); para o GitHub do projeto use `GH_TOKEN=$(gh auth token -u legendaryredfox)` sem trocar a conta ativa.
-- Commits terminam com a linha `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
+- **Sem co-autoria de IA:** o usuário é o único autor. Nenhuma linha `Co-Authored-By` nem menção a IA em commits ou PRs (regra do usuário, 2026-11-02; o histórico foi reescrito para remover as linhas antigas).
 
 ## 7. Ambiente e armadilhas já encontradas
 
@@ -115,7 +115,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
-**Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MBC7, MMM01, TAMA5), RTC do MBC3, SNES com os chips raros acima. **Hardware pendente do D56:** trocar o silk do slot GBA para "GBA / GB (adaptador) 3,3 V" antes de encomendar; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
+**Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MBC7, MMM01, TAMA5), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
 Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 801 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 

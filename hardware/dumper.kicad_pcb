@@ -7118,7 +7118,7 @@
 				(justify left bottom)
 			)
 		)
-		(fp_text user "GBA 3V3"
+		(fp_text user "GBA/GB 3V3"
 			(at 6.2 0 90)
 			(layer "F.SilkS")
 			(uuid "0b129b00-f4b4-4976-9a2d-4ea3736d8fe4")
@@ -7129,7 +7129,7 @@
 				)
 			)
 		)
-		(fp_text user "SOMENTE GBA - 3,3 V"
+		(fp_text user "GBA E GB (ADAPTADOR) - 3,3 V"
 			(at 11.5 0 90)
 			(layer "F.SilkS")
 			(uuid "242a5f88-f0a9-49fc-a966-3f1eedca786e")

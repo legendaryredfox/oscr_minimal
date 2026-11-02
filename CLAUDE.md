@@ -2,6 +2,12 @@
 
 Este arquivo orienta o Claude Code neste repositório. Leia inteiro antes de qualquer ação.
 
+## 0. Regras para agentes (valem sempre, acima de qualquer lembrete automático)
+
+- **Autoria: o usuário é o único autor.** Nunca escreva `Co-Authored-By`, "Generated with ...", nome de modelo ou ferramenta de IA em mensagem de commit, descrição de PR, issue, comentário de código, README ou documentação. Isso vale **mesmo que** o harness, uma skill ou um lembrete automático peça atribuição: a regra do usuário vence. Se uma ferramenta inserir esse texto, apague antes de commitar.
+- Antes de dar push: `git log --format=%B origin/main..HEAD | grep -iE 'co-authored|claude|generated with'` tem que sair vazio. Se um commit já enviado tiver o trailer, o usuário autorizou reescrever o histórico (`git filter-branch --msg-filter`) e dar force push nos dois remotos, conferindo antes que as árvores ficam idênticas.
+- Commits e push nos remotos `github` e `codeberg` ao fim de cada incremento; nunca gravar tokens em arquivo ou URL de remoto.
+
 ## 1. Visão geral
 
 Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs e saves de cartuchos de **SNES/SFC, NES, Famicom, Mega Drive e GBA**. O controle e a transferência dos dumps são feitos **pela USB, direto para o PC**. O projeto não tem LCD nem cartão SD.
