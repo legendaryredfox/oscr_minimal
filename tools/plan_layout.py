@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Calcula o posicionamento (fase 4) e imprime JSON para batch_move_components.
 Quadro 'Mega': x_m para a direita, y_m para cima, origem no canto inferior esquerdo do Mega.
 PCB: pcb_x = OX + x_m ; pcb_y = OY + (YTOP - y_m)."""

@@ -41,7 +41,10 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 │   ├── dumper.kicad_pro / .kicad_sch / .kicad_pcb
 │   ├── lib/                  # símbolos e footprints próprios
 │   └── fab/                  # gerbers, drill e zip para a JLCPCB
-├── firmware/                 # fork do Cart_Reader do OSCR, enxuto
+├── firmware/                 # fork enxuto do Cart_Reader do OSCR + protocolo
+│   ├── oscr_serial/          # biblioteca do protocolo (C++ portátil, testes no PC)
+│   ├── arduino/              # projeto Arduino (arduino-cli / IDE)
+│   └── platformio/           # projeto PlatformIO
 ├── host/                     # CLI Python (pyserial) para o PC; referência e testes do protocolo
 └── gui/                      # GUI multiplataforma (Kotlin Multiplatform), Linux, macOS e Windows
 ```

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Máquina de estados do dispositivo (lado do firmware) para o protocolo v1.
 // Independente de Arduino: a E/S e os dados vêm de `Io` e `Backend`.
 #pragma once

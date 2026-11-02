@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Gera hardware/lib/ (símbolos e footprints próprios).
 
 - Slots SNES/NES/Famicom/Mega Drive: copiados do OSCR (CC BY 4.0),

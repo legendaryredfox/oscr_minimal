@@ -48,3 +48,7 @@ git clone --depth 1 https://github.com/oscartreader/oscr-firmware firmware
 ## Requisitos
 
 KiCad 10.0.8 (`kicad-cli`), Python 3.11+.
+
+## Licença
+
+Hardware: **CC BY 4.0**. Software: **GPL v3 ou posterior**. Mesmas licenças do OSCR; ver `LICENSE.md`.

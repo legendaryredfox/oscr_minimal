@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """CLI do dumper: detect, dump, save-read, save-write, info, ports."""
 from __future__ import annotations
 

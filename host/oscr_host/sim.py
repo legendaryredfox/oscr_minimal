@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Simulador do dispositivo (lado do firmware) para testes e para `dumper --simulate`.
 
 Implementa o protocolo v1 com dados sintéticos (modo MOCK). Aceita injeção de falhas

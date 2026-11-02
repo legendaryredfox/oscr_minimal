@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Cliente do protocolo v1 (lado do PC)."""
 from __future__ import annotations
 

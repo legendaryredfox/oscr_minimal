@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Camada de protocolo serial v1 (docs/protocolo.md). Sem dependência do Arduino:
 // compila no AVR e no PC (testes). C++11.
 #pragma once

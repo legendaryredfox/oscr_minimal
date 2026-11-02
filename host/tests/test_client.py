@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Cliente x simulador (modo MOCK): leitura, recuperação de falhas e gravação."""
 import pytest
 

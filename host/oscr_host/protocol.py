@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Quadros, tipos e (de)serialização do protocolo v1. Sem dependência de serial."""
 from __future__ import annotations
 

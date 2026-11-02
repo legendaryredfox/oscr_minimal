@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Lê docs/pinmap.md e imprime {ref: {pino: net}} (JSON) e a lista de no-connect.
 Usado para alimentar batch_connect do MCP do KiCad na fase 3."""
 import json, re, sys

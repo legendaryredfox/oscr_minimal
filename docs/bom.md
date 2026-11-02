@@ -52,6 +52,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `hardware/fab/
 | Espaçador M3 fêmea-fêmea, ~12 mm | 6 | Nos 6 furos do Mega (3,2 mm). Conferir a altura com o USB e o jack do Mega. |
 | Parafuso M3 (comprimento a medir) | 6 | Por baixo do Mega, até o espaçador. Sem parafuso por cima. |
 | Espaçador M3 + pé de borracha | 4 | Furos de canto da placa. Comprimento a definir (fase 7: o Mega fica sob o shield). |
+| Espaçador M2 (nylon ou metal) + parafuso M2 | 2 | Para os 2 furos de 2,2 mm ao lado do módulo Si5351 (MH5, MH6, 20 mm entre eles). Altura = a do header fêmea (~8,5 mm). Posição estimada: conferir com os furos do módulo. |
 | Cabo USB-C para USB-C (ou USB-A) | 1 | Interface com o PC (D30). |
 
 ## Ferramentas e consumíveis

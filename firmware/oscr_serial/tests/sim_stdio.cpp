@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Roda a Session do firmware (MockBackend) ligada a stdin/stdout. Usado pelos testes do host:
 // o cliente Python conversa com este processo como se fosse a porta serial.
 #include <poll.h>

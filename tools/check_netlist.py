@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Verifica a netlist do esquemático contra docs/pinmap.md (CLAUDE.md, seção 8).
 
 1. exporta a netlist com `kicad-cli sch export netlist`;

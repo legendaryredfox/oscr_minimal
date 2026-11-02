@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Alinha os nomes de net da PCB com os da netlist do esquemático (equivale ao que o
 "Atualizar PCB a partir do esquemático" do KiCad faz com os nomes). Roda fora do MCP.
 Uso: python tools/sync_net_names.py hardware/dumper.kicad_sch hardware/dumper.kicad_pcb

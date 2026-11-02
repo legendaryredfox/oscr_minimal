@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Transportes: porta serial (pyserial) e par em memória (testes/simulador)."""
 from __future__ import annotations
 

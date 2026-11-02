@@ -44,7 +44,7 @@ Ver `docs/bom.md` (quantidades e referências). Resumo:
 5. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 6. **Regulador U3 (TO-92)** com a face chata de acordo com o desenho do silkscreen, e os capacitores C7 e C8 (1 µF). Pinagem do MCP1700 TO-92: 1 = GND, 2 = entrada, 3 = saída.
 7. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
-8. **Header fêmea do Si5351 (U1)** (1x7). O pino 1 (VIN, quadrado) fica na ponta indicada no silkscreen. **Ainda sem o módulo.**
+8. **Header fêmea do Si5351 (U1)** (1x7). O pino 1 (VIN, quadrado) fica na ponta indicada no silkscreen. **Ainda sem o módulo.** Os 2 furos de 2,2 mm ao lado (MH5, MH6) são para espaçadores M2 que seguram o módulo; confira a posição com os furos do módulo antes de fixar.
 9. **Slots SNES1, NES1, FC1, MD1.** Para cada um: solde os dois pinos das pontas, confira se o slot está reto e assentado, depois solde o resto. A etiqueta do cartucho fica para baixo, para o lado do USB do Mega (setas `v v ETIQUETA v v` no silk); ver a pendência abaixo.
 10. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).

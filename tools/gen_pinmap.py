@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Gera docs/pinmap.md cruzando 3 fontes do OSCR HW5:
   1. pinout.ods            (vendor/oscr/legacy/pinout.ods)
   2. esquemáticos KiCad    (vendor/oscr/legacy/hardware/*)

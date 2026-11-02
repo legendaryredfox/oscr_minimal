@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Testes do firmware no PC: framing, CRC32 e sessão completa (modo MOCK).
 // Compilar e rodar: make -C firmware/oscr_serial test
 #include <stdio.h>

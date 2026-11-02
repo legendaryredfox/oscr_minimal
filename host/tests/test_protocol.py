@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Framing, CRC e (de)serialização. Os vetores batem com docs/protocolo.md, seção 9."""
 import struct
 

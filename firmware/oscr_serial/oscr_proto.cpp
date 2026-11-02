@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "oscr_proto.h"
 
 namespace oscr {

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Teste cruzado: o cliente Python fala com o código REAL do firmware (compilado no PC).
 
 Compila firmware/oscr_serial (g++) e roda `sim_stdio`. Pula se não houver g++/make.

@@ -9,3 +9,12 @@ hardware/*-backups/
 *.bak
 __pycache__/
 *.pyc
+# Builds
+firmware/platformio/.pio/
+firmware/oscr_serial/build/
+gui/.gradle/
+gui/**/build/
+gui/.kotlin/
+host/.pytest_cache/
+.pytest_cache/
+*.egg-info/
