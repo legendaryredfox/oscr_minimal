@@ -10,7 +10,7 @@ namespace oscr {
 
 class CartBackend : public Backend {
  public:
-  CartBackend(SnesBus* snes, NesBus* nes, MdBus* md, GbaBus* gba) : snes_(snes), nes_(nes), md_(md), gba_(gba) {}
+  CartBackend(SnesBus* snes, NesBus* nes, MdBus* md, GbaBus* gba, GbBus* gb = nullptr) : snes_(snes), nes_(nes), md_(md), gba_(gba), gb_(gb) {}
 
   uint8_t flags() override { return (snes_ && snes_->clocks_available()) ? 2 : 0; }   // bit1: Si5351 respondendo
   uint16_t systems() override;
@@ -44,16 +44,22 @@ class CartBackend : public Backend {
     uint32_t md_base = 0;        // endereço em palavras do início da SRAM
     uint8_t md_eep = 0;          // Mega Drive: tipo da EEPROM serial (1 Acclaim 1, 2 Acclaim 2, 3 Capcom/Sega, 4 EA, 5 Codemasters)
     uint16_t md_eep_size = 0;    // bytes
+    uint16_t gb_type = 0;        // Game Boy: byte $147 do cabeçalho (+$100 se MBC1M)
+    uint8_t gb_shift = 13;       // Game Boy: log2 dos bytes de cada banco de RAM (9, 11 ou 13)
     bool gba_skip = false;       // GBA: e-Reader, não grava os últimos 128 bytes de cada banco de 64 KB
     uint8_t gba_type = 0;        // GBA, tipo de save pedido: 1 EEPROM 4K, 2 EEPROM 64K, 3 SRAM, 4 Flash 64K, 5 Flash 128K
   };
-  SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
+  SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_; GbBus* gb_;
   Cart c_;
   void clear_options() { opt_mapper_ = opt_prg_ = opt_chr_ = 0; }
   int16_t sdd1_cur_ = -1, sdd1_init_ = 0;   // S-DD1: janela de 1 MB mapeada ($4807) e valor original
   int8_t spc_region_ = -1;                  // SPC7110: região de ROM mapeada
   bool spc_touched_ = false, spc_sram_ = false;
   uint8_t cx4_orig_ = 0; bool cx4_touched_ = false;   // Cx4: valor original de $7F52
+  bool gb_ram_on_ = false;       // Game Boy: RAM habilitada ($0000 = $0A)
+  void gb_ram_enable();
+  void gb_select(int16_t bank);  // seleciona o banco de ROM em $4000-$7FFF conforme o mapper
+  uint16_t gb_ram_addr(uint32_t off);   // endereço em $A000+ de um byte do save; troca o banco de RAM
   bool clocks_on_ = false;       // SNES: Si5351 e CIC ligados (SA-1)
   void snes_clocks_boot();       // clocks lentos + CIC, e lê 1 KB do banco $C0 ("primeira leitura" do OSCR)
   uint8_t sa1_first_[16] = {0};  // SA-1: 16 primeiros bytes do save, regravados no fim

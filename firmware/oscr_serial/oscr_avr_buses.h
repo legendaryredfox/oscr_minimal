@@ -128,6 +128,65 @@ struct AvrSnesBus : SnesBus {
   }
 };
 
+struct AvrGbBus : GbBus {     // Game Boy / Color: mesmos pinos do slot GBA. Sequências de GB.ino. NÃO VALIDADO EM HARDWARE.
+  void begin() override {
+    DDRF = 0xFF; DDRK = 0xFF;                                           // A0-A7, A8-A15
+    DDRH |= (1 << 0) | (1 << 1) | (1 << 3) | (1 << 5) | (1 << 6);       // RST, CLK, CS, WR, RD
+    PORTH |= (1 << 3) | (1 << 5) | (1 << 6);                            // CS, WR, RD altos (ativos em nível baixo)
+    PORTH &= ~((1 << 0) | (1 << 1));                                    // RST baixo (inicializa o MBC) e CLK baixo
+    DDRC = 0x00; PORTC = 0xFF;                                          // dados como entrada, pull-ups
+    DDRH &= ~(1 << 4); PORTH |= (1 << 4);                               // Audio-In como entrada com pull-up
+    delay(400);
+    PORTH |= (1 << 0);                                                  // RST alto
+  }
+  void end() override { bus_release(); }
+  static void addr(uint16_t a) { PORTF = a & 0xFF; PORTK = a >> 8; }
+  uint8_t read(uint16_t a) override {
+    addr(a);
+    DDRC = 0x00; PORTC = 0xFF;
+    OSCR_NOP4;
+    PORTH &= ~(1 << 6);                                                 // RD baixo
+    OSCR_NOP4;
+    uint8_t v = PINC;
+    PORTH |= (1 << 6);                                                  // RD alto
+    OSCR_NOP4;
+    return v;
+  }
+  void write(uint16_t a, uint8_t v) override {
+    addr(a); PORTC = v; DDRC = 0xFF;
+    OSCR_NOP4;
+    PORTH &= ~(1 << 5);                                                 // WR baixo
+    OSCR_NOP4;
+    PORTH |= (1 << 5);                                                  // WR alto
+    OSCR_NOP4;
+    DDRC = 0x00; PORTC = 0xFF;
+  }
+  uint8_t sram_read(uint16_t a, bool camera) override {
+    addr(a);
+    DDRC = 0x00; PORTC = 0xFF;
+    OSCR_NOP4;
+    PORTH &= ~((1 << 3) | (1 << 1));                                    // CS e CLK baixos (CLK para o módulo FRAM)
+    PORTH &= ~(1 << 6);                                                 // RD baixo
+    OSCR_NOP4;
+    uint8_t v = PINC;
+    PORTH |= (1 << 6);                                                  // RD alto
+    if (camera) PORTH |= (1 << 3); else PORTH |= (1 << 3) | (1 << 1);
+    OSCR_NOP4;
+    return v;
+  }
+  void sram_write(uint16_t a, uint8_t v, bool camera) override {
+    addr(a); PORTC = v; DDRC = 0xFF;
+    OSCR_NOP4;
+    if (camera) { PORTH &= ~(1 << 3); PORTH |= (1 << 1); PORTH &= ~(1 << 5); }   // GB Camera: CS baixo, CLK alto, WR baixo
+    else { PORTH &= ~((1 << 3) | (1 << 1)); PORTH &= ~(1 << 5); }
+    OSCR_NOP4;
+    if (camera) { PORTH |= (1 << 5); PORTH |= (1 << 3); PORTH &= ~(1 << 1); }
+    else { PORTH |= (1 << 5); PORTH |= (1 << 3) | (1 << 1); }
+    OSCR_NOP4;
+    DDRC = 0x00; PORTC = 0xFF;
+  }
+};
+
 struct AvrNesBus : NesBus {   // NES e Famicom
   static void set_address(uint16_t a) {
     PORTL = a & 0xFF; PORTA = a >> 8;

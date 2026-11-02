@@ -68,7 +68,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 3 | Famicom | `.nes` |
 | 4 | Mega Drive/Genesis | `.md` |
 | 5 | GBA (3,3 V) | `.gba` |
-| 6 | Game Boy (reservado, via adaptador no slot GBA) | `.gb` |
+| 6 | Game Boy / Game Boy Color (via adaptador no slot GBA, 3,3 V) | `.gb` (os jogos só de GBC podem ser renomeados para `.gbc`) |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções de `DUMP_ROM` para NES/Famicom e Mega Drive

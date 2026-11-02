@@ -114,6 +114,68 @@ struct SimSa1 : SnesBus {
   }
 };
 
+// Game Boy simulado: MBC1 (modos de banco e de RAM), MBC1M, MBC2 (512 x 4 bits), MBC3, MBC5 e sem mapper. O cartucho só entrega a RAM habilitada.
+struct SimGb : GbBus {
+  int type; std::vector<uint8_t> rom, ram; bool absent = false;
+  uint8_t r2000 = 1, r4000 = 0, r3000 = 0, mode = 0; bool ram_en = false; int cam_wrong = 0, cam_calls = 0;
+  SimGb(int t, uint8_t rsz, uint8_t ssz, const char* title = "TESTE GB", uint8_t cs_override = 0, bool use_cs = false) : type(t) {
+    rom.resize(16384UL << (rsz + 1)); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i) + 21);
+    memset(&rom[0x134], 0, 16); memcpy(&rom[0x134], title, strlen(title));
+    rom[0x147] = uint8_t(t); rom[0x148] = rsz; rom[0x149] = ssz;
+    uint8_t sum = 0; for (int i = 0x134; i < 0x14D; i++) sum = uint8_t(sum - rom[i] - 1);
+    rom[0x14D] = sum;
+    if (use_cs) {                                                     // checksum válido E igual ao pedido: ajusta a versão ($14C), como nos cartuchos reais da tabela
+      for (int v = 0; v < 256; v++) { rom[0x14C] = uint8_t(v); uint8_t x = 0; for (int i = 0x134; i < 0x14D; i++) x = uint8_t(x - rom[i] - 1); if (x == cs_override) { rom[0x14D] = x; break; } }
+    }
+    size_t n = t == 6 ? 512 : (ssz == 1 ? 2048 : (ssz == 2 ? 8192 : (ssz == 3 ? 32768 : (ssz == 4 ? 131072 : (ssz == 5 ? 65536 : 0)))));
+    ram.assign(n, 0);
+  }
+  bool mbc1m() const { return type >= 0x101 && type <= 0x103; }
+  bool is5() const { return type >= 0x19 && type <= 0x1E; }
+  bool is2() const { return type == 5 || type == 6; }
+  bool is1() const { return (type >= 1 && type <= 3) || mbc1m(); }
+  size_t bank_hi() const {                                            // banco mapeado em $4000-$7FFF
+    if (is5()) return (size_t(r3000 & 1) << 8) | r2000;
+    if (mbc1m()) return (size_t(r4000) << 4) | (r2000 & 0x0F);
+    if (is1()) { size_t lo = r2000 & 0x1F; if (lo == 0) lo = 1; return (size_t(r4000 & 3) << 5) | lo; }
+    if (is2()) { size_t b = r2000 & 0x0F; return b ? b : 1; }
+    if (type == 0) return 1;
+    size_t b = r2000 & 0x7F; return b ? b : 1;                         // MBC3, câmera, HuC
+  }
+  void begin() override {} void end() override {}
+  uint8_t read(uint16_t a) override {
+    if (absent) return 0xFF;
+    if (a < 0x4000) { size_t b = (is1() && !mbc1m() && mode) ? (size_t(r4000 & 3) << 5) : 0; return rom[(b * 16384 + a) % rom.size()]; }
+    if (a < 0x8000) return rom[(bank_hi() * 16384 + (a - 0x4000)) % rom.size()];
+    return 0xFF;
+  }
+  void write(uint16_t a, uint8_t v) override {
+    if (a < 0x2000) { if (!is2() || !(a & 0x100)) ram_en = (v & 0x0F) == 0x0A; }
+    else if (a < 0x4000) {
+      if (is5()) { if (a < 0x3000) r2000 = v; else r3000 = v; }
+      else if (is2()) { if (a & 0x100) r2000 = v; }
+      else r2000 = v;
+    }
+    else if (a < 0x6000) r4000 = v;
+    else if (a < 0x8000) mode = v & 1;
+  }
+  size_t ram_index(uint16_t a) const {
+    size_t bank = (type <= 4 ? (mode ? r4000 & 3 : 0) : r4000);
+    if (is2()) return (a - 0xA000) & 0x1FF;
+    return (bank * 8192 + (a - 0xA000)) % (ram.empty() ? 1 : ram.size());
+  }
+  uint8_t sram_read(uint16_t a, bool camera) override {
+    if (type == 0xFC) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
+    if (!ram_en || ram.empty() || a < 0xA000) return 0xFF;
+    uint8_t v = ram[ram_index(a)]; return is2() ? uint8_t(0xF0 | (v & 0x0F)) : v;
+  }
+  void sram_write(uint16_t a, uint8_t v, bool camera) override {
+    if (type == 0xFC) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
+    if (!ram_en || ram.empty() || a < 0xA000) return;
+    ram[ram_index(a)] = is2() ? uint8_t(v & 0x0F) : v;
+  }
+};
+
 // ---------------------------------------------------------------- NES simulado
 struct SimNes : NesBus {
   std::vector<uint8_t> prgrom, chrrom; bool absent = false;
@@ -589,6 +651,48 @@ static void test_snes_sa1() {
     CHECK(d.status == 1 && none.boots == 1); }
 }
 
+static void test_gb() {
+  struct Cfg { int type; uint8_t rsz, ssz; const char* title; };
+  const Cfg cfgs[] = {
+    {0x00, 0, 0, "ROM SO"}, {0x01, 4, 0, "MBC1"}, {0x03, 5, 3, "MBC1 32K"}, {0x03, 6, 2, "MBC1 8K"}, {0x02, 6, 1, "MBC1 2K"},
+    {0x06, 3, 0, "MBC2"}, {0x13, 6, 3, "MBC3"}, {0x10, 5, 2, "MBC3 RTC"}, {0x1B, 8, 4, "MBC5 128K"}, {0x1E, 7, 5, "MBC5 64K"},
+    {0x19, 8, 0, "MBC5 4MB"}, {0xFC, 5, 4, "CAMERA"}, {0x103, 5, 2, "MOMOCOL"},
+  };
+  for (const Cfg& c : cfgs) {
+    int hdr_type = c.type & 0xFF;
+    SimGb s(hdr_type, c.rsz, c.ssz, c.title, c.type == 0x103 ? 0x28 : 0, c.type == 0x103);
+    if (c.type == 0x103) s.type = 0x103;
+    CartBackend be(nullptr, nullptr, nullptr, nullptr, &s);
+    DetectInfo d; be.detect(SYS_GB, d);
+    CHECK(d.status == 0 && d.rom_size == s.rom.size() && d.save_size == s.ram.size());
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_GB, KIND_ROM, out, err);
+    bool same = out.size() == s.rom.size() && memcmp(out.data(), s.rom.data(), out.size()) == 0;
+    CHECK(same);
+    if (!same) printf("  GB tipo %02X (%s): ROM difere\n", c.type, c.title);
+    if (s.ram.empty()) { dump(be, SYS_GB, KIND_SAVE, out, err); CHECK(err == E_SEM_SAVE); continue; }
+    for (size_t i = 0; i < s.ram.size(); i++) s.ram[i] = (hdr_type == 6) ? uint8_t(pat(uint32_t(i) + 3) & 0x0F) : pat(uint32_t(i) + 3);
+    dump(be, SYS_GB, KIND_SAVE, out, err);
+    bool eq = out.size() == s.ram.size();
+    for (size_t i = 0; eq && i < out.size(); i++) if ((hdr_type == 6 ? (out[i] & 0x0F) : out[i]) != s.ram[i]) eq = false;
+    CHECK(eq); CHECK(!s.ram_en);                                       // lê e desabilita a RAM
+    if (!eq) printf("  GB tipo %02X (%s): save difere\n", c.type, c.title);
+    uint32_t n = uint32_t(s.ram.size());
+    std::vector<uint8_t> sv(n); for (size_t i = 0; i < n; i++) sv[i] = (hdr_type == 6) ? uint8_t(pat(uint32_t(i) + 800) & 0x0F) : pat(uint32_t(i) + 800);
+    uint16_t e2 = 0; bool wb = be.write_begin(SYS_GB, n, e2); CHECK(wb); if (!wb) printf("  GB tipo %02X (%s): write_begin err=%u n=%u\n", c.type, c.title, e2, n);
+    bool ok = true; for (uint32_t off = 0; off < n; off += 512) ok = ok && be.write_block(off, &sv[off], uint16_t(n - off < 512 ? n - off : 512));
+    CHECK(ok && be.write_commit() && s.ram == sv && !s.ram_en);
+    CHECK(s.cam_wrong == 0);
+    CHECK(hdr_type != 0xFC || s.cam_calls > 0);
+  }
+  // sem cartucho, checksum errado, mappers sem suporte
+  { SimGb none(0x01, 4, 0); none.absent = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &none); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
+  { SimGb bad(0x01, 4, 0, "RUIM"); bad.rom[0x14D] ^= 0x55; CartBackend be(nullptr, nullptr, nullptr, nullptr, &bad); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
+  for (int t : {0x20, 0x22, 0x0B, 0xFD}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
+  { SimGb s(0x01, 0x52, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }   // tamanho fora da tabela
+  { SimGb s(0x01, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); CHECK((be.systems() >> SYS_GB) & 1); }
+  { SimSnes s(false, 9, 3); CartBackend be(&s, nullptr, nullptr, nullptr); CHECK(!be.supports(SYS_GB)); }
+}
+
 static void test_nes() {
   for (uint32_t prg : {16384u, 32768u}) for (uint32_t chr : {0u, 8192u}) {
     SimNes s(prg, chr); CartBackend be(nullptr, &s, nullptr, nullptr);
@@ -938,7 +1042,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_snes_exhirom(); test_snes_sa1(); test_snes_chips(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_snes_exhirom(); test_snes_sa1(); test_snes_chips(); test_gb(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

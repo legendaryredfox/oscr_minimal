@@ -64,4 +64,16 @@ struct GbaBus {  // AD0..15 multiplexado (PF/PK), A16..A23 em PC
   virtual void wait_ms(uint16_t ms) = 0;
 };
 
+// Game Boy / Game Boy Color pelo slot GBA (com adaptador): mesmos pinos do GBA.ino/GB.ino do OSCR.
+// A0-A15 em PF/PK, D0-D7 em PC, RD = PH6, WR = PH5, CS (SRAM) = PH3, CLK = PH1, RST = PH0.
+struct GbBus {
+  virtual ~GbBus() {}
+  virtual void begin() = 0;                                            // RST baixo, 400 ms, RST alto (como setup_GB)
+  virtual void end() = 0;
+  virtual uint8_t read(uint16_t addr) = 0;                             // ROM e registradores (readByte_GB)
+  virtual void write(uint16_t addr, uint8_t value) = 0;                // writeByte_GB
+  virtual uint8_t sram_read(uint16_t addr, bool camera) = 0;           // readByteSRAM_GB: pulsa CS (e CLK, fora do GB Camera)
+  virtual void sram_write(uint16_t addr, uint8_t value, bool camera) = 0;   // writeByteSRAM_GB
+};
+
 }  // namespace oscr

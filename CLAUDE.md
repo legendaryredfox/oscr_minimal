@@ -77,7 +77,7 @@ Nunca invente um pino. Se não conseguir confirmar um sinal, marque como `PENDEN
 - CIC: seguir o esquema do `cic_adapter` do OSCR, integrado à placa.
 - Desacoplamento: um capacitor cerâmico THT de 100nF junto ao VCC de cada slot, um junto ao PIC e um eletrolítico de 470µF/16V na entrada de 5V.
 - LED de status: 3 mm THT com resistor de 220Ω, no mesmo pino do OSCR.
-- Não incluir o conector de controle de N64 nem slot de Game Boy clássico. O GBA está incluído (decisão do usuário em 2026-11-02), sempre a 3,3 V.
+- Não incluir o conector de controle de N64 nem um slot dedicado de Game Boy clássico. O GBA está incluído (decisão do usuário em 2026-11-02), sempre a 3,3 V. **GB e GBC entram só pelo slot GBA, com adaptador** (decisão do usuário em 2026-11-02); o usuário autorizou mudanças de hardware se forem necessárias para isso.
 
 ## 5. Mecânica e layout
 

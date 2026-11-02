@@ -39,10 +39,11 @@ uint16_t CartBackend::systems() {
   if (nes_) m |= (1 << SYS_NES) | (1 << SYS_FAMICOM);
   if (md_) m |= 1 << SYS_MD;
   if (gba_) m |= 1 << SYS_GBA;
+  if (gb_) m |= 1 << SYS_GB;
   return m;
 }
 
-bool CartBackend::supports(uint8_t sys) { return sys >= 1 && sys <= 5 && (systems() & (1 << sys)); }
+bool CartBackend::supports(uint8_t sys) { return sys >= 1 && sys <= 6 && (systems() & (1 << sys)); }
 
 bool CartBackend::all_same(const uint8_t* p, uint8_t n) const {
   for (uint8_t i = 1; i < n; i++) if (p[i] != p[0]) return false;
@@ -57,11 +58,13 @@ void CartBackend::acquire(uint8_t sys) {
     case SYS_NES: case SYS_FAMICOM: nes_->begin(); break;
     case SYS_MD: md_->begin(); break;
     case SYS_GBA: gba_->begin(); break;
+    case SYS_GB: gb_->begin(); break;
   }
   active_ = sys;
 }
 
 void CartBackend::release() {
+  if (active_ == SYS_GB && gb_ram_on_ && gb_) { gb_->write(0x0000, 0x00); gb_ram_on_ = false; }   // desabilita a RAM do cartucho
   if (active_ == SYS_SNES && snes_) {                               // devolve os registradores dos chips especiais ao valor original
     if (sdd1_cur_ >= 0) snes_->write(0, 0x4807, uint8_t(sdd1_init_));
     if (spc_touched_) { snes_->write(0, 0x4833, 2); snes_->write(0, 0x4834, 0); }
@@ -80,6 +83,7 @@ void CartBackend::release() {
     case SYS_NES: case SYS_FAMICOM: nes_->end(); break;
     case SYS_MD: md_->end(); break;
     case SYS_GBA: gba_->end(); break;
+    case SYS_GB: gb_->end(); break;
   }
   active_ = 0;
 }
@@ -125,6 +129,18 @@ uint8_t CartBackend::byte_at(uint8_t sys, uint32_t off) {
       }
       uint16_t w = md_->word(a >> 1);
       return (a & 1) ? uint8_t(w & 0xFF) : uint8_t(w >> 8);
+    }
+    case SYS_GB: {                                                       // bancos de 16 KB; $0000-$3FFF (banco 0) é lido com o banco 1 já selecionado, como o OSCR
+      if (cur_prg_ < 0) { gb_select(1); cur_prg_ = 1; }
+      if (off < 0x4000UL) return gb_->read(uint16_t(off));
+      int16_t b = int16_t(off >> 14);
+      bool alt = c_.gb_type <= 4 && b >= 32 && (b & 0x1F) == 0;        // MBC1: os bancos $20/$40/$60 não aparecem em $4000 (viram $21/$41/$61); só pela janela de $0000, em modo 1
+      if (b != cur_prg_) {
+        if (alt) { gb_->write(0x6000, 1); gb_->write(0x4000, uint8_t(b >> 5)); }
+        else gb_select(b);
+        cur_prg_ = b;
+      }
+      return gb_->read(alt ? uint16_t(off & 0x3FFF) : uint16_t(0x4000 + (off & 0x3FFF)));
     }
     case SYS_GBA: { uint16_t w = gba_->word(off & ~1UL); return (off & 1) ? uint8_t(w >> 8) : uint8_t(w & 0xFF); }
   }
@@ -232,6 +248,41 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
     o.status = 0;
     c_ = o;
     nes_setup_mapper();
+    return true;
+  }
+  if (sys == SYS_GB) {
+    uint8_t g[80];
+    bool ok = false;
+    gb_->write(0x6000, 0); gb_->write(0x4000, 0);                       // MBC1 em modo 1 com banco superior != 0 (operação anterior) esconderia o banco 0 e o cabeçalho
+    for (uint8_t pass = 0; pass < 2 && !ok; pass++) {                  // checksum do cabeçalho; relê uma vez se não bater (como o OSCR)
+      for (uint8_t i = 0; i < 80; i++) g[i] = gb_->read(uint16_t(0x100 + i));
+      uint8_t sum = 0;
+      for (uint8_t i = 0x34; i < 0x4D; i++) sum = uint8_t(sum - g[i] - 1);
+      ok = (sum == g[0x4D]) && !all_same(g, 80);
+    }
+    if (!ok) { o.status = 1; return false; }
+    uint8_t type = g[0x47], rsz = g[0x48], ssz = g[0x49];
+    uint16_t t = type;
+    if (type >= 1 && type <= 3) {                                      // MBC1M: não dá para saber pelo cabeçalho, tabela de títulos do OSCR
+      static const struct { const char* name; uint8_t len, sum; } mm[] = {{"MOMOCOL", 7, 0x28}, {"BOMCOL", 6, 0x86}, {"GENCOL", 6, 0x8A}, {"SUPERCHINESE 123", 16, 0xE4}, {"MORTALKOMBATI&II", 16, 0xB9}, {"MORTALKOMBAT DUO", 16, 0xA7}};
+      for (uint8_t k = 0; k < 6; k++) if (strncmp(reinterpret_cast<const char*>(&g[0x34]), mm[k].name, mm[k].len) == 0 && g[0x4D] == mm[k].sum) t = uint16_t(0x100 + type);
+    }
+    bool known = type == 0x00 || (type >= 1 && type <= 3) || type == 5 || type == 6 || type == 8 || type == 9 || (type >= 0x0F && type <= 0x13)
+                 || (type >= 0x19 && type <= 0x1E) || type == 0xFC || type == 0xFE || type == 0xFF;
+    if (!known || rsz > 8) { o.status = 2; copy_ascii(o.name, &g[0x34], 15); return false; }   // MBC6, MBC7, MMM01, TAMA5, M161 e tamanhos fora da tabela
+    o.gb_type = t;
+    o.rom = 16384UL << (rsz + 1);                                      // 2^(n+1) bancos de 16 KB
+    uint16_t bank_bytes = 0; uint8_t banks = 0;
+    if (type == 6) { bank_bytes = 512; banks = 1; o.gb_shift = 9; }    // MBC2: 512 x 4 bits
+    else if (ssz == 1) { bank_bytes = 2048; banks = 1; o.gb_shift = 11; }
+    else if (ssz >= 2 && ssz <= 5 && type != 5) { bank_bytes = 8192; banks = (ssz == 2) ? 1 : (ssz == 3 ? 4 : (ssz == 4 ? 16 : 8)); o.gb_shift = 13; }
+    o.save = uint32_t(bank_bytes) * banks;
+    o.save_type = o.save ? 1 : 0;
+    uint8_t cgb = g[0x43], nlen = (cgb == 0x80 || cgb == 0xC0) ? 15 : 16;   // o título perde 1 byte quando $143 é a flag CGB
+    copy_ascii(o.name, &g[0x34], nlen);
+    o.status = 0;
+    c_ = o;
+    cur_prg_ = cur_chr_ = -1;
     return true;
   }
   if (sys == SYS_MD) {
@@ -490,9 +541,10 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
   Cart c;
   if (!probe(sys, c, kind == KIND_SAVE)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (kind == KIND_SAVE) {
-    if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+    if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM && sys != SYS_GB) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
     if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
     if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
+    if (sys == SYS_GB) gb_ram_enable();
     if (sys == SYS_SNES && c_.hirom && !c_.spc7110) snes_->cs(true);
     if (sys == SYS_SNES && c_.spc7110) { snes_->write(0, 0x4830, 0x80); spc_sram_ = true; }   // SPC7110: libera a SRAM (sem CS alto)
     size = c_.save;
@@ -520,6 +572,8 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
       if (!md_eep_read(uint16_t(off + i), buf[i])) return false;
     } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
+    } else if (kind == KIND_SAVE && sys == SYS_GB) {
+      buf[i] = gb_->sram_read(gb_ram_addr(off + i), c_.gb_type == 0xFC);
     } else if (kind == KIND_SAVE && sys == SYS_GBA) {
       buf[i] = gba_save_byte(off + i);
     } else if (kind == KIND_SAVE) {
@@ -768,6 +822,34 @@ void CartBackend::md_save_set(uint32_t i, uint8_t v) {
   }
 }
 
+void CartBackend::gb_select(int16_t bank) {
+  uint16_t t = c_.gb_type;
+  if (t >= 0x101 && t <= 0x103) {                                      // MBC1M
+    gb_->write(0x4000, uint8_t(bank >> 4));
+    gb_->write(0x2000, bank < 10 ? uint8_t(bank & 0x1F) : uint8_t(0x10 | (bank & 0x1F)));
+  } else if (t >= 5) {                                                 // MBC2, MBC3, MBC5 e afins: registrador em $2100
+    if (t >= 0x19 && t <= 0x1E) gb_->write(0x3000, uint8_t(bank >> 8));   // MBC5: bit 9
+    gb_->write(0x2100, uint8_t(bank & 0xFF));
+  } else {                                                             // sem mapper e MBC1
+    gb_->write(0x6000, 0);
+    gb_->write(0x4000, uint8_t(bank >> 5));
+    gb_->write(0x2000, uint8_t(bank & 0x1F));
+  }
+}
+
+void CartBackend::gb_ram_enable() {
+  gb_->read(0x0134);                                                   // "MBC2 fix" do OSCR
+  if (c_.gb_type <= 4) gb_->write(0x6000, 1);                          // MBC1: modo de RAM
+  gb_->write(0x0000, 0x0A);                                            // habilita a RAM
+  gb_ram_on_ = true; cur_chr_ = -1;
+}
+
+uint16_t CartBackend::gb_ram_addr(uint32_t off) {
+  int16_t b = int16_t(off >> c_.gb_shift);
+  if (b != cur_chr_) { gb_->write(0x4000, uint8_t(b)); cur_chr_ = b; }
+  return uint16_t(0xA000 + (off & ((1UL << c_.gb_shift) - 1)));
+}
+
 void CartBackend::snes_clocks_boot() {
   snes_->clocks_boot();
   clocks_on_ = true;
@@ -787,13 +869,14 @@ bool CartBackend::sa1_finish() {
 // ---------------------------------------------------------------- escrita de save (SNES SRAM)
 bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
-  if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM && sys != SYS_GBA) { err = E_SEM_SAVE; return false; }
+  if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM && sys != SYS_GBA && sys != SYS_GB) { err = E_SEM_SAVE; return false; }
   Cart c;
   if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
+  if (sys == SYS_GB) gb_ram_enable();
   if (sys == SYS_SNES && c_.hirom && !c_.sa1 && !c_.spc7110) snes_->cs(true);
   if (sys == SYS_SNES && c_.spc7110) { snes_->write(0, 0x4830, 0x80); spc_sram_ = true; }
   if (sys == SYS_SNES && c_.sa1) {                                   // BW-RAM do SA-1: com o clock do CPU ligado, janela em $6000 pelo registrador $2224
@@ -810,6 +893,16 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
   if (active_ == SYS_GBA) return gba_write(off, buf, len);
+  if (active_ == SYS_GB) {                                                     // grava e confere cada byte (MBC2 só guarda 4 bits)
+    bool cam = c_.gb_type == 0xFC, mbc2 = c_.gb_type == 5 || c_.gb_type == 6;
+    for (uint16_t i = 0; i < len; i++) {
+      uint16_t a = gb_ram_addr(off + i);
+      gb_->sram_write(a, buf[i], cam);
+      uint8_t r = gb_->sram_read(a, cam);
+      if (mbc2 ? ((r & 0x0F) != (buf[i] & 0x0F)) : (r != buf[i])) return false;
+    }
+    return true;
+  }
   if (active_ == SYS_MD && c_.md_save == 4) {                                  // EEPROM serial: só grava o que mudou, e confere
     for (uint16_t i = 0; i < len; i++) {
       uint16_t a = uint16_t(off + i); uint8_t cur;

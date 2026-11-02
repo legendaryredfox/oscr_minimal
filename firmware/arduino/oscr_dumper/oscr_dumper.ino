@@ -15,7 +15,8 @@ static oscr::AvrSnesBus snes;
 static oscr::AvrNesBus nes;
 static oscr::AvrMdBus md;
 static oscr::AvrGbaBus gba;
-static oscr::CartBackend backend(&snes, &nes, &md, &gba);
+static oscr::AvrGbBus gb;
+static oscr::CartBackend backend(&snes, &nes, &md, &gba, &gb);
 #endif
 static OscrApp app(backend);
 

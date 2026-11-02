@@ -105,9 +105,10 @@ fun App() {
         val c = client
         Text("${t(S.SYSTEM)}:")
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            val systems = CartSystem.entries.filter { it != CartSystem.GB && (info?.mock == true || it != CartSystem.MOCK) }   // GB: o firmware ainda não lê
+            val systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK }
             systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
         }
+        if (system == CartSystem.GB) Text(t(S.GB_WARNING), color = MaterialTheme.colorScheme.error)
         if (system == CartSystem.GBA) {
             Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
             OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true, modifier = Modifier.width(180.dp))
