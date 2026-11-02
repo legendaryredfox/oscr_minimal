@@ -117,7 +117,7 @@ class OscrClient(
         return streamIn(Proto.T_DUMP_ROM, p, progress)
     }
 
-    /** NES/Famicom: `mapper` 1 ou 4 (PRG-RAM com bateria, 8 KB); `ramKb` 16 ou 32 só no mapper 1 (0 = 8 KB). */
+    /** NES/Famicom: `mapper` 1, 4, 5 ou 69 (PRG-RAM com bateria, 8 KB); `ramKb` 16 ou 32 só nos mappers 1 e 5 (0 = 8 KB). */
     fun readSave(system: CartSystem, block: Int = 0, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): DumpResult {
         var p = byteArrayOf(system.id.toByte()) + le16(block)
         if (mapper != 0 || ramKb != 0) p += le16(mapper) + le16(ramKb) + le16(0)

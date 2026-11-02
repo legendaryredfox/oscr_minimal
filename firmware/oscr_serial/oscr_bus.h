@@ -21,6 +21,9 @@ struct NesBus {  // NES e Famicom: mesmo barramento
   virtual uint8_t prg(uint16_t addr) = 0;  // CPU $0000-$FFFF (ROM em $8000-$FFFF)
   virtual uint8_t chr(uint16_t addr) = 0;  // PPU $0000-$1FFF
   virtual void prg_write(uint16_t addr, uint8_t value) = 0;  // escrita de registrador do mapper ($8000-$FFFF)
+  // PRG-RAM do MMC5 ($6000-$7FFF): o OSCR pulsa o M2 (PHI2) a cada leitura e usa outra sequência de escrita (write_wram_byte).
+  virtual uint8_t ram(uint16_t addr) { return prg(addr); }
+  virtual void ram_write(uint16_t addr, uint8_t value) { prg_write(addr, value); }
 };
 
 struct MdBus {  // dados de 16 bits (PA = D8..D15, PC = D0..D7)

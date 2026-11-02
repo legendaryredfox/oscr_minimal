@@ -65,12 +65,16 @@ struct SimMapper : NesBus {
   uint8_t fcmd = 0, f[16] = {0};                                         // 69 (FME-7): comando e registradores 0-15
   uint8_t m5[0x40] = {0}; bool m5_prg_set = false;                       // 5 (MMC5): registradores $5100-$513F
   size_t ram_off() const {                                              // MMC1 SOROM/SXROM: banco de RAM pelo registrador CHR 0 (mm1[1])
+    if (m == 5) {                                                       // MMC5: $5113; 16 KB = dois chips de 8 KB (bit 2 escolhe o chip)
+      if (ram.size() == 16384) return (m5[0x13] & 4) ? 8192 : 0;
+      return size_t(m5[0x13] & 3) * 8192 % ram.size();
+    }
     if (m != 1) return 0;
     if (ram.size() == 32768) return size_t((mm1[1] >> 2) & 3) * 8192;
     if (ram.size() == 16384) return size_t((mm1[1] >> 3) & 1) * 8192;
     return 0;
   }
-  bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : false)); }
+  bool ram_enabled() const { return has_ram && (m == 1 ? !(mm1[3] & 0x10) : (m == 4 ? mmc3_ram_en : (m == 5 ? true : (m == 69 ? (f[8] & 0xC0) == 0xC0 : false)))); }
   SimMapper(int mp, uint32_t p, uint32_t c) : m(mp) {
     prgrom.resize(p); chrrom.resize(c);
     for (size_t i = 0; i < p; i++) prgrom[i] = pat(uint32_t(i) + 11 * mp);
@@ -139,7 +143,7 @@ struct SimMapper : NesBus {
   }
   void prg_write(uint16_t a, uint8_t v) override {
     if (m == 5 && a >= 0x5100 && a < 0x5140) { m5[a - 0x5100] = v; return; }
-    if (a >= 0x6000 && a < 0x8000) { if (ram_enabled()) ram[ram_off() + a - 0x6000] = v; return; }
+    if (a >= 0x6000 && a < 0x8000) { if (ram_enabled() && (m != 5 || (m5[2] == 2 && m5[3] == 1))) ram[ram_off() + a - 0x6000] = v; return; }   // MMC5: só com $5102=2 e $5103=1
     if (a < 0x8000) return;
     switch (m) {
       case 2: case 3: case 7: case 11: case 66: reg = v & prg(a); break;     // conflito: valor E byte da ROM
@@ -467,6 +471,30 @@ static void test_nes_saves() {
     be.set_options(1, 8, 0); CHECK(!be.write_begin(SYS_NES, n, e2) && e2 == E_ARGUMENTO);     // tamanho do arquivo != RAM informada
     uint32_t size = 0; be.set_options(1, 24, 0); CHECK(!be.open_read(SYS_NES, KIND_SAVE, size, err) && err == E_ARGUMENTO);
     be.set_options(4, uint16_t(kb), 0); CHECK(!be.open_read(SYS_NES, KIND_SAVE, size, err) && err == E_ARGUMENTO);   // MMC3: só 8 KB
+  }
+  // MMC5 (8, 16 e 32 KB) e FME-7 (8 KB): RAM com habilitação/proteção
+  for (int m : {5, 69}) for (uint32_t kb : {8u, 16u, 32u}) {
+    if (m == 69 && kb != 8) continue;
+    uint32_t n = kb * 1024;
+    SimMapper s(m, 128 << 10, 64 << 10); s.ram.assign(n, 0); CartBackend be(nullptr, &s, nullptr, nullptr);
+    for (size_t i = 0; i < n; i++) s.ram[i] = pat(uint32_t(i) + 31 * m);
+    be.set_options(uint16_t(m), uint16_t(kb == 8 ? 0 : kb), 0);
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_NES, KIND_SAVE, out, err);
+    CHECK(out.size() == n && out == s.ram);
+    CHECK(m == 5 || !s.ram_enabled());                                  // FME-7: RAM desligada ao terminar
+    std::vector<uint8_t> save(n); for (size_t i = 0; i < n; i++) save[i] = pat(uint32_t(i) + 4242 + m);
+    uint16_t e2 = 0; be.set_options(uint16_t(m), uint16_t(kb == 8 ? 0 : kb), 0); CHECK(be.write_begin(SYS_NES, n, e2));
+    bool ok = true; for (uint32_t off = 0; off < n; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit() && s.ram == save);
+    CHECK(m != 5 || (s.m5[2] == 0 && s.m5[3] == 0));                    // MMC5: protegida de novo
+    CHECK(m != 69 || !s.ram_enabled());
+    // cartucho sem RAM: a conferência falha
+    SimMapper nr(m, 128 << 10, 64 << 10); nr.has_ram = false; CartBackend b2(nullptr, &nr, nullptr, nullptr);
+    b2.set_options(uint16_t(m), uint16_t(kb == 8 ? 0 : kb), 0); CHECK(b2.write_begin(SYS_NES, n, e2)); CHECK(!b2.write_block(0, &save[0], 512)); b2.write_abort();
+  }
+  { uint32_t size = 0; uint16_t err = 0;
+    SimMapper s(69, 128 << 10, 64 << 10); CartBackend be(nullptr, &s, nullptr, nullptr);
+    be.set_options(69, 16, 0); CHECK(!be.open_read(SYS_NES, KIND_SAVE, size, err) && err == E_ARGUMENTO);   // FME-7: só 8 KB
   }
   SimMapper s2(2, 128 << 10, 0); CartBackend be2(nullptr, &s2, nullptr, nullptr);
   std::vector<uint8_t> o; uint16_t err;

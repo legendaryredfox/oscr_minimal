@@ -130,7 +130,7 @@ def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, ch
 
 def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ram_kb: int = 0) -> bytes:
     base = struct.pack("<BIH", system, size, block)
-    if mapper or ram_kb:                # NES/Famicom: mapper (1 ou 4 têm PRG-RAM com bateria) e RAM em KB (16/32 só no mapper 1)
+    if mapper or ram_kb:                # NES/Famicom: mapper (1, 4, 5 e 69 têm PRG-RAM com bateria) e RAM em KB (16/32 só nos mappers 1 e 5)
         base += struct.pack("<HHH", mapper, ram_kb, 0)
     return base
 
