@@ -36,6 +36,7 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 │   ├── pinmap.md             # FONTE DA VERDADE: sinal do slot → pino do Mega
 │   ├── uso.md                # guia de uso: casos de uso, cenários, troubleshooting
 │   ├── bom.md
+│   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
 │   ├── montagem.md           # gerado na fase 7
 │   └── decisoes.md           # log de decisões e desvios
 ├── hardware/
