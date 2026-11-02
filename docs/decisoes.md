@@ -268,3 +268,9 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - `MdBus` ganhou `write_word` e `map_write`. HAL com as sequências do OSCR (não validado em hardware).
 - Testes: o simulador do Mega Drive modela SRAM nos 3 tipos (liga/desliga), registradores de banco e a máscara de bytes. 126 verificações de cartuchos simuladas passando. Firmware real: Arduino e PlatformIO compilam.
 - **Fora do escopo:** EEPROM serial, Pier Solar, lock-on (Sonic & Knuckles), mappers piratas, saves de bateria de 16 bits fora dos endereços conhecidos.
+
+### D44 — Mega Drive: tamanho da ROM e verificação do checksum; EEPROM fica de fora
+- **Tamanho:** `prg_kb` do `DUMP_ROM` passa a ser o tamanho da ROM do Mega Drive (32 KB a 4 MB, 8 MB com SSF2). Sem ele, o firmware reduz o tamanho do cabeçalho à metade enquanto os dois lados batem em 4 pontos com conteúdo (ignora áreas só de 0xFF/0x00; não reduz ROMs SSF2). As opções valem por operação: `DETECT` as ignora e `close_read` as apaga.
+- **Checksum do cabeçalho:** o host (Python, `oscr_host/verify.py`; Kotlin, `Verify.kt`) confere depois do dump: Mega Drive (soma de palavras de $200 ao fim vs $18E), SNES (soma dos bytes vs checksum, com espelhamento para tamanhos que não são potência de 2) e GBA (complemento em $BD). Aviso, não erro: há ROMs com checksum ruim de fábrica. GUI em 4 idiomas.
+- **Testes:** 134 verificações de cartuchos simulados (inclui espelhamento, tamanho forçado, limites, isolamento das opções); host 45; Kotlin 20.
+- **EEPROM serial do Mega Drive: não implementada.** O OSCR usa uma tabela de ~25 jogos por checksum e cinco famílias (Acclaim 1 e 2, Sega, EA, Codemasters) com ligações de SDA/SCL e tempos diferentes. Portar isso sem o hardware repetiria a minha leitura do código nos testes. Fica para quando houver os cartuchos para comparar. Também fora: Pier Solar, lock-on (Sonic & Knuckles) e mappers piratas.

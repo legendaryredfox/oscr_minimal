@@ -142,6 +142,30 @@ bool CartBackend::probe(uint8_t sys, Cart& o) {
     for (uint8_t i = 0; i < 4; i += 2) { uint16_t w = md_->word((0x1A4 + i) >> 1); end = (end << 16) | w; }
     uint32_t cap = o.ssf ? 0x800000UL : 0x400000UL;
     o.rom = (end >= 0x1FF && end < cap) ? end + 1 : cap;                // tamanho do cabeçalho; se inválido, o máximo
+    if (opt_prg_ != 0) {                                                // tamanho informado pelo usuário (KB)
+      uint32_t forced = uint32_t(opt_prg_) * 1024UL;
+      if (forced < 0x8000UL || forced > cap) { o.status = 3; return false; }
+      o.rom = forced;
+    } else {
+      // Cabeçalho que declara mais do que o chip tem: a ROM aparece repetida (espelhada). Reduz à metade
+      // enquanto os dois lados batem em vários pontos com conteúdo (ignora áreas só de 0xFF/0x00).
+      while (o.rom >= 0x40000UL && !o.ssf) {
+        uint32_t half = o.rom / 2;
+        const uint32_t pts[4] = {0x200UL, half / 4, half / 2, half - 64};
+        uint8_t informative = 0; bool equal = true;
+        for (uint8_t k = 0; k < 4 && equal; k++) {
+          bool same_val = true; uint16_t first = md_->word(pts[k] >> 1);
+          for (uint8_t i = 0; i < 32; i += 2) {
+            uint16_t lo = md_->word((pts[k] + i) >> 1), hi = md_->word((pts[k] + half + i) >> 1);
+            if (lo != hi) { equal = false; break; }
+            if (lo != first) same_val = false;
+          }
+          if (equal && !(same_val && (first == 0xFFFF || first == 0x0000))) informative++;
+        }
+        if (!equal || informative < 2) break;
+        o.rom = half;
+      }
+    }
     // SRAM: "RA" + tipo em $1B0, início em $1B4 e fim em $1B8 (lógica do OSCR)
     if (md_->word(0xD8) == 0x5241) {
       uint16_t type = md_->word(0xD9);
@@ -188,8 +212,11 @@ bool CartBackend::probe(uint8_t sys, Cart& o) {
 void CartBackend::detect(uint8_t sys, DetectInfo& out) {
   if (!supports(sys)) { out.status = 2; return; }
   Cart c;
+  uint16_t sm = opt_mapper_, sp = opt_prg_, sc = opt_chr_;   // DETECT ignora as opções do último dump
+  opt_mapper_ = opt_prg_ = opt_chr_ = 0;
   probe(sys, c);
   release();
+  opt_mapper_ = sm; opt_prg_ = sp; opt_chr_ = sc;
   out.status = c.status; out.rom_size = c.rom; out.save_size = c.save; out.save_type = c.save_type;
   strncpy(out.name, c.name, 32); out.name[32] = 0;
 }

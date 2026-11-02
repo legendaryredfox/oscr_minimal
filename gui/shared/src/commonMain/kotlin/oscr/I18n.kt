@@ -18,10 +18,14 @@ enum class S {
     HELP_USE_4, HELP_USE_5, HELP_USE_6, HELP_FIX_1, HELP_FIX_2, HELP_FIX_3,
     HELP_FIX_4, HELP_FIX_5, HELP_FIX_6, HELP_FIX_7, HELP_FIX_8,
     NES_OPTIONS, MAPPER, PRG_KB, CHR_KB, NES_HINT,
+    ROM_SIZE_KB, CHECKSUM_OK, CHECKSUM_BAD,
 }
 
 object I18n {
     private val pt = mapOf(
+        S.ROM_SIZE_KB to "Tamanho da ROM (KB; 0 = pelo cabeçalho)",
+        S.CHECKSUM_OK to "Checksum do cabeçalho confere",
+        S.CHECKSUM_BAD to "ATENÇÃO: checksum do cabeçalho NÃO confere (tamanho errado, contato sujo ou ROM modificada)",
         S.NES_OPTIONS to "Opções NES/Famicom",
         S.MAPPER to "Mapper",
         S.PRG_KB to "PRG (KB)",
@@ -82,6 +86,9 @@ object I18n {
         S.HELP_FIX_8 to "Para no meio da leitura: troque o cabo, evite hubs USB e tente 115200 baud.",
     )
     private val en = mapOf(
+        S.ROM_SIZE_KB to "ROM size (KB; 0 = from header)",
+        S.CHECKSUM_OK to "Header checksum matches",
+        S.CHECKSUM_BAD to "WARNING: header checksum does NOT match (wrong size, dirty contacts or modified ROM)",
         S.NES_OPTIONS to "NES/Famicom options",
         S.MAPPER to "Mapper",
         S.PRG_KB to "PRG (KB)",
@@ -142,6 +149,9 @@ object I18n {
         S.HELP_FIX_8 to "Stops in the middle of a dump: change the cable, avoid USB hubs and try 115200 baud.",
     )
     private val ru = mapOf(
+        S.ROM_SIZE_KB to "Размер ROM (КБ; 0 = из заголовка)",
+        S.CHECKSUM_OK to "Контрольная сумма заголовка совпадает",
+        S.CHECKSUM_BAD to "ВНИМАНИЕ: контрольная сумма заголовка НЕ совпадает (неверный размер, грязные контакты или изменённая ROM)",
         S.NES_OPTIONS to "Параметры NES/Famicom",
         S.MAPPER to "Маппер",
         S.PRG_KB to "PRG (КБ)",
@@ -202,6 +212,9 @@ object I18n {
         S.HELP_FIX_8 to "Останавливается посреди чтения: смените кабель, избегайте USB-хабов и попробуйте 115200 бод.",
     )
     private val zh = mapOf(
+        S.ROM_SIZE_KB to "ROM 大小（KB；0 = 按头部）",
+        S.CHECKSUM_OK to "头部校验和一致",
+        S.CHECKSUM_BAD to "警告：头部校验和不一致（大小错误、触点脏或 ROM 被修改）",
         S.NES_OPTIONS to "NES/Famicom 选项",
         S.MAPPER to "Mapper",
         S.PRG_KB to "PRG (KB)",

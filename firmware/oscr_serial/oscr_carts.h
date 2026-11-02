@@ -18,12 +18,12 @@ class CartBackend : public Backend {
   void detect(uint8_t sys, DetectInfo& out) override;
   bool open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t& err) override;
   bool read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, uint16_t len) override;
-  void close_read() override { release(); }
+  void close_read() override { release(); clear_options(); }
   void set_options(uint16_t mapper, uint16_t prg_kb, uint16_t chr_kb) override { opt_mapper_ = mapper; opt_prg_ = prg_kb; opt_chr_ = chr_kb; }
   bool write_begin(uint8_t sys, uint32_t size, uint16_t& err) override;
   bool write_block(uint32_t off, const uint8_t* buf, uint16_t len) override;
-  bool write_commit() override { release(); return true; }
-  void write_abort() override { release(); }
+  bool write_commit() override { release(); clear_options(); return true; }
+  void write_abort() override { release(); clear_options(); }
 
  private:
   struct Cart {
@@ -39,6 +39,7 @@ class CartBackend : public Backend {
   };
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
   Cart c_;
+  void clear_options() { opt_mapper_ = opt_prg_ = opt_chr_ = 0; }
   uint8_t active_ = 0;           // sistema com barramento aberto (0 = nenhum)
   uint16_t opt_mapper_ = 0, opt_prg_ = 0, opt_chr_ = 0;   // opções do NES/Famicom (set_options)
   bool md_sram_on_ = false;

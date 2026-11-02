@@ -9,6 +9,7 @@ from pathlib import Path
 from . import __version__
 from . import protocol as P
 from .client import Client, TimeoutError_
+from .verify import verify_rom
 from .transport import SerialTransport, Transport
 
 BAUDS = (1_000_000, 115_200)
@@ -115,7 +116,11 @@ def cmd_dump(args) -> int:
     sid = system_id(args.system)
     res = c.dump_rom(sid, args.block, _progress("ROM"), args.mapper, args.prg, args.chr)
     t.close()
-    return _save_result(args, res, P.SYSTEMS[args.system][1], f"rom_{args.system}")
+    rc = _save_result(args, res, P.SYSTEMS[args.system][1], f"rom_{args.system}")
+    chk = verify_rom(sid, res.data)
+    if chk.status != "na":
+        print(("aviso: " if chk.status == "mismatch" else "") + str(chk))
+    return rc
 
 
 def cmd_save_read(args) -> int:
@@ -160,7 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
     add("detect", cmd_detect, "detecta o cartucho")
     dp = add("dump", cmd_dump, "lê a ROM", out=True)
     dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 7)")
-    dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16)")
+    dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive: tamanho da ROM em KB (0 = pelo cabeçalho)")
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
     add("save-read", cmd_save_read, "lê o save", out=True)
     add("save-write", cmd_save_write, "grava o save", inp=True)

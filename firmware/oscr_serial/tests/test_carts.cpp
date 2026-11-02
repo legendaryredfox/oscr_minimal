@@ -120,10 +120,10 @@ struct SimMd : MdBus {
   int save_kind = 0;                                // 0 nenhum, 1 ímpares, 2 pares, 3 ambos
   std::vector<uint16_t> sram = std::vector<uint16_t>(0x10000, 0xFFFF);
   uint8_t bank[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  explicit SimMd(uint32_t size, int kind = 0, bool is_ssf = false, uint32_t ssram = 8192) : ssf(is_ssf), save_kind(kind) {
+  explicit SimMd(uint32_t size, int kind = 0, bool is_ssf = false, uint32_t ssram = 8192, uint32_t claimed = 0) : ssf(is_ssf), save_kind(kind) {
     rom.resize(size); for (size_t i = 0; i < size; i++) rom[i] = pat(uint32_t(i) + 7);
     memcpy(&rom[0x100], is_ssf ? "SEGA SSF        " : "SEGA MEGA DRIVE ", 16); memset(&rom[0x150], ' ', 48); memcpy(&rom[0x150], "JOGO DE TESTE", 13);
-    uint32_t end = size - 1; rom[0x1A4] = end >> 24; rom[0x1A5] = end >> 16; rom[0x1A6] = end >> 8; rom[0x1A7] = end;
+    uint32_t end = (claimed ? claimed : size) - 1; rom[0x1A4] = end >> 24; rom[0x1A5] = end >> 16; rom[0x1A6] = end >> 8; rom[0x1A7] = end;
     if (kind) {
       uint32_t base = kind == 2 ? 0x200000 : 0x200001, last = kind == 1 ? base + ssram * 2 - 2 : (kind == 2 ? base + ssram * 2 - 1 : base + ssram - 2 + (0));
       if (kind == 3) { base = 0x200001; last = base + ssram - 2 + 1 - 1 + 0; last = base + ssram - 2; }
@@ -294,6 +294,24 @@ static void test_md_sram_ssf() {
   SimMd big(0x500000, 0, false); CartBackend b4(nullptr, nullptr, &big, nullptr); b4.detect(SYS_MD, d); CHECK(d.rom_size == 0x400000);
 }
 
+static void test_md_tamanho() {
+  uint32_t size; uint16_t err; DetectInfo d;
+  // cabeçalho diz 4 MB, mas a ROM de 1 MB aparece espelhada: o firmware reduz sozinho
+  SimMd m(0x100000, 0, false, 8192, 0x400000); CartBackend be(nullptr, nullptr, &m, nullptr);
+  be.detect(SYS_MD, d); CHECK(d.status == 0 && d.rom_size == 0x100000);
+  // tamanho informado vence o cabeçalho
+  be.set_options(0, 8192, 0); CHECK(!be.open_read(SYS_MD, KIND_ROM, size, err) && err == E_ARGUMENTO);   // acima do limite de 4 MB
+  be.set_options(0, 16, 0);   CHECK(!be.open_read(SYS_MD, KIND_ROM, size, err) && err == E_ARGUMENTO);   // abaixo de 32 KB
+  // DETECT ignora as opções; close_read as apaga
+  be.set_options(0, 512, 0); be.detect(SYS_MD, d); CHECK(d.rom_size == 0x100000);
+  CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x80000); be.close_read();
+  CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x100000); be.close_read();
+  // ROM real de 2 MB com cabeçalho correto não é reduzida
+  SimMd real(0x200000); CartBackend b2(nullptr, nullptr, &real, nullptr); b2.detect(SYS_MD, d); CHECK(d.rom_size == 0x200000);
+  // ROM de 1 MB sem espelho (metades diferentes) com cabeçalho de 1 MB também fica
+  SimMd one(0x100000); CartBackend b3(nullptr, nullptr, &one, nullptr); b3.detect(SYS_MD, d); CHECK(d.rom_size == 0x100000);
+}
+
 static void test_gba() {
   for (uint32_t mb : {1u, 4u, 16u}) {
     SimGba s(mb << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
@@ -318,7 +336,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_md_sram_ssf(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_nes(); test_nes_mappers(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

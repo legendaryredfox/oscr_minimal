@@ -61,11 +61,13 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | SNES/SFC | LoROM e HiROM até 4 MB | SRAM (ler e gravar) | Detecta pelo checksum do cabeçalho. **Não** lê SA-1, ExHiROM, S-DD1, SuperFX e outros chips especiais. |
 | NES | mappers 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4 (MMC3) e 7 | não | Mapper 0 é automático. Para os demais, **informe mapper, PRG e CHR em KB** (GUI: campos "Opções NES/Famicom"; CLI: `--mapper 4 --prg 128 --chr 128`), de uma fonte confiável (No-Intro/NESCartDB). Gera cabeçalho iNES (espelhamento e bateria saem 0; ajuste no emulador se preciso). Mappers 2 e 7 usam CHR-RAM (`--chr 0`). |
 | Famicom | os mesmos do NES | não | Mesmo código do NES. |
-| Mega Drive | ROM pelo tamanho do cabeçalho: até 4 MB; até 8 MB com mapper SSF2 (cabeçalho "SEGA SSF", como Super Street Fighter II) | SRAM de 8 bits (bytes ímpares ou pares) ou de 16 bits, **lida e gravada**, pelo que o cabeçalho declara | Precisa da palavra "SEGA" no cabeçalho. Sem suporte: EEPROM serial, Pier Solar, Sonic 3 / Sonic & Knuckles (lock-on) e mappers piratas. A gravação confere cada byte depois de gravar. |
+| Mega Drive | ROM pelo tamanho do cabeçalho: até 4 MB; até 8 MB com mapper SSF2 (cabeçalho "SEGA SSF", como Super Street Fighter II) | SRAM de 8 bits (bytes ímpares ou pares) ou de 16 bits, **lida e gravada**, pelo que o cabeçalho declara | Precisa da palavra "SEGA" no cabeçalho. Se o cabeçalho declara mais do que a ROM tem (ROM espelhada), o firmware reduz sozinho; para forçar, informe o tamanho em KB (GUI: "Tamanho da ROM"; CLI: `--prg 512`). Sem suporte: EEPROM serial, Pier Solar, Sonic 3 / Sonic & Knuckles (lock-on) e mappers piratas. A gravação confere cada byte depois de gravar. |
 | GBA | ROM de 256 KB até 32 MB (tamanho por espelhamento) | só **leitura** de 32 KB, assumindo SRAM | Só cartuchos GBA, 3,3 V. O firmware não sabe se o save é SRAM, Flash ou EEPROM: em jogos com Flash ou EEPROM o arquivo lido **não vale**. Gravação de save do GBA não é suportada (risco com cartuchos Flash). |
 | GB/GBC | não | não | Reservado (precisa de adaptador no slot GBA). |
 
 Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (código `0x0002`).
+
+Depois de cada dump o programa confere o **checksum do cabeçalho** (Mega Drive, SNES e GBA) e avisa se não confere. Isso ajuda a achar tamanho errado ou contato sujo, mas não substitui o CRC32 do No-Intro: algumas ROMs têm o checksum errado de fábrica.
 
 ## 4. Solução de problemas (básico)
 
@@ -76,6 +78,7 @@ Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (
 | Detecta "nenhum cartucho" | encaixe, contatos, sistema errado | Encaixe até o fim; limpe com álcool isopropílico; confira o sistema na lista; teste outro cartucho. |
 | "sistema não suportado" (`0x0002`) | chip especial / mapper fora da lista | Veja a seção 3. NES: mappers 0, 1, 2, 3, 4 e 7. |
 | NES: "argumento inválido" (`0x0004`) | PRG/CHR errados para o mapper | PRG múltiplo de 16 KB (7: de 32 KB), CHR múltiplo de 8 KB; mappers 2 e 7 sem CHR; MMC1 até 256 KB. |
+| Aviso "checksum do cabeçalho NÃO confere" | tamanho errado, contato sujo, ROM modificada (ou checksum ruim de fábrica) | Leia de novo; se for Mega Drive, tente informar o tamanho; compare o CRC32 com o No-Intro. |
 | CRC32 diferente do No-Intro | contato sujo; revisão diferente; ROM não suportada | Limpe, leia 3 vezes (se mudar a cada leitura, é contato); confira região/revisão no DAT. |
 | Leitura trava ou dá "reenvios excedidos" (`0x0005`) | cabo ruim, hub USB, ruído | Cabo curto e direto no PC; evite hubs; tente `--baud 115200`. |
 | "CRC32 do arquivo não confere" (`0x0006`) | corrupção no USB | Repita a operação; troque o cabo. |

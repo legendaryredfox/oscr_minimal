@@ -107,6 +107,9 @@ fun App() {
             systems.forEach { s -> FilterChip(selected = system == s, onClick = { system = s }, label = { Text(s.name) }) }
         }
         if (system == CartSystem.GBA) Text(t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
+        if (system == CartSystem.MD) {
+            OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, modifier = Modifier.width(260.dp))
+        }
         if (system == CartSystem.NES || system == CartSystem.FAMICOM) {
             Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -132,6 +135,9 @@ fun App() {
                     val f = pickFile(t(S.CHOOSE_FILE), true, "rom_${system.name.lowercase()}${system.ext}")
                     if (f != null) { f.writeBytes(res.data); say("${t(S.SAVED_TO)} $f — ${t(S.RESULT_SIZE)} ${res.data.size}, CRC32 ${res.crcHex}") }
                     else say("CRC32 ${res.crcHex}")
+                    val chk = verifyRom(system, res.data)
+                    if (chk.status == CheckStatus.OK) say("${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})")
+                    else if (chk.status == CheckStatus.MISMATCH) say("${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}")
                 }
             }) { Text(t(S.DUMP_ROM)) }
 
