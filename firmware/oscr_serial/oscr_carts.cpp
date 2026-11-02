@@ -237,7 +237,10 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
       if (opt_prg_ == 0 || opt_prg_ % 16 != 0 || opt_chr_ % 8 != 0) { o.status = 3; return false; }
       if ((m == 2 || m == 7 || m == 71) && opt_chr_ != 0) { o.status = 3; return false; }   // CHR-RAM
       if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206) && opt_chr_ == 0) { o.status = 3; return false; }   // CHR-ROM
-      if (m == 1 && opt_prg_ > 256) { o.status = 2; return false; }                          // SUROM etc.
+      if (m == 1 && (opt_prg_ > 256 || opt_chr_ > 128)) { o.status = 2; return false; }      // SUROM etc.; registrador de CHR de 5 bits
+      if (m == 4 && (opt_prg_ > 512 || opt_chr_ > 256)) { o.status = 2; return false; }     // registradores de banco do MMC3 de 8 bits (CHR de 1 KB)
+      if ((m == 9 || m == 10) && opt_chr_ > 128) { o.status = 2; return false; }            // registrador de CHR de 5 bits (4 KB)
+      if (m == 69 && opt_chr_ > 256) { o.status = 2; return false; }                        // registrador de CHR de 8 bits (1 KB)
       if ((m == 7 || m == 11 || m == 66 || m == 79) && opt_prg_ % 32 != 0) { o.status = 3; return false; }
       if ((m == 9 && opt_prg_ > 128) || (m == 10 && opt_prg_ > 256) || (m == 11 && (opt_prg_ > 128 || opt_chr_ > 128))
           || (m == 66 && (opt_prg_ > 128 || opt_chr_ > 32)) || (m == 69 && opt_prg_ > 512) || (m == 5 && opt_prg_ > 1024)

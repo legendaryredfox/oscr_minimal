@@ -119,7 +119,7 @@ struct SimGb : GbBus {
   int type; std::vector<uint8_t> rom, ram; bool absent = false;
   uint8_t r2000 = 1, r4000 = 0, r3000 = 0, mode = 0; bool ram_en = false; int cam_wrong = 0, cam_calls = 0;
   SimGb(int t, uint8_t rsz, uint8_t ssz, const char* title = "TESTE GB", uint8_t cs_override = 0, bool use_cs = false) : type(t) {
-    rom.resize(16384UL << (rsz + 1)); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i) + 21);
+    rom.resize(16384UL << ((rsz > 8 ? 8 : rsz) + 1)); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i) + 21);   // rsz inválido só no cabeçalho
     memset(&rom[0x134], 0, 16); memcpy(&rom[0x134], title, strlen(title));
     rom[0x147] = uint8_t(t); rom[0x148] = rsz; rom[0x149] = ssz;
     uint8_t sum = 0; for (int i = 0x134; i < 0x14D; i++) sum = uint8_t(sum - rom[i] - 1);
@@ -773,6 +773,11 @@ static void test_nes_mappers() {
   be.set_options(66, 48, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);   // GxROM: PRG múltiplo de 32
   be.set_options(66, 256, 8);  CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // além dos 2 bits
   be.set_options(9, 256, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // MMC2: até 128 KB
+  be.set_options(1, 128, 256); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // MMC1: CHR até 128 KB (5 bits)
+  be.set_options(4, 128, 512); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);     // MMC3: CHR até 256 KB (8 bits)
+  be.set_options(4, 1024, 128); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);    // MMC3: PRG até 512 KB
+  be.set_options(10, 128, 256); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);    // MMC4: CHR até 128 KB
+  be.set_options(69, 128, 512); CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_SISTEMA);    // FME-7: CHR até 256 KB
   be.set_options(2, 128, 8);   CHECK(!be.open_read(SYS_NES, KIND_ROM, size, err) && err == E_ARGUMENTO);
 }
 

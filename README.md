@@ -27,6 +27,8 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `docs/continuacao.md` | **Comece aqui para retomar:** estado, mapa do código, como rodar, pendências |
 | `hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) e `lib/` (símbolos e footprints) |
 | `docs/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
+| `docs/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
+| `docs/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
 | `tools/` | `gen_pinmap.py`, `check_netlist.py`, `build_lib.py`, `plan_layout.py`, `gen_connections.py`, `fill_zones.py`, `sync_net_names.py` |
 
 ## Verificação

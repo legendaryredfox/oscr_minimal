@@ -52,7 +52,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 859 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 864 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -100,6 +100,8 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 ## 8. O que falta, em ordem de valor
 
+**Revisões (2026-11-02):** `docs/revisao-codigo.md` (C-xx) e `docs/revisao-ux.md` (U-xx) têm os achados abertos por gravidade. Antes do primeiro teste com hardware, recomendo U-01, U-02 e U-03 (perda de dados na GUI, gravação sem confirmação, resultado fora da tela), C-13 (CI) e C-14 (teste do HAL), e conferir o módulo Si5351 (C-15).
+
 **A. Validação com hardware (nada disso foi feito).** Roteiro em `docs/uso.md` seção 7:
 0. **Ordem de risco para os primeiros testes de gravação:** SRAM do SNES/GBA com backup feito, depois EEPROM do GBA, e a Flash do GBA por último (apaga o chip).
 1. Encomendar a placa (`hardware/fab/dumper-v1.0-jlcpcb.zip`) e as peças da `docs/bom.md`.
@@ -117,7 +119,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MBC7, MMM01, TAMA5), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 859 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
+Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 864 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 

@@ -387,3 +387,8 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - **Fora:** 34 (BxROM/NINA-001: o OSCR espera 200 ms por troca de banco, o `NesBus` não tem esse atraso), os VRC2/4/6/7 (variantes por mapeamento de pinos), 64, 68, 85, 119 e os piratas.
 - **Testes:** 15 configurações novas de ROM (PRG e CHR) com modelos independentes; 859 verificações; três erros plantados derrubam de 1 a 2 cada. Arduino compila.
 - **Não validado em hardware.**
+
+### D58 — Revisões de código e de UX/UI
+- Revisão da base toda e de UX/UI documentadas em `docs/revisao-codigo.md` e `docs/revisao-ux.md` (achados numerados C-xx e U-xx, com gravidade e recomendação).
+- **Corrigido na revisão:** limites de tamanho do NES que faltavam (MMC1 CHR 128 KB, MMC3 PRG 512 KB e CHR 256 KB, MMC2/MMC4 CHR 128 KB, FME-7 CHR 256 KB), que faziam o banco truncar em silêncio; e um estouro de deslocamento no simulador de teste do GB achado pelo UBSan. ASan e UBSan limpos em todo o firmware portátil (864 + 16 verificações).
+- **Abertos:** 7 de gravidade média e 9 baixas no código; 3 altas, 10 médias e 7 baixas em UX. Os de maior risco para o primeiro teste real: U-01, U-02, U-03, C-13, C-14, C-15.
