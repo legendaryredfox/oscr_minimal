@@ -1,6 +1,6 @@
 # Continuação — estado do projeto e como retomar
 
-Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D50).
+Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D51).
 
 ## 1. Onde estamos
 
@@ -9,24 +9,24 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Hardware (KiCad 10) | Pronto para fabricar: DRC com 0 erros e 4 avisos justificados (furos de canto), netlist confere com `docs/pinmap.md`. Gerbers, drill e zip em `hardware/fab/`. **Nada foi encomendado nem montado.** |
 | Documentação | `README.md`, `docs/{pinmap,bom,montagem,protocolo,uso,decisoes}.md`, este arquivo. |
 | Firmware | Protocolo v1 e leitura de cartuchos escritos e testados **só no PC**, com cartuchos simulados. Compila para o Mega (Arduino e PlatformIO). **Nunca rodou em hardware.** |
-| Host (Python) | CLI `dumper.py` completa, 49 testes. |
+| Host (Python) | CLI `dumper.py` completa, 50 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi o conjunto de mappers do NES, D50). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi a RAM de 16/32 KB do MMC1, D51). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
 | Sistema | ROM | Save |
 |---|---|---|
 | SNES | LoROM e HiROM | SRAM: ler e gravar (com conferência) |
-| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1 e 4: ler e gravar |
+| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1 e 4, 16/32 KB no mapper 1 (`--ram`): ler e gravar |
 | Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC | não | não |
 
-Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D49 de `docs/decisoes.md`.
+Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D51 de `docs/decisoes.md`.
 
-**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers além da lista acima, save do 5 e do 69, RAM de 16/32 KB do MMC1; GB/GBC; Pier Solar, lock-on, mappers piratas.
+**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers além da lista acima, save do 5 e do 69; GB/GBC; Pier Solar, lock-on, mappers piratas.
 
 ## 3. Mapa do código
 
@@ -52,8 +52,8 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 595 de cartuchos simulados
-(cd host && python3 -m pytest -q)                  # 49 testes
+make -C firmware/oscr_serial test                  # 16 do protocolo + 607 de cartuchos simulados
+(cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
 (cd firmware/platformio && pio run)                # precisa do PlatformIO (pip install platformio, num venv)
@@ -113,11 +113,11 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 - Revisão das traduções ru e zh por falante nativo.
 - Empacotamento (deb/AppImage, dmg, msi), previsto para depois.
 
-**C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mappers do NES (5, 9, 10, 11, 66, 69, 71), RAM de 16/32 KB do MMC1, SNES ExHiROM e SA-1, GB/GBC.
+**C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
-**Próximo passo sugerido:** ciclo C de novo: RAM de 16/32 KB do MMC1 (SOROM/SXROM), save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
+**Próximo passo sugerido:** ciclo C de novo: save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 595 de cartuchos, 49 do host. Os testes do Gradle não foram rodados depois da gravação de EEPROM do Mega Drive (só mudou firmware e docs).
+Estado dos testes na última verificação: 16 do protocolo + 607 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha nova: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 
