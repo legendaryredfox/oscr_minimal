@@ -163,3 +163,40 @@ Shield apoiado nos 6 furos do Mega com espaçadores M3 fêmea-fêmea de ~12 mm (
 Usuário: o cartucho fica "de frente" para o USB; a posição dos slots não importa, desde que a direção esteja indicada no silk; os slots devem ser paralelos, exceto o GB/GBA.
 Como os slots correm no sentido do lado maior do Mega, o cartucho entra de perfil; a etiqueta só pode olhar para os lados de cima ou de baixo da placa. Escolhi **para baixo** (lado em que ficam o USB e o jack do Mega, no canto inferior esquerdo). Silk: "ETIQUETA DO CARTUCHO PARA BAIXO (LADO DO USB)" e "v v ETIQUETA v v" no lado de baixo de cada slot (SNES, NES, Famicom, Mega Drive). O GBA fica sem indicação.
 **A CONFIRMAR com o slot físico:** a direção real da etiqueta depende da peça (de que lado do slot o cartucho encaixa em relação ao pino 1). Se estiver ao contrário, basta girar o slot 180° (o pino 1 vai para a outra ponta; as nets não mudam) ou trocar o texto. Também falta definir a direção do GBA.
+
+### D28 — GBA/GB entra na horizontal (usuário)
+O cartucho GBA/GB fica **paralelo à placa**. Pelo footprint do OSCR, os pads de sinal estão na traseira (x local −7,5..−2,5) e as abas de blindagem na frente (+16,25); então a boca do slot abre para **+x** (direita da placa) e o cartucho sai pela borda direita, sem passar sobre outras peças. A etiqueta fica **para cima**. Silk: "GBA: ETIQUETA P/ CIMA" e "ENTRA PELA DIREITA" (substitui o "ETIQUETA GBA >>>" anterior, que estava errado). A direção "de costas para as placas" do usuário bate com isso: o cartucho se afasta dos outros slots. A confirmar com o slot físico.
+
+## Requisito novo (2026-11-02): GUI multiplataforma
+GUI para Linux, macOS e Windows em Kotlin Multiplatform (pedido do usuário). Entra na fase 8 junto com firmware e `host/`. CLAUDE.md atualizado (estrutura do repositório e seção 9). Escolhas técnicas (Compose Multiplatform Desktop, jSerialComm) são sugestões a validar; nada foi implementado. Não afeta o hardware: a USB do Mega e o baud de 1.000.000 continuam iguais (conferir se o jSerialComm abre 1 Mbaud nos três sistemas).
+
+**Idiomas da GUI (usuário, 2026-11-02):** português e inglês na primeira versão, expansão depois. Strings em recursos por idioma (em Compose Multiplatform, o sistema de recursos `composeResources` com `strings.xml` por locale), inglês como fallback; troca de idioma na GUI. Mensagens do firmware/protocolo continuam em códigos, traduzidos só na GUI.
+
+### D29 — Silkscreen em português do Brasil (usuário)
+Todos os textos de silk em pt-BR. O único que estava em inglês era a atribuição; agora: "Baseado no Open Source Cartridge Reader de sanni — CC BY 4.0" (a atribuição à obra e à licença continua presente). Os demais já estavam em português ("UM CARTUCHO POR VEZ", "Projeto original", "Adaptado por", "ETIQUETA ...", "SOMENTE GBA - 3,3 V", "Si5351 pino 1 = VIN"). CLAUDE.md seção 5 atualizado. Textos que vêm de footprints padrão do KiCad (referências R1, C1 etc.) não são mensagens.
+
+### D30 — Interface com o PC: USB-C (usuário, 2026-11-02)
+A ligação ao computador deve ser USB-C. A foto do Mega que o usuário mostrou é um clone com conector **USB-C** no canto inferior esquerdo (ao lado do jack de energia), então o shield não ganha conector USB; a porta é a do Mega. O shield (borda esquerda em x_m 0, igual à do Mega) não cobre o conector, que fica para fora da borda. Pontos a confirmar quando o Mega chegar:
+- Se for o clone da foto, o conversor USB-serial costuma ser um CH340 (aparece como `/dev/ttyUSB0`, não `ttyACM0`); a GUI e a CLI devem listar os dois tipos de porta. Para 1.000.000 baud o CH340 serve (aceita até 2 Mbaud); o ATmega16U2 do Mega oficial também.
+- Mega oficial usa USB-B: nesse caso precisa de cabo USB-C para USB-B (ou adaptador). Não há mudança de hardware.
+- O CH340 precisa de driver no Windows e no macOS antigo; documentar na GUI/README.
+
+## Fase 5 — roteamento (2026-11-02)
+
+### D31 — Resultado
+- **Método:** DSN exportado pelo MCP (`export_dsn`, com as classes de net), Freerouting 2.x rodado fora do MCP (`java -jar ~/.kicad-mcp/freerouting.jar -de ... -do ... -mp 60`) e SES importado (`import_ses`). Motivo: o limite de 30 s por chamada do MCP já zerou um `.kicad_sch` (D20); o roteador leva ~10 min. `check_freerouting` OK (Java 26, jar em `~/.kicad-mcp`).
+- **Freerouting:** 306 ligações → 0 sem rota e 0 violações em 594 s (11 passadas).
+- **Trilhas:** 3.097 segmentos; alimentação (`+5V`, `+3V3`) com 0,8 mm (87 segmentos); sinal com 0,3 mm (2.849); GND com 0,3 mm (144) além dos planos. **17 segmentos de sinal ficaram com 0,23 mm**: o roteador estreitou onde precisava passar entre pads de passo 1,5 mm (GBA) e de 2,5 mm. Está acima do mínimo da regra de projeto (0,2 mm) e do mínimo da JLCPCB (0,127 mm); mantido.
+- **Vias:** 336 de 0,6/0,3 mm e 1 de 0,8/0,4 mm (alimentação), mais 73 vias de costura de GND (grade de 8 mm, margem de 1,5 mm da borda). Uma via de costura duplicada com uma via do roteador foi removida (hole_to_hole).
+- **Planos de GND** nas duas camadas (F.Cu e B.Cu), folga 0,3 mm, largura mínima 0,2 mm, alívio térmico nos pads THT. Quatro pads de GND ficaram com conexão sólida (`MD1.A1`, `MD1.A32`, `NES1.1`, `U3.1`) porque o alívio térmico ficava sem raios ("starved thermal"). Isso dificulta um pouco soldar esses pinos: usar ferro mais quente.
+- **Preenchimento das zonas** feito por `tools/fill_zones.py` (o refill do MCP via SWIG pode travar). Nomes de nets da PCB alinhados à netlist por `tools/sync_net_names.py` (a PCB usava `+5V`, o esquemático `/+5V`; os pinos sem ligação ganharam as nets `unconnected-(...)`).
+
+### Verificações finais da fase 5
+- **DRC** (`kicad-cli pcb drc --schematic-parity`): **0 erros**, 0 ligações abertas, **4 avisos justificados**: `lib_footprint_mismatch` nos 4 furos de canto (criados pelo MCP com pad NPTH de 4,2 mm; sem efeito na fabricação).
+- **Paridade esquemático × PCB:** 23 diferenças só cosméticas: 17 campos Datasheet/Description vazios nos footprints, 2 `PWR_FLAG` sem footprint (normal) e 4 furos de canto só na PCB (normal). Nenhum `net_conflict`.
+- **ERC:** 0 violações. **`tools/check_netlist.py`:** OK (67 nets, 375 ligações, 26 pinos sem ligação conferidos).
+- Placa final **144,1 × 108,0 mm**.
+
+### Pendente para a fase 6 (e para você)
+- Abrir `hardware/dumper.kicad_pcb` no KiCad e olhar o roteamento a olho (o Freerouting não separa sinais rápidos; o barramento é lento, mas confira os CLK0..2 do Si5351 e o D7/D16).
+- Gerbers e `docs/bom.md` na fase 6. Confirmar medidas de slots e módulo antes de fabricar (D17, D23, D27).

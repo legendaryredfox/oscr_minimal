@@ -82,7 +82,7 @@ def build_gba_footprint():
     s = re.sub(r'\(fp_text reference "[^"]*"', '(fp_text reference "REF**"', s, count=1)
     s = s.replace('(fp_text value "GBA_Slot" (at 0 0) (layer "F.SilkS") hide', '(fp_text value "GBA_Slot" (at 0 0) (layer "F.Fab") hide')
     extra = [rect(-8.0, -29.5, 19.5, 29.5, "F.CrtYd", 0.05),
-             rect(-1.9, -28.6, 15.1, 28.6, "F.SilkS", 0.15),
+             rect(-0.9, -28.6, 13.9, 28.6, "F.SilkS", 0.15),
              text("GBA 3V3", 6.2, 0, "F.SilkS", 1.5, 90),
              text("SOMENTE GBA - 3,3 V", 11.5, 0, "F.SilkS", 1.0, 90)]
     (PRETTY / "GBA_Slot.kicad_mod").write_text(s + "\n" + "\n".join(extra) + "\n)\n")

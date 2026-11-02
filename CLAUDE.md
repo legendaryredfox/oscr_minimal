@@ -21,7 +21,7 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 | Slots | SNES 62p (2,5 mm), NES 72p (2,5 mm), Famicom 60p (2,54 mm), Mega Drive 64p (2,54 mm), GBA 32p (1,5 mm, SMD) |
 | Clock | Módulo breakout SI5351 em header fêmea (não usar o chip solto) |
 | CIC (SNES SA1) | PIC12F629 DIP-8 em **soquete**, na própria placa |
-| Interface | Serial USB nativa do Mega; sem LCD, sem SD, sem RTC |
+| Interface | Serial USB nativa do Mega, pela porta **USB-C** do Mega (requisito do usuário); sem LCD, sem SD, sem RTC |
 | Fabricação | JLCPCB, 2 camadas, 1,6 mm, HASL, lote de 5 |
 | Estrutura | Sem impressão 3D; espaçadores M3 + pés de borracha |
 
@@ -42,7 +42,8 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 │   ├── lib/                  # símbolos e footprints próprios
 │   └── fab/                  # gerbers, drill e zip para a JLCPCB
 ├── firmware/                 # fork do Cart_Reader do OSCR, enxuto
-└── host/                     # CLI Python (pyserial) para o PC
+├── host/                     # CLI Python (pyserial) para o PC; referência e testes do protocolo
+└── gui/                      # GUI multiplataforma (Kotlin Multiplatform), Linux, macOS e Windows
 ```
 
 Nunca edite nada em `vendor/`. Copie o que precisar para `hardware/lib/` ou `firmware/`.
@@ -100,7 +101,8 @@ Nunca invente um pino. Se não conseguir confirmar um sinal, marque como `PENDEN
 - Pino 1 de todos os headers, do soquete e do LED.
 - "UM CARTUCHO POR VEZ".
 - Versão da placa (ex.: `v1.0`) e data.
-- "Based on Open Source Cartridge Reader by sanni — CC BY 4.0".
+- "Baseado no Open Source Cartridge Reader de sanni — CC BY 4.0".
+- Todas as mensagens do silkscreen em **português do Brasil** (decisão do usuário em 2026-11-02). Nomes próprios e de sistemas (SNES, NES, Famicom, Mega Drive, GBA, Si5351, PIC12F629) ficam como estão.
 
 ## 6. Uso do MCP do KiCad (mixelpixx/KiCAD-MCP-Server)
 
@@ -159,6 +161,14 @@ Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o 
 - Python 3.11+ com `pyserial`, rodando no Linux Mint.
 - CLI: `dumper.py detect`, `dumper.py dump -o jogo.sfc`, `dumper.py save-read`, `dumper.py save-write`.
 - Salve com a extensão correta (`.sfc`, `.nes`, `.md`) e mostre o CRC32 para comparar com bancos de dados como o No-Intro.
+
+### GUI multiplataforma (`gui/`)
+Requisito do usuário (2026-11-02): interface gráfica para **Linux, macOS e Windows**, em **Kotlin Multiplatform**.
+- Sugestão (a confirmar na fase 8): Compose Multiplatform Desktop (JVM), módulo `shared` (`commonMain`) com o protocolo (quadros, CRC32, máquina de estados), e `desktopMain` com a porta serial (por exemplo jSerialComm, que cobre os três sistemas).
+- Funções mínimas: escolher a porta serial, detectar o cartucho (`INFO`, `DETECT`), ler ROM e save, gravar save, mostrar progresso, mostrar o CRC32 para comparar com o No-Intro, salvar com a extensão certa (`.sfc`, `.nes`, `.md`, `.gba`).
+- Mesmo protocolo da CLI Python (`docs/protocolo.md`, escrito antes de implementar). Testes de framing e CRC em `commonTest`; usar o modo `MOCK` do firmware para testar sem cartucho.
+- **Idiomas:** português (pt-BR) e inglês (en) desde a primeira versão; outros idiomas virão depois. Todo texto da interface fica em arquivos de recursos por idioma (nenhuma string fixa no código), com inglês como idioma de reserva. Escolha do idioma na própria GUI, com padrão vindo do sistema.
+- Empacotamento por sistema (deb/AppImage, dmg, msi) fica para depois; no Linux o usuário precisa estar no grupo `dialout`.
 
 ### Testes
 - Modo `MOCK` no firmware, que envia um padrão conhecido sem precisar de cartucho.
