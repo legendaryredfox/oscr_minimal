@@ -146,6 +146,49 @@ struct AvrMdBus : MdBus {
     OSCR_NOP4; OSCR_NOP; OSCR_NOP;
     data_in();
   }
+  // EEPROM serial do Mega Drive: EepromInit, writeWord_SDA, writeWord_SCL e writeWord_CM do OSCR. NÃO validado em hardware.
+  static void eep_wait(bool slow) { if (slow) delayMicroseconds(100); else { OSCR_NOP4; OSCR_NOP4; OSCR_NOP4; } }
+  static void eep_addr(uint32_t a) { PORTF = a & 0xFF; PORTK = (a >> 8) & 0xFF; PORTL = (a >> 16) & 0xFF; }
+  void eep_enable(bool on) override {
+    data_out();
+    PORTF = 0x00; PORTK = 0x00; PORTL = 0x10; PORTA = 0x00;
+    PORTH |= (1 << 0);                                                  // /RES alto
+    PORTC = on ? 0 : 1;                                                 // 0 = liga a EEPROM, 1 = lê a ROM
+    PORTH &= ~(1 << 3);                                                 // CE baixo
+    PORTH &= ~(1 << 4) & ~(1 << 5);                                     // /UDSW e /LDSW baixos
+    PORTH |= (1 << 6);                                                  // OE alto
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    PORTH |= (1 << 4) | (1 << 5);
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    data_in();
+  }
+  void eep_sda(uint32_t a, uint8_t d, bool slow) override {
+    data_out(); eep_addr(a); PORTC = d;
+    PORTH &= ~(1 << 3); PORTH &= ~(1 << 5); PORTH |= (1 << 4); PORTH |= (1 << 6);   // CE e /LDSW baixos
+    eep_wait(slow);
+    PORTH |= (1 << 5);
+    eep_wait(slow);
+    data_in();
+  }
+  void eep_scl(uint32_t a, uint8_t d, bool slow) override {
+    data_out(); eep_addr(a); PORTC = d;
+    PORTH &= ~(1 << 3); PORTH &= ~(1 << 4); PORTH |= (1 << 5); PORTH |= (1 << 6);   // CE e /UDSW baixos
+    eep_wait(slow);
+    PORTH |= (1 << 4);
+    eep_wait(slow);
+    data_in();
+  }
+  void eep_cm(uint32_t a, uint16_t w) override {
+    data_out(); eep_addr(a); PORTC = w & 0xFF; PORTA = (w >> 8) & 0xFF;
+    OSCR_NOP; OSCR_NOP;
+    PORTH &= ~(1 << 4); PORTH &= ~(1 << 3);
+    PORTH ^= (1 << 1);                                                  // pulso no clock
+    OSCR_NOP4; OSCR_NOP4; OSCR_NOP4;
+    PORTH ^= (1 << 1);
+    PORTH |= (1 << 3); PORTH |= (1 << 4);
+    OSCR_NOP4; OSCR_NOP; OSCR_NOP;
+    data_in();
+  }
   void map_write(uint32_t a, uint16_t w) override {                     // writeSSF2Map do OSCR
     data_out();
     PORTJ |= (1 << 0);

@@ -163,6 +163,85 @@ struct SimMd : MdBus {
     if (b == 0xA130F0) sram_on = w & 1;
     else if (b >= 0xA130F2 && b <= 0xA130FE) bank[(b - 0xA130F0) / 2] = w & 0xFF;
   }
+  void eep_enable(bool) override {}
+  void eep_sda(uint32_t, uint8_t, bool) override {}
+  void eep_scl(uint32_t, uint8_t, bool) override {}
+  void eep_cm(uint32_t, uint16_t) override {}
+};
+
+// EEPROM serial 24Cxx (I2C) simulada, escrita a partir do datasheet e independente do código do firmware.
+struct I2cEeprom {
+  std::vector<uint8_t> mem; bool sda_m = true, scl = true, slave_low = false;
+  enum Ph { IDLE, BITS_IN, ACK_OUT, TX, MACK } ph = IDLE;
+  enum Next { N_DEV, N_HI, N_LO, N_DATA } next = N_DEV;
+  int bits = 0, txbit = 0; uint8_t shift = 0; uint32_t addr = 0, hi = 0, lo = 0; int page = 0; bool rw = false, tx_next = false, nack = false;
+  int ack_count = 0;
+  explicit I2cEeprom(size_t n) : mem(n) {}
+  bool line() const { return sda_m && !slave_low; }
+  uint8_t cur() const { return mem[addr % mem.size()]; }
+  void update(bool nsda, bool nscl) {
+    bool osda = sda_m, oscl = scl;
+    sda_m = nsda; scl = nscl;
+    if (oscl && nscl && osda != nsda) {                        // START / STOP com SCL alto
+      if (!nsda) { ph = BITS_IN; next = N_DEV; bits = 0; slave_low = false; }
+      else { ph = IDLE; slave_low = false; }
+      return;
+    }
+    if (nscl && !oscl) {                                       // subida do SCL
+      if (ph == BITS_IN) { shift = uint8_t(shift << 1 | (line() ? 1 : 0)); bits++; }
+      else if (ph == MACK) nack = line();
+    } else if (!nscl && oscl) {                                // descida do SCL
+      if (ph == BITS_IN && bits == 8) {
+        bits = 0; bool ack = true; tx_next = false;
+        if (mem.size() <= 128 && next == N_DEV) { addr = shift >> 1; rw = shift & 1; next = N_DATA; tx_next = rw; }
+        else if (next == N_DEV) {
+          ack = (shift >> 4) == 0xA; page = (shift >> 1) & 7; rw = shift & 1;
+          if (rw) { addr = mem.size() > 0x800 ? (hi << 8 | lo) : (((uint32_t)page << 8) | lo) & (mem.size() - 1); tx_next = true; }
+          else next = mem.size() > 0x800 ? N_HI : N_LO;
+        } else if (next == N_HI) { hi = shift; next = N_LO; }
+        else if (next == N_LO) { lo = shift; addr = mem.size() > 0x800 ? (hi << 8 | lo) : (((uint32_t)page << 8) | lo) & (mem.size() - 1); next = N_DATA; }
+        else if (next == N_DATA) { mem[addr % mem.size()] = shift; addr++; }
+        if (ack) { slave_low = true; ack_count++; }
+        ph = ack ? ACK_OUT : IDLE;
+      } else if (ph == ACK_OUT) {
+        slave_low = false;
+        if (tx_next) { ph = TX; txbit = 0; slave_low = !((cur() >> 7) & 1); }
+        else { ph = BITS_IN; bits = 0; }
+      } else if (ph == TX) {
+        txbit++;
+        if (txbit == 8) { slave_low = false; ph = MACK; }
+        else slave_low = !((cur() >> (7 - txbit)) & 1);
+      } else if (ph == MACK) {
+        if (nack) ph = IDLE; else { addr++; ph = TX; txbit = 0; slave_low = !((cur() >> 7) & 1); }
+      }
+    }
+  }
+};
+
+// Cartucho Mega Drive com EEPROM e a "cola" elétrica de cada tipo (bits de SDA e SCL), como descrito no OSCR.
+struct SimMdEep : SimMd {
+  int type; I2cEeprom e; bool on2 = false, dead = false; int violations = 0;
+  SimMdEep(int t, size_t size, uint16_t chk) : SimMd(0x100000), type(t), e(size) {
+    rom[0x18E] = chk >> 8; rom[0x18F] = chk & 0xFF;
+    for (size_t i = 0; i < size; i++) e.mem[i] = pat(uint32_t(i) * 5 + 9);
+  }
+  void write_word(uint32_t wa, uint16_t w) override {
+    if (wa == 0x100000 && (type == 1 || type == 3)) e.update(w & 1, (w >> 1) & 1);
+    else if (wa == 0x100000 && type == 4) e.update(w & 0x80, w & 0x40);
+    else SimMd::write_word(wa, w);
+  }
+  void eep_cm(uint32_t wa, uint16_t w) override { if (type == 5 && wa == 0x180000) e.update(w & 1, (w >> 1) & 1); }
+  void eep_enable(bool on) override { on2 = on; }
+  void eep_sda(uint32_t wa, uint8_t d, bool) override { if (type == 2 && wa == 0x100000 && on2) e.update(d & 1, e.scl); else violations++; }
+  void eep_scl(uint32_t wa, uint8_t d, bool) override { if (type == 2 && wa == 0x100000 && on2) e.update(e.sda_m, d & 1); else violations++; }
+  uint16_t word(uint32_t wa) override {
+    if (dead && (wa == 0x100000 || wa == 0x1C0000)) return 0xFFFF;            // barramento aberto: SDA fica alto, sem ACK
+    if (wa == 0x100000 && type == 1) return uint16_t(e.line() << 1);
+    if (wa == 0x100000 && (type == 2 || type == 3)) return e.line() ? 1 : 0;
+    if (wa == 0x100000 && type == 4) return uint16_t(e.line() << 7);
+    if (wa == 0x1C0000 && type == 5) return uint16_t(e.line() << 7);
+    return SimMd::word(wa);
+  }
 };
 
 // ---------------------------------------------------------------- GBA simulado
@@ -357,6 +436,39 @@ static void test_md_tamanho() {
   SimMd one(0x100000); CartBackend b3(nullptr, nullptr, &one, nullptr); b3.detect(SYS_MD, d); CHECK(d.rom_size == 0x100000);
 }
 
+static void test_md_eeprom() {
+  struct Case { int type; size_t size; uint16_t chk; };
+  const Case cases[] = {
+    {1, 256, 0x694F}, {2, 256, 0xCC3F}, {2, 2048, 0x3DE6}, {2, 8192, 0xCB78}, {3, 128, 0xAD23}, {3, 128, 0x7270},
+    {4, 128, 0xA107}, {5, 1024, 0x7E65}, {5, 2048, 0x7E50}, {5, 8192, 0x12C1},
+  };
+  for (const Case& k : cases) {
+    SimMdEep s(k.type, k.size, k.chk); CartBackend be(nullptr, nullptr, &s, nullptr);
+    DetectInfo d; be.detect(SYS_MD, d);
+    CHECK(d.status == 0 && d.save_size == k.size && d.save_type == 3);
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_MD, KIND_SAVE, out, err);
+    CHECK(out == s.e.mem);
+    CHECK(s.violations == 0 && !s.on2);                    // tipo 2 liga a EEPROM só durante o acesso
+    uint16_t e2 = 0; CHECK(!be.write_begin(SYS_MD, uint32_t(k.size), e2) && e2 == E_SEM_SAVE);   // gravação não suportada
+  }
+  {  // checksum em branco só vale com E840 no cabeçalho; Codemasters 165E só com 'DN' no início
+    SimMdEep a(3, 128, 0x0000); CartBackend ba(nullptr, nullptr, &a, nullptr); DetectInfo d; ba.detect(SYS_MD, d); CHECK(d.save_size == 0);
+    a.rom[0x1B2] = 0xE8; a.rom[0x1B3] = 0x40; ba.detect(SYS_MD, d); CHECK(d.save_size == 128 && d.save_type == 3);
+    SimMdEep c(5, 2048, 0x165E); CartBackend bc(nullptr, nullptr, &c, nullptr); bc.detect(SYS_MD, d); CHECK(d.save_size == 0);
+    c.rom[0] = 0x44; c.rom[1] = 0x4E; bc.detect(SYS_MD, d); CHECK(d.save_size == 2048);
+  }
+  {  // EEPROM que não responde (sem ACK): erro de leitura, sem travar
+    SimMdEep s(4, 128, 0xA107); s.dead = true;
+    CartBackend be(nullptr, nullptr, &s, nullptr); uint32_t size = 0; uint16_t err = 0; uint8_t buf[16];
+    CHECK(be.open_read(SYS_MD, KIND_SAVE, size, err) && size == 128);
+    CHECK(!be.read(SYS_MD, KIND_SAVE, 0, buf, 16));
+    be.close_read();
+  }
+  {  // cartucho com SRAM continua como antes
+    SimMd s(0x100000, 1, false, 8192); CartBackend be(nullptr, nullptr, &s, nullptr); DetectInfo d; be.detect(SYS_MD, d); CHECK(d.save_type == 1 && d.save_size == 8192);
+  }
+}
+
 static void test_gba_saves() {
   struct Case { uint16_t type; uint32_t size; uint8_t stype; };
   const Case cases[] = {{1, 512, 3}, {2, 8192, 3}, {3, 32768, 1}, {4, 65536, 2}, {5, 131072, 2}};
@@ -408,7 +520,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

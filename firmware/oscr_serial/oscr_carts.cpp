@@ -3,7 +3,28 @@
 
 #include <string.h>
 
+#if defined(__AVR__)
+#include <avr/pgmspace.h>
+#else
+#define PROGMEM
+#define pgm_read_word(p) (*(p))
+#endif
+
 namespace oscr {
+
+// Tabela de EEPROM serial do Mega Drive, do OSCR (MD.ino): {checksum do cabeçalho em $18E, tipo | tamanho}.
+// Tipo nos 3 bits baixos (1 Acclaim 1, 2 Acclaim 2, 3 Capcom/Sega, 4 EA, 5 Codemasters); o resto é o tamanho em bytes.
+static const uint16_t MD_EEP_TABLE[] PROGMEM = {
+  0x5B9F, 0x101, 0x694F, 0x101, 0xBFA9, 0x101,                                           // Acclaim 1: NBA Jam
+  0x16B2, 0x102, 0xCC3F, 0x102, 0x8AE1, 0x102, 0xDB97, 0x102, 0x7651, 0x102, 0xDFE4, 0x102,   // Acclaim 2
+  0x3DE6, 0x802, 0xCB78, 0x2002, 0x6DD9, 0x2002,
+  0xAD23, 0x83, 0xEA80, 0x83,                                                            // Capcom
+  0x760F, 0x83, 0x95E7, 0x83, 0x0000, 0x83, 0x7270, 0x83, 0xBACC, 0x83, 0xB939, 0x83,   // Sega
+  0x487C, 0x83, 0x740D, 0x83, 0x0278, 0x83, 0x9D79, 0x83,
+  0x8512, 0x84, 0xA107, 0x84, 0x246A, 0x84, 0x5807, 0x84, 0x2799, 0x84, 0xFA57, 0x84, 0x8B9F, 0x84,   // EA
+  0x7E65, 0x405, 0x9A5C, 0x2005, 0xC4EE, 0x2005, 0x7E50, 0x805, 0x165E, 0x805, 0x168B, 0x405, 0x12C1, 0x2005,   // Codemasters
+};
+static const uint8_t MD_EEP_COUNT = sizeof(MD_EEP_TABLE) / sizeof(MD_EEP_TABLE[0]) / 2;
 
 static void copy_ascii(char* dst, const uint8_t* src, uint8_t n) {
   uint8_t o = 0;
@@ -177,8 +198,20 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
         o.rom = half;
       }
     }
+    // EEPROM serial: tabela por checksum do cabeçalho ($18E), como no OSCR
+    uint16_t chk = md_->word(0xC7);
+    for (uint8_t i = 0; i < MD_EEP_COUNT; i++) {
+      if (pgm_read_word(MD_EEP_TABLE + i * 2) == chk) {
+        uint16_t d = pgm_read_word(MD_EEP_TABLE + i * 2 + 1);
+        o.md_eep = uint8_t(d & 7); o.md_eep_size = d & 0xFFF8;
+        break;
+      }
+    }
+    if (o.md_eep && chk == 0x0000 && md_->word(0xD9) != 0xE840) o.md_eep = 0;                    // checksum em branco: confere o cabeçalho
+    if (o.md_eep && (chk == 0x165E || chk == 0x168B) && md_->word(0x00) != 0x444E) o.md_eep = 0;  // Codemasters sem EEPROM
+    if (o.md_eep) { o.md_save = 4; o.save = o.md_eep_size; o.save_type = 3; }
     // SRAM: "RA" + tipo em $1B0, início em $1B4 e fim em $1B8 (lógica do OSCR)
-    if (md_->word(0xD8) == 0x5241) {
+    else if (md_->word(0xD8) == 0x5241) {
       uint16_t type = md_->word(0xD9);
       uint32_t base = (uint32_t(md_->word(0xDA)) << 16) | md_->word(0xDB);
       uint32_t last = (uint32_t(md_->word(0xDC)) << 16) | md_->word(0xDD);
@@ -322,7 +355,7 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
   if (!probe(sys, c, kind == KIND_SAVE)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (kind == KIND_SAVE) {
     if ((sys != SYS_SNES && sys != SYS_GBA && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) || c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
-    if (sys == SYS_MD) md_sram(true);
+    if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
     if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
     size = c_.save;
   } else {
@@ -341,6 +374,8 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
   for (uint16_t i = 0; i < len; i++) {
     if (kind == KIND_SAVE && (sys == SYS_NES || sys == SYS_FAMICOM)) {
       buf[i] = nes_->prg(uint16_t(0x6000 + off + i));
+    } else if (kind == KIND_SAVE && sys == SYS_MD && c_.md_save == 4) {
+      if (!md_eep_read(uint16_t(off + i), buf[i])) return false;
     } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
     } else if (kind == KIND_SAVE && sys == SYS_GBA) {
@@ -354,6 +389,98 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
     }
   }
   return true;
+}
+
+// ---------------------------------------------------------------- Mega Drive: EEPROM serial (I2C), leitura
+// Linhas SDA/SCL e leitura do SDA por tipo de cartucho (EepromStart, EepromSet0... do OSCR). Endereços em palavras.
+static const uint32_t EEP_ADDR = 0x100000UL, EEP_CM_WR = 0x180000UL, EEP_CM_RD = 0x1C0000UL;
+
+void CartBackend::eep_state(uint8_t st) {
+  bool sda = st & 1, scl = st & 2;
+  switch (c_.md_eep) {
+    case 4: md_->write_word(EEP_ADDR, uint16_t((sda ? 0x80 : 0) | (scl ? 0x40 : 0))); break;     // D7 = SDA, D6 = SCL
+    case 5: md_->eep_cm(EEP_CM_WR, uint16_t(st & 3)); break;                                      // D0 = SDA, D1 = SCL
+    default: md_->write_word(EEP_ADDR, uint16_t(st & 3)); break;                                  // tipos 1 e 3
+  }
+}
+
+void CartBackend::eep_run(const char* gen, const char* t2) {
+  bool slow = c_.md_eep_size <= 0x100;
+  if (c_.md_eep != 2) { for (; *gen; gen++) eep_state(uint8_t(*gen - '0')); return; }
+  for (; *t2; t2++) {                                      // a/b: SDA 0/1; c/d: SCL 0/1
+    if (*t2 == 'a' || *t2 == 'b') md_->eep_sda(EEP_ADDR, *t2 == 'b', slow);
+    else md_->eep_scl(EEP_ADDR, *t2 == 'd', slow);
+  }
+}
+
+void CartBackend::eep_start() { eep_run(c_.md_eep == 5 ? "02320" : "0320", "acbdac"); }
+void CartBackend::eep_finish() { eep_run("01310", "acbcbdbcac"); }
+void CartBackend::eep_stop() { eep_run("02310", "adbdbcac"); }
+void CartBackend::eep_set(bool one) { if (one) eep_run("1310", "bdbc"); else eep_run("020", "adac"); }
+
+bool CartBackend::eep_sda_in() {
+  switch (c_.md_eep) {
+    case 1: return (md_->word(EEP_ADDR) >> 1) & 1;
+    case 4: return (md_->word(EEP_ADDR) >> 7) & 1;
+    case 5: return (md_->word(EEP_CM_RD) >> 7) & 1;
+    default: return md_->word(EEP_ADDR) & 1;               // tipos 2 e 3
+  }
+}
+
+bool CartBackend::eep_status() {                            // 9º pulso: espera o ACK (SDA baixo)
+  eep_run("13", "bd");
+  bool ack = false;
+  for (uint16_t n = 0; n < 2000 && !ack; n++) ack = !eep_sda_in();   // o OSCR espera para sempre; aqui há limite
+  eep_run("1", "c");
+  return ack;
+}
+
+bool CartBackend::eep_device(uint16_t page, bool write_mode) {   // 1010 + A2..A0
+  eep_set(1); eep_set(0); eep_set(1); eep_set(0);
+  for (int i = 0; i < 3; i++) { eep_set((page >> 2) & 1); page <<= 1; }
+  eep_set(!write_mode);
+  return eep_status();
+}
+
+bool CartBackend::eep_set_address(uint16_t address) {
+  if (c_.md_eep_size > 0x80) {                              // 24C02 ou maior: 8 bits + ACK
+    for (int i = 0; i < 8; i++) { eep_set((address >> 7) & 1); address <<= 1; }
+    return eep_status();
+  }
+  for (int i = 0; i < 7; i++) { eep_set((address >> 6) & 1); address <<= 1; }   // 24C01: 7 bits, sem ACK
+  return true;
+}
+
+bool CartBackend::md_eep_read(uint16_t address, uint8_t& out) {   // readEepromByte do OSCR
+  uint8_t hi = uint8_t(address >> 8), lo = uint8_t(address & 0xFF);
+  bool ok = true;
+  if (c_.md_eep == 2) md_->eep_enable(true);
+  eep_start();
+  if (c_.md_eep_size > 0x80) {
+    if (c_.md_eep_size > 0x800) ok = eep_device(0, true) && eep_set_address(hi);      // 24C65: A2..A0 = 000, endereço de 16 bits
+    else ok = eep_device(hi, true);                                                    // 24C02/08/16: bits altos no byte de dispositivo
+  }
+  ok = ok && eep_set_address(lo);
+  if (ok && c_.md_eep_size > 0x80) {
+    eep_start();
+    ok = eep_device(c_.md_eep_size > 0x800 ? 0 : hi, false);
+  } else if (ok) {                                            // 24C01: o bit R/W vem logo depois do endereço
+    eep_set(1);
+    ok = eep_status();
+  }
+  uint8_t v = 0;
+  if (ok) {
+    for (int i = 0; i < 8; i++) {
+      eep_run("3", "bd");
+      v = uint8_t((v << 1) | (eep_sda_in() ? 1 : 0));
+      eep_run("1", "bc");
+    }
+    eep_finish();
+  }
+  eep_stop();
+  if (c_.md_eep == 2) md_->eep_enable(false);
+  out = v;
+  return ok;
 }
 
 // ---------------------------------------------------------------- GBA: SRAM, Flash e EEPROM (só leitura)
@@ -405,7 +532,7 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM) { err = E_SEM_SAVE; return false; }
   Cart c;
   if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : E_SEM_CARTUCHO; return false; }
-  if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+  if (c_.save == 0 || (sys == SYS_MD && c_.md_save == 4)) { release(); err = E_SEM_SAVE; return false; }   // EEPROM serial: só leitura
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);

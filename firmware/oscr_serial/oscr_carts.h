@@ -36,6 +36,8 @@ class CartBackend : public Backend {
     bool ssf = false;            // Mega Drive: mapper SSF2 (ROM acima de 4 MB)
     uint8_t md_save = 0;         // Mega Drive: 0 nenhum, 1 bytes ímpares, 2 bytes pares, 3 ambos
     uint32_t md_base = 0;        // endereço em palavras do início da SRAM
+    uint8_t md_eep = 0;          // Mega Drive: tipo da EEPROM serial (1 Acclaim 1, 2 Acclaim 2, 3 Capcom/Sega, 4 EA, 5 Codemasters)
+    uint16_t md_eep_size = 0;    // bytes
     uint8_t gba_type = 0;        // GBA, tipo de save pedido: 1 EEPROM 4K, 2 EEPROM 64K, 3 SRAM, 4 Flash 64K, 5 Flash 128K
   };
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
@@ -52,6 +54,16 @@ class CartBackend : public Backend {
   uint8_t md_hi_ = 0;                                     // byte alto pendente (SRAM "ambos")
   int16_t md_bank_ = -1;                                  // banco SSF2 já selecionado na janela 1
   void md_sram(bool on);
+  // EEPROM serial do Mega Drive (leitura)
+  void eep_state(uint8_t st);                             // bit 0 = SDA, bit 1 = SCL
+  void eep_run(const char* gen, const char* t2);          // sequência de estados; tipo 2 usa escritas separadas de SDA e SCL
+  bool eep_status();                                      // ACK
+  void eep_set(bool one);
+  bool eep_sda_in();
+  void eep_start(); void eep_finish(); void eep_stop();
+  bool eep_set_address(uint16_t address);
+  bool eep_device(uint16_t page, bool write_mode);
+  bool md_eep_read(uint16_t address, uint8_t& out);
   uint8_t md_save_byte(uint32_t i);
   void md_save_set(uint32_t i, uint8_t v);
   uint16_t mapper_ = 0;                                   // mapper em uso na leitura
