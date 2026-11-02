@@ -394,6 +394,31 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
   return true;
 }
 
+bool CartBackend::md_eep_write(uint16_t address, uint8_t value) {   // writeEepromByte do OSCR
+  uint8_t hi = uint8_t(address >> 8), lo = uint8_t(address & 0xFF);
+  bool ok = true;
+  if (c_.md_eep == 2) md_->eep_enable(true);
+  eep_start();
+  if (c_.md_eep_size > 0x80) {
+    if (c_.md_eep_size > 0x800) ok = eep_device(0, true) && eep_set_address(hi);
+    else ok = eep_device(hi, true);
+    ok = ok && eep_set_address(lo);
+  } else {                                                  // 24C01: endereço de 7 bits, depois o bit R/W = 0
+    eep_set_address(lo);
+    eep_set(0);
+    ok = eep_status();
+  }
+  if (ok) {
+    for (int i = 0; i < 8; i++) eep_set((value >> (7 - i)) & 1);
+    ok = eep_status();
+  }
+  eep_stop();
+  if (c_.md_eep == 2) md_->eep_enable(false);
+  // O OSCR espera 50 ms por byte e não confere o ACK do próximo acesso: o ciclo de escrita (5 a 10 ms) precisa acabar antes.
+  md_->wait_ms(c_.md_eep_size <= 0x100 ? 20 : 10);
+  return ok;
+}
+
 // ---------------------------------------------------------------- GBA: gravação de SRAM, Flash e EEPROM
 void CartBackend::gba_cmd(uint8_t c) {
   gba_->sram_write(0x5555, 0xAA); gba_->sram_write(0x2AAA, 0x55); gba_->sram_write(0x5555, c);
@@ -610,9 +635,9 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (sys != SYS_SNES && sys != SYS_MD && sys != SYS_NES && sys != SYS_FAMICOM && sys != SYS_GBA) { err = E_SEM_SAVE; return false; }
   Cart c;
   if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
-  if (c_.save == 0 || (sys == SYS_MD && c_.md_save == 4)) { release(); err = E_SEM_SAVE; return false; }   // EEPROM serial: só leitura
+  if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
-  if (sys == SYS_MD) md_sram(true);
+  if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
   if (sys == SYS_GBA && (c_.gba_type == 4 || c_.gba_type == 5) && !gba_flash_prepare()) { release(); err = E_CARTUCHO_IO; return false; }
   return true;
@@ -620,6 +645,15 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
   if (active_ == SYS_GBA) return gba_write(off, buf, len);
+  if (active_ == SYS_MD && c_.md_save == 4) {                                  // EEPROM serial: só grava o que mudou, e confere
+    for (uint16_t i = 0; i < len; i++) {
+      uint16_t a = uint16_t(off + i); uint8_t cur;
+      if (!md_eep_read(a, cur)) return false;
+      if (cur == buf[i]) continue;
+      if (!md_eep_write(a, buf[i]) || !md_eep_read(a, cur) || cur != buf[i]) return false;
+    }
+    return true;
+  }
   if (active_ == SYS_NES || active_ == SYS_FAMICOM) {
     for (uint16_t i = 0; i < len; i++) {
       uint16_t a = uint16_t(0x6000 + off + i);

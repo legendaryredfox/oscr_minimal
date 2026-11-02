@@ -73,6 +73,7 @@ class CartBackend : public Backend {
   bool eep_set_address(uint16_t address);
   bool eep_device(uint16_t page, bool write_mode);
   bool md_eep_read(uint16_t address, uint8_t& out);
+  bool md_eep_write(uint16_t address, uint8_t value);
   uint8_t md_save_byte(uint32_t i);
   void md_save_set(uint32_t i, uint8_t v);
   uint16_t mapper_ = 0;                                   // mapper em uso na leitura

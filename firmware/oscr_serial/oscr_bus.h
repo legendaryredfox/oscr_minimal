@@ -35,6 +35,7 @@ struct MdBus {  // dados de 16 bits (PA = D8..D15, PC = D0..D7)
   virtual void eep_sda(uint32_t word_addr, uint8_t d, bool slow) = 0;            // writeWord_SDA: D0 vai ao SDA (só /LWR)
   virtual void eep_scl(uint32_t word_addr, uint8_t d, bool slow) = 0;            // writeWord_SCL: D0 vai ao SCL (só /UWR)
   virtual void eep_cm(uint32_t word_addr, uint16_t w) = 0;                       // writeWord_CM (Codemasters): /UWR + pulsos de clock
+  virtual void wait_ms(uint16_t ms) = 0;                                         // ciclo de escrita da EEPROM
 };
 
 struct GbaBus {  // AD0..15 multiplexado (PF/PK), A16..A23 em PC

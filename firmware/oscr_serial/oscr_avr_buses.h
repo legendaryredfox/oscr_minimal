@@ -178,6 +178,7 @@ struct AvrMdBus : MdBus {
     eep_wait(slow);
     data_in();
   }
+  void wait_ms(uint16_t ms) override { delay(ms); }
   void eep_cm(uint32_t a, uint16_t w) override {
     data_out(); eep_addr(a); PORTC = w & 0xFF; PORTA = (w >> 8) & 0xFF;
     OSCR_NOP; OSCR_NOP;

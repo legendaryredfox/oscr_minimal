@@ -12,7 +12,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Host (Python) | CLI `dumper.py` completa, 49 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi a gravação de saves do GBA, D48). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi a gravação da EEPROM do Mega Drive, D49). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
@@ -20,13 +20,13 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 |---|---|---|
 | SNES | LoROM e HiROM | SRAM: ler e gravar (com conferência) |
 | NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 7; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1 e 4: ler e gravar |
-| Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: só ler** (38 checksums do OSCR) |
+| Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC | não | não |
 
 Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D47 de `docs/decisoes.md`.
 
-**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers 5, 9, 10, 11, 66, 69, 71 e RAM de 16/32 KB; GB/GBC; Mega Drive gravar EEPROM, Pier Solar, lock-on, mappers piratas.
+**Ainda não existe:** SNES ExHiROM e chips especiais (SA-1 precisa do Si5351 e do PIC); NES mappers 5, 9, 10, 11, 66, 69, 71 e RAM de 16/32 KB; GB/GBC; Pier Solar, lock-on, mappers piratas.
 
 ## 3. Mapa do código
 
@@ -52,7 +52,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 264 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 535 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 49 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -64,7 +64,7 @@ cd gui && ./gradlew :desktopApp:run                # abre a GUI (nunca testado e
 
 Sem hardware: `python3 host/dumper.py --simulate detect` e `... dump -s snes -o x.sfc` usam o simulador.
 
-Tamanho do firmware: 23,2 KB de flash (9%) no Mega.
+Tamanho do firmware: ~23,5 KB de flash (9%) no Mega.
 
 ## 5. Como o trabalho foi feito (padrão para continuar)
 
@@ -113,7 +113,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 - Revisão das traduções ru e zh por falante nativo.
 - Empacotamento (deb/AppImage, dmg, msi), previsto para depois.
 
-**C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mappers do NES (5, 9, 10, 11, 66, 69, 71), RAM de 16/32 KB do MMC1, SNES ExHiROM e SA-1, GB/GBC, Mega Drive gravar EEPROM.
+**C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mappers do NES (5, 9, 10, 11, 66, 69, 71), RAM de 16/32 KB do MMC1, SNES ExHiROM e SA-1, GB/GBC.
 
 ## 9. Preferências do usuário
 

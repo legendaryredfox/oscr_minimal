@@ -308,3 +308,10 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - **Host/GUI:** o `ACK` de cada `DATA` agora espera `long_timeout` (a EEPROM de 8 KB leva ~0,6 s por bloco de 512 bytes). A GUI usa o campo "Tipo de save" também na gravação.
 - **Testes:** modelo de Flash JEDEC (comandos, ID, apagar, banco, gravar só zera bits, página Atmel), EEPROM e SRAM simuladas; 264 verificações: todos os chips aceitos, blocos fora de alinhamento, chip desconhecido (nada é apagado), apagar ignorado, EEPROM que não grava, SRAM somente leitura, e-Reader.
 - **Não validado em hardware**, e é a gravação de maior risco do projeto. Primeiro teste real: SRAM (cartucho com backup feito), depois EEPROM, e só por último Flash.
+
+### D49 — Mega Drive: gravação de EEPROM serial (revisa D47)
+- `WRITE_SAVE` do Mega Drive com EEPROM (mesma detecção por checksum de D47). Porta de `writeEepromByte` do OSCR sobre as mesmas primitivas I2C da leitura; byte a byte.
+- **Só grava o que mudou:** lê o byte, e se for igual não grava (poupa tempo e ciclos de escrita da EEPROM). Depois de gravar, lê de volta e confere; qualquer falha dá `0x0007`.
+- **Ciclo de escrita:** o OSCR espera 50 ms por byte e a rotina `EepromStatus` dele **não** faz polling de ACK com novo START: ela só relê o SDA, então depende dessa espera. Aqui: 10 ms por byte (20 ms nas de 128 e 256 bytes), acima do tWR de 5 a 10 ms dos datasheets, para um bloco de 512 bytes caber no `long_timeout` do host (≈ 6 s). Se o chip ainda estiver ocupado no acesso seguinte, a espera pelo ACK esgota o limite e a gravação falha (a conferência pega), em vez de gravar errado. Mais devagar que isso só se o teste real mostrar que é preciso: aumente em `md_eep_write`.
+- **Teste:** o modelo 24Cxx ganhou o estado "ocupado" depois de gravar (sem ACK até a espera). Tirar a espera do firmware faz 249 verificações falharem. Os 10 casos de D47 agora gravam, não regravam dados iguais e recusam tamanho errado; cartucho sem ACK não altera nada. 535 verificações.
+- **Não validado em hardware.** Mesmos limites de D47 (bits por tipo copiados do OSCR) mais o tempo de gravação.

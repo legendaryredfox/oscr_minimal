@@ -167,6 +167,7 @@ struct SimMd : MdBus {
   void eep_sda(uint32_t, uint8_t, bool) override {}
   void eep_scl(uint32_t, uint8_t, bool) override {}
   void eep_cm(uint32_t, uint16_t) override {}
+  void wait_ms(uint16_t) override {}
 };
 
 // EEPROM serial 24Cxx (I2C) simulada, escrita a partir do datasheet e independente do código do firmware.
@@ -175,7 +176,7 @@ struct I2cEeprom {
   enum Ph { IDLE, BITS_IN, ACK_OUT, TX, MACK } ph = IDLE;
   enum Next { N_DEV, N_HI, N_LO, N_DATA } next = N_DEV;
   int bits = 0, txbit = 0; uint8_t shift = 0; uint32_t addr = 0, hi = 0, lo = 0; int page = 0; bool rw = false, tx_next = false, nack = false;
-  int ack_count = 0;
+  int ack_count = 0, writes = 0; bool busy = false, wrote = false;   // busy: ciclo de escrita em andamento, não dá ACK
   explicit I2cEeprom(size_t n) : mem(n) {}
   bool line() const { return sda_m && !slave_low; }
   uint8_t cur() const { return mem[addr % mem.size()]; }
@@ -184,7 +185,7 @@ struct I2cEeprom {
     sda_m = nsda; scl = nscl;
     if (oscl && nscl && osda != nsda) {                        // START / STOP com SCL alto
       if (!nsda) { ph = BITS_IN; next = N_DEV; bits = 0; slave_low = false; }
-      else { ph = IDLE; slave_low = false; }
+      else { ph = IDLE; slave_low = false; if (wrote) { busy = true; wrote = false; } }
       return;
     }
     if (nscl && !oscl) {                                       // subida do SCL
@@ -193,14 +194,14 @@ struct I2cEeprom {
     } else if (!nscl && oscl) {                                // descida do SCL
       if (ph == BITS_IN && bits == 8) {
         bits = 0; bool ack = true; tx_next = false;
-        if (mem.size() <= 128 && next == N_DEV) { addr = shift >> 1; rw = shift & 1; next = N_DATA; tx_next = rw; }
+        if (mem.size() <= 128 && next == N_DEV) { ack = !busy; addr = shift >> 1; rw = shift & 1; next = N_DATA; tx_next = rw; }
         else if (next == N_DEV) {
-          ack = (shift >> 4) == 0xA; page = (shift >> 1) & 7; rw = shift & 1;
+          ack = (shift >> 4) == 0xA && !busy; page = (shift >> 1) & 7; rw = shift & 1;
           if (rw) { addr = mem.size() > 0x800 ? (hi << 8 | lo) : (((uint32_t)page << 8) | lo) & (mem.size() - 1); tx_next = true; }
           else next = mem.size() > 0x800 ? N_HI : N_LO;
         } else if (next == N_HI) { hi = shift; next = N_LO; }
         else if (next == N_LO) { lo = shift; addr = mem.size() > 0x800 ? (hi << 8 | lo) : (((uint32_t)page << 8) | lo) & (mem.size() - 1); next = N_DATA; }
-        else if (next == N_DATA) { mem[addr % mem.size()] = shift; addr++; }
+        else if (next == N_DATA) { mem[addr % mem.size()] = shift; addr++; writes++; wrote = true; }
         if (ack) { slave_low = true; ack_count++; }
         ph = ack ? ACK_OUT : IDLE;
       } else if (ph == ACK_OUT) {
@@ -232,6 +233,7 @@ struct SimMdEep : SimMd {
   }
   void eep_cm(uint32_t wa, uint16_t w) override { if (type == 5 && wa == 0x180000) e.update(w & 1, (w >> 1) & 1); }
   void eep_enable(bool on) override { on2 = on; }
+  void wait_ms(uint16_t) override { e.busy = false; }       // o ciclo de escrita acaba
   void eep_sda(uint32_t wa, uint8_t d, bool) override { if (type == 2 && wa == 0x100000 && on2) e.update(d & 1, e.scl); else violations++; }
   void eep_scl(uint32_t wa, uint8_t d, bool) override { if (type == 2 && wa == 0x100000 && on2) e.update(e.sda_m, d & 1); else violations++; }
   uint16_t word(uint32_t wa) override {
@@ -483,13 +485,28 @@ static void test_md_eeprom() {
     std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_MD, KIND_SAVE, out, err);
     CHECK(out == s.e.mem);
     CHECK(s.violations == 0 && !s.on2);                    // tipo 2 liga a EEPROM só durante o acesso
-    uint16_t e2 = 0; CHECK(!be.write_begin(SYS_MD, uint32_t(k.size), e2) && e2 == E_SEM_SAVE);   // gravação não suportada
+    // gravação: só o que mudou é gravado; conferido; o ciclo de escrita é esperado
+    std::vector<uint8_t> nd(k.size); for (size_t i = 0; i < k.size; i++) nd[i] = pat(uint32_t(i) * 17 + 3);
+    uint16_t e2 = 0; be.set_options(0, 0, 0);
+    CHECK(be.write_begin(SYS_MD, uint32_t(k.size), e2));
+    for (size_t off = 0; off < k.size; off += 100) { size_t n = k.size - off < 100 ? k.size - off : 100; CHECK(be.write_block(uint32_t(off), &nd[off], uint16_t(n))); }
+    CHECK(be.write_commit() && s.e.mem == nd);
+    int w1 = s.e.writes;
+    CHECK(be.write_begin(SYS_MD, uint32_t(k.size), e2) && be.write_block(0, nd.data(), uint16_t(k.size < 512 ? k.size : 512)) && be.write_commit());
+    CHECK(s.e.writes == w1);                              // mesmos dados: nada é regravado
+    CHECK(!be.write_begin(SYS_MD, uint32_t(k.size) + 1, e2) && e2 == E_ARGUMENTO);
   }
   {  // checksum em branco só vale com E840 no cabeçalho; Codemasters 165E só com 'DN' no início
     SimMdEep a(3, 128, 0x0000); CartBackend ba(nullptr, nullptr, &a, nullptr); DetectInfo d; ba.detect(SYS_MD, d); CHECK(d.save_size == 0);
     a.rom[0x1B2] = 0xE8; a.rom[0x1B3] = 0x40; ba.detect(SYS_MD, d); CHECK(d.save_size == 128 && d.save_type == 3);
     SimMdEep c(5, 2048, 0x165E); CartBackend bc(nullptr, nullptr, &c, nullptr); bc.detect(SYS_MD, d); CHECK(d.save_size == 0);
     c.rom[0] = 0x44; c.rom[1] = 0x4E; bc.detect(SYS_MD, d); CHECK(d.save_size == 2048);
+  }
+  {  // sem ACK na gravação: erro, e a EEPROM não é alterada
+    SimMdEep s(4, 128, 0xA107); s.dead = true; std::vector<uint8_t> before = s.e.mem;
+    CartBackend be(nullptr, nullptr, &s, nullptr); uint16_t e2 = 0; uint8_t b = 0x5A;
+    CHECK(be.write_begin(SYS_MD, 128, e2) && !be.write_block(0, &b, 1)); be.write_abort();
+    CHECK(s.e.mem == before);
   }
   {  // EEPROM que não responde (sem ACK): erro de leitura, sem travar
     SimMdEep s(4, 128, 0xA107); s.dead = true;
