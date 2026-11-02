@@ -62,6 +62,7 @@ void CartBackend::acquire(uint8_t sys) {
 }
 
 void CartBackend::release() {
+  if (clocks_on_ && snes_) { snes_->cpu_clock(false); snes_->clocks_stop(); clocks_on_ = false; }
   if (active_ == SYS_MD && md_sram_on_) md_sram(false);
   if ((active_ == SYS_NES || active_ == SYS_FAMICOM) && nes_ram_on_) nes_ram(false);
   md_bank_ = -1;
@@ -118,13 +119,25 @@ bool CartBackend::probe(uint8_t sys, Cart& o, bool for_save) {
   uint8_t h[48];
   if (sys == SYS_SNES) {
     snes_->cs(false);                                                // volta ao padrão (ROM); a SRAM de HiROM/ExHiROM sobe o CS depois
-    for (uint8_t i = 0; i < 32; i++) h[i] = snes_->read(0x00, uint16_t(0xFFC0 + i));
-    uint16_t comp = h[0x1C] | (h[0x1D] << 8), sum = h[0x1E] | (h[0x1F] << 8);
-    if (all_same(h, 32) || uint16_t(comp ^ sum) != 0xFFFF) { o.status = 1; return false; }  // sem cartucho
+    bool good = false;
+    for (uint8_t pass = 0; pass < 2 && !good; pass++) {
+      for (uint8_t i = 0; i < 32; i++) h[i] = snes_->read(0x00, uint16_t(0xFFC0 + i));
+      uint16_t comp = h[0x1C] | (h[0x1D] << 8), sum = h[0x1E] | (h[0x1F] << 8);
+      good = !all_same(h, 32) && uint16_t(comp ^ sum) == 0xFFFF;
+      if (!good && pass == 0 && !clocks_on_ && snes_->clocks_available()) snes_clocks_boot();   // SA-1 e afins só respondem com clock e CIC
+    }
+    if (!good) { o.status = 1; return false; }                       // sem cartucho
     uint8_t map = h[0x15], mode = map & 0x0F, rs = h[0x17], ss = h[0x18];
+    bool sa1 = (mode == 3 && (h[0x16] == 0x34 || h[0x16] == 0x35));   // SA-1 com RAM (e bateria)
+    if (sa1 && !clocks_on_) {
+      if (!snes_->clocks_available()) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // sem o Si5351 não há SA-1
+      snes_clocks_boot();
+    }
+    if (clocks_on_) snes_->clocks_run();                              // clocks normais do console
     bool ex = (mode == 5);                                           // ExHiROM: $25 / $35 (cabeçalho em $40FFC0, visível em $00:FFC0)
-    if ((mode > 1 && !ex) || rs == 0 || rs > (ex ? 13 : 12)) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // SA-1 etc.
-    o.hirom = (mode == 1) || ex;
+    if ((mode > 1 && !ex && !sa1) || rs == 0 || rs > (ex ? 13 : 12)) { o.status = 2; copy_ascii(o.name, h, 21); return false; }   // SA-1 etc.
+    o.hirom = (mode == 1) || ex || sa1;                              // SA-1 lê a ROM como HiROM ($C0-$FF)
+    o.sa1 = sa1;
     o.exhirom = ex;
     o.rom = 1024UL << rs;
     if (ex && rs == 13) o.rom = 6144UL * 1024UL;                    // cabeçalho "8 MB": os ExHiROM conhecidos de mais de 4 MB têm 6 MB (48 Mbit); outro valor, informe o tamanho
@@ -448,7 +461,8 @@ bool CartBackend::open_read(uint8_t sys, uint8_t kind, uint32_t& size, uint16_t&
 }
 
 void CartBackend::snes_save_addr(uint32_t i, uint8_t& bank, uint16_t& addr) const {
-  if (c_.exhirom) { bank = uint8_t(0xB0 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
+  if (c_.sa1) { bank = uint8_t(0x40 + (i >> 16)); addr = uint16_t(i & 0xFFFF); }   // BW-RAM: 64 KB por banco a partir de $40
+  else if (c_.exhirom) { bank = uint8_t(0xB0 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
   else if (c_.hirom) { bank = uint8_t(0x30 + (i >> 13)); addr = uint16_t(0x6000 + (i & 0x1FFF)); }
   else { bank = uint8_t(0x70 + (i >> 15)); addr = uint16_t(i & 0x7FFF); }
 }
@@ -711,6 +725,22 @@ void CartBackend::md_save_set(uint32_t i, uint8_t v) {
   }
 }
 
+void CartBackend::snes_clocks_boot() {
+  snes_->clocks_boot();
+  clocks_on_ = true;
+  for (uint16_t i = 0; i < 1024; i++) snes_->read(0xC0, i);          // "primeira leitura" do cartucho, como getCartInfo_SNES do OSCR
+}
+
+bool CartBackend::sa1_finish() {
+  if (active_ != SYS_SNES || !c_.sa1 || sa1_blk_ < 0) return true;
+  snes_->write(0, 0x2224, 0); snes_->write(0, 0x2226, 0x80);         // bloco 0 outra vez
+  for (int8_t c = 15; c >= 0; c--) snes_->write(0, uint16_t(0x6000 + c), sa1_first_[c]);   // do último ao primeiro (corrige PGA Tour 96)
+  bool ok = true;
+  for (uint8_t c = 0; c < 16; c++) if (snes_->read(0, uint16_t(0x6000 + c)) != sa1_first_[c]) ok = false;
+  sa1_blk_ = -1;
+  return ok;
+}
+
 // ---------------------------------------------------------------- escrita de save (SNES SRAM)
 bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (!supports(sys)) { err = E_SISTEMA; return false; }
@@ -721,7 +751,15 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);
-  if (sys == SYS_SNES && c_.hirom) snes_->cs(true);
+  if (sys == SYS_SNES && c_.hirom && !c_.sa1) snes_->cs(true);
+  if (sys == SYS_SNES && c_.sa1) {                                   // BW-RAM do SA-1: com o clock do CPU ligado, janela em $6000 pelo registrador $2224
+    snes_->cpu_clock(true);
+    snes_->write(0, 0x2224, 0);                                      // BMAPS: bloco 0
+    snes_->write(0, 0x2226, 0x80);                                   // SBWE: gravação liberada
+    snes_->write(0, 0x2228, 0);                                      // BWPA: sem área protegida
+    snes_->wait_ms(1000);
+    sa1_blk_ = 0;
+  }
   if (sys == SYS_GBA && (c_.gba_type == 4 || c_.gba_type == 5) && !gba_flash_prepare()) { release(); err = E_CARTUCHO_IO; return false; }
   return true;
 }
@@ -767,6 +805,18 @@ bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
     return true;
   }
   if (active_ != SYS_SNES) return false;
+  if (active_ == SYS_SNES && c_.sa1) {                               // BW-RAM do SA-1 pela janela de $6000 (gravar direto em $40+ não funciona)
+    for (uint16_t i = 0; i < len; i++) {
+      uint32_t o = off + i;
+      int16_t blk = int16_t(o >> 13);
+      if (blk != sa1_blk_) { snes_->write(0, 0x2224, uint8_t(blk)); snes_->write(0, 0x2226, 0x80); sa1_blk_ = blk; }
+      uint16_t a = uint16_t(0x6000 + (o & 0x1FFF));
+      snes_->write(0, a, buf[i]);
+      if (o < 16) sa1_first_[o] = buf[i];                            // os 16 primeiros saem errados com frequência: regravados e conferidos no fim
+      else if (snes_->read(0, a) != buf[i]) return false;
+    }
+    return true;
+  }
   for (uint16_t i = 0; i < len; i++) {
     uint8_t bank; uint16_t addr;
     snes_save_addr(off + i, bank, addr);

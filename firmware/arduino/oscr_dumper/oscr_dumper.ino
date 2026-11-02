@@ -3,6 +3,7 @@
 // Precisa da biblioteca "oscr_serial" (pasta firmware/oscr_serial): copie-a para a pasta de
 // bibliotecas do Arduino, ou use: arduino-cli compile --library firmware/oscr_serial ...
 // Modo de teste sem cartucho (dados sintéticos): compile com -DOSCR_MOCK.
+#include <Wire.h>
 #include <oscr_arduino.h>
 #include <oscr_avr_buses.h>
 #include <oscr_carts.h>

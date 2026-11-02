@@ -5,9 +5,11 @@
 #pragma once
 #if defined(ARDUINO) && defined(__AVR_ATmega2560__)
 #include <Arduino.h>
+#include <Wire.h>
 #include <util/delay.h>
 
 #include "oscr_bus.h"
+#include "oscr_si5351.h"
 
 #define OSCR_NOP __asm__ __volatile__("nop\n\t")
 #define OSCR_NOP4 do { OSCR_NOP; OSCR_NOP; OSCR_NOP; OSCR_NOP; } while (0)
@@ -37,6 +39,76 @@ struct AvrSnesBus : SnesBus {
   }
   void end() override { bus_release(); }
   void cs(bool high) override { if (high) PORTH |= (1 << 3); else PORTH &= ~(1 << 3); }
+  void wait_ms(uint16_t ms) override { delay(ms); }
+
+  // ---- Si5351 (I²C 0x60, SDA D20 / SCL D21) e CIC (PG1 = reset do PIC). Sequências e frequências do OSCR (SNES.ino);
+  // os registradores seguem o datasheet do Si5351 (AN619). NÃO VALIDADO EM HARDWARE.
+  uint8_t clk_state_ = 0;                                              // 0 não testado, 1 presente, 2 ausente
+  uint8_t clk_oe_ = 0xFF;                                              // registrador 3: bit = 1 desliga a saída
+  bool clk_pll_ = false;
+  bool i2c_write(uint8_t reg, const uint8_t* d, uint8_t n) {
+    Wire.beginTransmission(0x60); Wire.write(reg);
+    for (uint8_t i = 0; i < n; i++) Wire.write(d[i]);
+    return Wire.endTransmission() == 0;
+  }
+  bool i2c_write1(uint8_t reg, uint8_t v) { return i2c_write(reg, &v, 1); }
+  bool clocks_available() override {
+    if (clk_state_ == 0) {
+      Wire.begin();
+#ifdef WIRE_HAS_TIMEOUT
+      Wire.setWireTimeout(25000, true);                                // não trava se o barramento ficar preso
+#endif
+      Wire.beginTransmission(0x60);
+      clk_state_ = (Wire.endTransmission() == 0) ? 1 : 2;
+    }
+    return clk_state_ == 1;
+  }
+  void si_set(uint8_t clk, uint64_t centihz) {                         // clk 0 a 2, PLLA fixo em 900 MHz
+    if (!clk_pll_) {
+      uint8_t p[8]; Si5351Synth pll = {SI5351_PLL_MULT, 0, 1, 0, true};
+      si5351_pack(pll, 0, p);
+      i2c_write1(183, 0xD2);                                           // carga do cristal: 10 pF
+      i2c_write(26, p, 8);                                             // MSNA (PLLA)
+      clk_pll_ = true;
+    }
+    Si5351Synth s = si5351_synth(centihz);
+    if (!s.ok) return;
+    uint8_t m[8]; si5351_pack(s, s.r_div, m);
+    i2c_write(42 + 8 * clk, m, 8);                                     // MS0 = 42, MS1 = 50, MS2 = 58
+    i2c_write1(16 + clk, s.b == 0 ? 0x4F : 0x0F);                      // ligado, modo inteiro se b = 0, fonte PLLA, saída do multisynth, 8 mA
+    i2c_write1(177, 0xA0);                                             // reinicia o PLL
+  }
+  void si_oe(uint8_t mask_on, uint8_t mask_off) {
+    clk_oe_ = (clk_oe_ & ~mask_on) | mask_off;
+    i2c_write1(3, clk_oe_);
+  }
+  void clocks_boot() override {
+    if (!clocks_available()) return;
+    clk_oe_ = 0xFF; clk_pll_ = false;
+    i2c_write1(3, 0xFF);                                               // todas as saídas desligadas
+    for (uint8_t i = 0; i < 3; i++) i2c_write1(16 + i, 0x80);          // multisynths desligados
+    si_set(1, 100000000ULL);                                           // CPU 1 MHz
+    si_set(2, 100000000ULL);                                           // CIC 1 MHz
+    si_set(0, 400000000ULL);                                           // master 4 MHz
+    si_oe((1 << 2) | (1 << 0), 0);                                     // liga CIC e master; o clock do CPU fica desligado
+    delay(500);
+    DDRG |= (1 << 1); PORTG &= ~(1 << 1);                              // PG1 baixo: o PIC (CIC) começa a rodar
+    delay(500);
+  }
+  void clocks_run() override {
+    if (!clocks_available()) return;
+    si_set(0, 2147727200ULL);                                          // master 21,477272 MHz
+    si_set(1, 357954500ULL);                                           // CPU 3,579545 MHz
+    si_set(2, 307200000ULL);                                           // CIC 3,072 MHz
+  }
+  void cpu_clock(bool on) override {
+    if (!clocks_available()) return;
+    if (on) si_oe(1 << 1, 0); else si_oe(0, 1 << 1);
+  }
+  void clocks_stop() override {
+    DDRG |= (1 << 1); PORTG |= (1 << 1);                               // PG1 alto: CIC em reset
+    if (clk_state_ == 1) { clk_oe_ = 0xFF; i2c_write1(3, 0xFF); }
+  }
   uint8_t read(uint8_t bank, uint16_t addr) override {
     PORTL = bank; PORTF = addr & 0xFF; PORTK = addr >> 8;
     OSCR_NOP4; OSCR_NOP; OSCR_NOP;                                      // ~375 ns, como no OSCR

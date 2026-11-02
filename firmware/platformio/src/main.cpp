@@ -2,6 +2,7 @@
 // Projeto PlatformIO do dumper oscr_minimal. Mesmo código do projeto Arduino.
 // Ambiente "megaatmega2560_mock": dados sintéticos, sem cartucho (-DOSCR_MOCK).
 #include <Arduino.h>
+#include <Wire.h>
 #include <oscr_arduino.h>
 #include <oscr_avr_buses.h>
 #include <oscr_carts.h>

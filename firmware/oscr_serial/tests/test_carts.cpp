@@ -53,6 +53,44 @@ struct SimSnes : SnesBus {
   void write(uint8_t b, uint16_t a, uint8_t v) override { bool ok; size_t si = sram_index(b, a, ok); if (ok && si < sram.size()) sram[si] = v; }
 };
 
+// SA-1 simulado: o cabeçalho só aparece depois de clocks_boot (Si5351 + CIC); a ROM em $C0+ só com os clocks normais;
+// a BW-RAM só grava pela janela de $6000 (BMAPS/SBWE) com o clock do CPU ligado; o primeiro byte gravado se perde (como na vida real, segundo o OSCR).
+struct SimSa1 : SnesBus {
+  std::vector<uint8_t> rom, bw; bool avail = true, booted = false, run = false, cpu = false, cs_high = false;
+  uint8_t bmaps = 0, sbwe = 0; int boots = 0, stops = 0; bool first_lost = true; bool lose_first = true;
+  SimSa1(uint8_t rsz, uint8_t ssz, bool bad = false) {
+    rom.resize(1024UL << rsz); for (size_t i = 0; i < rom.size(); i++) rom[i] = pat(uint32_t(i) + 3);
+    bw.assign(1024UL << ssz, 0);
+    size_t h = 0x7FC0; memset(&rom[h], ' ', 21); memcpy(&rom[h], "SA1 TESTE", 9);
+    rom[h + 0x15] = 0x23; rom[h + 0x16] = 0x35; rom[h + 0x17] = rsz; rom[h + 0x18] = ssz;
+    uint16_t sum = 0x4321, comp = bad ? 0 : uint16_t(~sum);
+    rom[h + 0x1C] = comp & 0xFF; rom[h + 0x1D] = comp >> 8; rom[h + 0x1E] = sum & 0xFF; rom[h + 0x1F] = sum >> 8;
+  }
+  void begin() override {} void end() override {}
+  bool clocks_available() override { return avail; }
+  void clocks_boot() override { booted = true; run = false; boots++; }
+  void clocks_run() override { if (booted) run = true; }
+  void cpu_clock(bool on) override { if (booted) cpu = on; }
+  void clocks_stop() override { booted = run = cpu = false; stops++; }
+  void cs(bool high) override { cs_high = high; }
+  uint8_t read(uint8_t b, uint16_t a) override {
+    if (!booted) return 0xFF;
+    if (b >= 0x40 && b <= 0x4F) { size_t i = (size_t(b - 0x40) << 16) | a; return cs_high && i < bw.size() ? bw[i] : 0xFF; }
+    if (b == 0 && a >= 0x6000 && a < 0x8000) { size_t i = size_t(bmaps) * 8192 + (a - 0x6000); return i < bw.size() ? bw[i] : 0xFF; }
+    if (b >= 0xC0) return run ? rom[((size_t(b - 0xC0) << 16) | a) % rom.size()] : 0xFF;
+    if (b <= 0x3F && a >= 0x8000) return rom[((size_t(b) << 15) | (a & 0x7FFF)) % rom.size()];
+    return 0xFF;
+  }
+  void write(uint8_t b, uint16_t a, uint8_t v) override {
+    if (b != 0) return;                                             // gravar direto em $40+ não faz nada
+    if (a == 0x2224) bmaps = v; else if (a == 0x2226) sbwe = v;
+    else if (a >= 0x6000 && a < 0x8000 && cpu && sbwe == 0x80) {
+      if (lose_first && first_lost) { first_lost = false; return; }
+      size_t i = size_t(bmaps) * 8192 + (a - 0x6000); if (i < bw.size()) bw[i] = v;
+    }
+  }
+};
+
 // ---------------------------------------------------------------- NES simulado
 struct SimNes : NesBus {
   std::vector<uint8_t> prgrom, chrrom; bool absent = false;
@@ -429,6 +467,43 @@ static void test_snes_exhirom() {
   CHECK(ok && bh.write_commit() && hi.sram == sv);
 }
 
+static void test_snes_sa1() {
+  {
+    SimSa1 s(10, 5);                                                   // 1 MB, BW-RAM de 32 KB
+    CartBackend be(&s, nullptr, nullptr, nullptr);
+    CHECK((be.flags() & 2) != 0);
+    DetectInfo d; be.detect(SYS_SNES, d);
+    CHECK(d.status == 0 && d.rom_size == 1024UL * 1024 && d.save_size == 32768 && strcmp(d.name, "SA1 TESTE") == 0);
+    CHECK(s.boots == 1 && !s.booted && s.stops >= 1);                   // ligou os clocks uma vez e desligou ao terminar
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_SNES, KIND_ROM, out, err);
+    CHECK(out.size() == s.rom.size() && memcmp(out.data(), s.rom.data(), out.size()) == 0);
+    for (size_t i = 0; i < s.bw.size(); i++) s.bw[i] = pat(uint32_t(i) + 71);
+    dump(be, SYS_SNES, KIND_SAVE, out, err);                            // leitura pelos bancos $40+ (com CS alto)
+    CHECK(out == s.bw);
+    std::vector<uint8_t> save(32768); for (size_t i = 0; i < save.size(); i++) save[i] = pat(uint32_t(i) + 5000);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_SNES, 32768, e2));
+    CHECK(s.cpu);                                                       // clock do CPU ligado para gravar
+    bool ok = true; for (uint32_t off = 0; off < 32768; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(ok && be.write_commit());                                     // o primeiro byte se perdeu; os 16 primeiros foram regravados
+    CHECK(s.bw == save && !s.cpu && !s.booted);
+  }
+  { SimSa1 s(10, 5); s.avail = false; CartBackend be(&s, nullptr, nullptr, nullptr);     // sem Si5351: o cabeçalho nunca aparece
+    DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 1 && s.boots == 0); CHECK((be.flags() & 2) == 0); }
+  { SimSa1 s(10, 5, true); CartBackend be(&s, nullptr, nullptr, nullptr);                // cabeçalho inválido mesmo com clocks
+    DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 1 && s.boots == 1 && !s.booted); }
+  { SimSa1 s(10, 5); s.lose_first = false; CartBackend be(&s, nullptr, nullptr, nullptr);   // gravação que não confere: falha
+    std::vector<uint8_t> save(32768, 0x55); uint16_t e2 = 0; CHECK(be.write_begin(SYS_SNES, 32768, e2));
+    s.sbwe = 0; s.cpu = false;                                         // simula a BW-RAM protegida
+    bool ok = true; for (uint32_t off = 0; off < 512; off += 512) ok = ok && be.write_block(off, &save[off], 512);
+    CHECK(!ok); be.write_abort(); }
+  // cartuchos comuns não ligam clock nenhum, mesmo com o Si5351 presente
+  { struct Counting : SimSnes { int boots = 0; using SimSnes::SimSnes; bool clocks_available() override { return true; } void clocks_boot() override { boots++; } };
+    Counting plain(false, 9, 3); CartBackend be(&plain, nullptr, nullptr, nullptr); DetectInfo d; be.detect(SYS_SNES, d);
+    CHECK(d.status == 0 && plain.boots == 0);
+    Counting none(false, 9, 3, true); CartBackend b2(&none, nullptr, nullptr, nullptr); b2.detect(SYS_SNES, d);   // sem cartucho: tenta os clocks uma vez
+    CHECK(d.status == 1 && none.boots == 1); }
+}
+
 static void test_nes() {
   for (uint32_t prg : {16384u, 32768u}) for (uint32_t chr : {0u, 8192u}) {
     SimNes s(prg, chr); CartBackend be(nullptr, &s, nullptr, nullptr);
@@ -778,7 +853,7 @@ static void test_sistemas_sem_barramento() {
 }
 
 int main() {
-  test_snes(); test_snes_exhirom(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
+  test_snes(); test_snes_exhirom(); test_snes_sa1(); test_nes(); test_nes_mappers(); test_nes_saves(); test_md(); test_md_sram_ssf(); test_md_tamanho(); test_md_eeprom(); test_gba_write(); test_gba(); test_sistemas_sem_barramento();
   printf("%d verificações de cartuchos, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

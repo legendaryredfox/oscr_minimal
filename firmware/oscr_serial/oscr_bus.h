@@ -12,6 +12,13 @@ struct SnesBus {  // 24 bits: banco (PL) + endereço (PF/PK), dado em PC
   virtual void end() = 0;
   virtual uint8_t read(uint8_t bank, uint16_t addr) = 0;
   virtual void write(uint8_t bank, uint16_t addr, uint8_t value) = 0;
+  // Clocks do console (Si5351) e CIC, só para chips que não respondem sem eles (SA-1). Sem o módulo, nada disso faz nada.
+  virtual bool clocks_available() { return false; }   // Si5351 respondendo no I²C
+  virtual void clocks_boot() {}                       // clocks lentos (4 MHz / 1 MHz) e CIC ligado: desbloqueia o SA-1
+  virtual void clocks_run() {}                        // clocks normais do SNES (21,477 / 3,579 / 3,072 MHz); o do CPU continua desligado
+  virtual void cpu_clock(bool on) { (void)on; }       // clock do CPU (CLK1): ligado só para gravar a BW-RAM do SA-1
+  virtual void clocks_stop() {}                       // desliga os três clocks e segura o CIC em reset
+  virtual void wait_ms(uint16_t ms) { (void)ms; }
   virtual void cs(bool high) { (void)high; }   // CS (PH3): o OSCR o sobe para ler/gravar a SRAM de HiROM e ExHiROM; baixo para o resto
 };
 

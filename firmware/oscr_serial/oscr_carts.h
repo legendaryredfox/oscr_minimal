@@ -12,7 +12,7 @@ class CartBackend : public Backend {
  public:
   CartBackend(SnesBus* snes, NesBus* nes, MdBus* md, GbaBus* gba) : snes_(snes), nes_(nes), md_(md), gba_(gba) {}
 
-  uint8_t flags() override { return 0; }
+  uint8_t flags() override { return (snes_ && snes_->clocks_available()) ? 2 : 0; }   // bit1: Si5351 respondendo
   uint16_t systems() override;
   bool supports(uint8_t sys) override;
   void detect(uint8_t sys, DetectInfo& out) override;
@@ -22,7 +22,7 @@ class CartBackend : public Backend {
   void set_options(uint16_t mapper, uint16_t prg_kb, uint16_t chr_kb) override { opt_mapper_ = mapper; opt_prg_ = prg_kb; opt_chr_ = chr_kb; }
   bool write_begin(uint8_t sys, uint32_t size, uint16_t& err) override;
   bool write_block(uint32_t off, const uint8_t* buf, uint16_t len) override;
-  bool write_commit() override { release(); clear_options(); return true; }
+  bool write_commit() override { bool ok = sa1_finish(); release(); clear_options(); return ok; }
   void write_abort() override { release(); clear_options(); }
 
  private:
@@ -32,6 +32,7 @@ class CartBackend : public Backend {
     uint8_t save_type = 0;
     char name[33] = {0};
     bool hirom = false;          // SNES
+    bool sa1 = false;            // SNES SA-1 (mapa $23, chips $34/$35): precisa do Si5351 e do CIC
     bool exhirom = false;        // SNES ExHiROM (mapa $25/$35): ROM de até 8 MB, cabeçalho em $40FFC0
     uint32_t prg = 0, chr = 0;   // NES (bytes)
     bool ssf = false;            // Mega Drive: mapper SSF2 (ROM acima de 4 MB)
@@ -45,6 +46,11 @@ class CartBackend : public Backend {
   SnesBus* snes_; NesBus* nes_; MdBus* md_; GbaBus* gba_;
   Cart c_;
   void clear_options() { opt_mapper_ = opt_prg_ = opt_chr_ = 0; }
+  bool clocks_on_ = false;       // SNES: Si5351 e CIC ligados (SA-1)
+  void snes_clocks_boot();       // clocks lentos + CIC, e lê 1 KB do banco $C0 ("primeira leitura" do OSCR)
+  uint8_t sa1_first_[16] = {0};  // SA-1: 16 primeiros bytes do save, regravados no fim
+  int16_t sa1_blk_ = -1;         // SA-1: bloco de 8 KB da BW-RAM mapeado em $6000
+  bool sa1_finish();             // SA-1: regrava os 16 primeiros bytes, confere, desliga o clock do CPU
   uint8_t active_ = 0;           // sistema com barramento aberto (0 = nenhum)
   uint16_t opt_mapper_ = 0, opt_prg_ = 0, opt_chr_ = 0;   // opções do NES/Famicom (set_options)
   int16_t gba_bank_ = 0;                                  // GBA Flash 128 KB: banco selecionado
