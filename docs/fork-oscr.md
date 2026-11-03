@@ -8,12 +8,12 @@ Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware
 |---|---|
 | Cópia do upstream em `firmware/oscr/` | feita (commit `d9cb26a` do upstream) |
 | Núcleos desligados (`user.ini`) | N64, SMS, autoteste |
-| Compila para o Mega (`pio run -e SerialASCII`) | sim: 113.692 B de flash (44,8%), 3.091 B de RAM (37,7%) |
+| Compila para o Mega (`pio run -e SerialASCII`) | sim: 118.372 B de flash (46,6%), 3.146 B de RAM (38,4%) |
 | UI de texto silenciada | feita (`ClockedSerial.mute`, `rawWrite` só para o protocolo) |
 | `OSCR::Storage` sem SD | **feito**: `StreamFile` (arquivo virtual) e `StreamSd` (sem sistema de arquivos); o SD sai do build |
 | Modo fluxo no protocolo (`Session`) | **feito e testado no PC**: `stream_read`/`stream_write`, `BEGIN` com tamanho `0xFFFFFFFF`, cliente Python e GUI aceitam |
-| Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **Mega Drive**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE` (SRAM e EEPROM). **Compila; nunca rodou** |
-| SNES, NES/Famicom, GBA, GB/GBC | **não ligados** |
+| Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **Mega Drive**, **GBA** e **GB/GBC**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. **Compila; nunca rodou** |
+| SNES, NES/Famicom | **não ligados** |
 | Erros fatais e esperas por botão | `fatalError` volta ao laço por `longjmp`; `waitButton` não espera |
 | Identificação por banco de dados no PC | **não feita** (seção 3.2) |
 | Validação em hardware | nenhuma |

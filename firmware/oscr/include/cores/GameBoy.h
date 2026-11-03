@@ -46,6 +46,8 @@ namespace OSCR::Cores
 
     extern bool audioWE;
     extern uint16_t lastByteAddress;
+    extern uint16_t romBanks;    // fork oscr_minimal: o laço de comandos precisa dos tamanhos
+    extern uint16_t sramBanks;
 
     void menu();
 

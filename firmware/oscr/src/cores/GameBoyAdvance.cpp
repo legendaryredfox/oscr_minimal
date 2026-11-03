@@ -891,6 +891,7 @@ namespace OSCR::Cores::GameBoyAdvance
 
     cartOff();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: o fluxo é sequencial; a correção do preenchimento (seek) e a conferência pela base de dados não existem
     // Fix unmapped ROM area of cartridges with 32 MB ROM + EEPROM save type
     if ((cartSize == 0x2000000) && ((saveType == 1) || (saveType == 2)))
     {
@@ -909,9 +910,15 @@ namespace OSCR::Cores::GameBoyAdvance
       OSCR::Storage::Shared::sharedFile.write(padding_byte, 256);
     }
 
+# endif /* !OSCR_DUMPER */
     OSCR::UI::printLine(FS(OSCR::Strings::Common::DONE));
 
     OSCR::UI::ProgressBar::finish();
+
+# if OSCR_DUMPER
+    OSCR::Storage::Shared::close();
+    return;   // o PC confere o checksum e o CRC32 (END)
+# endif
 
     // Overwrite the progress bar
     OSCR::UI::setLineRel(-1);

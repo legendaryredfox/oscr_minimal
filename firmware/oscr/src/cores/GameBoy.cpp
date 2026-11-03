@@ -1324,6 +1324,12 @@ namespace OSCR::Cores
 
       OSCR::UI::ProgressBar::finish();
 
+# if OSCR_DUMPER
+      // fork oscr_minimal: sem arquivo para reler nem base de dados; o PC confere o checksum global e o CRC32 (END)
+      OSCR::Storage::Shared::close();
+      return true;
+# endif
+
       OSCR::UI::setLineRel(-1);
       OSCR::UI::clearLine();
       OSCR::UI::printSync(FS(OSCR::Strings::Status::Checksum));

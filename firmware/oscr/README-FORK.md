@@ -12,10 +12,12 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 | `include/arch/avr/generic/interfaces/ClockedSerial.h`, `src/.../ClockedSerial.cpp` | `mute` (a UI de texto não escreve) e `rawWrite` (só o protocolo). |
 | `src/ui/interfaces/serial/ascii.cpp` | `_error` marca o erro, `_fatalError` volta ao laço por `longjmp`, `waitButton` não espera. |
 | `src/main.cpp` | `setup()` chama `Dumper::setup()`; `loop()` chama `Dumper::loop()` no lugar do menu. |
-| `include/cores/MegaDrive.h` | `extern uint16_t eepSize;` |
+| `include/cores/MegaDrive.h`, `include/cores/GameBoy.h` | `extern` de `eepSize`, `romBanks` e `sramBanks` (o laço de comandos precisa deles). |
+| `src/cores/GameBoyAdvance.cpp`, `src/cores/GameBoy.cpp` | `readROM` termina depois do último byte (sem reler o arquivo nem a base de dados). |
+| `src/apps/Prompts.cpp`, `src/apps/FileBrowser.cpp` | Sem usuário: os prompts não esperam; `selectFile` abre o arquivo virtual que o PC manda. |
 | `include/dumper/*`, `src/dumper/*` (novos) | `Dumper` (laço de comandos e backend do Mega Drive), `StreamFile`, e cópias de `oscr_proto`/`oscr_session` de `firmware/oscr_serial`. |
 | `README-FORK.md` (novo) | Este arquivo. |
 
-Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardware 5, E/S por serial, sem tela nem botões). Medida em 2026-11-03 com o laço de comandos: flash 113.692 bytes (44,8%), RAM 3.091 bytes (37,7%). O upstream puro ocupa 141.824 bytes.
+Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardware 5, E/S por serial, sem tela nem botões). Medida em 2026-11-03 com o laço de comandos: flash 118.372 bytes (46,6%), RAM 3.146 bytes (38,4%). O upstream puro ocupa 141.824 bytes.
 
-**Estado (ver `docs/fork-oscr.md`):** o Mega Drive está ligado ao protocolo (compila, nunca rodou). SNES, NES/Famicom, GBA e GB/GBC ainda não.
+**Estado (ver `docs/fork-oscr.md`):** Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). SNES e NES/Famicom ainda não.

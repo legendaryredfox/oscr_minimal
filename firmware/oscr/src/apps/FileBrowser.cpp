@@ -213,6 +213,12 @@ namespace OSCR
 
   void selectFile(__FlashStringHelper const * title, oflag_t oflag)
   {
+# if OSCR_DUMPER
+    (void)title;   // fork oscr_minimal: o "arquivo" é o que o PC manda pelo protocolo
+    if (OSCR::Storage::Shared::sharedFile.isOpen()) OSCR::Storage::Shared::sharedFile.close();
+    OSCR::Storage::Shared::sharedFile.open("save", oflag);
+    return;
+# endif
     FileBrowser browser(title);
 
     if (OSCR::Storage::Shared::sharedFile.isOpen()) OSCR::Storage::Shared::sharedFile.close();
@@ -222,6 +228,11 @@ namespace OSCR
 
   void selectFile(__FlashStringHelper const * title, OSCR::Storage::File & file, oflag_t oflag, bool useShared)
   {
+# if OSCR_DUMPER
+    (void)title; (void)useShared;
+    file.open("save", oflag);
+    return;
+# endif
     FileBrowser browser(title);
 
     return useShared ? wrapOpenFileShared(browser, file, oflag) : wrapOpenFilePlain(browser, file, oflag);
@@ -229,6 +240,11 @@ namespace OSCR
 
   void selectFile(__FlashStringHelper const * title, OSCR::Storage::File & file, oflag_t oflag, char * nameBuff, size_t nameSize, char * pathBuff, size_t pathSize)
   {
+# if OSCR_DUMPER
+    (void)title; (void)nameBuff; (void)nameSize; (void)pathBuff; (void)pathSize;
+    file.open("save", oflag);
+    return;
+# endif
     FileBrowser browser(title);
 
     return wrapOpenFile(browser, file, oflag, nameBuff, nameSize, pathBuff, pathSize);

@@ -66,6 +66,7 @@
 - **D65** Firmware: volta ao plano de usar o firmware original do OSCR (decisão do usuário, 2026-11-03)
 - **D66** Fork: SD trocado pela serial e protocolo ligado ao Mega Drive; identificação por banco de dados no PC (decisão do usuário, 2026-11-03)
 - **D67** Gerbers para pedir a placa (2026-11-03)
+- **D68** Fork: GBA e GB/GBC ligados ao protocolo (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -534,5 +535,12 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Exportado com `kicad-cli`** (o MCP não foi necessário): F.Cu, B.Cu, máscaras, silk, contorno (extensões Protel, sem X2) e furos Excellon métrico (PTH e NPTH separados). Cobre, máscara, contorno e silk de cima saíram **idênticos** aos de 2026-11-02; mudam só as datas de criação, e a silk de baixo (que não tem desenho) deixou de trazer recortes vazios.
 - **Conferido com `gerbonara`:** 7 camadas, contorno 144,05 × 108,05 mm, 915 furos metalizados (iguais a D32) e 14 não metalizados (12 de D32 mais os 2 de M2 do módulo Si5351, D34).
 - **Arquivo para a fábrica:** `dumper-v1.0-gerbers-jlcpcb.zip` na raiz do projeto (mesmo conteúdo de `hardware/fab/dumper-v1.0-jlcpcb.zip`). Pedido: 2 camadas, 1,6 mm, HASL, 5 peças (CLAUDE.md seção 1).
+- **Configurações do pedido na JLCPCB (PCB, upload do zip):** Base material FR-4; camadas 2; dimensões 144 × 108 mm (lidas do arquivo); quantidade 5; espessura 1,6 mm; cobre 1 oz; acabamento HASL (com chumbo ou sem chumbo, a gosto; sem chumbo é a opção padrão da maioria dos pedidos de hobby); máscara e cor da seda: **escolha sua** (o CLAUDE.md manda perguntar; silk branco em máscara verde/preta é o padrão); trilha/espaço mínimo do projeto 0,2 mm; furo mínimo 0,3 mm (o padrão aceita); sem controle de impedância, sem dedos de ouro, sem castelo, sem borda em V; "Remove Order Number" (opcional, cobra à parte; sem isso, a JLCPCB imprime um código no silk de baixo, que está vazio); teste: o padrão. Sem montagem (PCBA) e sem stencil: todas as peças são THT, e o slot do GBA (SMD, 1,5 mm) é soldado à mão.
 - **O que continua estimado e só o hardware responde** (não impede o pedido, mas pode obrigar a girar um slot ou mudar o silk numa v1.1): corpo e altura dos slots (D17, ±3 mm), lado da etiqueta e direção de entrada do slot (D27, D28, U-18), posição dos furos M2 do módulo Si5351 (D34) e altura dos espaçadores (D25). As **trilhas, os furos e a pinagem** não dependem disso.
+
+### D68 — Fork: GBA e GB/GBC ligados ao protocolo (2026-11-03)
+- Detalhes em `docs/fork-oscr.md` seção 1.3. Resumo: GBA sem a CRDB (tamanho da ROM por espelhamento, tipo de save pelo campo `mapper`), GB pelo `checkCart` do OSCR; `readROM` dos dois núcleos termina depois do último byte; prompts e seletor de arquivo sem usuário; erros do OSCR depois do dado não derrubam a leitura.
+- **Compila (118.372 B de flash, 46,6%); nunca rodou.** Sem teste no PC: o código do OSCR não roda fora do AVR.
+- **Perdas:** correção de preenchimento de GBA 32 MB + EEPROM, e a verificação do save depois de gravar (o PC precisa reler). A gravação da Flash do MBC6 é a do OSCR, sem teste.
+- Faltam SNES e NES/Famicom, e a identificação por banco de dados no PC.
 
