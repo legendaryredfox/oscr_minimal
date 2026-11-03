@@ -13,13 +13,18 @@ from typing import Optional
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID.
 # No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
-         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1}
+         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1,
+         "gb-diy-mbc3": 1, "gb-diy-mbc5": 2, "gb-hdr-mbc30": 3, "gb-cam-first": 4, "gb-cam-second": 5, "gb-orange-fm": 6, "gb-39sf-mbc5": 7, "gb-cfi": 8}
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
-               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0}
+               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0,
+               "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)",
               "gba-flash": "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)",
+              "gb-diy-mbc3": "GB flash 29F, DIY MBC3 (WR)", "gb-diy-mbc5": "GB flash 29F, DIY MBC5 (WR)", "gb-hdr-mbc30": "GB flash 29F, HDR MBC30 (WE no pino de áudio)",
+              "gb-cam-first": "GB flash 29F, HDR GameBoy Cam, 1º jogo (apaga)", "gb-cam-second": "GB flash 29F, HDR GameBoy Cam, 2º jogo (sem apagar)",
+              "gb-orange-fm": "GB flash 39SF010 sem MBC, Orange FM (32 KB)", "gb-39sf-mbc5": "GB flash 39SF040, MBC5 (WE no pino de áudio)", "gb-cfi": "GB flash CFI",
               "snes-lorom-p0": "SNES flash de 8 bits, LoROM (P0)", "snes-hirom-p0": "SNES flash de 8 bits, HiROM (P0)",
               "snes-exlorom-p1": "SNES flash de 8 bits, ExLoROM (P1)", "snes-exhirom-p1": "SNES flash de 8 bits, ExHiROM (P1)"}
 SNES_CFI_CHIPS = ("snes-lorom", "snes-hirom")                     # menus "CFI LoROM / CFI HiROM": flash CFI de 1, 2 ou 4 chips (--layout)
@@ -32,6 +37,8 @@ SNES_GENERIC = 0x10
 FLASH_TYPES = {"29f032": 1, "29f1610": 2, "lh28f0xx": 3, "29f1601": 4, "29lv640": 5, "29f800": 6, "29gl": 7, "e28fxxxj3a": 8}
 FLASH_TYPES_NEED_SECTOR = ("29gl", "lh28f0xx", "e28fxxxj3a")
 MD_MAX_BYTES = 4 * 1024 * 1024
+GB_CHIPS = ("gb-diy-mbc3", "gb-diy-mbc5", "gb-hdr-mbc30", "gb-cam-first", "gb-cam-second", "gb-orange-fm", "gb-39sf-mbc5", "gb-cfi")
+GB_MAX_BYTES = 4 * 1024 * 1024
 GBA_MAX_BYTES = 32 * 1024 * 1024               # flash de 1 chip; o 369-in-1 vai até 256 MB (bloco 0) ou até o fim da memória (bloco N, de 4 MB)
 GBA_369_MAX_BYTES = 256 * 1024 * 1024
 GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024   # prg_kb do DUMP_ROM é u16 (KB)
@@ -178,6 +185,18 @@ def split_gba(data: bytes, block: int = 0) -> RomImage:
     if len(data) > limit:
         raise ValueError(f"a ROM tem {len(data) // 1024} KB e passa do que cabe a partir do bloco {block}")
     return RomImage(data, min(len(data) // 1024, 65535), 0, None, block=block)
+
+
+def split_gb(data: bytes, chip: str) -> RomImage:
+    """ROM de Game Boy para o flash repro: tamanho múltiplo de 16 KB (um banco), de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB.
+    O número de bancos o firmware tira do tamanho. Levanta ValueError."""
+    if len(data) < 32768 or len(data) % 16384:
+        raise ValueError("a ROM de Game Boy precisa ter tamanho múltiplo de 16 KB (um banco), de 32 KB para cima")
+    if len(data) > GB_MAX_BYTES:
+        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o gravador de Game Boy vai até 4 MB (256 bancos)")
+    if chip == "gb-orange-fm" and len(data) != 32768:
+        raise ValueError("o flash sem MBC (Orange FM) grava só 32 KB, como no OSCR")
+    return RomImage(data, len(data) // 1024, 0, None)
 
 
 def chip_code(chip: str, img: "RomImage") -> int:

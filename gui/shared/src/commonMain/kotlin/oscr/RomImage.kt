@@ -5,7 +5,7 @@ package oscr
  * Prepara um arquivo para o WRITE_ROM: tira o cabeçalho iNES e acha chip, PRG e CHR. Igual a host/oscr_host/romimage.py.
  * No OSCR original isso era feito pelo firmware lendo o arquivo do SD; aqui é o PC.
  */
-enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false) {
+enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false) {
     NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF040, mapper 30)"),
     A29040B("a29040b", 2, 0, "A29040B (mapper 0)"),
     /** SNES: flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR). */
@@ -16,6 +16,15 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     SNES_HIROM_P0("snes-hirom-p0", 2, 0, "SNES flash de 8 bits, HiROM (P0)", true, generic = true),
     SNES_EXLOROM_P1("snes-exlorom-p1", 3, 0, "SNES flash de 8 bits, ExLoROM (P1)", true, generic = true),
     SNES_EXHIROM_P1("snes-exhirom-p1", 4, 0, "SNES flash de 8 bits, ExHiROM (P1)", true, generic = true),
+    /** Game Boy (GB.cpp): menus "GB 29F/39SF Repro" (seis variantes) e "GB CFI Repro"; o campo chip é o número do item. */
+    GB_DIY_MBC3("gb-diy-mbc3", 1, 0, "GB flash 29F, DIY MBC3 (WR)", gb = true),
+    GB_DIY_MBC5("gb-diy-mbc5", 2, 0, "GB flash 29F, DIY MBC5 (WR)", gb = true),
+    GB_HDR_MBC30("gb-hdr-mbc30", 3, 0, "GB flash 29F, HDR MBC30 (WE no pino de áudio)", gb = true),
+    GB_CAM_FIRST("gb-cam-first", 4, 0, "GB flash 29F, HDR GameBoy Cam, 1º jogo (apaga)", gb = true),
+    GB_CAM_SECOND("gb-cam-second", 5, 0, "GB flash 29F, HDR GameBoy Cam, 2º jogo (sem apagar)", gb = true),
+    GB_ORANGE_FM("gb-orange-fm", 6, 0, "GB flash 39SF010 sem MBC, Orange FM (32 KB)", gb = true),
+    GB_39SF_MBC5("gb-39sf-mbc5", 7, 0, "GB flash 39SF040, MBC5 (WE no pino de áudio)", gb = true),
+    GB_CFI("gb-cfi", 8, 0, "GB flash CFI", gb = true),
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
@@ -24,7 +33,7 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
         /** Chips que o sistema aceita ([CartSystem.MOCK] aceita todos, para o simulador). */
-        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD) && it.gba == (s == CartSystem.GBA)) }
+        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD) && it.gba == (s == CartSystem.GBA) && it.gb == (s == CartSystem.GB)) }
     }
 }
 
@@ -64,7 +73,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -147,6 +156,16 @@ object RomImages {
         return RomImage(body, rom.size / 1024, 0, null, flashMb * 1024, SnesLayouts.GENERIC, typeCode or (secExp shl 4) or (bufExp shl 9), rom)
     }
 
+    const val GB_MAX_BYTES = 4 * 1024 * 1024
+
+    /** ROM de Game Boy para o flash repro: múltiplo de 16 KB, de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB. Igual a split_gb em romimage.py. */
+    fun splitGb(data: ByteArray, chip: FlashChip): RomImage {
+        if (data.size < 32768 || data.size % 16384 != 0) throw RomImageException(RomImageProblem.GB_SIZE)
+        if (data.size > GB_MAX_BYTES) throw RomImageException(RomImageProblem.GB_TOO_BIG, data.size / 1024)
+        if (chip == FlashChip.GB_ORANGE_FM && data.size != 32768) throw RomImageException(RomImageProblem.GB_ORANGE)
+        return RomImage(data, data.size / 1024, 0, null)
+    }
+
     const val GBA_369_MAX_BYTES = 256 * 1024 * 1024
     const val GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024      // prg_kb do DUMP_ROM é u16 (KB)
 
@@ -190,6 +209,7 @@ object RomImages {
         if (chip != null && chip.snes) return chip to splitSnes(data, capacityKb, layout)
         if (chip != null && chip.md) return chip to splitMd(data)
         if (chip != null && chip.gba) return chip to splitGba(data, block)
+        if (chip != null && chip.gb) return chip to splitGb(data, chip)
         if (chip != null) return chip to split(data, chip)
         val first = split(data, FlashChip.NESMAKER)
         val inferred = if (first.mapper == null) FlashChip.NESMAKER else FlashChip.entries.firstOrNull { it.mapper == first.mapper } ?: throw RomImageException(RomImageProblem.CHIP_UNKNOWN)

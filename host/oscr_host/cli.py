@@ -355,8 +355,8 @@ def _layout_name(img) -> str:
 
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
-    if args.system not in ("nes", "famicom", "snes", "md", "gba", "mock"):
-        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (MX29F1610 e S29GL064N) e GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1); veja docs/funcoes-oscr.md", EXIT_USAGE)
+    if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "mock"):
+        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (MX29F1610 e S29GL064N) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/funcoes-oscr.md", EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
@@ -383,8 +383,12 @@ def cmd_rom_write(args) -> int:
                 raise CliError("usage", f"o chip {chip} não é de GBA (use --chip gba-flash, ou nada)", EXIT_USAGE)
             chip = "gba-flash"
             img = RI.split_gba(data, args.block369)
-        elif snes_chip or chip in ("md-flash", "gba-flash"):
-            raise CliError("usage", f"o chip {chip} é só para o sistema dele (snes, md ou gba)", EXIT_USAGE)
+        elif args.system == "gb" or (args.system == "mock" and chip in RI.GB_CHIPS):
+            if chip not in RI.GB_CHIPS:
+                raise CliError("usage", "no Game Boy escolha o cartucho com --chip: " + ", ".join(RI.GB_CHIPS) + " (a ROM sozinha não diz como o cartucho foi montado)", EXIT_USAGE)
+            img = RI.split_gb(data, chip)
+        elif snes_chip or chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
+            raise CliError("usage", f"o chip {chip} é só para o sistema dele (snes, md, gba ou gb)", EXIT_USAGE)
         else:
             img = RI.split_image(data, chip or "nesmaker")
             if chip is None:
@@ -398,7 +402,7 @@ def cmd_rom_write(args) -> int:
         print(f"aviso: o arquivo é do mapper {img.mapper}, mas o chip {chip} é de cartucho de mapper {RI.CHIP_MAPPER[chip]}", file=sys.stderr)
     if img.flash_kb:
         what = f"{RI.CHIP_LABEL[chip]}: ROM {img.prg_kb} KB em flash de {img.flash_kb} KB, {_layout_name(img)} ({len(img.body)} bytes enviados)"
-    elif chip in ("md-flash", "gba-flash"):
+    elif chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
         what = f"{RI.CHIP_LABEL[chip]}: ROM {len(img.body)} bytes" + (f", bloco {img.block}" if img.block else "")
     else:
         what = f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)"
@@ -424,9 +428,11 @@ def cmd_rom_write(args) -> int:
         out["layout"] = _layout_name(img)
     lines = [f"ROM gravada: {what}  CRC32 {crc:08X}"]
     gba_skip = chip == "gba-flash" and (img.block != 0 or len(img.body) > RI.GBA_VERIFY_MAX_BYTES)   # 369-in-1 em bloco N ou ROM > 64 MB: a leitura comum não alcança
+    gb_skip = chip == "gb-cam-second"           # o 2º jogo do GB Camera fica em outra metade do flash; a leitura comum vê o 1º
+    gba_skip = gba_skip or gb_skip
     if args.no_verify or args.system == "mock" or gba_skip:      # o simulador não guarda a ROM gravada para ler de volta
         out["verify"] = "skipped"
-        lines.append("conferência depois de gravar: pulada" + (" (a leitura do GBA não alcança o bloco N do 369-in-1, nem mais de 64 MB)" if gba_skip else ""))
+        lines.append("conferência depois de gravar: pulada" + ((" (o 2º jogo do GB Camera não é visto pela leitura comum)" if gb_skip else " (a leitura do GBA não alcança o bloco N do 369-in-1, nem mais de 64 MB)") if gba_skip else ""))
     else:
         c2, t2, _ = connect(args)
         try:
@@ -525,7 +531,7 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--backup-dir", default="~/oscr_backups", help="pasta do backup (padrão ~/oscr_backups)")
     rp = add("rom-write", cmd_rom_write, "grava a ROM em um cartucho de flash (apaga o chip)", inp=True)
     rp.set_defaults(system="nes")
-    rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (NES: padrão pelo mapper do cabeçalho, 30 = nesmaker, 0 = a29040b; SNES: snes-lorom ou snes-hirom (flash CFI), snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1 ou snes-exhirom-p1; obrigatório; MD: md-flash; GBA: gba-flash)")
+    rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (NES: padrão pelo mapper do cabeçalho, 30 = nesmaker, 0 = a29040b; SNES: snes-lorom ou snes-hirom (flash CFI), snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1 ou snes-exhirom-p1; obrigatório; MD: md-flash; GBA: gba-flash; GB: gb-diy-mbc3, gb-diy-mbc5, gb-hdr-mbc30, gb-cam-first, gb-cam-second, gb-orange-fm, gb-39sf-mbc5, gb-cfi)")
     rp.add_argument("--capacity", type=int, choices=RI.SNES_CAPACITIES_KB, help="SNES CFI, disposição 1x: capacidade do flash em KB (padrão: a menor em que a ROM cabe)")
     rp.add_argument("--layout", choices=list(RI.SNES_LAYOUTS), default="1x",
                     help="SNES CFI: chips do cartucho: 1x (1 chip de 2 ou 4 MB, padrão), 2x2mb, 2x4mb, 4x2mb ou 1x8mb (as três últimas: ROM de 6 a 8 MB, como no OSCR)")

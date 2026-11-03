@@ -231,4 +231,27 @@ class RomWriteTest {
         assertEquals(0, run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "gba-flash", "--block369", "3", "--yes").first)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gba", "-i", f.path, "--chip", "nesmaker", "--yes").first)
     }
+
+    // ---------------------------------------------------------------- Game Boy
+    private fun gbRom(kb: Int) = ByteArray(kb * 1024) { ((it * 17 + 9) and 0xFF).toByte() }
+
+    @Test fun gbDivideECodigos() {
+        val a = RomImages.splitGb(gbRom(512), FlashChip.GB_CFI)
+        assertEquals(Pair(512, 512 * 1024), Pair(a.prgKb, a.body.size))
+        assertEquals((1..8).toList(), FlashChip.forSystem(CartSystem.GB).map { RomImages.chipCode(it, a) })
+        assertEquals(32, RomImages.splitGb(gbRom(32), FlashChip.GB_ORANGE_FM).prgKb)
+        for ((d, c) in listOf(ByteArray(0) to FlashChip.GB_CFI, ByteArray(16384) to FlashChip.GB_CFI, ByteArray(32768 + 100) to FlashChip.GB_CFI)) {
+            assertEquals(RomImageProblem.GB_SIZE, assertFailsWith<RomImageException> { RomImages.splitGb(d, c) }.problem)
+        }
+        assertEquals(RomImageProblem.GB_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitGb(gbRom(8192), FlashChip.GB_CFI) }.problem)
+        assertEquals(RomImageProblem.GB_ORANGE, assertFailsWith<RomImageException> { RomImages.splitGb(gbRom(64), FlashChip.GB_ORANGE_FM) }.problem)
+    }
+
+    @Test fun romWriteGbSimulado() {
+        val d = tmp(); val f = File(d, "jogo.gb").also { it.writeBytes(gbRom(256)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "gb-diy-mbc5", "--yes")
+        assertEquals(0, r.first, r.second); assertTrue("\"chip\":\"gb-diy-mbc5\"" in r.second); assertTrue("\"bytes\":262144" in r.second)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gb", "-i", f.path, "--yes").first)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gb", "-i", f.path, "--chip", "md-flash", "--yes").first)
+    }
 }

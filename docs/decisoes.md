@@ -82,6 +82,7 @@
 - **D81** Gravação de ROM em flash repro do Mega Drive (MX29F1610 e S29GL064N) com `WRITE_ROM` (2026-11-03)
 - **D82** SNES: flash CFI de 2 e 4 chips, 4x 2 MB e 1x 8 MB; menus P0 e P1 com tipo de flash informado pelo PC (2026-11-03)
 - **D83** Gravação de ROM em flash repro do GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) com `WRITE_ROM` (2026-11-03)
+- **D84** Gravação de ROM em flash repro do Game Boy (29F, 39SF, CFI) com `WRITE_ROM` (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -666,3 +667,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - ID e apagamento rodam antes do primeiro `ACK`. Sem o `verifyFlashrom` do OSCR (relê o arquivo): o PC lê o cartucho de volta com `DUMP_ROM`, que no GBA passou a aceitar `prg_kb` como tamanho da ROM (o espelhamento acha o flash inteiro, 32 MB).
 - **Limites assumidos:** (1) a conferência é pulada no 369-in-1 em bloco ≠ 0 e em ROM acima de 64 MB (o `prg_kb` é u16 em KB e a leitura comum não alcança o bloco N); no bloco 0 do 369-in-1 a leitura comum pode não bater, e então use `--no-verify`. (2) Os laços do OSCR não têm limite de tempo (iguais a D81). (3) O Intel 4000L0YBQ0 tem o tamanho "chutado" no reset, como no OSCR. (4) A leitura do 369-in-1 (`read369in1`) ainda não está ligada.
 - **Nunca rodou em cartucho.** Pontos de ajuste prováveis: `cartOn` do GBA a 3,3 V e os tempos longos de apagamento do 369-in-1 (o PC espera 90 s pelo primeiro `ACK`; apagar 256 MB pode levar muito mais: aumente `--begin-timeout`).
+
+### D84 — Gravação de ROM em flash repro do Game Boy (2026-11-03)
+- Quinta gravação de ROM (meta D77), no mesmo `WRITE_ROM`: `sistema` = 6, `chip` 1 a 8 (os itens dos menus "GB 29F/39SF Repro" e "GB CFI Repro"; `docs/protocolo.md` seção 9). "CFI + save" do OSCR são dois comandos do PC: `rom-write` e depois `save-write`.
+- **Divergência de método:** as funções inteiras do OSCR (`GB::writeFlash`, `GB::writeCFI`) não servem no fork: `writeFlash` chama `getFlashDetail()` (banco CRDB do cartão SD, ponteiro nulo no fork) e imprime `mapperDetail->name`; as duas leem o mapper e o tamanho do cabeçalho do arquivo com `seekCur`/`rewind` e releem o arquivo para verificar. Por isso o fork reaproveita os **blocos** do OSCR (`cartOn`, `writeByte(…, audioWE)`, `readByte`, `sendFlashCommand`, `sendCFICommand`, `identifyCFI`) e escreve só o laço dos bancos, igual ao do OSCR (incluindo o truque do MBC5 gravado como MBC3 e o "0x2A8000 fix"), com limite de tempo por byte e no apagamento (80 s).
+- Bancos vêm do tamanho do arquivo (o OSCR os tirava do byte `$148` do cabeçalho; coincidem em ROM válida). A blank check de depois de apagar (lê todos os bancos) não roda: a leitura de volta do PC cobre. O ID do 29F não é conferido contra uma lista (só recusa 0000 e FFFF); tipo de variante errado (por exemplo MBC3 num cartucho MBC5) pode gravar errado.
+- A conferência depois de gravar usa o `DUMP_ROM` do GB (tamanho pelo cabeçalho); é pulada no 2º jogo do GB Camera (a leitura comum vê o 1º).
+- **Nunca rodou em cartucho.** O GB Smart (Game Menu, Flash Menu, trocar jogo) e os dispositivos Datel/Pelican seguem pendentes.

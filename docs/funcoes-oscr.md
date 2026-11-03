@@ -76,7 +76,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 |---|---|---|
 | Ler ROM, ler e gravar SRAM (sem mapper, MBC1, 1M, 2, 3, 5, 6, 7, MMM01, TAMA5, Camera) | firmware | ✅ (MBC6 só leitura; sem RTC) |
 | RTC do MBC3, Flash do MBC6, ROM do TAMA5 | firmware | ⬜ |
-| Flash repro: 29F/39SF (DIY MBC3, DIY MBC5, HDR MBC30, HDR GB Cam, Orange FM, 39SF MBC5), CFI, CFI + save | firmware + PC | ⬜ |
+| Flash repro: 29F/39SF (DIY MBC3, DIY MBC5, HDR MBC30, HDR GB Cam 1º e 2º jogo, Orange FM, 39SF MBC5) e CFI | firmware + PC | ✅ `WRITE_ROM` (D84; nunca rodou); conferência por leitura de volta |
+| Flash repro: CFI + save | PC (`rom-write` e depois `save-write`) | ✅ em dois comandos (D84) |
 | GB Smart (Game Menu, Flash Menu, trocar jogo) | firmware + PC | ⬜ |
 | NPower GB Memory (ler ID, ler e gravar mapeamento) | firmware + PC | ⬜ |
 | Mega Memory (ler e gravar), GBC GameShark (ler e gravar), Datel, Codebreaker, Pelican | firmware + PC | ⬜ |

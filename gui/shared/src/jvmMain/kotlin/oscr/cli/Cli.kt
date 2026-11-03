@@ -407,12 +407,13 @@ Full contract: docs/cli.md
     private fun cmdRomWrite(io: CliIo, a: Args): Int {
         val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
         val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
-        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.MOCK)
-            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (MX29F1610 and S29GL064N) and GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1); see docs/funcoes-oscr.md", EXIT_USAGE)
+        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.GB && sys != CartSystem.MOCK)
+            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (MX29F1610 and S29GL064N) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) and Game Boy (29F, 39SF, CFI); see docs/funcoes-oscr.md", EXIT_USAGE)
         val chipOpt0 = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
         val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else if (sys == CartSystem.GBA && chipOpt0 == null) FlashChip.GBA_FLASH else chipOpt0
         if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
         if (sys == CartSystem.SNES && chipOpt == null) throw CliError("usage", "on the SNES choose the flash wiring with --chip snes-lorom or --chip snes-hirom (the ROM alone does not say how the cartridge was built)", EXIT_USAGE)
+        if (sys == CartSystem.GB && chipOpt == null) throw CliError("usage", "on the Game Boy choose the cartridge with --chip: ${FlashChip.forSystem(CartSystem.GB).joinToString(", ") { it.key }} (the ROM alone does not say how the cartridge was built)", EXIT_USAGE)
         val capacityOpt = a.opts["capacity"]?.let { it.toIntOrNull() ?: throw CliError("usage", "--capacity needs a number of KB (2048 or 4096)", EXIT_USAGE) }
         fun optInt(k: String) = a.opts[k]?.let { it.toIntOrNull() ?: throw CliError("usage", "--$k needs a number", EXIT_USAGE) }
         val (chip, img) = try {
@@ -441,6 +442,10 @@ Full contract: docs/cli.md
                 RomImageProblem.GEN_SECTOR -> "--sector-kb must be a power of 2 (1 to 16384)"
                 RomImageProblem.GEN_BUFFER -> "--buffer must be a power of 2 (2 to 128)"
                 RomImageProblem.GEN_PADDED_NO_FIT -> "the ROM padded to a whole number of sectors (${e.a} KB) does not fit ${e.b} MB"
+                RomImageProblem.GB_SIZE -> "the Game Boy ROM size must be a multiple of 16 KB (one bank), 32 KB or more"
+                RomImageProblem.GB_TOO_BIG -> "the ROM has ${e.a} KB; the Game Boy writer goes up to 4 MB (256 banks)"
+                RomImageProblem.GB_ORANGE -> "the flash without MBC (Orange FM) writes only 32 KB, as in the OSCR"
+                RomImageProblem.GB_NEEDS_CHIP -> "on the Game Boy choose --chip"
                 RomImageProblem.GBA_BLOCK -> "--block369 goes from 0 to 63"
                 RomImageProblem.GBA_SIZE -> "the GBA ROM size must be a multiple of 1 KB"
                 RomImageProblem.GBA_TOO_BIG -> "the ROM has ${e.a} KB and goes past what fits from block ${e.b}"
@@ -453,7 +458,7 @@ Full contract: docs/cli.md
         if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err("warning: the file is mapper ${img.mapper}, but chip ${chip.key} belongs to mapper ${chip.mapper} cartridges")
         val layoutName = if (img.layout == SnesLayouts.GENERIC) "8-bit flash of chosen type" else SnesLayouts.NAMES.entries.firstOrNull { it.value == img.layout }?.key ?: "?"
         val what = if (img.flashKb > 0) "${chip.label}: ROM ${img.prgKb} KB in a ${img.flashKb} KB flash, $layoutName (${img.body.size} bytes sent)"
-                   else if (chip.md || chip.gba) "${chip.label}: ROM ${img.body.size} bytes" + (if (img.block != 0) ", block ${img.block}" else "")
+                   else if (chip.md || chip.gba || chip.gb) "${chip.label}: ROM ${img.body.size} bytes" + (if (img.block != 0) ", block ${img.block}" else "")
                    else "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
         if ("yes" !in a.flags) {
             if (!io.interactive) throw CliError("refused", "refused: writing the ROM ERASES the cartridge's flash chip. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")
@@ -471,9 +476,9 @@ Full contract: docs/cli.md
         val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
         if (img.flashKb > 0) { out["flash_kb"] = img.flashKb; out["layout"] = layoutName }
         val lines = mutableListOf("ROM written: $what  CRC32 $hex")
-        val gbaSkip = chip.gba && (img.block != 0 || img.body.size > RomImages.GBA_VERIFY_MAX_BYTES)    // 369-in-1 em bloco N ou ROM > 64 MB: a leitura comum não alcança
+        val gbaSkip = (chip.gba && (img.block != 0 || img.body.size > RomImages.GBA_VERIFY_MAX_BYTES)) || chip == FlashChip.GB_CAM_SECOND    // 369-in-1 em bloco N ou ROM > 64 MB: a leitura comum não alcança
         if ("no-verify" in a.flags || sys == CartSystem.MOCK || gbaSkip) {          // o simulador não guarda a ROM gravada para ler de volta
-            out["verify"] = "skipped"; lines += "verification after writing: skipped" + (if (gbaSkip) " (the GBA read does not reach 369-in-1 block N, nor more than 64 MB)" else "")
+            out["verify"] = "skipped"; lines += "verification after writing: skipped" + (if (!gbaSkip) "" else if (chip == FlashChip.GB_CAM_SECOND) " (the plain read does not see the 2nd GB Camera game)" else " (the GBA read does not reach 369-in-1 block N, nor more than 64 MB)")
         } else {
             val c2 = connect(io, a)
             val v = try { verifyWritten(c2.client, sys, chip, img, progress(io, a, "verify")) } finally { c2.transport.close() }

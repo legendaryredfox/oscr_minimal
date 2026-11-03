@@ -23,6 +23,7 @@
 # include "dumper/SnesFlash.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
+# include "dumper/GbFlash.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -570,6 +571,14 @@ namespace OSCR::Dumper
           rc = oscr::E_FLASH;                                           // o `idFlashrom` do OSCR faz fatalError se não reconhece o chip
           ran = runCore([&rc, code, size] { rc = GbaFlash::prepare(code, size); GBA::cartOff(); });
         }
+        else if (system == oscr::SYS_GB)
+        {
+          rc = GbFlash::check(chip, size);
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_FLASH;
+          ran = runCore([&rc, chip, size] { rc = GbFlash::prepare(chip, size); GB::cartOff(); });
+          GB::audioWE = 0;                                              // o pino de áudio como WE só vale durante a gravação
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
@@ -618,6 +627,12 @@ namespace OSCR::Dumper
           ran = runCore([&rc, code, n] { rc = GbaFlash::program(code, n); GBA::cartOff(); });
           activeSource = nullptr;
           if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;
+        }
+        else if (system == oscr::SYS_GB)
+        {
+          uint32_t n = romWriteSize;
+          ran = runCore([&rc, &in, chip, n] { rc = GbFlash::program(chip, n, in); GB::cartOff(); });
+          GB::audioWE = 0;
         }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }

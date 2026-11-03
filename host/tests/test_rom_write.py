@@ -328,3 +328,33 @@ def test_rom_write_gba_simulado(tmp_path, capsys):
     assert code == 0
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gba", "-i", str(f), "--chip", "nesmaker", "--yes")
     assert code == 64
+
+
+# ---------------------------------------------------------------- Game Boy (29F, 39SF, CFI)
+def gb_rom(kb: int) -> bytes:
+    return bytes((i * 17 + 9) & 0xFF for i in range(kb * 1024))
+
+
+def test_split_gb_e_codigos():
+    img = RI.split_gb(gb_rom(512), "gb-cfi")
+    assert (img.prg_kb, len(img.body)) == (512, 512 * 1024)
+    assert [RI.chip_code(c, img) for c in RI.GB_CHIPS] == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert RI.split_gb(gb_rom(32), "gb-orange-fm").prg_kb == 32
+
+
+def test_split_gb_erros():
+    for data, chip in ((b"", "gb-cfi"), (bytes(16384), "gb-cfi"), (bytes(32768 + 100), "gb-cfi"), (gb_rom(8192), "gb-cfi"), (gb_rom(64), "gb-orange-fm")):
+        with pytest.raises(ValueError):
+            RI.split_gb(data, chip)
+
+
+def test_rom_write_gb_simulado(tmp_path, capsys):
+    f = tmp_path / "jogo.gb"
+    f.write_bytes(gb_rom(256))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "gb-diy-mbc5", "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["chip"] == "gb-diy-mbc5" and (o["prg_kb"], o["bytes"]) == (256, 256 * 1024)
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gb", "-i", str(f), "--yes")
+    assert code == 64 and "gb-cfi" in json.loads(out)["error"]["message"]
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gb", "-i", str(f), "--chip", "md-flash", "--yes")
+    assert code == 64
