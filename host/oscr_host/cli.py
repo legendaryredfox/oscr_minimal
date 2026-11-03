@@ -349,8 +349,8 @@ def cmd_save_write(args) -> int:
 
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
-    if args.system not in ("nes", "famicom", "snes", "mock"):
-        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B) e SNES (flash CFI de 2 ou 4 MB); veja docs/funcoes-oscr.md", EXIT_USAGE)
+    if args.system not in ("nes", "famicom", "snes", "md", "mock"):
+        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB) e Mega Drive (MX29F1610 e S29GL064N); veja docs/funcoes-oscr.md", EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
@@ -361,8 +361,13 @@ def cmd_rom_write(args) -> int:
             if not snes_chip:
                 raise CliError("usage", f"o chip {chip} não é de SNES", EXIT_USAGE)
             img = RI.split_snes(data, args.capacity)
-        elif snes_chip:
-            raise CliError("usage", f"o chip {chip} é só para --system snes", EXIT_USAGE)
+        elif args.system == "md" or (args.system == "mock" and chip == "md-flash"):
+            if chip not in (None, "md-flash"):
+                raise CliError("usage", f"o chip {chip} não é de Mega Drive (use --chip md-flash, ou nada)", EXIT_USAGE)
+            chip = "md-flash"
+            img = RI.split_md(data)
+        elif snes_chip or chip == "md-flash":
+            raise CliError("usage", f"o chip {chip} é só para o sistema dele (snes ou md)", EXIT_USAGE)
         else:
             img = RI.split_image(data, chip or "nesmaker")
             if chip is None:
@@ -375,6 +380,7 @@ def cmd_rom_write(args) -> int:
     if img.mapper is not None and img.mapper != RI.CHIP_MAPPER[chip] and not args.json:
         print(f"aviso: o arquivo é do mapper {img.mapper}, mas o chip {chip} é de cartucho de mapper {RI.CHIP_MAPPER[chip]}", file=sys.stderr)
     what = (f"{RI.CHIP_LABEL[chip]}: ROM {img.prg_kb} KB em flash de {img.flash_kb} KB ({len(img.body)} bytes)" if img.flash_kb
+            else f"{RI.CHIP_LABEL[chip]}: ROM {len(img.body)} bytes" if chip == "md-flash"
             else f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)")
     if not args.yes:
         if not sys.stdin.isatty():

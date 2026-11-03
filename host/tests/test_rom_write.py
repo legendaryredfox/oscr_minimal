@@ -182,3 +182,42 @@ def test_rom_write_chip_de_nes_no_snes(tmp_path, capsys):
     f.write_bytes(snes_rom(512))
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "snes", "-i", str(f), "--chip", "nesmaker", "--yes")
     assert code == 64 and json.loads(out)["error"]["kind"] == "usage"
+
+
+# ---------------------------------------------------------------- Mega Drive (MX29F1610 / S29GL064N)
+def md_rom(n: int) -> bytes:
+    return bytes((i * 11 + 5) & 0xFF for i in range(n))
+
+
+def test_split_md():
+    img = RI.split_md(md_rom(524288))
+    assert (img.prg_kb, img.chr_kb, img.flash_kb, len(img.body)) == (512, 0, 0, 524288)
+    assert RI.split_md(md_rom(1000)).prg_kb == 1            # arredonda para cima; o firmware recebe o tamanho exato
+    assert RI.split_md(md_rom(4 * 1024 * 1024)).prg_kb == 4096
+
+
+def test_split_md_erros():
+    for bad in (b"", md_rom(1001), md_rom(4 * 1024 * 1024 + 2)):
+        with pytest.raises(ValueError):
+            RI.split_md(bad)
+    smd = bytearray(md_rom(512 + 2048))
+    smd[512 + 0x100:512 + 0x104] = b"SEGA"
+    with pytest.raises(ValueError):
+        RI.split_md(bytes(smd))
+
+
+def test_rom_write_md_simulado(tmp_path, capsys):
+    f = tmp_path / "jogo.md"
+    f.write_bytes(md_rom(524288))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "md-flash", "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["chip"] == "md-flash" and (o["prg_kb"], o["bytes"]) == (512, 524288)
+
+
+def test_rom_write_md_chip_errado(tmp_path, capsys):
+    f = tmp_path / "jogo.md"
+    f.write_bytes(md_rom(1024))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "md", "-i", str(f), "--chip", "nesmaker", "--yes")
+    assert code == 64 and json.loads(out)["error"]["kind"] == "usage"
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "nes", "-i", str(f), "--chip", "md-flash", "--yes")
+    assert code == 64

@@ -79,6 +79,7 @@
 - **D78** Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
 - **D79** Gravação de ROM em flash CFI do SNES (1 chip de 2 ou 4 MB) com `WRITE_ROM` (2026-11-03)
 - **D80** Capacitores da `16_bits` renumerados para C1 a C4 (pedido do usuário, 2026-11-03)
+- **D81** Gravação de ROM em flash repro do Mega Drive (MX29F1610 e S29GL064N) com `WRITE_ROM` (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -643,3 +644,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 ### D80 — Capacitores da `16_bits` renumerados (pedido do usuário, 2026-11-03)
 - A numeração vinha da `16_and_8_bits` (C2 NES, C4 Famicom, C7/C8/C9 do regulador e do GBA) e deixava buracos: C1, C3, C5, C6. Agora C1 (470 µF), **C2** (SNES, antes C3), **C3** (Mega Drive, antes C5), **C4** (PIC, antes C6). Só rótulos mudaram: posições, nets e footprints são os mesmos.
 - Alterados esquemático, PCB, `fab/bom.csv`, gerbers e zips (refeitos com `tools/export_fab.sh 16_bits v1.0`; SHA-256 novo em `fab/PEDIDO.md`), `docs/bom.md`, `docs/montagem.md`, `README.md`. DRC com as mesmas 8 mensagens de antes; `tools/check_netlist.py` confere. As prévias `previa-cima.png` e `previa-baixo.png` ainda mostram os rótulos antigos. **Nada foi encomendado**, então não há placa física com a numeração antiga.
+
+### D81 — Gravação de ROM em flash repro do Mega Drive (2026-11-03)
+- Terceira gravação de ROM (meta D77), no mesmo `WRITE_ROM`: `sistema` = 4, `chip` 1 (automático). Reaproveita **inteiro** o menu "Flash Repro" do OSCR (`MegaDrive.cpp`): `idFlash`, `eraseFlash`, `resetFlash`, `write29F1610` e `write29GL` são chamados direto; o "arquivo" é o fluxo serial (`StreamFile`), ligado como no `WRITE_SAVE`. Código novo só em `src/dumper/MdFlash.cpp` (ordem das chamadas, chip select, conferência de tamanho) e nos ganchos do `Dumper.cpp`.
+- ID e apagamento rodam antes do primeiro `ACK` (`rom_prepare`), como no NES e no SNES.
+- **Diferença assumida:** aqui NÃO reescrevi os laços para terem limite de tempo (como fiz no NES e no SNES), para reaproveitar o código do OSCR sem mudança. `busyCheck` e a espera de status do `write29GL` esperam para sempre; um chip defeituoso trava o firmware até o USB ser reconectado. Se isso incomodar em hardware, trocar por laços com limite em `MdFlash.cpp`.
+- O OSCR pulava a verificação de apagado (`blankCheck`) só no texto; aqui ela não roda, pois a leitura de volta do PC cobre. A conferência depois de gravar usa o `DUMP_ROM` do MD, que dimensiona pelo cabeçalho da ROM e reduz espelhos: ROM com cabeçalho inconsistente dá `verify` diferente no fim, sem a gravação estar errada.
+- **Nunca rodou em cartucho.** Pontos de ajuste prováveis: chip select (`PH3`) e `cartOn` do Mega Drive sem o resto da placa original.

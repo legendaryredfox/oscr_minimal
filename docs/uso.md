@@ -61,6 +61,7 @@ Exemplo (Mega Man 3, MMC3, 256 KB de PRG e 128 KB de CHR): `dumper.py dump -s ne
 
 - **NES/Famicom:** NES Maker (mapper 30, até 512 KB) e A29040B (mapper 0, 16/32 KB + CHR 0/8 KB). `dumper rom-write -s nes -i jogo.nes --yes`; o chip sai do mapper do cabeçalho.
 - **SNES:** repro com **um chip de flash CFI de 2 ou 4 MB**. Você escolhe a fiação do cartucho: `dumper rom-write -s snes -i jogo.sfc --chip snes-lorom --yes` (ou `snes-hirom`). O cabeçalho de copiadora de 512 bytes é removido sozinho. Na GUI: sistema SNES, "Chip de flash", botão "Gravar ROM". Repros com 2 ou 4 chips ou de 8 MB ainda não são suportados.
+- **Mega Drive:** repro com flash **MX29F1610 (2 MB)** ou **S29GL064N (4 MB)**; o chip é identificado sozinho. `dumper rom-write -s md -i jogo.md --yes`. ROM binária de tamanho par, até 4 MB (sem cabeçalho `.smd`). Se o chip tiver defeito, o firmware pode travar na espera do apagamento: desligue e ligue o USB.
 - Depois de gravar, o programa **lê a ROM de volta e compara** (desligue com `--no-verify`). Se a gravação falhar no meio, o chip fica apagado ou pela metade: regrave.
 
 ### 2.7 Usar vários sistemas na mesma sessão

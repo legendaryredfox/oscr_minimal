@@ -21,6 +21,7 @@
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
 # include "dumper/SnesFlash.h"
+# include "dumper/MdFlash.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -552,6 +553,13 @@ namespace OSCR::Dumper
           rc = oscr::E_CARTUCHO_IO;
           ran = runCore([&rc, chip, prg] { rc = SnesFlash::prepare(chip, prg); SN::cartOff(); });
         }
+        else if (system == oscr::SYS_MD)
+        {
+          rc = MdFlash::check(chip, size);
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_CARTUCHO_IO;
+          ran = runCore([&rc, size] { rc = MdFlash::prepare(size); MD::cartOff(); });
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
@@ -564,6 +572,16 @@ namespace OSCR::Dumper
         bool ran;
         if (isNes(system)) ran = runCore([&rc, &in, chip, prg, chr] { NE::cartOn(); rc = NesFlash::program(chip, prg, chr, in); NE::cartOff(); });
         else if (system == oscr::SYS_SNES) { uint32_t n = romWriteSize; ran = runCore([&rc, &in, chip, n] { rc = SnesFlash::program(chip, n, in); SN::cartOff(); }); }
+        else if (system == oscr::SYS_MD)
+        {
+          // As funções do OSCR leem o "arquivo" (sharedFile): ligá-lo ao fluxo, como no WRITE_SAVE.
+          countingSource.inner = &in; countingSource.bytes = 0;
+          activeSource = &countingSource;
+          OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+          ran = runCore([&rc] { rc = MdFlash::program(); MD::cartOff(); });
+          activeSource = nullptr;
+          if (rc == 0 && countingSource.bytes != romWriteSize) rc = oscr::E_CARTUCHO_IO;       // o OSCR não avisa se o arquivo acabou antes
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;

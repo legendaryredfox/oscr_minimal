@@ -55,7 +55,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Ler e gravar SRAM e EEPROM serial (38 checksums do OSCR) | firmware | ✅ |
 | Sega CD RAM (BRAM): ler e gravar | firmware | ⬜ |
 | Realtec (ler) | firmware | ⬜ |
-| Flash repro: 29F1610, 29GL, apagar | firmware + PC | ⬜ |
+| Flash repro: MX29F1610 (2 MB) e S29GL064N (4 MB), apagar e gravar | firmware + PC | ✅ `WRITE_ROM` (D81; nunca rodou); conferência por leitura de volta |
 
 ## Game Boy Advance
 

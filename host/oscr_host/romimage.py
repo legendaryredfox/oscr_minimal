@@ -10,12 +10,13 @@ from typing import Optional
 
 # Valor do campo "chip" do WRITE_ROM (firmware/oscr/include/dumper/NesFlash.h) e o mapper do cartucho de cada chip.
 # SNES (firmware/oscr/include/dumper/SnesFlash.h): flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR).
-CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2}
-CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0}
+# Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID.
+CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1}
+CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
-              "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)"}
-CHIP_SYSTEMS = {"nesmaker": ("nes", "famicom", "mock"), "a29040b": ("nes", "famicom", "mock"),
-                "snes-lorom": ("snes", "mock"), "snes-hirom": ("snes", "mock")}
+              "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
+              "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)"}
+MD_MAX_BYTES = 4 * 1024 * 1024
 SNES_CAPACITIES_KB = (2048, 4096)     # as opções "1x 2MB" e "1x 4MB" do OSCR
 
 
@@ -65,6 +66,18 @@ def split_snes(data: bytes, capacity_kb: Optional[int] = None) -> RomImage:
     elif kb > capacity_kb:
         raise ValueError(f"a ROM tem {kb} KB e não cabe em um flash de {capacity_kb} KB")
     return RomImage(data, kb, 0, None, capacity_kb)
+
+
+def split_md(data: bytes) -> RomImage:
+    """ROM de Mega Drive para o flash repro: arquivo binário (.md/.bin/.gen) de tamanho par, até 4 MB. ROM entrelaçada (.smd) não é aceita.
+    `prg_kb` é o tamanho arredondado para cima (o firmware recebe o tamanho exato em bytes). Levanta ValueError."""
+    if len(data) == 0 or len(data) % 2:
+        raise ValueError("a ROM de Mega Drive precisa ter tamanho par (arquivo binário .md/.bin/.gen)")
+    if len(data) > MD_MAX_BYTES:
+        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o flash repro do Mega Drive tem no máximo 4 MB (MX29F1610 2 MB ou S29GL064N 4 MB)")
+    if len(data) % 1024 == 512 and data[0x100:0x104] != b"SEGA" and data[512 + 0x100:512 + 0x104] == b"SEGA":
+        raise ValueError("o arquivo parece ter o cabeçalho de copiadora de 512 bytes (.smd); use a ROM binária sem cabeçalho")
+    return RomImage(data, (len(data) + 1023) // 1024, 0, None)
 
 
 def infer_chip(img: RomImage) -> Optional[str]:

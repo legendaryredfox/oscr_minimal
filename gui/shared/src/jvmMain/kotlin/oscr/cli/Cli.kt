@@ -99,6 +99,7 @@ options (accepted before or after the command):
   --limit N            search: maximum results (default 20)
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
                        SNES: snes-lorom or snes-hirom (required, the wiring of the CFI flash)
+                       Mega Drive: md-flash (the default; the firmware identifies MX29F1610 or S29GL064N by ID)
   --capacity KB        rom-write, SNES: flash size, 2048 or 4096 (default: the smallest the ROM fits)
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
   --no-verify          rom-write: do not read the ROM back to verify after writing (default: verify)
@@ -400,9 +401,10 @@ Full contract: docs/cli.md
     private fun cmdRomWrite(io: CliIo, a: Args): Int {
         val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
         val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
-        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MOCK)
-            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash) and SNES (CFI flash of 2 or 4 MB); see docs/funcoes-oscr.md", EXIT_USAGE)
-        val chipOpt = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
+        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.MOCK)
+            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (CFI flash of 2 or 4 MB) and Mega Drive (MX29F1610 and S29GL064N); see docs/funcoes-oscr.md", EXIT_USAGE)
+        val chipOpt0 = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
+        val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else chipOpt0
         if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
         if (sys == CartSystem.SNES && chipOpt == null) throw CliError("usage", "on the SNES choose the flash wiring with --chip snes-lorom or --chip snes-hirom (the ROM alone does not say how the cartridge was built)", EXIT_USAGE)
         val capacityOpt = a.opts["capacity"]?.let { it.toIntOrNull() ?: throw CliError("usage", "--capacity needs a number of KB (2048 or 4096)", EXIT_USAGE) }
@@ -420,11 +422,15 @@ Full contract: docs/cli.md
                 RomImageProblem.SNES_NO_FIT -> "the ROM has ${e.a} KB and does not fit a ${e.b} KB flash"
                 RomImageProblem.SNES_CAPACITY -> "flash capacity: 2048 or 4096 (KB)"
                 RomImageProblem.SNES_NEEDS_CHIP -> "on the SNES choose --chip snes-lorom or --chip snes-hirom"
+                RomImageProblem.MD_SIZE -> "the Mega Drive ROM size must be even (binary .md/.bin/.gen file)"
+                RomImageProblem.MD_TOO_BIG -> "the ROM has ${e.a} KB; the Mega Drive flash repro holds at most 4 MB (MX29F1610 2 MB or S29GL064N 4 MB)"
+                RomImageProblem.MD_SMD -> "the file seems to have the 512-byte copier header (.smd); use the plain binary ROM without a header"
             }
             throw CliError(if (e.problem == RomImageProblem.CHIP_UNKNOWN) "usage" else "bad_rom", msg, EXIT_USAGE)
         }
         if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err("warning: the file is mapper ${img.mapper}, but chip ${chip.key} belongs to mapper ${chip.mapper} cartridges")
         val what = if (img.flashKb > 0) "${chip.label}: ROM ${img.prgKb} KB in a ${img.flashKb} KB flash (${img.body.size} bytes)"
+                   else if (chip.md) "${chip.label}: ROM ${img.body.size} bytes"
                    else "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
         if ("yes" !in a.flags) {
             if (!io.interactive) throw CliError("refused", "refused: writing the ROM ERASES the cartridge's flash chip. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")

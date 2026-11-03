@@ -122,4 +122,26 @@ class RomWriteTest {
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "snes", "-i", f.path, "--yes").first)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "snes", "-i", f.path, "--chip", "nesmaker", "--yes").first)
     }
+
+    // ---------------------------------------------------------------- Mega Drive (MX29F1610 / S29GL064N)
+    private fun mdRom(n: Int) = ByteArray(n) { ((it * 11 + 5) and 0xFF).toByte() }
+
+    @Test fun mdDivideEErros() {
+        val a = RomImages.splitMd(mdRom(524288))
+        assertEquals(Triple(512, 0, 0), Triple(a.prgKb, a.chrKb, a.flashKb))
+        assertEquals(1, RomImages.splitMd(mdRom(1000)).prgKb)
+        assertEquals(RomImageProblem.MD_SIZE, assertFailsWith<RomImageException> { RomImages.splitMd(mdRom(1001)) }.problem)
+        assertEquals(RomImageProblem.MD_SIZE, assertFailsWith<RomImageException> { RomImages.splitMd(ByteArray(0)) }.problem)
+        assertEquals(RomImageProblem.MD_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitMd(mdRom(4 * 1024 * 1024 + 2)) }.problem)
+        val smd = mdRom(512 + 2048).also { "SEGA".encodeToByteArray().copyInto(it, 512 + 0x100) }
+        assertEquals(RomImageProblem.MD_SMD, assertFailsWith<RomImageException> { RomImages.splitMd(smd) }.problem)
+        assertEquals(listOf(FlashChip.MD_FLASH), FlashChip.forSystem(CartSystem.MD))
+    }
+
+    @Test fun romWriteMdSimulado() {
+        val d = tmp(); val f = File(d, "jogo.md").also { it.writeBytes(mdRom(524288)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "md-flash", "--yes")
+        assertEquals(0, r.first, r.second); assertTrue("\"chip\":\"md-flash\"" in r.second); assertTrue("\"bytes\":524288" in r.second)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "md", "-i", f.path, "--chip", "nesmaker", "--yes").first)
+    }
 }
