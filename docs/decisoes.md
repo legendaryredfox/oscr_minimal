@@ -593,3 +593,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Códigos de saída:** mantidos 0 (ok), 1 (erro) e 2 (sem cartucho), como já estava em `docs/uso.md`. Acrescentados 3 (sem porta/dispositivo), 4 (recusado, falta `--yes`), 64 (uso, no lugar do 2 do argparse, que colidia com "sem cartucho") e 130 (Ctrl+C).
 - `detect` sem cartucho passa a ter `"ok": false` na saída JSON (o comando funcionou, mas não há cartucho); a saída continua 2.
 - O rótulo de progresso em texto passou de `ROM:` para `rom:` (igual ao `label` do JSON).
+- **Kotlin:** novo módulo `gui/cliApp` (binário `dumper`, sem dependências além do `shared`). O núcleo (`Cli`, `Json`, `SimDevice`) fica em `shared/src/jvmMain/kotlin/oscr/cli/` para os testes rodarem em `:shared:jvmTest` (`CliTest`, 12 testes, o mesmo contrato do `test_cli_agentes.py`). `SerialTransport.kt` foi movido do `desktopApp` para `shared/src/jvmMain` (mesmo pacote `oscr`), com a dependência do jSerialComm, para a GUI e a CLI usarem o mesmo.
+- **Desvio:** os textos livres da CLI Kotlin (ajuda, dicas) estão em inglês no código, fora do I18n da GUI (regra de "nenhuma string fixa" vale para a GUI). Erros do dispositivo e do protocolo reutilizam o I18n (`--lang`).
+- `host/` ganhou o `error.kind` `open_port` (saída 3) quando a porta serial não abre.
+

@@ -2,6 +2,7 @@
 rootProject.name = "oscr-gui"
 include(":shared")
 include(":desktopApp")
+include(":cliApp")
 
 pluginManagement {
     repositories { gradlePluginPortal(); google(); mavenCentral() }

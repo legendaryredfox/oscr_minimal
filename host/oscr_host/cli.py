@@ -92,7 +92,11 @@ def connect(args) -> tuple[Client, Transport, dict]:
     bauds = (args.baud,) if args.baud else BAUDS
     last: Exception | None = None
     for b in bauds:
-        t = SerialTransport(port, b)
+        try:
+            t = SerialTransport(port, b)
+        except OSError as e:                              # porta ocupada, sem permissão (grupo dialout), cabo solto
+            raise CliError("open_port", f"não foi possível abrir {port}: {e}", EXIT_NO_DEVICE,
+                           "feche outros programas que usam a porta; no Linux o usuário precisa estar no grupo dialout") from e
         c = Client(t, timeout=0.5)
         try:
             return c, t, c.info()

@@ -19,7 +19,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | 0 | sucesso | |
 | 1 | erro do dispositivo, do protocolo, timeout ou arquivo | `device_error`, `no_save`, `protocol`, `timeout`, `io` |
 | 2 | nenhum cartucho | `no_cartridge` (ou `detect` com `status` ≠ 0) |
-| 3 | porta serial não encontrada, ou dispositivo sem resposta | `no_port`, `no_response` |
+| 3 | porta serial não encontrada, não abre, ou dispositivo sem resposta | `no_port`, `open_port`, `no_response` |
 | 4 | recusado: `save-write` sem `--yes` fora de um terminal | `refused` |
 | 64 | argumentos inválidos | `usage` |
 | 130 | Ctrl+C | `interrupted` |
@@ -52,3 +52,16 @@ dumper --json save-write -s snes -i jogo.sav --yes
 ```
 
 Dois `dump` seguidos com o mesmo `crc32` é a prova de leitura estável. Gravar save sobrescreve a memória do cartucho: o agente só deve usar `--yes` com autorização do usuário.
+
+## CLI em Kotlin (`gui/cliApp`)
+
+Mesmo contrato (comandos, opções, JSON, códigos de saída), usando o protocolo do módulo `shared` da GUI. Build: `cd gui && ./gradlew :cliApp:installDist`; binário em `gui/cliApp/build/install/dumper/bin/dumper`. Precisa de JVM 17+.
+
+Diferenças em relação à Python:
+- Os textos livres (`message`, `hint`, `status_text`) são em inglês; os erros do dispositivo e do protocolo seguem `--lang` (`en`, `pt-BR`, `ru`, `zh-CN`). Agentes devem usar `ok`, `error.kind` e o código de saída, não o texto.
+- Opções são aceitas em qualquer comando (a Python rejeita as que o comando não usa).
+- `errors` lista só `code` e `text` (a dica vem dentro do texto).
+- `--simulate` só entende o sistema `mock`; os outros respondem "sem cartucho" (igual à Python).
+- Os dois simuladores e as duas CLIs produzem o mesmo CRC32 para o mesmo dado (conferido: `mock` = `D1DF4327`).
+- `error.kind` extra: `open_port` (saída 3) quando a porta existe mas não abre (as duas CLIs); `internal` (saída 1) só na Kotlin, para exceção inesperada.
+
