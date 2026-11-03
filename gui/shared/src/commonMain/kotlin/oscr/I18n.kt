@@ -31,7 +31,7 @@ enum class S {
     V_UNSUPPORTED_MAPPER, V_TOO_BIG_PRG, V_TOO_BIG_CHR, V_RAM_VALUES, V_SNES_SIZE, V_MD_SIZE, FIRST_RUN_TITLE,
     FIRST_RUN_1, FIRST_RUN_2, FIRST_RUN_3, FIRST_RUN_4, FIRST_RUN_DISMISS, SAVE_REPORT, SHORTCUTS, HELP_DOCS,
     READ_SECTION, WRITE_SECTION,
-    SETTINGS, DB_TITLE, DB_HINT, DB_CHOOSE, DB_CLEAR, DB_LOADING, DB_LOADED, DB_NONE, DB_ERROR, GAME_LABEL, GAME_NOT_FOUND, GAME_SEARCH, GAME_FILLED, GAME_NO_RESULTS, SOON_TITLE, SOON_HINT, STUB_NOTICE,
+    SETTINGS, DB_TITLE, DB_HINT, DB_CHOOSE, DB_CLEAR, DB_LOADING, DB_LOADED, DB_NONE, DB_ERROR, GAME_LABEL, GAME_NOT_FOUND, GAME_SEARCH, GAME_FILLED, GAME_NO_RESULTS, SOON_TITLE, SOON_HINT, STUB_NOTICE, CONNECTION_TITLE, CARTRIDGE_TITLE,
 }
 
 object I18n {
@@ -193,6 +193,8 @@ object I18n {
         S.SOON_TITLE to "Em breve (outros cartuchos do OSCR, ainda sem suporte)",
         S.SOON_HINT to "Estes sistemas ainda não têm hardware nem firmware neste projeto.",
         S.STUB_NOTICE to "{0}: ainda não suportado. É só um marcador de lugar; hardware, firmware e protocolo virão depois.",
+        S.CONNECTION_TITLE to "Conexão",
+        S.CARTRIDGE_TITLE to "Cartucho",
         S.WRITE_SECTION to "Gravação (sobrescreve o cartucho)",
     )
     private val en = mapOf(
@@ -353,6 +355,8 @@ object I18n {
         S.SOON_TITLE to "Coming soon (other OSCR cartridges, not supported yet)",
         S.SOON_HINT to "These systems have no hardware or firmware in this project yet.",
         S.STUB_NOTICE to "{0}: not supported yet. This is only a placeholder; hardware, firmware and protocol will come later.",
+        S.CONNECTION_TITLE to "Connection",
+        S.CARTRIDGE_TITLE to "Cartridge",
         S.WRITE_SECTION to "Write (overwrites the cartridge)",
     )
     private val ru = mapOf(
@@ -513,6 +517,8 @@ object I18n {
         S.SOON_TITLE to "Скоро (другие картриджи OSCR, пока без поддержки)",
         S.SOON_HINT to "Для этих систем в проекте пока нет ни оборудования, ни прошивки.",
         S.STUB_NOTICE to "{0}: пока не поддерживается. Это только заглушка; оборудование, прошивка и протокол появятся позже.",
+        S.CONNECTION_TITLE to "Подключение",
+        S.CARTRIDGE_TITLE to "Картридж",
         S.WRITE_SECTION to "Запись (перезаписывает картридж)",
     )
     private val zh = mapOf(
@@ -673,6 +679,8 @@ object I18n {
         S.SOON_TITLE to "即将推出（OSCR 的其他卡带，暂不支持）",
         S.SOON_HINT to "这些系统在本项目中还没有硬件和固件。",
         S.STUB_NOTICE to "{0}：尚不支持。这只是占位项；硬件、固件和协议将在之后加入。",
+        S.CONNECTION_TITLE to "连接",
+        S.CARTRIDGE_TITLE to "卡带",
         S.WRITE_SECTION to "写入（会覆盖卡带）",
     )
     private val tables = mapOf(Lang.PT to pt, Lang.EN to en, Lang.RU to ru, Lang.ZH to zh)

@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package oscr
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -61,6 +66,7 @@ fun main() = application {
 
 private fun safeName(title: String, fallback: String): String = title.replace(Regex("[^A-Za-z0-9._ -]+"), "_").trim(' ', '.', '_').ifEmpty { fallback }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun App() {
     var lang by remember { mutableStateOf(Lang.entries.firstOrNull { it.tag == Prefs.lang } ?: I18n.fromLocale(Locale.getDefault().toString())) }
@@ -305,90 +311,71 @@ fun App() {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     val connected = client != null
+    val stub = planned
+    var logOpen by remember { mutableStateOf(true) }
+    val dbStatus = when { dbLoading -> t(S.DB_LOADING); dbError != null -> f(S.DB_ERROR, dbError ?: ""); db != null -> f(S.DB_LOADED, db?.size ?: 0, db?.files?.size ?: 0); else -> t(S.DB_NONE) }
+    val canRun = connected && !busy && stub == null
 
-    Column(
-        Modifier.fillMaxSize().focusRequester(focus).focusable().onPreviewKeyEvent { ev ->
-            if (ev.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-            when {
-                ev.key == Key.Escape && busy -> { actAbort(); true }
-                ev.isCtrlPressed && ev.key == Key.D && connected && !busy -> { actDetect(); true }
-                ev.isCtrlPressed && ev.key == Key.R && connected && !busy -> { actDumpRom(); true }
-                ev.isCtrlPressed && ev.key == Key.S && connected && !busy -> { actReadSave(); true }
-                else -> false
-            }
-        },
-    ) {
-        // área de cima: controles (rola se a janela for pequena)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(t(S.TITLE), style = MaterialTheme.typography.headlineSmall)
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer), modifier = Modifier.fillMaxWidth()) {
-                Text("⚠ " + t(S.ONE_CART_ONLY), Modifier.padding(10.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
-            }
-            if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
-
-            OutlinedButton(onClick = { showSettings = !showSettings }) { Text((if (showSettings) "▾ " else "▸ ") + t(S.SETTINGS)) }
-            if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, dbPaths,
-                when { dbLoading -> t(S.DB_LOADING); dbError != null -> f(S.DB_ERROR, dbError ?: ""); db != null -> f(S.DB_LOADED, db?.size ?: 0, db?.files?.size ?: 0); else -> t(S.DB_NONE) },
-                dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
-
-            // ---- conexão
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (connected) "● ${t(S.STATUS_CONNECTED)}: ${info?.firmware ?: ""}${if (info?.mock == true) " — ${t(S.MOCK_MODE)}" else ""}" else "○ ${t(S.STATUS_DISCONNECTED)}",
-                    color = if (connected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.titleSmall)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(S.PORT))
-                ports.forEach { p -> FilterChip(selected = port == p.name, enabled = !connected, onClick = { port = p.name }, label = { Text(p.label) }) }
-                OutlinedButton(enabled = !connected, onClick = { ports = SerialTransport.ports(); if (ports.none { it.name == port }) port = ports.firstOrNull()?.name ?: "" }) { Text(t(S.REFRESH)) }
-            }
-            if (ports.isEmpty()) Text("⚠ " + t(S.NO_PORTS), color = MaterialTheme.colorScheme.error)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (!connected) {
-                    Button(enabled = port.isNotEmpty() && !busy, onClick = { actConnect() }) { Text(if (lastMessage.startsWith(t(S.ERR_PREFIX)) && info == null && log.isNotEmpty()) t(S.RECONNECT) else t(S.CONNECT)) }
-                } else {
-                    Button(enabled = !busy, onClick = { dropConnection() }) { Text(t(S.DISCONNECT)) }
+    // Cartão "Conexão": porta, conectar, baud (em "Avançado")
+    val connectionCard: @Composable () -> Unit = {
+        SectionCard(t(S.CONNECTION_TITLE)) {
+            LabeledField(t(S.PORT)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ComboBox(value = ports.firstOrNull { it.name == port }?.label ?: "—", enabled = !connected && ports.isNotEmpty(), modifier = Modifier.weight(1f)) { close ->
+                        ports.forEach { p -> DropdownMenuItem(text = { Text(p.label) }, onClick = { port = p.name; close() }) }
+                    }
+                    TextButton(enabled = !connected, onClick = { ports = SerialTransport.ports(); if (ports.none { it.name == port }) port = ports.firstOrNull()?.name ?: "" }) { Text(t(S.REFRESH)) }
                 }
-                TextButton(onClick = { showAdvanced = !showAdvanced }) { Text(t(S.ADVANCED)) }
             }
-            if (showAdvanced) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(S.BAUD))
-                listOf(1_000_000, 115_200).forEach { b -> FilterChip(selected = baud == b, enabled = !connected, onClick = { baud = b }, label = { Text("$b") }) }
+            if (ports.isEmpty()) Callout(t(S.NO_PORTS), Tone.ERROR)
+            if (!connected) {
+                Button(enabled = port.isNotEmpty() && !busy, onClick = { actConnect() }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                    Text(if (lastMessage.startsWith(t(S.ERR_PREFIX)) && info == null && log.isNotEmpty()) t(S.RECONNECT) else t(S.CONNECT))
+                }
+            } else {
+                OutlinedButton(enabled = !busy, onClick = { dropConnection() }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(t(S.DISCONNECT)) }
             }
+            TextButton(onClick = { showAdvanced = !showAdvanced }) { Text((if (showAdvanced) "▾ " else "▸ ") + t(S.ADVANCED)) }
+            if (showAdvanced) LabeledField(t(S.BAUD)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(1_000_000, 115_200).forEach { b -> FilterChip(selected = baud == b, enabled = !connected, onClick = { baud = b }, label = { Text("$b") }) }
+                }
+            }
+        }
+    }
 
-            // ---- sistema e opções
-            Text("${t(S.SYSTEM)}:", style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                val systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK }
-                systems.forEach { s ->
-                    FilterChip(selected = planned == null && system == s, onClick = {
+    // Cartão "Cartucho": sistema e as opções do sistema escolhido
+    val cartridgeCard: @Composable () -> Unit = {
+        SectionCard(t(S.CARTRIDGE_TITLE)) {
+            LabeledField(t(S.SYSTEM)) {
+                SystemPicker(
+                    systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK },
+                    selected = system, stub = planned, soonTitle = t(S.SOON_TITLE),
+                    onSystem = { sys ->
                         planned = null
-                        if (s != system) { system = s; prgKb = "0"; chrKb = "0"; ramKb = "0"; mapper = "0"; Prefs.system = s.name }   // cada sistema começa limpo: nada "vaza" de um para outro
-                    }, label = { Text(s.name) })
-                }
+                        if (sys != system) { system = sys; prgKb = "0"; chrKb = "0"; ramKb = "0"; mapper = "0"; Prefs.system = sys.name }   // cada sistema começa limpo: nada "vaza" de um para outro
+                    },
+                    onStub = { planned = it },
+                )
             }
-            Text(t(S.SOON_TITLE), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline)
-            PlannedChips(planned) { planned = it }
-            val stub = planned
-            if (stub != null) Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
-                Text(f(S.STUB_NOTICE, stub.label), Modifier.padding(10.dp), style = MaterialTheme.typography.bodyMedium)
-            }
-            if (stub == null && system == CartSystem.GB) Text("⚠ " + t(S.GB_WARNING), color = MaterialTheme.colorScheme.error)
+            if (stub != null) Callout(f(S.STUB_NOTICE, stub.label), Tone.INFO)
+            if (stub == null && system == CartSystem.GB) Callout(t(S.GB_WARNING), Tone.WARN)
             if (stub == null && system == CartSystem.GBA) {
-                Text("⚠ " + t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
-                OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true, modifier = Modifier.width(180.dp))
-                Text(t(S.GBA_SAVE_HINT), style = MaterialTheme.typography.bodyMedium)
+                Callout(t(S.GBA_WARNING), Tone.WARN)
+                OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true,
+                    supportingText = { Text(t(S.GBA_SAVE_HINT)) }, modifier = Modifier.fillMaxWidth())
             }
             if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
-                    supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.width(420.dp))
+                    supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }
             if (stub == null && isNes) {
                 Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
                 if (dbHasNes) {
-                    OutlinedTextField(gameQuery, { gameQuery = it }, label = { Text(t(S.GAME_SEARCH)) }, singleLine = true, modifier = Modifier.width(420.dp))
+                    OutlinedTextField(gameQuery, { gameQuery = it }, label = { Text(t(S.GAME_SEARCH)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     if (gameQuery.trim().length >= 2) {
                         val found = remember(gameQuery, db) { db?.searchNes(gameQuery, 8).orEmpty() }
-                        if (found.isEmpty()) Text(t(S.GAME_NO_RESULTS), style = MaterialTheme.typography.bodyMedium)
+                        if (found.isEmpty()) Text(t(S.GAME_NO_RESULTS), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
                         found.forEach { g ->
                             val o = g.nesOptions() ?: return@forEach
                             TextButton(onClick = {
@@ -401,67 +388,107 @@ fun App() {
                 }
                 val prgBad = problem?.key in setOf(S.V_PRG_REQUIRED, S.V_PRG_MULTIPLE16, S.V_PRG_MULTIPLE32, S.V_TOO_BIG_PRG)
                 val chrBad = problem?.key in setOf(S.V_CHR_MULTIPLE8, S.V_NO_CHR, S.V_NEEDS_CHR, S.V_TOO_BIG_CHR)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     OutlinedTextField(mapper, { mapper = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.MAPPER)) }, singleLine = true, isError = problem?.key == S.V_UNSUPPORTED_MAPPER,
-                        supportingText = { Text(Rules.mapperName(mapN) ?: "?") }, modifier = Modifier.width(150.dp))
-                    OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.PRG_KB)) }, singleLine = true, isError = prgBad, modifier = Modifier.width(130.dp))
-                    OutlinedTextField(chrKb, { chrKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.CHR_KB)) }, singleLine = true, isError = chrBad, modifier = Modifier.width(130.dp))
-                    OutlinedTextField(ramKb, { ramKb = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.RAM_KB)) }, singleLine = true, isError = ramProblem != null, modifier = Modifier.width(130.dp))
+                        supportingText = { Text(Rules.mapperName(mapN) ?: "?") }, modifier = Modifier.width(170.dp))
+                    OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.PRG_KB)) }, singleLine = true, isError = prgBad, modifier = Modifier.width(120.dp))
+                    OutlinedTextField(chrKb, { chrKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.CHR_KB)) }, singleLine = true, isError = chrBad, modifier = Modifier.width(120.dp))
+                    OutlinedTextField(ramKb, { ramKb = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.RAM_KB)) }, singleLine = true, isError = ramProblem != null, modifier = Modifier.width(120.dp))
                 }
-                (problem ?: ramProblem)?.let { Text("⚠ " + describeProblem(lang, it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-                Text(t(S.NES_HINT), style = MaterialTheme.typography.bodyMedium)
+                (problem ?: ramProblem)?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
+                Text(t(S.NES_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
             }
+        }
+    }
 
-            // ---- leitura (segura) e gravação (destrutiva), separadas
-            Text(t(S.READ_SECTION), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = connected && !busy && stub == null, onClick = { actDetect() }) { Text(t(S.DETECT)) }
-                Button(enabled = connected && !busy && stub == null && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
-                Button(enabled = connected && !busy && stub == null && ramProblem == null, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
+    // Leitura (segura) e gravação (destrutiva) em cartões separados: a gravação tem cor própria e fica longe dos botões de leitura
+    val readCard: @Composable () -> Unit = {
+        SectionCard(t(S.READ_SECTION)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = canRun && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
+                FilledTonalButton(enabled = canRun && ramProblem == null, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
+                OutlinedButton(enabled = canRun, onClick = { actDetect() }) { Text(t(S.DETECT)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
-            }
-            Text(t(S.WRITE_SECTION), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = connected && !busy && stub == null && ramProblem == null, onClick = { actWriteChoose() },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)) { Text(t(S.WRITE_SAVE)) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(saveReport, { saveReport = it; Prefs.saveReport = it }); Text(t(S.SAVE_REPORT), style = MaterialTheme.typography.bodyMedium)
             }
             Text(t(S.SHORTCUTS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+        }
+    }
+    val writeCard: @Composable () -> Unit = {
+        SectionCard(t(S.WRITE_SECTION), container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f), titleColor = MaterialTheme.colorScheme.error) {
+            OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() },
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE_SAVE)) }
+        }
+    }
+    val pendingCard: @Composable () -> Unit = {
+        pending?.let { p ->
+            SectionCard("${t(S.PENDING_TITLE)}: ${p.label}, ${p.data.size} ${t(S.BYTES)}", container = MaterialTheme.colorScheme.tertiaryContainer, titleColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { pickFile(t(S.CHOOSE_FILE), true, p.defaultName)?.let { savePending(it) } }) { Text(t(S.SAVE_AS)) }
+                    OutlinedButton(onClick = { pending = null }) { Text(t(S.DISCARD)) }
+                }
+            }
+        }
+    }
 
-            pending?.let { p ->
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${t(S.PENDING_TITLE)}: ${p.label}, ${p.data.size} ${t(S.BYTES)}", style = MaterialTheme.typography.titleSmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { pickFile(t(S.CHOOSE_FILE), true, p.defaultName)?.let { savePending(it) } }) { Text(t(S.SAVE_AS)) }
-                            OutlinedButton(onClick = { pending = null }) { Text(t(S.DISCARD)) }
-                        }
-                    }
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).focusRequester(focus).focusable().onPreviewKeyEvent { ev ->
+            if (ev.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            when {
+                ev.key == Key.Escape && busy -> { actAbort(); true }
+                ev.isCtrlPressed && ev.key == Key.D && connected && !busy -> { actDetect(); true }
+                ev.isCtrlPressed && ev.key == Key.R && connected && !busy -> { actDumpRom(); true }
+                ev.isCtrlPressed && ev.key == Key.S && connected && !busy -> { actReadSave(); true }
+                else -> false
+            }
+        },
+    ) {
+        // cabeçalho: título, estado da conexão e configurações; o aviso de segurança fica logo abaixo, sempre visível
+        Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(t(S.TITLE), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            StatusPill(connected, if (connected) "${t(S.STATUS_CONNECTED)}: ${info?.firmware ?: ""}${if (info?.mock == true) " — ${t(S.MOCK_MODE)}" else ""}" else t(S.STATUS_DISCONNECTED))
+            OutlinedButton(onClick = { showSettings = !showSettings }) { Text((if (showSettings) "▾ " else "▸ ") + t(S.SETTINGS)) }
+        }
+        Box(Modifier.padding(horizontal = 24.dp)) { Callout(t(S.ONE_CART_ONLY), Tone.ERROR) }
+
+        // área central: rola se a janela for pequena; duas colunas quando larga (conexão à esquerda, trabalho à direita), uma coluna quando estreita
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val wide = maxWidth >= 840.dp
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.widthIn(max = 1120.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
+                    if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
+                    if (wide) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard() }
+                        Column(Modifier.weight(0.62f), verticalArrangement = Arrangement.spacedBy(16.dp)) { pendingCard(); cartridgeCard(); readCard(); writeCard() }
+                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard() }
                 }
             }
         }
 
-        // barra de baixo: sempre visível (estado, progresso e registro)
-        HorizontalDivider()
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(stage ?: S.STAGE_IDLE), style = MaterialTheme.typography.titleSmall)
-                if (speed.isNotEmpty()) Text(speed, style = MaterialTheme.typography.bodyMedium)
-            }
-            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-            if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
-            if (lastMessage.isNotEmpty()) Text(lastMessage, style = MaterialTheme.typography.bodyLarge,
-                color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(S.LOG), style = MaterialTheme.typography.titleSmall)
-                OutlinedButton(enabled = log.isNotEmpty(), onClick = { copyLog() }) { Text(t(S.COPY_LOG)) }
-                OutlinedButton(enabled = log.isNotEmpty(), onClick = { saveLog() }) { Text(t(S.SAVE_LOG)) }
-            }
-            SelectionContainer {
-                Column(Modifier.fillMaxWidth().height(110.dp).verticalScroll(logScroll)) {
-                    log.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+        // painel de estado: sempre visível (etapa, progresso, última mensagem e registro)
+        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(t(stage ?: S.STAGE_IDLE), style = MaterialTheme.typography.titleSmall)
+                    if (speed.isNotEmpty()) Text(speed, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                }
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
+                if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
+                if (lastMessage.isNotEmpty()) Text(lastMessage, style = MaterialTheme.typography.bodyLarge,
+                    color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { logOpen = !logOpen }) { Text((if (logOpen) "▾ " else "▸ ") + t(S.LOG), style = MaterialTheme.typography.titleSmall) }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(enabled = log.isNotEmpty(), onClick = { copyLog() }) { Text(t(S.COPY_LOG)) }
+                    TextButton(enabled = log.isNotEmpty(), onClick = { saveLog() }) { Text(t(S.SAVE_LOG)) }
+                }
+                if (logOpen) SelectionContainer {
+                    Column(Modifier.fillMaxWidth().height(88.dp).background(MaterialTheme.colorScheme.surfaceContainerLowest, RoundedCornerShape(8.dp)).padding(8.dp).verticalScroll(logScroll)) {
+                        log.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    }
                 }
             }
         }
@@ -538,12 +565,75 @@ private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<Stri
     }
 }
 
-/** Outros cartuchos do OSCR, ainda sem suporte: stubs selecionáveis (só mostram um aviso; nenhuma ação vai ao dispositivo). */
-@OptIn(ExperimentalLayoutApi::class)
+private enum class Tone { INFO, WARN, ERROR }
+
+/** Cartão com título: agrupa o que é do mesmo assunto (proximidade) e dá um nível de hierarquia. */
 @Composable
-private fun PlannedChips(selected: PlannedSystem?, onSelect: (PlannedSystem) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        PLANNED_SYSTEMS.forEach { p -> FilterChip(selected = selected?.key == p.key, onClick = { onSelect(p) }, label = { Text(p.label) }) }
+private fun SectionCard(title: String, container: Color = MaterialTheme.colorScheme.surfaceContainerLow, titleColor: Color = MaterialTheme.colorScheme.onSurface, content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = container)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = titleColor)
+            content()
+        }
+    }
+}
+
+/** Rótulo pequeno acima do campo (padrão único para todos os campos do formulário). */
+@Composable
+private fun LabeledField(label: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+        content()
+    }
+}
+
+/** Aviso em linha, com cor por gravidade, no lugar de texto vermelho solto. */
+@Composable
+private fun Callout(text: String, tone: Tone) {
+    val cs = MaterialTheme.colorScheme
+    val (bg, fg, icon) = when (tone) {
+        Tone.ERROR -> Triple(cs.errorContainer, cs.onErrorContainer, "⚠")
+        Tone.WARN -> Triple(cs.tertiaryContainer, cs.onTertiaryContainer, "⚠")
+        Tone.INFO -> Triple(cs.secondaryContainer, cs.onSecondaryContainer, "ℹ")
+    }
+    Row(Modifier.fillMaxWidth().background(bg, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(icon, color = fg)
+        Text(text, color = fg, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** Estado da conexão como "pílula": cor e ponto, não só texto. */
+@Composable
+private fun StatusPill(connected: Boolean, text: String) {
+    val color = if (connected) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline
+    Row(Modifier.background(color.copy(alpha = 0.12f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(color, CircleShape))
+        Text(text, style = MaterialTheme.typography.labelLarge, color = color)
+    }
+}
+
+/** Combo box: botão com o valor atual e um menu; [content] recebe a função que fecha o menu. */
+@Composable
+private fun ComboBox(value: String, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable ColumnScope.(close: () -> Unit) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        OutlinedButton(enabled = enabled, onClick = { open = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Text(value, Modifier.weight(1f), maxLines = 1); Text("▾")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.heightIn(max = 420.dp)) { content { open = false } }
+    }
+}
+
+/** Sistemas suportados, depois (sob um título) os stubs dos outros cartuchos do OSCR, que só mostram um aviso. */
+private val collator: java.text.Collator = java.text.Collator.getInstance(Locale.ROOT)   // ordem alfabética que ignora maiúsculas e acentos (Pokémon vem com o P)
+
+@Composable
+private fun SystemPicker(systems: List<CartSystem>, selected: CartSystem, stub: PlannedSystem?, soonTitle: String, onSystem: (CartSystem) -> Unit, onStub: (PlannedSystem) -> Unit) {
+    ComboBox(value = stub?.label ?: selected.name, modifier = Modifier.fillMaxWidth()) { close ->
+        systems.sortedWith(compareBy(collator) { it.name }).forEach { s -> DropdownMenuItem(text = { Text(s.name) }, onClick = { close(); onSystem(s) }) }
+        HorizontalDivider()
+        Text(soonTitle, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline)
+        PLANNED_SYSTEMS.sortedWith(compareBy(collator) { it.label }).forEach { p -> DropdownMenuItem(text = { Text(p.label) }, onClick = { close(); onStub(p) }) }
     }
 }
 
