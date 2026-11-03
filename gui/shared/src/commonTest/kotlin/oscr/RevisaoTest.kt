@@ -25,7 +25,7 @@ class RevisaoTest {
     @Test fun nesRegras() {
         assertNull(Rules.nes(0, 0, 0))                                         // automático
         assertNull(Rules.nes(4, 256, 128)); assertNull(Rules.nes(1, 128, 64)); assertNull(Rules.nes(206, 32, 32))
-        assertEquals(S.V_UNSUPPORTED_MAPPER, Rules.nes(34, 32, 0)?.key)
+        assertEquals(S.V_UNSUPPORTED_MAPPER, Rules.nes(97, 32, 0)?.key)
         assertEquals(S.V_PRG_REQUIRED, Rules.nes(4, 0, 8)?.key)
         assertEquals(S.V_PRG_MULTIPLE16, Rules.nes(4, 20, 8)?.key)
         assertEquals(S.V_PRG_MULTIPLE32, Rules.nes(7, 48, 0)?.key); assertEquals(S.V_PRG_MULTIPLE32, Rules.nes(66, 48, 8)?.key)
@@ -35,6 +35,9 @@ class RevisaoTest {
         assertEquals(Problem(S.V_TOO_BIG_CHR, 128), Rules.nes(1, 128, 256))    // MMC1: CHR até 128 KB
         assertEquals(Problem(S.V_TOO_BIG_PRG, 128), Rules.nes(9, 256, 8))      // MMC2: PRG até 128 KB
         assertEquals(Problem(S.V_TOO_BIG_CHR, 256), Rules.nes(4, 128, 512))
+        assertNull(Rules.nes(34, 128, 0)); assertNull(Rules.nes(34, 64, 64)); assertNull(Rules.nes(184, 32, 32)); assertNull(Rules.nes(180, 128, 0))   // lote de D64
+        assertEquals(S.V_NO_CHR, Rules.nes(13, 32, 8)?.key); assertEquals(S.V_NEEDS_CHR, Rules.nes(68, 128, 0)?.key); assertEquals(S.V_PRG_MULTIPLE32, Rules.nes(86, 48, 8)?.key)
+        assertEquals(Problem(S.V_TOO_BIG_PRG, 32), Rules.nes(184, 64, 8)); assertEquals(Problem(S.V_TOO_BIG_PRG, 512), Rules.nes(34, 1024, 0))
     }
 
     @Test fun ramESizeRegras() {

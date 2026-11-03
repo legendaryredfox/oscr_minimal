@@ -62,6 +62,7 @@
 - **D61** Game Boy: MMM01, MBC6 e TAMA5
 - **D62** NES: levantamento dos mappers do OSCR e limites (sem código novo)
 - **D63** Game Boy: limites documentados
+- **D64** NES: lote de 14 mappers (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184) e `NesBus::wait_ms`
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -490,4 +491,23 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - `docs/limites-gb.md` reúne o que o GB faz hoje (tabela por mapper), os limites da placa (3,3 V, `Audio-In` sem ligação, reset de 400 ms), os limites de cada mapper (tamanhos, MBC6 só leitura, MMM01 até 1 MB, sem RTC), o que o OSCR faz e não foi portado (gravação em flash repro, GB Memory, GBS, Pelican, Mega Memory, GameShark, M161, MBC4) e o que o simulador não prova.
 - Correção de texto achada no levantamento: `docs/uso.md` dizia que o GB sai sempre `.gb`; o CLI e a GUI já escolhem `.gbc` pela flag `$143` da ROM lida.
 - Nenhuma mudança de firmware nesta entrada.
+
+### D64 — NES: lote de 14 mappers (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184) e `NesBus::wait_ms`
+- **Origem:** sequências copiadas do `NES.ino` (`readPRG`, `readCHR`); o firmware novo do OSCR é igual (ver `docs/achados-oscr-original.md`). Cada mapper abaixo foi lido em PRG e CHR antes de portar.
+- **`NesBus::wait_ms`** (novo; padrão sem efeito, `delay` no AVR): o mapper 34 (NINA-001) espera 200 ms depois de cada troca de banco de PRG ou de CHR. Um PRG de 512 KB leva ~3 s a mais.
+- **Mappers:**
+  - **13 (CPROM)** e **184 (Sunsoft 1)**: PRG como NROM (13: 32 KB; 184: até 32 KB), CHR-RAM no 13; no 184 o CHR de 4 KB entra pelos bits 0-2 de `$6000`.
+  - **34 (BxROM/NINA-001):** como o OSCR, escreve o banco em `$7FFD` (NINA) e em `$8000` (BxROM, pela varredura de conflito de barramento). CHR de 4 KB por `$7FFE` quando há CHR-ROM (NINA-001); CHR 0 é BxROM.
+  - **67 (Sunsoft 3):** PRG de 16 KB em `$F800` (escrita segura acima de `$E000`), CHR de 2 KB em `$8800`.
+  - **68 (Sunsoft 4):** PRG de 16 KB em `$F000`; CHR em quatro bancos de 2 KB (`$8000/$9000/$A000/$B000`) que formam 8 KB.
+  - **72 e 92 (Jaleco JF-17/JF-19):** os bancos travam na **subida** do bit 7 (PRG) e do bit 6 (CHR): escreve-se `v|0x80` e depois `v` (ou `v|0x40` e `v`), depois de um `$8000 = 0` inicial. 72: PRG troca em `$8000` e o último banco fica fixo; 92: o primeiro fica fixo em `$8000` e a troca é em `$C000`.
+  - **73 (VRC3):** PRG em `$F000`, CHR-RAM.
+  - **86 (JF-13) e 140 (JF-11/14):** registrador `$6000`; PRG de 32 KB nos bits 4-5. CHR: 140 bits 0-3; 86 bits 0-1 e o bit 6 vale o bit 2 do banco.
+  - **93 e 94:** UNROM com conflito de barramento (varre o banco fixo em busca de um byte igual ao valor). 93: PRG nos bits 4-6, bit 0 liga a CHR-RAM, e o OSCR também escreve o número do banco em `$6000` (copiei; não sei para quê). 94: PRG nos bits 2-4.
+  - **152:** como o 70, com PRG nos bits 4-6 (o bit 7 é o espelhamento).
+  - **180:** UNROM invertido (1º banco fixo em `$8000`, troca em `$C000`, conflito de barramento).
+- **Fora de propósito:** o **mapper 97** (o OSCR o trata junto com o 180, mas pela documentação que conheço o 97 tem o *último* banco fixo; não conferi e não portei).
+- **Limites de tamanho** (acima disso `ERRO 0x0002`): 13 PRG 32; 34 PRG 512, CHR 64; 67 128/128; 68 256/256; 72 128/128; 92 256/128; 73 PRG 128; 86 128/64; 93, 94 e 180 PRG 128; 140 e 152 128/128; 184 32/32. Vêm das observações de tamanho do OSCR e do tamanho do registrador; não vi cartuchos acima disso.
+- **Testes:** modelos novos no `SimMapper` (travas por subida de bit, CHR de 2 KB e 4 KB, NINA contra BxROM, conflito de barramento nos 34/93/94/152/180). 21 configurações novas e 6 recusas de opção; 990 verificações; 14 erros plantados válidos, 12 derrubam entre 1 e 2 verificações; sobrevivem o `$6000` do 93 (o modelo ignora a escrita) e o reset inicial dos 72/92 (só afetaria o banco 0, que é igual ao valor de reset). ASan e UBSan limpos. Arduino compila (41,9 KB, 16%). Host: lista de mappers na CLI, na GUI (4 idiomas) e nas docs (os testes de sincronia pegaram o esquecimento). GUI: regras de validação e nomes novos.
+- **Não validado em hardware.** Tempos do `wait_ms(200)` e a sequência de dois toques dos mappers Jaleco são os pontos mais prováveis de ajuste.
 

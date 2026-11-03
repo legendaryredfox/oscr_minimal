@@ -203,6 +203,7 @@ struct AvrNesBus : NesBus {   // NES e Famicom
     delay(20);
   }
   void end() override { bus_release(); }
+  void wait_ms(uint16_t ms) override { delay(ms); }
   uint8_t prg(uint16_t a) override {
     PORTK = 0xFF; DDRK = 0;                                             // MODE_READ
     PORTF |= (1 << 7);                                                  // PRG_READ

@@ -33,6 +33,7 @@ struct NesBus {  // NES e Famicom: mesmo barramento
   // Escrita em $E000-$FFFF sem corromper a PRG-RAM com bateria ($6000-$7FFF): a diferença entre M2 baixo e /ROMSEL alto tem que ser
   // de ~33 ns (write_reg_byte do OSCR). O MMC1 e outros usam isso nos registradores acima de $E000.
   virtual void reg_write_safe(uint16_t addr, uint8_t value) { prg_write(addr, value); }
+  virtual void wait_ms(uint16_t ms) { (void)ms; }   // espera (mapper 34: o OSCR espera 200 ms depois de cada troca de banco da NINA-001)
   virtual uint8_t ram(uint16_t addr) { return prg(addr); }
   virtual void ram_write(uint16_t addr, uint8_t value) { prg_write(addr, value); }
 };

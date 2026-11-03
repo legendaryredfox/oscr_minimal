@@ -29,21 +29,26 @@ bool CartBackend::probe_nes(uint8_t sys, Cart& o, bool for_save) {
     } else {                                                          // mapper e tamanhos informados
       uint16_t m = opt_mapper_;
       bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 9 || m == 10 || m == 11 || m == 33 || m == 48 || m == 66 || m == 69 || m == 70 || m == 71
-                   || m == 75 || m == 78 || m == 79 || m == 87 || m == 118 || m == 206;
+                   || m == 75 || m == 78 || m == 79 || m == 87 || m == 118 || m == 206
+                   || m == 13 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184;
       if (!known) { o.status = 2; return false; }
       if (opt_prg_ == 0 || opt_prg_ % 16 != 0 || opt_chr_ % 8 != 0) { o.status = 3; return false; }
-      if ((m == 2 || m == 7 || m == 71) && opt_chr_ != 0) { o.status = 3; return false; }   // CHR-RAM
-      if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206) && opt_chr_ == 0) { o.status = 3; return false; }   // CHR-ROM
+      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 73 || m == 93 || m == 94 || m == 180) && opt_chr_ != 0) { o.status = 3; return false; }   // CHR-RAM
+      if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206 || m == 67 || m == 68 || m == 72 || m == 92 || m == 86 || m == 140 || m == 152 || m == 184) && opt_chr_ == 0) { o.status = 3; return false; }   // CHR-ROM
       if (m == 1 && (opt_prg_ > 256 || opt_chr_ > 128)) { o.status = 2; return false; }      // SUROM etc.; registrador de CHR de 5 bits
       if (m == 4 && (opt_prg_ > 512 || opt_chr_ > 256)) { o.status = 2; return false; }     // registradores de banco do MMC3 de 8 bits (CHR de 1 KB)
       if ((m == 9 || m == 10) && opt_chr_ > 128) { o.status = 2; return false; }            // registrador de CHR de 5 bits (4 KB)
       if (m == 69 && opt_chr_ > 256) { o.status = 2; return false; }                        // registrador de CHR de 8 bits (1 KB)
-      if ((m == 7 || m == 11 || m == 66 || m == 79) && opt_prg_ % 32 != 0) { o.status = 3; return false; }
+      if ((m == 7 || m == 11 || m == 66 || m == 79 || m == 34 || m == 86 || m == 140 || m == 13) && opt_prg_ % 32 != 0) { o.status = 3; return false; }
       if ((m == 9 && opt_prg_ > 128) || (m == 10 && opt_prg_ > 256) || (m == 11 && (opt_prg_ > 128 || opt_chr_ > 128))
           || (m == 66 && (opt_prg_ > 128 || opt_chr_ > 32)) || (m == 69 && opt_prg_ > 512) || (m == 5 && opt_prg_ > 1024)
           || ((m == 33 || m == 48) && (opt_prg_ > 256 || opt_chr_ > 256)) || (m == 70 && (opt_prg_ > 256 || opt_chr_ > 128)) || (m == 75 && (opt_prg_ > 128 || opt_chr_ > 128))
           || (m == 78 && (opt_prg_ > 128 || opt_chr_ > 128)) || (m == 79 && (opt_prg_ > 64 || opt_chr_ > 64)) || (m == 87 && (opt_prg_ > 32 || opt_chr_ > 32))
-          || (m == 118 && (opt_prg_ > 512 || opt_chr_ > 256)) || (m == 206 && (opt_prg_ > 128 || opt_chr_ > 64))) { o.status = 2; return false; }   // além do registrador
+          || (m == 118 && (opt_prg_ > 512 || opt_chr_ > 256)) || (m == 206 && (opt_prg_ > 128 || opt_chr_ > 64))
+          || (m == 13 && opt_prg_ > 32) || (m == 34 && (opt_prg_ > 512 || opt_chr_ > 64)) || (m == 67 && (opt_prg_ > 128 || opt_chr_ > 128)) || (m == 68 && (opt_prg_ > 256 || opt_chr_ > 256))
+          || (m == 72 && (opt_prg_ > 128 || opt_chr_ > 128)) || (m == 92 && (opt_prg_ > 256 || opt_chr_ > 128)) || (m == 73 && opt_prg_ > 128) || (m == 86 && (opt_prg_ > 128 || opt_chr_ > 64))
+          || ((m == 93 || m == 94 || m == 180) && opt_prg_ > 128) || (m == 140 && (opt_prg_ > 128 || opt_chr_ > 128)) || (m == 152 && (opt_prg_ > 128 || opt_chr_ > 128))
+          || (m == 184 && (opt_prg_ > 32 || opt_chr_ > 32))) { o.status = 2; return false; }   // além do registrador
       o.prg = uint32_t(opt_prg_) * 1024UL; o.chr = uint32_t(opt_chr_) * 1024UL;
       mapper_ = m;
       strcpy(o.name, "mapper ");
@@ -119,12 +124,13 @@ void CartBackend::nes_setup_mapper() {
   if (mapper_ == 1) { nes_->prg_write(0x8000, 0x80); mmc1_write(0x8000, 0x1C); }   // reset; PRG modo 3, CHR 4 KB
   else if (mapper_ == 5) { nes_->prg_write(0x5100, 3); nes_->prg_write(0x5101, 0); }   // MMC5: PRG em bancos de 8 KB, CHR em 8 KB
   else if (mapper_ == 69) { nes_->prg_write(0x8000, 8); nes_->prg_write(0xA000, 0); }  // FME-7: $6000 = ROM banco 0 (RAM desligada)
+  else if (mapper_ == 72 || mapper_ == 92) nes_->prg_write(0x8000, 0);                 // Jaleco: limpa o registrador (as travas só pegam na subida dos bits 7 e 6)
 }
 
 uint8_t CartBackend::nes_prg_byte(uint32_t o) {
   uint32_t fixed = c_.prg > 16384UL ? c_.prg - 16384UL : 0;          // início do último banco de 16 KB
   switch (mapper_) {
-    case 0: case 3: case 87: return nes_->prg(uint16_t(0x8000 + o));
+    case 0: case 3: case 87: case 13: case 184: return nes_->prg(uint16_t(0x8000 + o));
     case 79: {                                                       // NINA-003/006: 32 KB por vez, registrador em $4100 (bit 3)
       int16_t bank = int16_t(o >> 15);
       if (bank != cur_prg_) { nes_->prg_write(0x4100, uint8_t(bank << 3)); cur_prg_ = bank; }
@@ -135,6 +141,27 @@ uint8_t CartBackend::nes_prg_byte(uint32_t o) {
       if (bank != cur_prg_) { nes_->prg_write(0x8000, uint8_t(bank & 0x0F)); cur_prg_ = bank; }
       return nes_->prg(uint16_t(0x8000 + (o & 0x1FFF)));
     }
+    case 86: case 140: {                                             // Jaleco JF-13/JF-11/JF-14: 32 KB por vez, bits 4-5 de $6000 (sem conflito de barramento)
+      int16_t bank = int16_t(o >> 15);
+      if (bank != cur_prg_) { nes_->prg_write(0x6000, uint8_t(bank << 4)); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0x8000 + (o & 0x7FFF)));
+    }
+    case 34: {                                                       // BxROM ($8000, com conflito) e NINA-001 ($7FFD): escreve nos dois, como o OSCR; a NINA é lenta para trocar
+      int16_t bank = int16_t(o >> 15);
+      if (bank != cur_prg_) { nes_->prg_write(0x7FFD, uint8_t(bank)); nes_->wait_ms(200); nes_reg(uint8_t(bank), 0x8000, 2048); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0x8000 + (o & 0x7FFF)));
+    }
+    case 180: {                                                      // UNROM invertido: 1º banco fixo em $8000, troca em $C000 (conflito de barramento)
+      if (o < 16384UL) return nes_->prg(uint16_t(0x8000 + o));
+      int16_t bank = int16_t(o >> 14);
+      if (bank != cur_prg_) { nes_reg(uint8_t(bank), 0x8000, 16384); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0xC000 + (o & 0x3FFF)));
+    }
+    case 92: {                                                       // Jaleco JF-19: 1º banco fixo em $8000, troca em $C000; trava na subida do bit 7
+      int16_t bank = int16_t(o >> 14);
+      if (bank != cur_prg_) { nes_->prg_write(0x8000, uint8_t(bank | 0x80)); nes_->prg_write(0x8000, uint8_t(bank)); cur_prg_ = bank; }
+      return nes_->prg(uint16_t(0xC000 + (o & 0x3FFF)));
+    }
     case 7: case 11: case 66: {                                      // 32 KB por vez; 7 e 11 e 66 têm conflito de barramento
       int16_t bank = int16_t(o >> 15);
       if (bank != cur_prg_) {
@@ -143,7 +170,7 @@ uint8_t CartBackend::nes_prg_byte(uint32_t o) {
       }
       return nes_->prg(uint16_t(0x8000 + (o & 0x7FFF)));
     }
-    case 2: case 1: case 4: case 10: case 71: case 33: case 48: case 70: case 78: case 118: case 206: {
+    case 2: case 1: case 4: case 10: case 71: case 33: case 48: case 70: case 78: case 118: case 206: case 73: case 68: case 67: case 72: case 93: case 94: case 152: {
       if (o >= fixed) return nes_->prg(uint16_t(0xC000 + (o - fixed)));
       int16_t bank = int16_t(o >> 14);
       if (bank != cur_prg_) {
@@ -154,6 +181,12 @@ uint8_t CartBackend::nes_prg_byte(uint32_t o) {
         else if (mapper_ == 33 || mapper_ == 48) { nes_->prg_write(0x8000, uint8_t(bank * 2)); nes_->prg_write(0x8001, uint8_t(bank * 2 + 1)); }   // dois bancos de 8 KB
         else if (mapper_ == 70) nes_reg(uint8_t(bank << 4), 0xC000, 16384);   // PRG nos bits 4-7; conflito de barramento
         else if (mapper_ == 78) nes_reg(uint8_t(bank), 0xC000, 16384);        // PRG nos bits 0-2; conflito de barramento
+        else if (mapper_ == 152) nes_reg(uint8_t(bank << 4), 0xC000, 16384);  // PRG nos bits 4-6 (o bit 7 é o espelhamento); conflito de barramento
+        else if (mapper_ == 94) nes_reg(uint8_t(bank << 2), 0xC000, 16384);   // PRG nos bits 2-4; conflito de barramento
+        else if (mapper_ == 93) { nes_->prg_write(0x6000, uint8_t(bank)); nes_reg(uint8_t((bank << 4) | 1), 0xC000, 16384); }   // PRG nos bits 4-6, bit 0 liga a CHR-RAM; o OSCR escreve também em $6000
+        else if (mapper_ == 73 || mapper_ == 68) nes_->prg_write(0xF000, uint8_t(bank));    // VRC3 e Sunsoft 4
+        else if (mapper_ == 67) nes_->reg_write_safe(0xF800, uint8_t(bank));                // Sunsoft 3 (escrita segura acima de $E000)
+        else if (mapper_ == 72) { nes_->prg_write(0x8000, uint8_t(bank | 0x80)); nes_->prg_write(0x8000, uint8_t(bank)); }   // Jaleco: a subida do bit 7 trava o banco
         else { mmc3_write(6, uint8_t(bank * 2)); mmc3_write(7, uint8_t(bank * 2 + 1)); }
         cur_prg_ = bank;
       }
@@ -186,14 +219,49 @@ uint8_t CartBackend::nes_prg_byte(uint32_t o) {
 uint8_t CartBackend::nes_chr_byte(uint32_t o) {
   switch (mapper_) {
     case 0: return nes_->chr(uint16_t(o));
-    case 3: case 66: case 11: case 70: case 78: {                    // 8 KB por vez; conflito de barramento
+    case 3: case 66: case 11: case 70: case 78: case 152: {         // 8 KB por vez; conflito de barramento
       int16_t bank = int16_t(o >> 13);
       if (bank != cur_chr_) {
         uint8_t v = (mapper_ == 11 || mapper_ == 78) ? uint8_t(bank << 4) : uint8_t(bank);   // 11 e 78: CHR nos bits 4-7
-        nes_reg(v, (mapper_ == 70 || mapper_ == 78) ? 0xC000 : 0x8000, (mapper_ == 70 || mapper_ == 78) ? 16384 : 2048);               // 70 e 78: varre o banco fixo
+        nes_reg(v, (mapper_ == 70 || mapper_ == 78 || mapper_ == 152) ? 0xC000 : 0x8000, (mapper_ == 70 || mapper_ == 78 || mapper_ == 152) ? 16384 : 2048);               // 70, 78 e 152: varre o banco fixo
         cur_chr_ = bank;
       }
       return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 34: {                                                       // NINA-001: 4 KB em $0000 pelo registrador $7FFE (lento)
+      int16_t k = int16_t(o >> 12);
+      if (k != cur_chr_) { nes_->prg_write(0x7FFE, uint8_t(k)); nes_->wait_ms(200); cur_chr_ = k; }
+      return nes_->chr(uint16_t(o & 0x0FFF));
+    }
+    case 184: {                                                      // Sunsoft 1: 4 KB em $0000, bits 0-2 de $6000
+      int16_t k = int16_t(o >> 12);
+      if (k != cur_chr_) { nes_->prg_write(0x6000, uint8_t(k)); cur_chr_ = k; }
+      return nes_->chr(uint16_t(o & 0x0FFF));
+    }
+    case 140: {                                                      // Jaleco: 8 KB, bits 0-3 de $6000
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_chr_) { nes_->prg_write(0x6000, uint8_t(bank)); cur_chr_ = bank; }
+      return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 86: {                                                       // JF-13: 8 KB, bits 0-1 e bit 6 (bit 2 do banco) de $6000
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_chr_) { nes_->prg_write(0x6000, bank < 4 ? uint8_t(bank & 3) : uint8_t((bank | 0x40) & 0x43)); cur_chr_ = bank; }
+      return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 72: case 92: {                                              // Jaleco: 8 KB; a subida do bit 6 trava o banco
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_chr_) { nes_->prg_write(0x8000, uint8_t(bank | 0x40)); nes_->prg_write(0x8000, uint8_t(bank)); cur_chr_ = bank; }
+      return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 68: {                                                       // Sunsoft 4: quatro bancos de 2 KB em $8000/$9000/$A000/$B000 = 8 KB
+      int16_t bank = int16_t(o >> 13);
+      if (bank != cur_chr_) { for (uint8_t j = 0; j < 4; j++) nes_->prg_write(uint16_t(0x8000 + 0x1000 * j), uint8_t(bank * 4 + j)); cur_chr_ = bank; }
+      return nes_->chr(uint16_t(o & 0x1FFF));
+    }
+    case 67: {                                                       // Sunsoft 3: 2 KB em $0000 pelo registrador $8800
+      int16_t k = int16_t(o >> 11);
+      if (k != cur_chr_) { nes_->prg_write(0x8800, uint8_t(k)); cur_chr_ = k; }
+      return nes_->chr(uint16_t(o & 0x07FF));
     }
     case 79: {                                                       // NINA-003/006: 8 KB, bits 0-2 de $4100
       int16_t bank = int16_t(o >> 13);

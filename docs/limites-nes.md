@@ -6,7 +6,7 @@ A leitura do `readCHR` parou por volta do mapper 19 (a lista de CHR dos mappers 
 
 ## 1. O que o firmware faz hoje
 
-Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 33, 48, 66, 69, 70, 71, 75, 78, 79, 87, 118, 206. São 22 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/protocolo.md` e D50, D57.
+Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206 (36; o lote de D64 acrescentou 14). São 36 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/protocolo.md` e D50, D57.
 
 ## 2. Limites de tamanho dos mappers já suportados
 
@@ -41,6 +41,8 @@ Regras gerais: PRG múltiplo de 16 KB, CHR múltiplo de 8 KB. Mappers 79, 87, 78
 - CHR-RAM não é lida (não há o que ler).
 - Cada leitura usa o `NesBus` com a sequência de porta copiada do OSCR (`oscr_avr_buses.h`): o teste no PC confere as sequências, mas **não** os tempos (M2, /ROMSEL, ~33 ns na escrita segura de D57).
 - Só um cartucho por vez, e os que mantêm estado entre operações (MMC1, MMC5, VRC) são reinicializados em `nes_setup_mapper`; o OSCR assume alimentação nova a cada leitura.
+
+> **Atualização (D64):** a espera em ms (mapper 34) e os mappers da seção 4.5 foram feitos, menos o 97. Veja `docs/achados-oscr-original.md` para o que o firmware novo do OSCR muda (quase nada).
 
 ## 4. O que o OSCR faz e o firmware ainda não, por motivo
 

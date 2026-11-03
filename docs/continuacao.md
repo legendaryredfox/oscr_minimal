@@ -19,7 +19,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Sistema | ROM | Save |
 |---|---|---|
 | SNES | LoROM, HiROM, ExHiROM (até 8064 KB), SA-1 (precisa do Si5351 e do PIC), SuperFX, S-DD1, SPC7110, Cx4 | SRAM: ler e gravar (com conferência) |
-| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1, 4, 5 e 69, 16/32 KB nos mappers 1 e 5 (`--ram`): ler e gravar |
+| NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71 e o lote de D64 (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184), mais os de D50/D57; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1, 4, 5 e 69, 16/32 KB nos mappers 1 e 5 (`--ram`): ler e gravar |
 | Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC (adaptador no slot GBA, 3,3 V) | sem mapper, MBC1, MBC1M, MBC2, MBC3, MBC5, MBC6 (ROM e save só leitura), MBC7, MMM01 (até 1 MB), TAMA5 (só ROM), GB Camera | SRAM: ler e gravar (sem RTC); EEPROM do MBC7: ler e gravar |
@@ -57,7 +57,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 914 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 990 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -124,11 +124,13 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
+**Achados no firmware original do OSCR:** `docs/achados-oscr-original.md` (o firmware novo é uma reescrita com as mesmas sequências; a diferença útil é a base de dados CRDB, que não está no clone).
+
 **Limites levantados em 2026-11-03:** `docs/limites-nes.md` (NES) e `docs/limites-gb.md` (Game Boy) (o que falta no `NesBus`, mappers por motivo de bloqueio, ordem sugerida do próximo lote; para o GB: limites da placa a 3,3 V, de cada mapper e acessórios não portados).
 
 **Próximo passo sugerido:** ciclo C de novo: gravação da Flash do MBC6 (ver D61), RTC do MBC3 (MBC6, MBC7, MMM01 e TAMA5 já estão em D60 e D61), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 914 de cartuchos, 60 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
+Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 990 de cartuchos, 60 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 
