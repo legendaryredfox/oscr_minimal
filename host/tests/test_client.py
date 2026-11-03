@@ -122,14 +122,12 @@ def test_cli_save_roundtrip(tmp_path, capsys):
 
 
 def test_cli_save_write_recusa_sem_confirmacao(tmp_path):
-    import pytest
     from oscr_host.cli import main
 
     src = tmp_path / "in.sav"
     src.write_bytes(b"\x00" * 16)
-    with pytest.raises(SystemExit) as e:                                  # pytest não tem terminal: sem --yes recusa
-        main(["--simulate", "save-write", "-s", "mock", "-i", str(src), "--backup-dir", str(tmp_path / "bk")])
-    assert "--yes" in str(e.value)
+    # pytest não tem terminal: sem --yes recusa (saída 4)
+    assert main(["--simulate", "save-write", "-s", "mock", "-i", str(src), "--backup-dir", str(tmp_path / "bk")]) == 4
     assert not (tmp_path / "bk").exists()                                 # nada foi lido nem gravado
 
 

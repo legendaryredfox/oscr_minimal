@@ -72,6 +72,7 @@
 - **D71** Placa `16_bits` (SNES e Mega Drive) e renomeação da placa de 5 slots (decisão do usuário, 2026-11-03)
 - **D72** U2 (PIC12F629) da `16_bits` passa ao footprint DIP-8 tradicional (pedido do usuário, 2026-11-03)
 - **D73** PIC removível indicado na placa `16_bits` (pedido do usuário, 2026-11-03)
+- **D74** CLI pensada para agentes de IA (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -585,3 +586,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - O footprint do U2 continua o DIP-8 tradicional (D72), mas a placa agora diz que o PIC fica em soquete: texto `PIC EM SOQUETE` no silk de cima (ao lado do U2) e valor do U2 `PIC12F629 (em soquete; snescic-lock-resync)` no esquemático, na PCB e no `fab/bom.csv`.
 - Só a camada de silk de cima mudou nos gerbers; cobre, máscaras, silk de baixo, contorno e furos saíram idênticos aos da D72. DRC igual (0 erros, 0 ligações abertas, 8 avisos da D71), ERC 0, netlist OK. Gerbers refeitos com `tools/export_fab.sh 16_bits v1.0`, SHA-256 atualizado em `fab/PEDIDO.md`.
 - Se o usuário quiser o desenho do soquete na placa, o footprint `Package_DIP:DIP-8_W7.62mm_Socket` (o da D71) tem os mesmos pads e pode voltar sem mexer no roteamento.
+
+### D74 — CLI pensada para agentes de IA (pedido do usuário, 2026-11-03)
+- Pedido: o programa do PC deve ter uma CLI boa para agentes de IA. Escopo escolhido: **Python (`host/`) como referência e Kotlin (`gui/`) com o mesmo contrato**; **sem servidor MCP** (a CLI com JSON basta via shell).
+- Contrato em `docs/cli.md`: `--json` em qualquer posição, `"ok"` em toda saída, erros estruturados (`kind`, `message`, `hint`) em stdout com `--json`, progresso `--progress jsonl` em stderr, comandos `systems` e `errors` sem abrir a porta.
+- **Códigos de saída:** mantidos 0 (ok), 1 (erro) e 2 (sem cartucho), como já estava em `docs/uso.md`. Acrescentados 3 (sem porta/dispositivo), 4 (recusado, falta `--yes`), 64 (uso, no lugar do 2 do argparse, que colidia com "sem cartucho") e 130 (Ctrl+C).
+- `detect` sem cartucho passa a ter `"ok": false` na saída JSON (o comando funcionou, mas não há cartucho); a saída continua 2.
+- O rótulo de progresso em texto passou de `ROM:` para `rom:` (igual ao `label` do JSON).

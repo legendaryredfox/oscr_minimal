@@ -92,7 +92,7 @@ Depois de cada dump o programa confere o **checksum do cabeçalho** (Mega Drive,
 | Placa esquenta, cheiro, LED sem acender | curto | Desligue o USB já. Refaça os testes de `boards/16_and_8_bits/docs/montagem.md` (seção 5). |
 | GBA não lê | cartucho de outro sistema; solda do slot | Só cartucho GBA; confira a solda dos pads de 1,5 mm e a tensão de 3,3 V no pino 1. |
 
-Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código de saída é 1 em erro, 2 se não houver cartucho.
+Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código de saída é 1 em erro, 2 se não houver cartucho; os demais e a saída `--json` para agentes estão em `docs/cli.md`.
 
 ## 5. Dicas
 
