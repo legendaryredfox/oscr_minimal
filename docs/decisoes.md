@@ -65,6 +65,7 @@
 - **D64** NES: lote de 14 mappers (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184) e `NesBus::wait_ms`
 - **D65** Firmware: volta ao plano de usar o firmware original do OSCR (decisão do usuário, 2026-11-03)
 - **D66** Fork: SD trocado pela serial e protocolo ligado ao Mega Drive; identificação por banco de dados no PC (decisão do usuário, 2026-11-03)
+- **D67** Gerbers para pedir a placa (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -527,4 +528,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Banco de dados:** a identificação do jogo (CRDB do OSCR, No-Intro, NES 2.0) fica no **PC**, por CRC32, e o PC também escolhe mapper e tamanhos do NES para mandar como opções do `DUMP_ROM`. Fora do firmware. Ainda não implementado no host nem na GUI (`docs/fork-oscr.md` seção 3.2 e 3.3).
 - **Limites conhecidos:** fluxo sequencial (sem `seek` real); releitura do arquivo gravado devolve 0 bytes; o `WRITE_SAVE` não confere o cartucho byte a byte (o PC precisa reler); um arquivo por comando; baud 1.000.000 contra 250.000 do upstream.
 - **Testes no PC:** 71 do host (10 novos de fluxo e 1 de sincronia das cópias do protocolo), 990 de cartuchos do firmware próprio, Gradle ok.
+
+### D67 — Gerbers para pedir a placa (2026-11-03)
+- **Verificações antes de exportar** (placa sem mudanças desde o último zip): DRC `kicad-cli pcb drc` 0 erros e 4 avisos (`lib_footprint_mismatch` dos furos de canto, justificados em D26); 0 itens sem ligação; `tools/check_netlist.py` OK (67 nets, 375 ligações, 26 pinos sem ligação); ERC 0 erros e 1 aviso novo (`lib_symbol_mismatch` do `U3`: o símbolo MCP1700 do projeto difere da cópia da biblioteca do KiCad 10; só cosmético). Zonas conferidas com `--check-zones`.
+- **Exportado com `kicad-cli`** (o MCP não foi necessário): F.Cu, B.Cu, máscaras, silk, contorno (extensões Protel, sem X2) e furos Excellon métrico (PTH e NPTH separados). Cobre, máscara, contorno e silk de cima saíram **idênticos** aos de 2026-11-02; mudam só as datas de criação, e a silk de baixo (que não tem desenho) deixou de trazer recortes vazios.
+- **Conferido com `gerbonara`:** 7 camadas, contorno 144,05 × 108,05 mm, 915 furos metalizados (iguais a D32) e 14 não metalizados (12 de D32 mais os 2 de M2 do módulo Si5351, D34).
+- **Arquivo para a fábrica:** `dumper-v1.0-gerbers-jlcpcb.zip` na raiz do projeto (mesmo conteúdo de `hardware/fab/dumper-v1.0-jlcpcb.zip`). Pedido: 2 camadas, 1,6 mm, HASL, 5 peças (CLAUDE.md seção 1).
+- **O que continua estimado e só o hardware responde** (não impede o pedido, mas pode obrigar a girar um slot ou mudar o silk numa v1.1): corpo e altura dos slots (D17, ±3 mm), lado da etiqueta e direção de entrada do slot (D27, D28, U-18), posição dos furos M2 do módulo Si5351 (D34) e altura dos espaçadores (D25). As **trilhas, os furos e a pinagem** não dependem disso.
 
