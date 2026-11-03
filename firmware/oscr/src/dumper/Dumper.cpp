@@ -22,6 +22,7 @@
 # include "dumper/NesFlash.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/MdFlash.h"
+# include "dumper/GbaFlash.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -561,6 +562,14 @@ namespace OSCR::Dumper
           rc = oscr::E_CARTUCHO_IO;
           ran = runCore([&rc, size] { rc = MdFlash::prepare(size); MD::cartOff(); });
         }
+        else if (system == oscr::SYS_GBA)
+        {
+          uint16_t code = optMapper;                                    // GBA: (bloco << 8) | 1; o bloco só vale no 369-in-1
+          rc = GbaFlash::check(code, size);
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_FLASH;                                           // o `idFlashrom` do OSCR faz fatalError se não reconhece o chip
+          ran = runCore([&rc, code, size] { rc = GbaFlash::prepare(code, size); GBA::cartOff(); });
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
@@ -599,6 +608,17 @@ namespace OSCR::Dumper
           activeSource = nullptr;
           if (rc == 0 && countingSource.bytes != romWriteSize) rc = oscr::E_CARTUCHO_IO;       // o OSCR não avisa se o arquivo acabou antes
         }
+        else if (system == oscr::SYS_GBA)
+        {
+          // As funções do OSCR leem o "arquivo" (sharedFile): ligá-lo ao fluxo, como no WRITE_SAVE.
+          uint16_t code = optMapper; uint32_t n = romWriteSize;
+          countingSource.inner = &in; countingSource.bytes = 0;
+          activeSource = &countingSource;
+          OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+          ran = runCore([&rc, code, n] { rc = GbaFlash::program(code, n); GBA::cartOff(); });
+          activeSource = nullptr;
+          if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
@@ -624,6 +644,7 @@ namespace OSCR::Dumper
           uint8_t st = 1;
           runCore([&st, this] { st = gbaProbe(uint8_t(optMapper)); });
           if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }     // 4 (checksum do cabeçalho errado) segue: o PC decide
+          if (!forSave && optPrgKb) OSCR::Cores::cartSize = uint32_t(optPrgKb) * 1024UL;   // tamanho informado (conferência depois de gravar o flash: a detecção por espelho vê o flash inteiro)
           return true;
         }
         if (system == oscr::SYS_SNES)

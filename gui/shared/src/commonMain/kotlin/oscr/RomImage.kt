@@ -5,7 +5,7 @@ package oscr
  * Prepara um arquivo para o WRITE_ROM: tira o cabeçalho iNES e acha chip, PRG e CHR. Igual a host/oscr_host/romimage.py.
  * No OSCR original isso era feito pelo firmware lendo o arquivo do SD; aqui é o PC.
  */
-enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false) {
+enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false) {
     NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF040, mapper 30)"),
     A29040B("a29040b", 2, 0, "A29040B (mapper 0)"),
     /** SNES: flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR). */
@@ -16,13 +16,15 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     SNES_HIROM_P0("snes-hirom-p0", 2, 0, "SNES flash de 8 bits, HiROM (P0)", true, generic = true),
     SNES_EXLOROM_P1("snes-exlorom-p1", 3, 0, "SNES flash de 8 bits, ExLoROM (P1)", true, generic = true),
     SNES_EXHIROM_P1("snes-exhirom-p1", 4, 0, "SNES flash de 8 bits, ExHiROM (P1)", true, generic = true),
+    /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
+    GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
     MD_FLASH("md-flash", 1, 0, "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)", md = true);
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
         /** Chips que o sistema aceita ([CartSystem.MOCK] aceita todos, para o simulador). */
-        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD)) }
+        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD) && it.gba == (s == CartSystem.GBA)) }
     }
 }
 
@@ -32,7 +34,7 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
  * [rom]: a ROM original, que a conferência compara com a leitura ([body] vem reordenado e completado).
  */
 class RomImage(val body: ByteArray, val prgKb: Int, val chrKb: Int, val mapper: Int?, val flashKb: Int = 0,
-               val layout: Int = 0, val wireChr: Int = 0, val rom: ByteArray? = null)
+               val layout: Int = 0, val wireChr: Int = 0, val rom: ByteArray? = null, val block: Int = 0)
 
 /** Disposições do flash CFI do SNES (parte alta do campo chip do WRITE_ROM); igual a SNES_LAYOUTS em romimage.py e a SnesPlan.h no firmware. */
 object SnesLayouts {
@@ -62,7 +64,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -145,8 +147,23 @@ object RomImages {
         return RomImage(body, rom.size / 1024, 0, null, flashMb * 1024, SnesLayouts.GENERIC, typeCode or (secExp shl 4) or (bufExp shl 9), rom)
     }
 
-    /** Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; nos demais, o número do chip. */
-    fun chipCode(chip: FlashChip, img: RomImage): Int = if (chip.snes) (img.layout shl 8) or chip.code else chip.code
+    const val GBA_369_MAX_BYTES = 256 * 1024 * 1024
+    const val GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024      // prg_kb do DUMP_ROM é u16 (KB)
+
+    /**
+     * ROM de GBA para o flash repro: tamanho múltiplo de 1 KB, até 256 MB no bloco 0 do 369-in-1 (ou até o fim da memória a partir do bloco N, de 4 MB).
+     * [RomImage.prgKb] é o tamanho em KB limitado a 65535. Igual a split_gba em romimage.py.
+     */
+    fun splitGba(data: ByteArray, block: Int = 0): RomImage {
+        if (block !in 0..63) throw RomImageException(RomImageProblem.GBA_BLOCK)
+        if (data.isEmpty() || data.size % 1024 != 0) throw RomImageException(RomImageProblem.GBA_SIZE)
+        val limit = if (block == 0) GBA_369_MAX_BYTES.toLong() else 4L * 1024 * 1024 * (64 - block)
+        if (data.size > limit) throw RomImageException(RomImageProblem.GBA_TOO_BIG, data.size / 1024, block)
+        return RomImage(data, minOf(data.size / 1024, 65535), 0, null, block = block)
+    }
+
+    /** Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; no GBA: (bloco << 8) | 1; nos demais, o número do chip. */
+    fun chipCode(chip: FlashChip, img: RomImage): Int = if (chip.snes) (img.layout shl 8) or chip.code else if (chip.gba) (img.block shl 8) or 1 else chip.code
 
     const val MD_MAX_BYTES = 4 * 1024 * 1024
 
@@ -164,7 +181,7 @@ object RomImages {
 
     /** [chip] null = pelo mapper do cabeçalho (30 = NES Maker, 0 = A29040B); arquivo cru = NES Maker. */
     fun prepare(data: ByteArray, chip: FlashChip?, capacityKb: Int? = null, layout: String = "1x",
-                flashMb: Int? = null, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null): Pair<FlashChip, RomImage> {
+                flashMb: Int? = null, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, block: Int = 0): Pair<FlashChip, RomImage> {
         if (chip != null && chip.generic) {
             if (flashType == null) throw RomImageException(RomImageProblem.GEN_TYPE)
             if (flashMb == null) throw RomImageException(RomImageProblem.GEN_MB)
@@ -172,6 +189,7 @@ object RomImages {
         }
         if (chip != null && chip.snes) return chip to splitSnes(data, capacityKb, layout)
         if (chip != null && chip.md) return chip to splitMd(data)
+        if (chip != null && chip.gba) return chip to splitGba(data, block)
         if (chip != null) return chip to split(data, chip)
         val first = split(data, FlashChip.NESMAKER)
         val inferred = if (first.mapper == null) FlashChip.NESMAKER else FlashChip.entries.firstOrNull { it.mapper == first.mapper } ?: throw RomImageException(RomImageProblem.CHIP_UNKNOWN)

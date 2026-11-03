@@ -296,3 +296,35 @@ def test_rom_write_snes_layout_invalido(tmp_path, capsys):
     f.write_bytes(snes_rom(512))
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "snes-lorom", "--layout", "4x2mb", "--yes")
     assert code == 64 and json.loads(out)["error"]["kind"] == "bad_rom"
+
+
+# ---------------------------------------------------------------- GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1)
+def gba_rom(kb: int) -> bytes:
+    return bytes((i * 13 + 7) & 0xFF for i in range(kb * 1024))
+
+
+def test_split_gba_e_codigo():
+    img = RI.split_gba(gba_rom(4096))
+    assert (img.prg_kb, img.block, len(img.body)) == (4096, 0, 4 * 1024 * 1024)
+    assert RI.chip_code("gba-flash", img) == 0x0001
+    assert RI.chip_code("gba-flash", RI.split_gba(gba_rom(1024), 5)) == 0x0501
+    assert RI.split_gba(gba_rom(1024), 63).block == 63
+
+
+def test_split_gba_erros():
+    for kw in ({"data": b""}, {"data": bytes(1000)}, {"data": gba_rom(1), "block": 64}, {"data": gba_rom(1), "block": -1},
+               {"data": gba_rom(8192), "block": 63}):            # 8 MB a partir do bloco 63 (último de 4 MB) passa do fim
+        with pytest.raises(ValueError):
+            RI.split_gba(**kw)
+
+
+def test_rom_write_gba_simulado(tmp_path, capsys):
+    f = tmp_path / "jogo.gba"
+    f.write_bytes(gba_rom(1024))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "gba-flash", "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["chip"] == "gba-flash" and (o["prg_kb"], o["bytes"]) == (1024, 1024 * 1024)
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "gba-flash", "--block369", "3", "--yes")
+    assert code == 0
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gba", "-i", str(f), "--chip", "nesmaker", "--yes")
+    assert code == 64

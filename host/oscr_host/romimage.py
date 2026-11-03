@@ -13,12 +13,13 @@ from typing import Optional
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID.
 # No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
-         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4}
+         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1}
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
-               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0}
+               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)",
+              "gba-flash": "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)",
               "snes-lorom-p0": "SNES flash de 8 bits, LoROM (P0)", "snes-hirom-p0": "SNES flash de 8 bits, HiROM (P0)",
               "snes-exlorom-p1": "SNES flash de 8 bits, ExLoROM (P1)", "snes-exhirom-p1": "SNES flash de 8 bits, ExHiROM (P1)"}
 SNES_CFI_CHIPS = ("snes-lorom", "snes-hirom")                     # menus "CFI LoROM / CFI HiROM": flash CFI de 1, 2 ou 4 chips (--layout)
@@ -31,6 +32,9 @@ SNES_GENERIC = 0x10
 FLASH_TYPES = {"29f032": 1, "29f1610": 2, "lh28f0xx": 3, "29f1601": 4, "29lv640": 5, "29f800": 6, "29gl": 7, "e28fxxxj3a": 8}
 FLASH_TYPES_NEED_SECTOR = ("29gl", "lh28f0xx", "e28fxxxj3a")
 MD_MAX_BYTES = 4 * 1024 * 1024
+GBA_MAX_BYTES = 32 * 1024 * 1024               # flash de 1 chip; o 369-in-1 vai até 256 MB (bloco 0) ou até o fim da memória (bloco N, de 4 MB)
+GBA_369_MAX_BYTES = 256 * 1024 * 1024
+GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024   # prg_kb do DUMP_ROM é u16 (KB)
 SNES_CAPACITIES_KB = (2048, 4096)     # as opções "1x 2MB" e "1x 4MB" do OSCR
 
 
@@ -44,6 +48,7 @@ class RomImage:
     layout: int = 0             # só no SNES: disposição (SNES_LAYOUTS) ou SNES_GENERIC
     wire_chr: int = 0           # só no SNES genérico: campo chr_kb do WRITE_ROM (tipo | setor << 4 | buffer << 9)
     rom: Optional[bytes] = None  # SNES: a ROM original, que a conferência compara com o que a leitura devolve (body vem reordenado e completado)
+    block: int = 0              # só no GBA 369-in-1: bloco de 4 MB (0 a 63) onde a gravação começa
 
 
 def split_image(data: bytes, chip: str) -> RomImage:
@@ -161,8 +166,24 @@ def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: O
     return RomImage(body, len(rom) // 1024, 0, None, flash_mb * 1024, SNES_GENERIC, word, rom)
 
 
+def split_gba(data: bytes, block: int = 0) -> RomImage:
+    """ROM de GBA para o flash repro (o firmware identifica o chip pelo ID). Tamanho múltiplo de 1 KB, até 32 MB (no 369-in-1, até 256 MB no bloco 0
+    ou até o fim da memória a partir do bloco N). `block` (0 a 63, de 4 MB) só vale no 369-in-1. `prg_kb` é o tamanho em KB (limitado a 65535).
+    Levanta ValueError."""
+    if not 0 <= block <= 63:
+        raise ValueError("o bloco do 369-in-1 vai de 0 a 63")
+    if len(data) == 0 or len(data) % 1024:
+        raise ValueError("a ROM de GBA precisa ter tamanho múltiplo de 1 KB")
+    limit = GBA_369_MAX_BYTES if block == 0 else 4 * 1024 * 1024 * (64 - block)
+    if len(data) > limit:
+        raise ValueError(f"a ROM tem {len(data) // 1024} KB e passa do que cabe a partir do bloco {block}")
+    return RomImage(data, min(len(data) // 1024, 65535), 0, None, block=block)
+
+
 def chip_code(chip: str, img: "RomImage") -> int:
-    """Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; nos demais, o número do chip."""
+    """Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; no GBA: (bloco << 8) | 1; nos demais, o número do chip."""
+    if chip == "gba-flash":
+        return (img.block << 8) | 1
     return (img.layout << 8) | CHIPS[chip] if chip in SNES_CHIPS else CHIPS[chip]
 
 

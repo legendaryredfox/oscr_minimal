@@ -209,4 +209,26 @@ class RomWriteTest {
         assertEquals(64, e.first); assertTrue("--flash-type" in e.second)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "snes-lorom", "--layout", "4x2mb", "--yes").first)
     }
+
+    // ---------------------------------------------------------------- GBA
+    private fun gbaRom(kb: Int) = ByteArray(kb * 1024) { ((it * 13 + 7) and 0xFF).toByte() }
+
+    @Test fun gbaDivideECodigo() {
+        val a = RomImages.splitGba(gbaRom(4096))
+        assertEquals(Triple(4096, 0, 4 * 1024 * 1024), Triple(a.prgKb, a.block, a.body.size))
+        assertEquals(0x0001, RomImages.chipCode(FlashChip.GBA_FLASH, a))
+        assertEquals(0x0501, RomImages.chipCode(FlashChip.GBA_FLASH, RomImages.splitGba(gbaRom(1024), 5)))
+        assertEquals(RomImageProblem.GBA_BLOCK, assertFailsWith<RomImageException> { RomImages.splitGba(gbaRom(1), 64) }.problem)
+        assertEquals(RomImageProblem.GBA_SIZE, assertFailsWith<RomImageException> { RomImages.splitGba(ByteArray(1000)) }.problem)
+        assertEquals(RomImageProblem.GBA_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitGba(gbaRom(8192), 63) }.problem)
+        assertEquals(listOf(FlashChip.GBA_FLASH), FlashChip.forSystem(CartSystem.GBA))
+    }
+
+    @Test fun romWriteGbaSimulado() {
+        val d = tmp(); val f = File(d, "jogo.gba").also { it.writeBytes(gbaRom(1024)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "gba-flash", "--yes")
+        assertEquals(0, r.first, r.second); assertTrue("\"chip\":\"gba-flash\"" in r.second); assertTrue("\"bytes\":1048576" in r.second)
+        assertEquals(0, run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "gba-flash", "--block369", "3", "--yes").first)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gba", "-i", f.path, "--chip", "nesmaker", "--yes").first)
+    }
 }

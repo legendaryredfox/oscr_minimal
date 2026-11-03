@@ -65,8 +65,9 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Ler ROM | firmware | ✅ |
 | Ler e gravar save: SRAM, FRAM, Flash 64/128 KB, EEPROM 512 B e 8 KB | firmware | ✅ |
 | Tipo de save (menu "Set save type") | **PC** (`--mapper`, dica pela ROM) | ✅ |
-| Flash repro: Intel 4000/4400, MSP55LV128, MX29GL128E | firmware + PC | ⬜ |
-| 369-in-1 (ler e gravar 256 MB, por offset) | firmware + PC | ⬜ |
+| Flash repro: Intel 4000L0YBQ0 e 4400L0ZDQ0, MSP55LV128(N), MX29GL128E, PC28F256M29, M29W128GH | firmware + PC | ✅ `WRITE_ROM` (D83; nunca rodou); conferência por leitura de volta |
+| 369-in-1: gravar 256 MB e por bloco (offset) | firmware + PC | ✅ `WRITE_ROM` com `--block369` (D83); a conferência não alcança o bloco N |
+| 369-in-1: ler 256 MB e por offset | firmware | ⬜ |
 | GBA Repro (3 V) via slot GB | firmware | ⬜ |
 
 ## Game Boy / Game Boy Color (adaptador no slot GBA, 3,3 V)

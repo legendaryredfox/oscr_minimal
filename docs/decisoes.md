@@ -81,6 +81,7 @@
 - **D80** Capacitores da `16_bits` renumerados para C1 a C4 (pedido do usuário, 2026-11-03)
 - **D81** Gravação de ROM em flash repro do Mega Drive (MX29F1610 e S29GL064N) com `WRITE_ROM` (2026-11-03)
 - **D82** SNES: flash CFI de 2 e 4 chips, 4x 2 MB e 1x 8 MB; menus P0 e P1 com tipo de flash informado pelo PC (2026-11-03)
+- **D83** Gravação de ROM em flash repro do GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) com `WRITE_ROM` (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -659,3 +660,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **P0 e P1:** o firmware **chama direto** as funções do `menuFlash8` (`eraseFlash29F032`, `eraseFlash29F1610`, `eraseFlash28FXXX`, `writeFlash29F032`, `writeFlash29GL`, `writeFlash28FXXX` etc.), com o "arquivo" ligado ao fluxo como no Mega Drive (D81). A única parte que o OSCR tirava do cartão SD é o banco CRDB que dava tipo, tamanho, setor e buffer do chip a partir do ID: no fork esse banco não existe (o `id8` do OSCR quebraria sem ele), então o **usuário informa o tipo** (`--flash-type`, `--flash-mb`, `--sector-kb`, `--buffer`; combos e campos na GUI). O firmware lê o ID do tipo escolhido e recusa se o chip não responde (0000 ou FFFF), mas **não confere o ID contra o tipo**: tipo errado pode gravar errado.
 - **Diferenças assumidas:** os laços dos tipos genéricos não têm limite de tempo (iguais ao OSCR, como em D81); o programa de byte do CFI é o meu laço com limite (D79). O `writeFlash29F032` do OSCR chama `noInterrupts()` durante cada bloco de 512 bytes; a UART do AVR guarda 64 bytes, então o PC não deve mandar o bloco seguinte antes do `ACK` (o protocolo já espera o `ACK` por bloco). Ponto de atenção em hardware.
 - **Nunca rodou em cartucho.** Pontos de ajuste prováveis: o `mapping` dos chips 2 a 4, o apagamento simultâneo (se algum cartucho não aguentar, trocar por um chip de cada vez) e os tempos.
+
+### D83 — Gravação de ROM em flash repro do GBA (2026-11-03)
+- Quarta gravação de ROM (meta D77), no mesmo `WRITE_ROM`: `sistema` = 5, `chip` = `(bloco << 8) | 1` (`docs/protocolo.md` seção 9). Reaproveita o `flashRepro` do OSCR (`GameBoyAdvance.cpp`): `idFlashrom`, `eraseIntel4000/4400`, `sectorEraseMX29GL128E/MSP55LV128`, `erase369in1`, `writeIntel4000`, `writeMX29GL128E`, `writeMSP55LV128`, `write369in1` e os resets, chamados direto. Código novo só em `src/dumper/GbaFlash.cpp` (ordem das chamadas, conferências) e nos ganchos do `Dumper.cpp`.
+- ID e apagamento rodam antes do primeiro `ACK`. Sem o `verifyFlashrom` do OSCR (relê o arquivo): o PC lê o cartucho de volta com `DUMP_ROM`, que no GBA passou a aceitar `prg_kb` como tamanho da ROM (o espelhamento acha o flash inteiro, 32 MB).
+- **Limites assumidos:** (1) a conferência é pulada no 369-in-1 em bloco ≠ 0 e em ROM acima de 64 MB (o `prg_kb` é u16 em KB e a leitura comum não alcança o bloco N); no bloco 0 do 369-in-1 a leitura comum pode não bater, e então use `--no-verify`. (2) Os laços do OSCR não têm limite de tempo (iguais a D81). (3) O Intel 4000L0YBQ0 tem o tamanho "chutado" no reset, como no OSCR. (4) A leitura do 369-in-1 (`read369in1`) ainda não está ligada.
+- **Nunca rodou em cartucho.** Pontos de ajuste prováveis: `cartOn` do GBA a 3,3 V e os tempos longos de apagamento do 369-in-1 (o PC espera 90 s pelo primeiro `ACK`; apagar 256 MB pode levar muito mais: aumente `--begin-timeout`).

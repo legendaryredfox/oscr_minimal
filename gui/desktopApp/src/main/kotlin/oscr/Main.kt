@@ -111,6 +111,7 @@ fun App() {
     var snesCapacity by remember { mutableStateOf("") }                  // "" = a menor em que a ROM cabe (só na disposição 1x)
     var flashType by remember { mutableStateOf("29f032") }               // P0/P1: tipo do flash de 8 bits
     var flashMb by remember { mutableStateOf("4") }
+    var block369 by remember { mutableStateOf("0") }                    // GBA 369-in-1: bloco de 4 MB onde a gravação começa
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
     var backupFirst by remember { mutableStateOf(true) }
@@ -153,7 +154,8 @@ fun App() {
     val isNes = system == CartSystem.NES || system == CartSystem.FAMICOM
     val isSnes = system == CartSystem.SNES
     val isMd = system == CartSystem.MD
-    val canWriteRom = isNes || isSnes || isMd                                    // gravação de ROM: flash do NES e flash CFI do SNES
+    val isGba = system == CartSystem.GBA
+    val canWriteRom = isNes || isSnes || isMd || isGba                                    // gravação de ROM: flash do NES e flash CFI do SNES
     val chipChoice: FlashChip? = romChip?.takeIf { it in FlashChip.forSystem(system) }     // a escolha vale só para o sistema atual
     val prgN = prgKb.toIntOrNull() ?: 0; val chrN = chrKb.toIntOrNull() ?: 0; val ramN = ramKb.toIntOrNull() ?: 0; val mapN = mapper.toIntOrNull() ?: 0
     val problem: Problem? = when {
@@ -323,6 +325,9 @@ fun App() {
         RomImageProblem.SNES_NO_FIT -> f(S.RIMG_SNES_NO_FIT, e.a, e.b)
         RomImageProblem.SNES_CAPACITY -> t(S.RIMG_SNES_CAPACITY)
         RomImageProblem.SNES_NEEDS_CHIP -> t(S.RIMG_SNES_NEEDS_CHIP)
+        RomImageProblem.GBA_BLOCK -> t(S.RIMG_GBA_BLOCK)
+        RomImageProblem.GBA_SIZE -> t(S.RIMG_GBA_SIZE)
+        RomImageProblem.GBA_TOO_BIG -> f(S.RIMG_GBA_TOO_BIG, e.a, e.b)
         RomImageProblem.MD_SIZE -> t(S.RIMG_MD_SIZE)
         RomImageProblem.MD_TOO_BIG -> f(S.RIMG_MD_TOO_BIG, e.a)
         RomImageProblem.MD_SMD -> t(S.RIMG_MD_SMD)
@@ -343,8 +348,8 @@ fun App() {
         if (isSnes && chipChoice == null) { say(t(S.ERR_PREFIX) + ": " + t(S.RIMG_SNES_NEEDS_CHIP)); return }
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
         try {
-            val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else chipChoice,
-                if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull())
+            val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else if (isGba) FlashChip.GBA_FLASH else chipChoice,
+                if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), block369.toIntOrNull() ?: 0)
             romReq = RomWriteRequest(file, chip, img)
         } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
     }
@@ -354,8 +359,9 @@ fun App() {
         if (info?.writeRom != true) { say(t(S.ERR_PREFIX) + ": " + t(S.ROM_NO_FW)); return }
         run(S.STAGE_WRITING_ROM) {
             val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, if (req.image.flashKb > 0) req.image.flashKb else req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker()) }
-            say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, " + (if (req.chip.md) "${req.image.body.size} bytes" else if (req.image.flashKb > 0) "ROM ${req.image.prgKb} KB / flash ${req.image.flashKb} KB" else "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB") + ", CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
-            if (verifyRom) {
+            say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, " + (if (req.chip.md || req.chip.gba) "${req.image.body.size} bytes" else if (req.image.flashKb > 0) "ROM ${req.image.prgKb} KB / flash ${req.image.flashKb} KB" else "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB") + ", CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+            val gbaSkip = req.chip.gba && (req.image.block != 0 || req.image.body.size > RomImages.GBA_VERIFY_MAX_BYTES)
+            if (verifyRom && !gbaSkip) {
                 stage = S.STAGE_VERIFYING_ROM; progress = 0f
                 val v = withContext(Dispatchers.IO) { verifyWritten(c, system, req.chip, req.image, ticker()) }
                 fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
@@ -493,12 +499,13 @@ fun App() {
                 OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_SAVE)) }
                 OutlinedButton(enabled = canRun && canWriteRom && info?.writeRom == true, onClick = { actRomWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_ROM)) }
             }
-            if (stub == null && canWriteRom && !isMd) LabeledField(t(S.FLASH_CHIP)) {
+            if (stub == null && canWriteRom && !isMd && !isGba) LabeledField(t(S.FLASH_CHIP)) {
                 ComboBox(value = chipChoice?.label ?: (if (isSnes) "—" else t(S.FLASH_CHIP_AUTO)), modifier = Modifier.fillMaxWidth()) { close ->
                     if (isNes) DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
                     FlashChip.forSystem(system).forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
                 }
             }
+            if (stub == null && isGba) OutlinedTextField(block369, { block369 = it.filter(Char::isDigit).take(2) }, label = { Text(t(S.LBL_BLOCK369)) }, singleLine = true, modifier = Modifier.width(200.dp))
             if (stub == null && isSnes && chipChoice != null) {
                 if (chipChoice.generic) {
                     LabeledField(t(S.LBL_FLASH_TYPE)) {
@@ -530,7 +537,7 @@ fun App() {
             if (stub == null && canWriteRom) Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(verifyRom, { verifyRom = it; Prefs.verifyRom = it }); Text(t(S.VERIFY_AFTER), style = MaterialTheme.typography.bodyMedium)
             }
-            Text(if (stub == null && canWriteRom) (if (info?.writeRom == false && connected) t(S.ROM_NO_FW) else t(if (isSnes) S.ROM_WRITE_HINT_SNES else if (isMd) S.ROM_WRITE_HINT_MD else S.ROM_WRITE_HINT)) else t(S.ROM_ONLY_NES),
+            Text(if (stub == null && canWriteRom) (if (info?.writeRom == false && connected) t(S.ROM_NO_FW) else t(if (isSnes) S.ROM_WRITE_HINT_SNES else if (isMd) S.ROM_WRITE_HINT_MD else if (isGba) S.ROM_WRITE_HINT_GBA else S.ROM_WRITE_HINT)) else t(S.ROM_ONLY_NES),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
