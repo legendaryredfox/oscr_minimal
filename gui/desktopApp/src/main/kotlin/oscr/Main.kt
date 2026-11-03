@@ -131,7 +131,7 @@ fun App() {
         return { done, total ->
             progress = if (total > 0) done.toFloat() / total else 0f
             val secs = (System.nanoTime() - start) / 1e9
-            if (secs > 1.0 && done > 0) {
+            if (secs > 1.0 && done > 0 && total > 0) {   // total 0 = tamanho desconhecido (modo fluxo): sem estimativa
                 val bps = done / secs
                 speed = f(S.SPEED_ETA, String.format(Locale.ROOT, "%.1f", bps / 1024.0), ((total - done) / bps).toInt())
             }

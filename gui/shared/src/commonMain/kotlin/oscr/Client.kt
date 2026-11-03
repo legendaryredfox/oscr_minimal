@@ -78,9 +78,10 @@ class OscrClient(
         val begin = request(cmd, payload, seq, setOf(Proto.T_BEGIN), longTimeoutMs).payload
         val kind = begin.u8(0); val size = begin.u32(1)
         if (kind != expectKind) { abort(); throw ProtocolError(Fail.BAD_KIND, "$kind") }
-        if (size < 0 || size > Proto.MAX_STREAM) { abort(); throw ProtocolError(Fail.BAD_SIZE, "$size") }
+        val unknown = size == -1                                   // núcleos do OSCR: 0xFFFFFFFF = tamanho só no END
+        if (!unknown && (size < 0 || size > Proto.MAX_STREAM)) { abort(); throw ProtocolError(Fail.BAD_SIZE, "$size") }
         send(Proto.T_ACK, le32(0), seq)
-        val buf = ByteArray(size)
+        var buf = ByteArray(if (unknown) 65536 else size)
         var expected = 0; var idle = 0
         while (true) {
             val f = recv(if (expected == 0) longTimeoutMs else timeoutMs * 3, seq)
@@ -93,9 +94,13 @@ class OscrClient(
                 Proto.T_DATA -> {
                     val off = f.payload.u32(0); val n = f.payload.size - 4
                     when {
-                        off == expected && off + n <= size -> {
+                        off == expected && (unknown || off + n <= size) -> {
+                            if (unknown) {
+                                if (expected.toLong() + n > Proto.MAX_STREAM) { abort(); throw ProtocolError(Fail.BAD_SIZE, "${expected + n}") }
+                                if (expected + n > buf.size) buf = buf.copyOf(maxOf(buf.size * 2, expected + n))
+                            }
                             f.payload.copyInto(buf, off, 4, 4 + n); expected += n
-                            send(Proto.T_ACK, le32(off), seq); progress?.invoke(expected.toLong(), size.toLong())
+                            send(Proto.T_ACK, le32(off), seq); progress?.invoke(expected.toLong(), if (unknown) 0L else size.toLong())
                         }
                         off < expected -> send(Proto.T_ACK, le32(off), seq)
                         else -> send(Proto.T_NAK, le32(expected), seq)
@@ -103,7 +108,8 @@ class OscrClient(
                 }
                 Proto.T_END -> {
                     val total = f.payload.u32(0); val crc = f.payload.u32(4)
-                    if (total != size || expected != size) { abort(); throw ProtocolError(Fail.BAD_END, "$total/$expected/$size") }
+                    if ((!unknown && total != size) || expected != total) { abort(); throw ProtocolError(Fail.BAD_END, "$total/$expected/$size") }
+                    if (unknown) buf = buf.copyOf(total)
                     val mine = crc32(buf)
                     if (mine != crc) { abort(); throw DeviceError(6) }
                     send(Proto.T_ACK, le32(total), seq)

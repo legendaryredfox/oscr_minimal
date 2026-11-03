@@ -49,6 +49,7 @@ ERROR_HINTS = {
     10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
 }
 
+UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
 MAX_STREAM_BYTES = 64 << 20          # maior leitura aceita (GBA: 32 MB); acima disso o BEGIN é tratado como defeito
 
 

@@ -20,6 +20,19 @@ struct DetectInfo {
   char name[33] = {0};      // ASCII, até 32 caracteres
 };
 
+// Fluxo (modo "push"): os núcleos do OSCR geram os bytes durante a leitura em vez de atender `read(off)`.
+// `write` devolve false se o PC recusou (ABORT ou reenvios esgotados); o núcleo deve parar.
+struct StreamSink {
+  virtual ~StreamSink() {}
+  virtual bool write(const uint8_t* data, size_t len) = 0;
+};
+// Entrega o arquivo do PC (WRITE_SAVE) sob demanda; `read` devolve menos que `len` (0 no fim ou em erro).
+struct StreamSource {
+  virtual ~StreamSource() {}
+  virtual size_t read(uint8_t* data, size_t len) = 0;
+  virtual uint32_t size() const = 0;
+};
+
 // Fornece os dados. No firmware real, cada sistema (SNES, NES, MD, GBA) implementa isto;
 // `MockBackend` gera um padrão conhecido sem cartucho.
 class Backend {
@@ -40,6 +53,11 @@ class Backend {
   virtual bool write_block(uint32_t off, const uint8_t* buf, uint16_t len) = 0;
   virtual bool write_commit() = 0;   // chamado só depois do CRC32 conferir
   virtual void write_abort() {}
+  // Backends em modo fluxo (os núcleos do OSCR): `streams()` liga o caminho abaixo no lugar de open_read/read e write_begin/write_block.
+  // O BEGIN sai com tamanho 0xFFFFFFFF (desconhecido); o END traz o tamanho e o CRC32 reais.
+  virtual bool streams() { return false; }
+  virtual bool stream_read(uint8_t system, uint8_t kind, StreamSink& out, uint16_t& err) { (void)system; (void)kind; (void)out; err = E_COMANDO; return false; }
+  virtual bool stream_write(uint8_t system, StreamSource& in, uint16_t& err) { (void)system; (void)in; err = E_COMANDO; return false; }
 };
 
 class MockBackend : public Backend {
@@ -83,6 +101,10 @@ class Session {
   void do_detect(uint8_t seq, uint8_t sys);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block);
+  void do_stream_write(uint8_t seq, uint8_t sys, uint32_t size);
+  friend struct StreamOut;
+  friend struct StreamIn;
   // 1 = ACK(off), 0 = NAK/timeout, -1 = ABORT
   int wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms);
   bool in_tx_ok(uint16_t payload) const { return size_t(payload) + 10 <= tx_cap_; }

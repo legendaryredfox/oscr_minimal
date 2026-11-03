@@ -75,3 +75,38 @@ def test_dois_dumps_seguidos_no_mesmo_firmware(client):
 
 def test_firmware_aceita_opcoes_de_mapper_sem_quebrar(client):
     assert client.dump_rom(255, 0, mapper=4, prg_kb=128, chr_kb=128).data == P.mock_data()
+
+
+# ---------------------------------------------------------------- modo fluxo (núcleos do OSCR): tamanho desconhecido no BEGIN
+@pytest.fixture
+def stream_client(sim_bin):
+    t = ProcessTransport([str(sim_bin), "stream"])
+    yield Client(t, timeout=0.5, long_timeout=5.0)
+    t.close()
+
+
+@pytest.mark.parametrize("block", [64, 200, 512, 1020])
+def test_fluxo_rom_com_tamanho_desconhecido(stream_client, block):
+    seen = []
+    res = stream_client.dump_rom(255, block, progress=lambda done, total: seen.append((done, total)))
+    assert res.data == bytes(((i * 7 + (i >> 8)) & 0xFF) for i in range(5000))
+    assert res.crc32 == P.crc32(res.data)
+    assert seen and all(t == 0 for _, t in seen) and seen[-1][0] == 5000      # total 0 = desconhecido
+
+
+def test_fluxo_save(stream_client):
+    res = stream_client.read_save(255)
+    assert res.data == bytes(((i * 3 + 1) & 0xFF) for i in range(2000))
+
+
+@pytest.mark.parametrize("size,block", [(3000, 512), (1, 512), (513, 100), (4096, 1020)])
+def test_fluxo_write_save_so_confirma_depois_de_consumir(stream_client, size, block):
+    data = bytes((i * 5) & 0xFF for i in range(size))
+    assert stream_client.write_save(255, data, block) == P.crc32(data)
+
+
+def test_fluxo_write_save_com_dado_errado_e_erro_7(stream_client):
+    data = bytearray((i * 5) & 0xFF for i in range(1000)); data[700] ^= 0xFF
+    with pytest.raises(P.DeviceError) as e:
+        stream_client.write_save(255, bytes(data), 512)
+    assert e.value.code == 7

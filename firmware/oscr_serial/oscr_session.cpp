@@ -134,6 +134,7 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
   if (block == 0) block = DEFAULT_BLOCK;
   if (block > OSCR_MAX_PAYLOAD - 4 || !in_tx_ok(uint16_t(block + 4))) { send_error(seq, E_ARGUMENTO, "bloco"); return; }
   uint8_t kind = (type == T_DUMP_ROM) ? KIND_ROM : KIND_SAVE;
+  if (be_.streams()) { do_stream_read(seq, kind, sys, block); return; }
   uint32_t size = 0;
   uint16_t err = E_CARTUCHO_IO;
   if (!be_.open_read(sys, kind, size, err)) { send_error(seq, err); return; }
@@ -182,6 +183,7 @@ void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len) {
   uint32_t size = get_u32(p + 1);
   if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
   be_.set_options(len >= 9 ? get_u16(p + 7) : 0, len >= 11 ? get_u16(p + 9) : 0, len >= 13 ? get_u16(p + 11) : 0);   // NES/Famicom: mapper (opcional)
+  if (be_.streams()) { do_stream_write(seq, sys, size); return; }
   uint16_t err = E_CARTUCHO_IO;
   if (!be_.write_begin(sys, size, err)) { send_error(seq, err); return; }
   send_offset(T_D_ACK, seq, 0);
@@ -212,6 +214,137 @@ void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len) {
     }
   }
   be_.write_abort();
+  send_error(seq, E_REENVIOS, "timeout");
+}
+
+// ---------------------------------------------------------------- modo fluxo (núcleos do OSCR)
+// Dispositivo -> PC: os dados chegam por `write` à medida que o núcleo lê o cartucho; saem em DATA de `block` bytes, cada um com ACK.
+struct StreamOut : StreamSink {
+  Session& s; uint8_t seq; uint16_t block, fill = 0; uint32_t off = 0, crc = 0; uint16_t fail = 0;
+  StreamOut(Session& se, uint8_t sq, uint16_t b) : s(se), seq(sq), block(b) {}
+  bool flush() {
+    if (!fill) return true;
+    uint8_t* tx = s.tx_;
+    put_u32(tx + 6, off);
+    crc = crc32_update(crc, tx + 10, fill);
+    tx[0] = MAGIC0; tx[1] = MAGIC1; tx[2] = T_DATA; tx[3] = seq;
+    put_u16(tx + 4, uint16_t(4 + fill));
+    put_u32(tx + 6 + 4 + fill, crc32_update(0, tx + 2, 4 + 4 + fill));
+    size_t frame = size_t(10) + 4 + fill;
+    int r = 0;
+    for (int t = 0; t < 4 && r == 0; t++) {
+      s.io_.write(s.io_.ctx, tx, frame);
+      r = s.wait_ack(seq, off, 400);
+    }
+    if (r <= 0) { fail = (r < 0) ? E_ABORTADO : E_REENVIOS; return false; }
+    off += fill; fill = 0;
+    return true;
+  }
+  bool write(const uint8_t* d, size_t n) override {
+    if (fail) return false;
+    while (n) {
+      size_t room = block - fill, k = n < room ? n : room;
+      memcpy(s.tx_ + 10 + fill, d, k);
+      fill = uint16_t(fill + k); d += k; n -= k;
+      if (fill == block && !flush()) return false;
+    }
+    return true;
+  }
+};
+
+void Session::do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block) {
+  uint8_t bp[7] = {kind, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0};   // tamanho desconhecido
+  put_u16(bp + 5, block);
+  int r = 0;
+  for (int t = 0; t < 4 && r == 0; t++) {
+    send(T_BEGIN, seq, bp, 7);
+    r = wait_ack(seq, 0, 500);
+  }
+  if (r <= 0) { send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+  StreamOut out(*this, seq, block);
+  uint16_t err = E_CARTUCHO_IO;
+  bool ok = be_.stream_read(sys, kind, out, err);
+  if (ok && !out.flush()) ok = false;
+  if (!ok) { send_error(seq, out.fail ? out.fail : err); return; }
+  uint8_t ep[8];
+  put_u32(ep, out.off); put_u32(ep + 4, out.crc);
+  r = 0;
+  for (int t = 0; t < 4 && r == 0; t++) {
+    send(T_END, seq, ep, 8);
+    r = wait_ack(seq, out.off, 500);
+  }
+  if (r <= 0) send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "end");
+}
+
+// PC -> dispositivo: o núcleo pede bytes com `read`; o ACK de cada bloco só sai depois que o núcleo consumiu o bloco inteiro,
+// para o PC não mandar o próximo enquanto o cartucho ainda grava (o buffer da UART do AVR tem 64 bytes).
+struct StreamIn : StreamSource {
+  Session& s; uint8_t seq; uint32_t total, expected = 0, crc = 0; uint16_t cur_len = 0, cur_pos = 0; bool have = false, dead = false; uint32_t last_off = 0;
+  StreamIn(Session& se, uint8_t sq, uint32_t size) : s(se), seq(sq), total(size) {}
+  uint32_t size() const override { return total; }
+  bool fetch() {
+    uint32_t last = s.io_.now_ms(s.io_.ctx);
+    while (s.io_.now_ms(s.io_.ctx) - last < 5000) {
+      if (!s.next_frame(200)) continue;
+      if (s.dec_.type == T_ABORT) { dead = true; return false; }
+      if (s.dec_.seq != seq) continue;
+      last = s.io_.now_ms(s.io_.ctx);
+      if (s.dec_.type == T_H_DATA && s.dec_.len >= 4) {
+        uint32_t off = get_u32(s.dec_.payload());
+        uint16_t n = uint16_t(s.dec_.len - 4);
+        if (off == expected && uint64_t(off) + n <= total) {
+          crc = crc32_update(crc, s.dec_.payload() + 4, n);
+          last_off = off; cur_len = n; cur_pos = 0; have = true; expected += n;
+          return true;
+        }
+        if (off < expected) s.send_offset(T_D_ACK, seq, off);   // duplicado: confirma de novo
+      }
+    }
+    dead = true;
+    return false;
+  }
+  void ack() { if (have) { s.send_offset(T_D_ACK, seq, last_off); have = false; } }
+  size_t read(uint8_t* d, size_t n) override {
+    size_t got = 0;
+    while (got < n && !dead) {
+      if (!have || cur_pos == cur_len) {
+        ack();
+        if (expected >= total) break;
+        if (!fetch()) break;
+      }
+      size_t k = cur_len - cur_pos; if (k > n - got) k = n - got;
+      memcpy(d + got, s.dec_.payload() + 4 + cur_pos, k);
+      cur_pos = uint16_t(cur_pos + k); got += k;
+    }
+    return got;
+  }
+};
+
+void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size) {
+  send_offset(T_D_ACK, seq, 0);
+  StreamIn in(*this, seq, size);
+  uint16_t err = E_CARTUCHO_IO;
+  bool ok = be_.stream_write(sys, in, err);
+  if (in.dead) { send_error(seq, E_REENVIOS, "timeout"); return; }
+  if (!ok) { send_error(seq, err); return; }
+  in.ack();                                              // confirma o último bloco, já consumido
+  uint32_t last = io_.now_ms(io_.ctx);
+  while (io_.now_ms(io_.ctx) - last < 5000) {
+    if (!next_frame(200)) continue;
+    if (dec_.type == T_ABORT) { send_offset(T_D_ACK, seq, 0); return; }
+    if (dec_.seq != seq) continue;
+    last = io_.now_ms(io_.ctx);
+    if (dec_.type == T_H_END && dec_.len >= 8) {
+      uint32_t t = get_u32(dec_.payload()), hcrc = get_u32(dec_.payload() + 4);
+      if (t != size || in.expected != size || hcrc != in.crc) { send_error(seq, E_CRC); return; }
+      send_offset(T_D_ACK, seq, t);
+      return;
+    }
+    if (dec_.type == T_H_DATA && dec_.len >= 4) {        // bloco que o núcleo nem pediu (leu menos que o arquivo)
+      send_error(seq, E_ARGUMENTO, "sobrou");
+      return;
+    }
+  }
   send_error(seq, E_REENVIOS, "timeout");
 }
 

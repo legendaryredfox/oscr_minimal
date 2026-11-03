@@ -89,11 +89,12 @@ class Client:
         if expect_kind and kind != expect_kind:
             self.abort()
             raise P.ProtocolError(f"o dispositivo respondeu com o tipo de dados {kind}, esperado {expect_kind}")
-        if size > P.MAX_STREAM_BYTES:
+        unknown = size == P.UNKNOWN_SIZE                      # núcleos do OSCR: o tamanho só se sabe no fim (vem no END)
+        if not unknown and size > P.MAX_STREAM_BYTES:
             self.abort()
             raise P.ProtocolError(f"tamanho anunciado absurdo: {size} bytes (máximo {P.MAX_STREAM_BYTES})")
         self._send(P.T_ACK, P.build_offset(0), seq)
-        buf = bytearray(size)
+        buf = bytearray() if unknown else bytearray(size)
         expected, idle = 0, 0
         while True:
             f = self._recv(self.long_timeout if expected == 0 else self.timeout * 3, seq)
@@ -106,21 +107,27 @@ class Client:
             idle = 0
             if f.type == P.T_DATA:
                 off, data = P.parse_data(f.payload)
-                if off == expected and off + len(data) <= size:
-                    buf[off:off + len(data)] = data
+                if off == expected and (unknown or off + len(data) <= size):
+                    if unknown:
+                        if expected + len(data) > P.MAX_STREAM_BYTES:
+                            self.abort()
+                            raise P.ProtocolError(f"fluxo maior que o máximo ({P.MAX_STREAM_BYTES} bytes)")
+                        buf += data
+                    else:
+                        buf[off:off + len(data)] = data
                     expected += len(data)
                     self._send(P.T_ACK, P.build_offset(off), seq)
                     if progress:
-                        progress(expected, size)
+                        progress(expected, 0 if unknown else size)
                 elif off < expected:
                     self._send(P.T_ACK, P.build_offset(off), seq)  # duplicado: confirma de novo
                 else:
                     self._send(P.T_NAK, P.build_offset(expected), seq)
             elif f.type == P.T_END:
                 total, crc = P.parse_end(f.payload)
-                if total != size or expected != size:
+                if (not unknown and total != size) or expected != total:
                     self.abort()
-                    raise P.ProtocolError(f"END com total {total}, recebido {expected}, esperado {size}")
+                    raise P.ProtocolError(f"END com total {total}, recebido {expected}, esperado {'?' if unknown else size}")
                 mine = P.crc32(bytes(buf))
                 if mine != crc:
                     self.abort()

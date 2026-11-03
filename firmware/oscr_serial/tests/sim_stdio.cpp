@@ -3,6 +3,7 @@
 // o cliente Python conversa com este processo como se fosse a porta serial.
 #include <poll.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -27,9 +28,39 @@ static uint32_t now(void*) {
   return uint32_t(t.tv_sec * 1000UL + t.tv_nsec / 1000000UL);
 }
 
-int main() {
+// Backend em modo fluxo (como os núcleos do OSCR): gera os bytes aos pedaços, sem saber o tamanho antes. Uso: sim_stdio stream
+struct StreamMock : oscr::MockBackend {
+  static constexpr uint32_t kRom = 5000, kSave = 2000;
+  bool streams() override { return true; }
+  void detect(uint8_t s, oscr::DetectInfo& o) override { MockBackend::detect(s, o); o.rom_size = kRom; o.save_size = kSave; strcpy(o.name, "STREAM"); }
+  bool stream_read(uint8_t, uint8_t kind, oscr::StreamSink& out, uint16_t& err) override {
+    uint32_t n = kind == oscr::KIND_ROM ? kRom : kSave;
+    uint8_t buf[300];
+    for (uint32_t off = 0; off < n;) {                       // pedaços de 300 bytes, diferentes do bloco do protocolo
+      uint32_t k = n - off < sizeof buf ? n - off : sizeof buf;
+      for (uint32_t i = 0; i < k; i++) buf[i] = kind == oscr::KIND_ROM ? rom_byte(off + i) : save_byte(off + i);
+      if (!out.write(buf, k)) { err = oscr::E_ABORTADO; return false; }
+      off += k;
+    }
+    return true;
+  }
+  bool stream_write(uint8_t, oscr::StreamSource& in, uint16_t& err) override {
+    uint8_t buf[77];
+    uint32_t off = 0;
+    while (off < in.size()) {                                // lê em pedaços de 77 bytes
+      size_t k = in.read(buf, sizeof buf);
+      if (k == 0) { err = oscr::E_CARTUCHO_IO; return false; }
+      for (size_t i = 0; i < k; i++) if (buf[i] != uint8_t((off + i) * 5)) { err = oscr::E_CARTUCHO_IO; return false; }
+      off += uint32_t(k);
+    }
+    return true;
+  }
+};
+
+int main(int argc, char** argv) {
   static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
-  oscr::MockBackend be;
+  static oscr::MockBackend plain; static StreamMock streamed;
+  oscr::Backend& be = (argc > 1 && !strcmp(argv[1], "stream")) ? static_cast<oscr::Backend&>(streamed) : static_cast<oscr::Backend&>(plain);
   oscr::Session s(oscr::Io{nullptr, rd, wr, now}, be, rx, sizeof rx, tx, sizeof tx);
   for (;;) {
     struct pollfd p = {0, POLLIN, 0};
