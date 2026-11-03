@@ -22,7 +22,7 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 | Pasta | Conteúdo |
 |---|---|
 | `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10) |
-| `fab/` | `gerbers/`, `bom.csv`, `dumper-v1.0-jlcpcb.zip`, `dumper-v1.0-gerbers-jlcpcb.zip` |
+| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/`, `bom.csv`, `dumper-v1.0-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):
