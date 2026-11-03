@@ -73,6 +73,7 @@
 - **D72** U2 (PIC12F629) da `16_bits` passa ao footprint DIP-8 tradicional (pedido do usuário, 2026-11-03)
 - **D73** PIC removível indicado na placa `16_bits` (pedido do usuário, 2026-11-03)
 - **D74** CLI pensada para agentes de IA (pedido do usuário, 2026-11-03)
+- **D75** Fork do OSCR: NES/Famicom ligado ao protocolo (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -597,3 +598,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Desvio:** os textos livres da CLI Kotlin (ajuda, dicas) estão em inglês no código, fora do I18n da GUI (regra de "nenhuma string fixa" vale para a GUI). Erros do dispositivo e do protocolo reutilizam o I18n (`--lang`).
 - `host/` ganhou o `error.kind` `open_port` (saída 3) quando a porta serial não abre.
 
+### D75 — Fork do OSCR: NES/Famicom ligado ao protocolo (2026-11-03)
+- `firmware/oscr/src/dumper/Dumper.cpp`: `nesProbe` troca a base de dados (CRDB) por um `crdbNESRecord` estático (`nesRec`): `NES::romDetail` aponta para ele, então os macros `NES_*` do núcleo (`readPRG`, `readCHR`, `readRAM`, `writeRAM`, `checkStatus`) funcionam sem o SD. Mapper, PRG, CHR e RAM vêm dos campos opcionais do protocolo (`docs/protocolo.md`); o núcleo conta bancos em expoentes de 2, então PRG/CHR que não sejam potência de 2 (por exemplo 48 KB) dão `ERRO 0x0004`.
+- Mesma lista de mappers (36) e os mesmos limites de tamanho do firmware próprio (`nesCheckRom`); acrescentado PRG máximo de 32 KB nos mappers 0 e 3 (o núcleo endereçaria além de 16 bits). Todos os 36 têm `case` em `readPRG` e, menos 2, 7, 71, 13, 73, 93, 94 e 180 (CHR-RAM), em `readCHR`.
+- O cabeçalho iNES sintético (16 bytes) é escrito no fluxo antes da PRG; o CRC32 do `END` o inclui, como no firmware próprio. Sem `NES::read()` (usa a CRDB e renomeia o arquivo).
+- Detecção de cartucho ausente e NROM automático: a mesma heurística do firmware próprio (64 bytes em `$8000`, `$C000` e CHR 0 iguais a `$00` ou `$FF`; espelhamento de 16/32 KB).
+- Saves: mappers 1, 4, 5, 69 e 118, como antes. Diferença: o tamanho da RAM vem do `checkStatus` do OSCR, então um **MMC6 (mapper 4) é detectado pela assinatura "STAR" e tem 1 KB**, não 8 KB; o `WRITE_SAVE` tem que mandar 1.024 bytes nesse caso. `NES::mmc6` e `NES::flashfound` são zerados a cada comando (o núcleo só os liga, nunca desliga).
+- A conferência byte a byte do `WRITE_SAVE` do firmware próprio não existe aqui (o OSCR relê o arquivo): o PC precisa reler o save depois de gravar e comparar.
+- Não conferido: se o núcleo do OSCR espera 200 ms por troca de banco no mapper 34 como o firmware próprio (a ver em hardware). **Nunca rodou**; os núcleos do OSCR só rodam no AVR, então não há teste no PC.

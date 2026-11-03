@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Fork oscr_minimal: laço de comandos do protocolo serial (docs/protocolo.md) ligado aos núcleos do OSCR.
-// Estado: Mega Drive e Game Boy Advance (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE). SNES, NES e GB/GBC ainda não (docs/fork-oscr.md).
+// Estado: SNES, NES/Famicom, Mega Drive, GBA e GB/GBC (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE), nunca rodados em hardware (docs/fork-oscr.md).
 #include "syslibinc.h"
 #include "config.h"
 
@@ -17,7 +17,11 @@
 # include "cores/GameBoyAdvance.h"
 # include "cores/GameBoy.h"
 # include "cores/SNES.h"
+# include "cores/NES.h"
 # include "dumper/Dumper.h"
+
+// `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
+namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
 
 # ifndef OSCR_DUMPER_BAUD
 #   define OSCR_DUMPER_BAUD 1000000UL     // 115200 como fallback: compile com -DOSCR_DUMPER_BAUD=115200
@@ -201,18 +205,130 @@ namespace OSCR::Dumper
       return 0;
     }
 
-    /** Backend dos núcleos do OSCR: SNES, Mega Drive, Game Boy Advance e Game Boy/Color. */
+
+    namespace NE = OSCR::Cores::NES;
+
+    NE::crdbNESRecord nesRec;                       // no lugar do registro da base de dados: os macros NES_* do núcleo apontam para cá
+    uint32_t nesPrgBytes = 0, nesChrBytes = 0, nesRamBytes = 0;
+    char nesName[24];
+
+    bool isNes(uint8_t system) { return system == oscr::SYS_NES || system == oscr::SYS_FAMICOM; }
+
+    bool allSame(uint8_t const * p, uint8_t n) { for (uint8_t i = 1; i < n; i++) if (p[i] != p[0]) return false; return true; }
+
+    uint8_t log2u(uint16_t v) { uint8_t n = 0; while (v > 1) { v >>= 1; n++; } return n; }
+
+    bool isPow2(uint16_t v) { return v != 0 && (v & (v - 1)) == 0; }
+
+    /** Mapper com PRG-RAM aceita em READ_SAVE/WRITE_SAVE (o mesmo conjunto do firmware próprio). */
+    bool nesHasSave(uint16_t m) { return m == 1 || m == 4 || m == 5 || m == 69 || m == 118; }
+
+    /**
+     * Confere mapper e tamanhos de ROM (KB) contra os limites do protocolo (docs/protocolo.md, NES/Famicom).
+     * Devolve 0 = ok, E_SISTEMA = mapper ou tamanho além do registrador, E_ARGUMENTO = tamanhos inválidos.
+     */
+    uint16_t nesCheckRom(uint16_t m, uint16_t prg, uint16_t chr)
+    {
+      bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 9 || m == 10 || m == 11 || m == 33 || m == 48 || m == 66 || m == 69 || m == 70 || m == 71
+                   || m == 75 || m == 78 || m == 79 || m == 87 || m == 118 || m == 206
+                   || m == 13 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184;
+      if (!known) return oscr::E_SISTEMA;
+      // O núcleo do OSCR conta bancos em potências de 2 (NES_PRG e NES_CHR são expoentes).
+      if (prg == 0 || prg % 16 != 0 || chr % 8 != 0 || !isPow2(prg / 16) || (chr && !isPow2(chr / 8))) return oscr::E_ARGUMENTO;
+      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 73 || m == 93 || m == 94 || m == 180) && chr != 0) return oscr::E_ARGUMENTO;     // CHR-RAM
+      if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206 || m == 67 || m == 68 || m == 72 || m == 92 || m == 86 || m == 140 || m == 152 || m == 184) && chr == 0) return oscr::E_ARGUMENTO;   // CHR-ROM
+      if ((m == 7 || m == 11 || m == 66 || m == 79 || m == 34 || m == 86 || m == 140 || m == 13) && prg % 32 != 0) return oscr::E_ARGUMENTO;
+      if (((m == 0 || m == 3) && prg > 32) || (m == 1 && (prg > 256 || chr > 128)) || (m == 4 && (prg > 512 || chr > 256)) || ((m == 9 || m == 10) && chr > 128) || (m == 69 && chr > 256)) return oscr::E_SISTEMA;
+      if ((m == 9 && prg > 128) || (m == 10 && prg > 256) || (m == 11 && (prg > 128 || chr > 128))
+          || (m == 66 && (prg > 128 || chr > 32)) || (m == 69 && prg > 512) || (m == 5 && prg > 1024)
+          || ((m == 33 || m == 48) && (prg > 256 || chr > 256)) || (m == 70 && (prg > 256 || chr > 128)) || (m == 75 && (prg > 128 || chr > 128))
+          || (m == 78 && (prg > 128 || chr > 128)) || (m == 79 && (prg > 64 || chr > 64)) || (m == 87 && (prg > 32 || chr > 32))
+          || (m == 118 && (prg > 512 || chr > 256)) || (m == 206 && (prg > 128 || chr > 64))
+          || (m == 13 && prg > 32) || (m == 34 && (prg > 512 || chr > 64)) || (m == 67 && (prg > 128 || chr > 128)) || (m == 68 && (prg > 256 || chr > 256))
+          || (m == 72 && (prg > 128 || chr > 128)) || (m == 92 && (prg > 256 || chr > 128)) || (m == 73 && prg > 128) || (m == 86 && (prg > 128 || chr > 64))
+          || ((m == 93 || m == 94 || m == 180) && prg > 128) || (m == 140 && (prg > 128 || chr > 128)) || (m == 152 && (prg > 128 || chr > 128))
+          || (m == 184 && (prg > 32 || chr > 32))) return oscr::E_SISTEMA;
+      return 0;
+    }
+
+    /**
+     * NES/Famicom: o cartucho não tem cabeçalho, então mapper e tamanhos vêm do PC (sem a base de dados do OSCR).
+     * `mapper` 0 e `prgKb` 0 = automático (NROM: 16 ou 32 KB pelo espelhamento). Em modo save, `prgKb` é a RAM em KB (0 = 8).
+     * Monta o registro do núcleo (`nesRec`, com o cabeçalho iNES sintético) e confere o MMC6. Deve rodar dentro de `runCore`.
+     * Devolve 0 = ok, ou o código de erro do protocolo (E_SEM_CARTUCHO, E_SISTEMA, E_ARGUMENTO, E_SEM_SAVE).
+     */
+    uint16_t nesProbe(bool forSave, uint16_t m, uint16_t prgKb, uint16_t chrKb)
+    {
+      using namespace OSCR::Cores;
+      uint8_t a[64], b[64], ch[64];
+
+      NE::cartOn();
+      for (uint8_t i = 0; i < 64; i++) { a[i] = NE::read_prg_byte(0x8000 + i); b[i] = NE::read_prg_byte(0xC000 + i); ch[i] = NE::read_chr_byte(i); }
+      if (allSame(a, 64) && allSame(b, 64) && (a[0] == 0xFF || a[0] == 0x00)) return oscr::E_SEM_CARTUCHO;
+
+      nesRec = NE::crdbNESRecord{};
+      NE::romDetail = &nesRec;
+      NE::mmc6 = false;
+      NE::flashfound = false;
+      fromCRDB = false;
+      nesRec.mapper = m;
+      nesPrgBytes = nesChrBytes = nesRamBytes = 0;
+
+      if (forSave)
+      {
+        if (!nesHasSave(m)) return oscr::E_SEM_SAVE;
+        uint16_t ram = prgKb ? prgKb : 8;
+        if (ram != 8 && !((m == 1 || m == 5) && (ram == 16 || ram == 32))) return oscr::E_ARGUMENTO;     // 16/32 KB só no MMC1 (SOROM/SXROM) e no MMC5
+        nesRec.ram = log2u(ram / 4);                                  // 8 KB = 1, 16 KB = 2, 32 KB = 3 (ramSizes do núcleo)
+        nesRec.prg = 0;
+        NE::checkStatus();                                            // preenche ramsize; no MMC6 acha a RAM de 1 KB
+        nesRamBytes = uint32_t(nesRec.ramsize) * 1024UL;
+        snprintf(nesName, sizeof nesName, "mapper %u", unsigned(m));
+        return 0;
+      }
+
+      uint16_t prg, chr;
+      if (m == 0 && prgKb == 0)                                       // automático: NROM
+      {
+        prg = memcmp(a, b, 64) == 0 ? 16 : 32;
+        chr = (allSame(ch, 64) && (ch[0] == 0xFF || ch[0] == 0x00)) ? 0 : 8;
+        strlcpy(nesName, "NROM (mapper 0)", sizeof nesName);
+      }
+      else
+      {
+        prg = prgKb; chr = chrKb;
+        uint16_t rc = nesCheckRom(m, prg, chr);
+        if (rc) return rc;
+        snprintf(nesName, sizeof nesName, "mapper %u", unsigned(m));
+      }
+
+      nesRec.prg = log2u(prg / 16);
+      nesRec.chr = chr ? log2u(chr / 4) : 0;
+      nesRec.ram = 0;
+      NE::checkStatus();
+      nesPrgBytes = uint32_t(prg) * 1024UL;
+      nesChrBytes = uint32_t(chr) * 1024UL;
+
+      uint8_t * h = nesRec.iNES;                                      // cabeçalho iNES sintético: tamanhos e mapper; espelhamento e bateria ficam 0
+      h[0] = 'N'; h[1] = 'E'; h[2] = 'S'; h[3] = 0x1A;
+      h[4] = uint8_t(prg / 16); h[5] = uint8_t(chr / 8);
+      h[6] = uint8_t((m & 0x0F) << 4); h[7] = uint8_t(m & 0xF0);
+      return 0;
+    }
+
+    /** Backend dos núcleos do OSCR: SNES, NES/Famicom, Mega Drive, Game Boy Advance e Game Boy/Color. */
     class CoreBackend : public oscr::Backend
     {
     public:
       uint8_t flags() override { return 0; }
-      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
       // SNES: `prg_kb` é o tamanho da ROM em KB (0 = pelo cabeçalho).
-      void set_options(uint16_t mapper, uint16_t prg, uint16_t chr) override { optMapper = mapper; optPrgKb = prg; (void)chr; }
+      // NES/Famicom: mapper, PRG e CHR em KB (0 = NROM automático); nos saves, `prg_kb` é a RAM em KB (0 = 8).
+      void set_options(uint16_t mapper, uint16_t prg, uint16_t chr) override { optMapper = mapper; optPrgKb = prg; optChrKb = chr; }
 
       void detect(uint8_t system, oscr::DetectInfo & out) override
       {
@@ -229,6 +345,19 @@ namespace OSCR::Dumper
           out.save_size = 32768;                  // o tipo real (SRAM, Flash ou EEPROM) o usuário informa; o cabeçalho não diz
           out.save_type = 255;
           strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
+          return;
+        }
+
+        if (isNes(system))
+        {
+          uint16_t rc = oscr::E_SEM_CARTUCHO;
+          bool ran = runCore([&rc] { rc = nesProbe(false, 0, 0, 0); NE::cartOff(); });   // o DETECT ignora as opções: NROM automático
+          if (!ran || rc != 0) { out.status = rc == oscr::E_SEM_CARTUCHO || !ran ? 1 : 2; return; }
+          out.status = 0;
+          out.rom_size = 16UL + nesPrgBytes + nesChrBytes;
+          out.save_size = 0;                                     // o PC informa mapper e RAM; o cartucho não diz
+          out.save_type = 0;
+          strlcpy(out.name, nesName, sizeof(out.name));
           return;
         }
 
@@ -277,7 +406,8 @@ namespace OSCR::Dumper
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
-        if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
+        if (isNes(system)) { if (kind == oscr::KIND_SAVE && nesRamBytes == 0) { err = oscr::E_SEM_SAVE; return false; } }
+        else if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
         else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (kind == oscr::KIND_SAVE && saveType == 0) { err = oscr::E_SEM_SAVE; return false; }
 
@@ -285,6 +415,23 @@ namespace OSCR::Dumper
         activeSink = &countingSink;
         bool ok = runCore([system, kind, saveType]
         {
+          if (isNes(system))
+          {
+            NE::cartOn();
+            if (kind == oscr::KIND_ROM)
+            {
+              OSCR::Storage::Shared::sharedFile.open("rom", O_WRONLY | O_CREAT | O_TRUNC);
+              OSCR::Storage::Shared::sharedFile.write(nesRec.iNES, 16);       // o CRC32 do arquivo (no END) inclui o cabeçalho, como no firmware próprio
+              NE::readPRG(true);
+              NE::readCHR(true);
+            }
+            else
+            {
+              NE::readRAM();
+            }
+            NE::cartOff();
+            return;
+          }
           if (system == oscr::SYS_GBA)
           {
             if (kind == oscr::KIND_ROM) GBA::readROM(); else GBA::readSave();
@@ -328,11 +475,12 @@ namespace OSCR::Dumper
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
-        uint32_t expected = system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
+        uint32_t expected = isNes(system) ? nesRamBytes
+                          : system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
                           : (system == oscr::SYS_GB ? gbSaveBytes()
                           : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)));
 
-        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && !isNes(system) && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
@@ -340,6 +488,13 @@ namespace OSCR::Dumper
         OSCR::Storage::Shared::sharedFile.open("save", O_RDONLY);    // o "arquivo" é o que o PC manda
         bool ok = runCore([system, saveType]
         {
+          if (isNes(system))
+          {
+            NE::cartOn();
+            NE::writeRAM();               // a conferência do OSCR relê o arquivo (não existe no fluxo): o PC relê o save e compara
+            NE::cartOff();
+            return;
+          }
           if (system == oscr::SYS_GBA)
           {
             GBA::writeSave();
@@ -381,7 +536,7 @@ namespace OSCR::Dumper
       bool write_commit() override { return false; }
 
     private:
-      uint16_t optMapper = 0, optPrgKb = 0;
+      uint16_t optMapper = 0, optPrgKb = 0, optChrKb = 0;
 
       /** Lê o cabeçalho do cartucho (preenche cartSize, saveType, sramSize...) antes de ler ou gravar. */
       bool prepare(uint8_t system, bool forSave, uint16_t & err)
@@ -401,6 +556,15 @@ namespace OSCR::Dumper
           runCore([&st, kb] { st = snesProbe(kb); });
           if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }
           if (st != 0) { err = oscr::E_CARTUCHO_IO; return false; }
+          return true;
+        }
+        if (isNes(system))
+        {
+          uint16_t rc = oscr::E_SEM_CARTUCHO;
+          uint16_t m = optMapper, p = optPrgKb, c = optChrKb;
+          bool ran = runCore([&rc, forSave, m, p, c] { rc = nesProbe(forSave, m, p, c); NE::cartOff(); });
+          if (!ran && rc == oscr::E_SEM_CARTUCHO) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (rc != 0) { err = rc; return false; }
           return true;
         }
         if (system == oscr::SYS_GB)

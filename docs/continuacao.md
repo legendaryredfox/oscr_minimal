@@ -4,7 +4,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 
 > **Placas (D70, D71):** o hardware agora é `boards/<variante>/`; a placa de 5 slots está em `boards/16_and_8_bits/` e a de SNES e Mega Drive em `boards/16_bits/`. Os caminhos de hardware deste documento valem para a `16_and_8_bits`.
 >
-> **Estado do fork (D66):** SD trocado pela serial, modo fluxo no protocolo, SNES, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). Faltam NES/Famicom e a identificação por banco de dados no PC.
+> **Estado do fork (D66, D75):** SD trocado pela serial, modo fluxo no protocolo, SNES, NES/Famicom, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). Falta a identificação por banco de dados no PC e arquivar `firmware/oscr_serial`.
 >
 > **Mudança de rumo (2026-11-03, D65):** o firmware passa a ser um fork do firmware novo do OSCR (`firmware/oscr/`, plano em `docs/fork-oscr.md`). O resto deste documento descreve o firmware próprio (`firmware/oscr_serial`), que continua funcionando até o fork cobrir o mesmo.
 

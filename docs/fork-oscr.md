@@ -12,8 +12,8 @@ Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware
 | UI de texto silenciada | feita (`ClockedSerial.mute`, `rawWrite` só para o protocolo) |
 | `OSCR::Storage` sem SD | **feito**: `StreamFile` (arquivo virtual) e `StreamSd` (sem sistema de arquivos); o SD sai do build |
 | Modo fluxo no protocolo (`Session`) | **feito e testado no PC**: `stream_read`/`stream_write`, `BEGIN` com tamanho `0xFFFFFFFF`, cliente Python e GUI aceitam |
-| Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **SNES**, **Mega Drive**, **GBA** e **GB/GBC**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. **Compila; nunca rodou** |
-| NES/Famicom | **não ligado** |
+| Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **SNES**, **NES/Famicom**, **Mega Drive**, **GBA** e **GB/GBC**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. **Compila; nunca rodou** |
+| NES/Famicom | **ligado (D75)**: `nesProbe` em `Dumper.cpp` monta o registro do núcleo (sem CRDB) a partir de mapper/PRG/CHR/RAM do PC; compila (121.722 B de flash, 47,9%; RAM 41,0%); nunca rodou |
 | Erros fatais e esperas por botão | `fatalError` volta ao laço por `longjmp`; `waitButton` não espera |
 | Identificação por banco de dados no PC | **não feita** (seção 3.2) |
 | Validação em hardware | nenhuma |
