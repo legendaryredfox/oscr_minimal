@@ -80,6 +80,7 @@
 - **D79** Gravação de ROM em flash CFI do SNES (1 chip de 2 ou 4 MB) com `WRITE_ROM` (2026-11-03)
 - **D80** Capacitores da `16_bits` renumerados para C1 a C4 (pedido do usuário, 2026-11-03)
 - **D81** Gravação de ROM em flash repro do Mega Drive (MX29F1610 e S29GL064N) com `WRITE_ROM` (2026-11-03)
+- **D82** SNES: flash CFI de 2 e 4 chips, 4x 2 MB e 1x 8 MB; menus P0 e P1 com tipo de flash informado pelo PC (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -651,3 +652,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Diferença assumida:** aqui NÃO reescrevi os laços para terem limite de tempo (como fiz no NES e no SNES), para reaproveitar o código do OSCR sem mudança. `busyCheck` e a espera de status do `write29GL` esperam para sempre; um chip defeituoso trava o firmware até o USB ser reconectado. Se isso incomodar em hardware, trocar por laços com limite em `MdFlash.cpp`.
 - O OSCR pulava a verificação de apagado (`blankCheck`) só no texto; aqui ela não roda, pois a leitura de volta do PC cobre. A conferência depois de gravar usa o `DUMP_ROM` do MD, que dimensiona pelo cabeçalho da ROM e reduz espelhos: ROM com cabeçalho inconsistente dá `verify` diferente no fim, sem a gravação estar errada.
 - **Nunca rodou em cartucho.** Pontos de ajuste prováveis: chip select (`PH3`) e `cartOn` do Mega Drive sem o resto da placa original.
+
+### D82 — SNES: CFI de 2 e 4 chips, 8 MB e menus P0/P1 (2026-11-03)
+- Fecha a lista de flash repro do SNES do `docs/funcoes-oscr.md`. Mesmo `WRITE_ROM`; o campo `chip` do SNES passou a ser `(disposição << 8) | fiação` (`docs/protocolo.md` seção 9). Os chips 1 e 2 de D79 continuam valendo (disposição 0).
+- **CFI com vários chips:** a regra de quais bytes do arquivo vão para qual chip é a do `adjustFileSizeOffset` e do `writeCFI` do OSCR, que usam `seekSet` e `rewind`. O fluxo serial não volta atrás, então o PC reordena a ROM e manda os trechos na ordem em que o firmware os grava (`SnesPlan.h`, código puro, com os mesmos vetores de teste em C++, Python e Kotlin). Os chips apagam ao mesmo tempo (o OSCR apagava um por vez e o PC só espera 90 s pelo primeiro `ACK`); o `mapping` de cada chip é o do `nextCFI` (122/124/142 em LoROM, 222/224/242 em HiROM). Em 1x 8MB só se aceitam ROMs de 6 e 8 MB.
+- **P0 e P1:** o firmware **chama direto** as funções do `menuFlash8` (`eraseFlash29F032`, `eraseFlash29F1610`, `eraseFlash28FXXX`, `writeFlash29F032`, `writeFlash29GL`, `writeFlash28FXXX` etc.), com o "arquivo" ligado ao fluxo como no Mega Drive (D81). A única parte que o OSCR tirava do cartão SD é o banco CRDB que dava tipo, tamanho, setor e buffer do chip a partir do ID: no fork esse banco não existe (o `id8` do OSCR quebraria sem ele), então o **usuário informa o tipo** (`--flash-type`, `--flash-mb`, `--sector-kb`, `--buffer`; combos e campos na GUI). O firmware lê o ID do tipo escolhido e recusa se o chip não responde (0000 ou FFFF), mas **não confere o ID contra o tipo**: tipo errado pode gravar errado.
+- **Diferenças assumidas:** os laços dos tipos genéricos não têm limite de tempo (iguais ao OSCR, como em D81); o programa de byte do CFI é o meu laço com limite (D79). O `writeFlash29F032` do OSCR chama `noInterrupts()` durante cada bloco de 512 bytes; a UART do AVR guarda 64 bytes, então o PC não deve mandar o bloco seguinte antes do `ACK` (o protocolo já espera o `ACK` por bloco). Ponto de atenção em hardware.
+- **Nunca rodou em cartucho.** Pontos de ajuste prováveis: o `mapping` dos chips 2 a 4, o apagamento simultâneo (se algum cartucho não aguentar, trocar por um chip de cada vez) e os tempos.

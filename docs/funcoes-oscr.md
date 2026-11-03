@@ -25,7 +25,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Usar cabeçalho / 4 MB LoROM / 4 MB HiROM / 6 MB ExROM (configuração de tamanho) | PC (`--prg`) | ✅ |
 | Teste de RAM (Test RAM) | firmware | ⬜ |
 | Flash repro: CFI LoROM e HiROM, **1x 2 MB e 1x 4 MB** | firmware (laço) + PC (arquivo, chip) | ✅ `WRITE_ROM` (D79; nunca rodou); conferência por leitura de volta |
-| Flash repro: 2x 2 MB, 2x 4 MB, 4x 2 MB, 1x 8 MB (CFI); LoROM/HiROM (P0), ExLoROM/ExHiROM (P1) | firmware (laço) + PC (arquivo, chip) | ⬜ |
+| Flash repro: CFI 2x 2 MB, 2x 4 MB, 4x 2 MB, 1x 8 MB | firmware (laço) + PC (reordena a ROM) | ✅ `WRITE_ROM` (D82; nunca rodou) |
+| Flash repro: LoROM/HiROM (P0), ExLoROM/ExHiROM (P1), tipos 29F032, 29F1610, LH28F0XX, 29F1601, 29LV640, 29F800, 29GL, E28FXXXJ3A | firmware (funções do `menuFlash8`) + PC (tipo do flash) | ✅ `WRITE_ROM` (D82; nunca rodou) |
 | SF Memory Cassette (SFM): ler jogo, flash, mapeamento, trocar jogo | firmware + PC | ⬜ |
 | Satellaview BS-X: ler e gravar Memory Pack, ler e gravar SRAM | firmware + PC | ⬜ |
 | Sufami Turbo: ler slot A e B | firmware | ⬜ |

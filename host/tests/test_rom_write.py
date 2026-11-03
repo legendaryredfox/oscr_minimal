@@ -149,6 +149,64 @@ def test_split_snes_tira_cabecalho_de_copiadora():
     assert len(img.body) == 512 * 1024 and img.body == snes_rom(512)
 
 
+def test_snes_plan_vetores():
+    """Os mesmos vetores de firmware/oscr/pc-tests/test_snes_plan.cpp e de RomWriteTest.kt."""
+    M = 1 << 20
+    assert RI.snes_plan(0, 1 * M, 2 * M) == [(1, 0, M, 0)]
+    assert RI.snes_plan(0, 3 * M, 2 * M) == [] and RI.snes_plan(0, M, 3 * M) == [] and RI.snes_plan(0, 1000, 2 * M) == []
+    assert RI.snes_plan(1, 1 * M, 0) == [(1, 0, M, 0), (2, 0, 0, 2 * M)]
+    assert RI.snes_plan(1, 3 * M, 0) == [(1, 0, 2 * M, 0), (2, 0, M, 2 * M)]
+    assert RI.snes_plan(1, 5 * M, 0) == []
+    assert RI.snes_plan(2, 8 * M, 0) == [(1, 0, 4 * M, 4 * M), (2, 0, 4 * M, 0)]
+    assert RI.snes_plan(2, 6 * M, 0) == [(1, 0, 2 * M, 4 * M), (2, 0, 4 * M, 0)]
+    assert RI.snes_plan(2, 4 * M, 0) == []
+    assert RI.snes_plan(3, 8 * M, 0) == [(1, 0, 2 * M, 4 * M), (2, 0, 2 * M, 6 * M), (3, 0, 2 * M, 0), (4, 0, 2 * M, 2 * M)]
+    assert RI.snes_plan(3, 6 * M, 0) == [(1, 0, 2 * M, 4 * M), (2, 0, 0, 6 * M), (3, 0, 2 * M, 0), (4, 0, 2 * M, 2 * M)]
+    assert RI.snes_plan(3, 2 * M, 0) == []
+    assert RI.snes_plan(4, 8 * M, 0) == [(1, 0, 4 * M, 4 * M), (1, 4 * M, 4 * M, 0)]
+    assert RI.snes_plan(4, 6 * M, 0) == [(1, 0, 2 * M, 4 * M), (1, 4 * M, 4 * M, 0)]
+    assert RI.snes_plan(4, 7 * M, 0) == [] and RI.snes_plan(9, M, 0) == []
+
+
+def test_split_snes_reordena_como_o_oscr():
+    M = 1 << 20
+    rom = bytes((i // 4096) & 0xFF for i in range(8 * M))            # cada 4 KB tem o número do trecho: dá para ver a troca
+    img = RI.split_snes(rom, layout="1x8mb")
+    assert (img.layout, img.flash_kb, img.prg_kb) == (4, 8192, 8192) and img.rom == rom
+    assert img.body == rom[4 * M:] + rom[:4 * M]                      # metades trocadas
+    img = RI.split_snes(rom, layout="4x2mb")
+    assert img.body == rom[4 * M:6 * M] + rom[6 * M:] + rom[:2 * M] + rom[2 * M:4 * M]
+    img = RI.split_snes(rom[:6 * M], layout="4x2mb")                 # 6 MB: o chip 2 só é apagado
+    assert img.body == rom[4 * M:6 * M] + rom[:2 * M] + rom[2 * M:4 * M]
+    img = RI.split_snes(rom[:3 * M], layout="2x2mb")
+    assert img.body == rom[:3 * M] and img.flash_kb == 4096
+    img = RI.split_snes(rom, layout="2x4mb")
+    assert img.body == rom[4 * M:] + rom[:4 * M]
+
+
+def test_chip_code_snes():
+    img = RI.split_snes(snes_rom(512), layout="1x")
+    assert RI.chip_code("snes-lorom", img) == 0x0001 and RI.chip_code("snes-hirom", img) == 0x0002
+    img = RI.split_snes(snes_rom(6144), layout="1x8mb")
+    assert RI.chip_code("snes-hirom", img) == 0x0402
+    g = RI.split_snes_generic(snes_rom(1024), 4, "29f032")
+    assert RI.chip_code("snes-exhirom-p1", g) == 0x1004 and g.flash_kb == 4096 and g.wire_chr == 1
+    assert RI.chip_code("nesmaker", img) == 1
+
+
+def test_split_snes_generic():
+    g = RI.split_snes_generic(snes_rom(1000), 4, "29gl", sector_kb=128, buffer=32)
+    assert len(g.body) % (128 * 1024) == 0 and g.body[:1000 * 1024] == snes_rom(1000) and set(g.body[1000 * 1024:]) == {0xFF}
+    assert g.wire_chr == 7 | (17 << 4) | (5 << 9) and g.rom == snes_rom(1000) and g.layout == 0x10
+    assert RI.split_snes_generic(snes_rom(512), 1, "e28fxxxj3a").wire_chr == 8 | (17 << 4) | (5 << 9)      # padrão: 128 KB e 32 bytes
+    for kw in ({"flash_type": "29gl"}, {"flash_type": "xx"}, {"flash_type": "29gl", "sector_kb": 100, "buffer": 32},
+               {"flash_type": "29gl", "sector_kb": 128, "buffer": 256}, {"flash_type": "29f032", "flash_mb": 9}):
+        with pytest.raises(ValueError):
+            RI.split_snes_generic(snes_rom(512), **{"flash_mb": 4, **kw})
+    with pytest.raises(ValueError):
+        RI.split_snes_generic(snes_rom(5120), 4, "29f032")           # 5 MB em flash de 4 MB
+
+
 def test_split_snes_erros():
     with pytest.raises(ValueError):
         RI.split_snes(bytes(1000))                    # não é múltiplo de 1 KB
@@ -221,3 +279,20 @@ def test_rom_write_md_chip_errado(tmp_path, capsys):
     assert code == 64 and json.loads(out)["error"]["kind"] == "usage"
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "nes", "-i", str(f), "--chip", "md-flash", "--yes")
     assert code == 64
+
+
+def test_rom_write_snes_generico_simulado(tmp_path, capsys):
+    f = tmp_path / "jogo.sfc"
+    f.write_bytes(snes_rom(512))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "snes-exlorom-p1", "--flash-type", "29f032", "--flash-mb", "2", "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["chip"] == "snes-exlorom-p1" and o["flash_kb"] == 2048 and o["bytes"] == 512 * 1024
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "snes-exlorom-p1", "--yes")
+    assert code == 64 and "--flash-type" in json.loads(out)["error"]["message"]
+
+
+def test_rom_write_snes_layout_invalido(tmp_path, capsys):
+    f = tmp_path / "jogo.sfc"
+    f.write_bytes(snes_rom(512))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "snes-lorom", "--layout", "4x2mb", "--yes")
+    assert code == 64 and json.loads(out)["error"]["kind"] == "bad_rom"

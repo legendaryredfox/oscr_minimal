@@ -58,7 +58,7 @@ object Cli {
         EXIT_INTERRUPTED to "interrupted (Ctrl+C)",
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity")
+    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer")
     private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "no-verify", "help", "version")
     private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
@@ -100,7 +100,12 @@ options (accepted before or after the command):
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
                        SNES: snes-lorom or snes-hirom (required, the wiring of the CFI flash)
                        Mega Drive: md-flash (the default; the firmware identifies MX29F1610 or S29GL064N by ID)
-  --capacity KB        rom-write, SNES: flash size, 2048 or 4096 (default: the smallest the ROM fits)
+  --capacity KB        rom-write, SNES CFI, layout 1x: flash size, 2048 or 4096 (default: the smallest the ROM fits)
+  --layout NAME        rom-write, SNES CFI: chips on the cartridge: 1x (one 2 or 4 MB chip, default), 2x2mb, 2x4mb, 4x2mb, 1x8mb (the last three: ROM of 6 to 8 MB, as in the OSCR)
+  --flash-type NAME    rom-write, SNES P0/P1 chips (snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1, snes-exhirom-p1): 8-bit flash type (29f032, 29f1610, lh28f0xx, 29f1601, 29lv640, 29f800, 29gl, e28fxxxj3a)
+  --flash-mb N         rom-write, SNES P0/P1: chip size in MB (1 to 8)
+  --sector-kb N        rom-write, SNES P0/P1, types 29gl, lh28f0xx, e28fxxxj3a: sector size in KB (power of 2)
+  --buffer N           rom-write, SNES P0/P1, same types: write buffer in bytes (power of 2, 2 to 128)
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
   --no-verify          rom-write: do not read the ROM back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
@@ -408,7 +413,10 @@ Full contract: docs/cli.md
         if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
         if (sys == CartSystem.SNES && chipOpt == null) throw CliError("usage", "on the SNES choose the flash wiring with --chip snes-lorom or --chip snes-hirom (the ROM alone does not say how the cartridge was built)", EXIT_USAGE)
         val capacityOpt = a.opts["capacity"]?.let { it.toIntOrNull() ?: throw CliError("usage", "--capacity needs a number of KB (2048 or 4096)", EXIT_USAGE) }
-        val (chip, img) = try { RomImages.prepare(File(input).readBytes(), chipOpt, capacityOpt) }
+        fun optInt(k: String) = a.opts[k]?.let { it.toIntOrNull() ?: throw CliError("usage", "--$k needs a number", EXIT_USAGE) }
+        val (chip, img) = try {
+            RomImages.prepare(File(input).readBytes(), chipOpt, capacityOpt, a.opts["layout"] ?: "1x", optInt("flash-mb"), a.opts["flash-type"], optInt("sector-kb"), optInt("buffer"))
+        }
         catch (e: RomImageException) {
             val msg = when (e.problem) {
                 RomImageProblem.TRUNCATED_HEADER -> "incomplete iNES header"
@@ -422,14 +430,25 @@ Full contract: docs/cli.md
                 RomImageProblem.SNES_NO_FIT -> "the ROM has ${e.a} KB and does not fit a ${e.b} KB flash"
                 RomImageProblem.SNES_CAPACITY -> "flash capacity: 2048 or 4096 (KB)"
                 RomImageProblem.SNES_NEEDS_CHIP -> "on the SNES choose --chip snes-lorom or --chip snes-hirom"
+                RomImageProblem.SNES_LAYOUT -> "unknown --layout (use ${SnesLayouts.NAMES.keys.joinToString(", ")})"
+                RomImageProblem.SNES_BAD_LAYOUT -> "the ${e.a} KB ROM does not fit this layout (the OSCR requires 6 to 8 MB in the 8 MB ones, at most 4 MB in 2x2mb, and 1x8mb takes only 6 or 8 MB)"
+                RomImageProblem.SNES_CAPACITY_FIXED -> "--capacity only applies to the one-chip layout (1x); the others have a fixed capacity"
+                RomImageProblem.GEN_TYPE -> "this chip needs --flash-type (${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")}); the OSCR found it in the SD card database, check the chip's datasheet"
+                RomImageProblem.GEN_MB -> "this chip needs --flash-mb (1 to 8)"
+                RomImageProblem.GEN_NO_FIT -> "the ROM has ${e.a} KB and does not fit a ${e.b} MB flash"
+                RomImageProblem.GEN_NEEDS_SECTOR -> "this flash type needs --sector-kb (sector size) and --buffer (write buffer bytes); see the chip's datasheet"
+                RomImageProblem.GEN_SECTOR -> "--sector-kb must be a power of 2 (1 to 16384)"
+                RomImageProblem.GEN_BUFFER -> "--buffer must be a power of 2 (2 to 128)"
+                RomImageProblem.GEN_PADDED_NO_FIT -> "the ROM padded to a whole number of sectors (${e.a} KB) does not fit ${e.b} MB"
                 RomImageProblem.MD_SIZE -> "the Mega Drive ROM size must be even (binary .md/.bin/.gen file)"
                 RomImageProblem.MD_TOO_BIG -> "the ROM has ${e.a} KB; the Mega Drive flash repro holds at most 4 MB (MX29F1610 2 MB or S29GL064N 4 MB)"
                 RomImageProblem.MD_SMD -> "the file seems to have the 512-byte copier header (.smd); use the plain binary ROM without a header"
             }
-            throw CliError(if (e.problem == RomImageProblem.CHIP_UNKNOWN) "usage" else "bad_rom", msg, EXIT_USAGE)
+            throw CliError(if (e.problem in setOf(RomImageProblem.CHIP_UNKNOWN, RomImageProblem.GEN_TYPE, RomImageProblem.GEN_MB)) "usage" else "bad_rom", msg, EXIT_USAGE)
         }
         if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err("warning: the file is mapper ${img.mapper}, but chip ${chip.key} belongs to mapper ${chip.mapper} cartridges")
-        val what = if (img.flashKb > 0) "${chip.label}: ROM ${img.prgKb} KB in a ${img.flashKb} KB flash (${img.body.size} bytes)"
+        val layoutName = if (img.layout == SnesLayouts.GENERIC) "8-bit flash of chosen type" else SnesLayouts.NAMES.entries.firstOrNull { it.value == img.layout }?.key ?: "?"
+        val what = if (img.flashKb > 0) "${chip.label}: ROM ${img.prgKb} KB in a ${img.flashKb} KB flash, $layoutName (${img.body.size} bytes sent)"
                    else if (chip.md) "${chip.label}: ROM ${img.body.size} bytes"
                    else "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
         if ("yes" !in a.flags) {
@@ -442,11 +461,11 @@ Full contract: docs/cli.md
         try {
             if (!c.info.writeRom) throw CliError("unsupported_firmware", "this firmware does not support WRITE_ROM", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
             val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()
-            crc = c.client.writeRom(sys, img.body, chip.code, if (img.flashKb > 0) img.flashKb else img.prgKb, img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
+            crc = c.client.writeRom(sys, img.body, RomImages.chipCode(chip, img), if (img.flashKb > 0) img.flashKb else img.prgKb, if (img.wireChr != 0) img.wireChr else img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
         } finally { c.transport.close() }
         val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
         val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
-        if (img.flashKb > 0) out["flash_kb"] = img.flashKb
+        if (img.flashKb > 0) { out["flash_kb"] = img.flashKb; out["layout"] = layoutName }
         val lines = mutableListOf("ROM written: $what  CRC32 $hex")
         if ("no-verify" in a.flags || sys == CartSystem.MOCK) {          // o simulador não guarda a ROM gravada para ler de volta
             out["verify"] = "skipped"; lines += "verification after writing: skipped"

@@ -347,6 +347,12 @@ def cmd_save_write(args) -> int:
     return 0
 
 
+def _layout_name(img) -> str:
+    if img.layout == RI.SNES_GENERIC:
+        return "flash de 8 bits de tipo informado"
+    return next((k for k, v in RI.SNES_LAYOUTS.items() if v == img.layout), "?")
+
+
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
     if args.system not in ("nes", "famicom", "snes", "md", "mock"):
@@ -354,13 +360,19 @@ def cmd_rom_write(args) -> int:
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
-        snes_chip = chip in ("snes-lorom", "snes-hirom")
+        snes_chip = chip in RI.SNES_CHIPS
         if args.system == "snes" or (args.system == "mock" and snes_chip):       # no simulador (mock) o chip decide
             if chip is None:
-                raise CliError("usage", "no SNES escolha a fiação do flash com --chip snes-lorom ou --chip snes-hirom (a ROM sozinha não diz como o cartucho foi montado)", EXIT_USAGE)
+                raise CliError("usage", "no SNES escolha o cartucho com --chip: snes-lorom ou snes-hirom (flash CFI, veja --layout), ou snes-lorom-p0, snes-hirom-p0, "
+                               "snes-exlorom-p1, snes-exhirom-p1 (flash de 8 bits, veja --flash-type); a ROM sozinha não diz como o cartucho foi montado", EXIT_USAGE)
             if not snes_chip:
                 raise CliError("usage", f"o chip {chip} não é de SNES", EXIT_USAGE)
-            img = RI.split_snes(data, args.capacity)
+            if chip in RI.SNES_GENERIC_CHIPS:
+                if not args.flash_type or not args.flash_mb:
+                    raise CliError("usage", f"o chip {chip} precisa de --flash-type e --flash-mb (o OSCR achava isso no banco do cartão SD; confira a folha de dados do chip)", EXIT_USAGE)
+                img = RI.split_snes_generic(data, args.flash_mb, args.flash_type, args.sector_kb, args.buffer)
+            else:
+                img = RI.split_snes(data, args.capacity, args.layout)
         elif args.system == "md" or (args.system == "mock" and chip == "md-flash"):
             if chip not in (None, "md-flash"):
                 raise CliError("usage", f"o chip {chip} não é de Mega Drive (use --chip md-flash, ou nada)", EXIT_USAGE)
@@ -379,7 +391,7 @@ def cmd_rom_write(args) -> int:
         raise CliError("bad_rom", str(e), EXIT_USAGE) from e
     if img.mapper is not None and img.mapper != RI.CHIP_MAPPER[chip] and not args.json:
         print(f"aviso: o arquivo é do mapper {img.mapper}, mas o chip {chip} é de cartucho de mapper {RI.CHIP_MAPPER[chip]}", file=sys.stderr)
-    what = (f"{RI.CHIP_LABEL[chip]}: ROM {img.prg_kb} KB em flash de {img.flash_kb} KB ({len(img.body)} bytes)" if img.flash_kb
+    what = (f"{RI.CHIP_LABEL[chip]}: ROM {img.prg_kb} KB em flash de {img.flash_kb} KB, {_layout_name(img)} ({len(img.body)} bytes enviados)" if img.flash_kb
             else f"{RI.CHIP_LABEL[chip]}: ROM {len(img.body)} bytes" if chip == "md-flash"
             else f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)")
     if not args.yes:
@@ -394,13 +406,14 @@ def cmd_rom_write(args) -> int:
     try:
         if not info.get("write_rom"):
             raise CliError("unsupported_firmware", "este firmware não aceita WRITE_ROM", EXIT_ERROR, "atualize o firmware (docs/funcoes-oscr.md)")
-        crc = c.write_rom(system_id(args.system), img.body, RI.CHIPS[chip], img.flash_kb or img.prg_kb, img.chr_kb, args.block or P.DEFAULT_BLOCK,
+        crc = c.write_rom(system_id(args.system), img.body, RI.chip_code(chip, img), img.flash_kb or img.prg_kb, img.wire_chr or img.chr_kb, args.block or P.DEFAULT_BLOCK,
                           _progress("write-rom", args.progress), args.begin_timeout)
     finally:
         t.close()
     out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}
     if img.flash_kb:
         out["flash_kb"] = img.flash_kb
+        out["layout"] = _layout_name(img)
     lines = [f"ROM gravada: {what}  CRC32 {crc:08X}"]
     if args.no_verify or args.system == "mock":      # o simulador não guarda a ROM gravada para ler de volta
         out["verify"] = "skipped"
@@ -503,8 +516,14 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--backup-dir", default="~/oscr_backups", help="pasta do backup (padrão ~/oscr_backups)")
     rp = add("rom-write", cmd_rom_write, "grava a ROM em um cartucho de flash (apaga o chip)", inp=True)
     rp.set_defaults(system="nes")
-    rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (NES: padrão pelo mapper do cabeçalho, 30 = nesmaker, 0 = a29040b; SNES: snes-lorom ou snes-hirom, obrigatório)")
-    rp.add_argument("--capacity", type=int, choices=RI.SNES_CAPACITIES_KB, help="SNES: capacidade do flash em KB (padrão: a menor em que a ROM cabe)")
+    rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (NES: padrão pelo mapper do cabeçalho, 30 = nesmaker, 0 = a29040b; SNES: snes-lorom ou snes-hirom (flash CFI), snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1 ou snes-exhirom-p1; obrigatório)")
+    rp.add_argument("--capacity", type=int, choices=RI.SNES_CAPACITIES_KB, help="SNES CFI, disposição 1x: capacidade do flash em KB (padrão: a menor em que a ROM cabe)")
+    rp.add_argument("--layout", choices=list(RI.SNES_LAYOUTS), default="1x",
+                    help="SNES CFI: chips do cartucho: 1x (1 chip de 2 ou 4 MB, padrão), 2x2mb, 2x4mb, 4x2mb ou 1x8mb (as três últimas: ROM de 6 a 8 MB, como no OSCR)")
+    rp.add_argument("--flash-type", choices=list(RI.FLASH_TYPES), help="SNES P0/P1: tipo do flash de 8 bits (nomes do FlashType do OSCR)")
+    rp.add_argument("--flash-mb", type=int, help="SNES P0/P1: tamanho do chip em MB (1 a 8)")
+    rp.add_argument("--sector-kb", type=int, help="SNES P0/P1, tipos 29gl, lh28f0xx e e28fxxxj3a: tamanho do setor em KB (potência de 2)")
+    rp.add_argument("--buffer", type=int, help="SNES P0/P1, tipos 29gl, lh28f0xx e e28fxxxj3a: buffer de escrita em bytes (potência de 2, 2 a 128)")
     rp.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
     rp.add_argument("--no-verify", action="store_true", help="não lê a ROM de volta para conferir depois de gravar (padrão: confere)")
     rp.add_argument("--begin-timeout", type=float, default=90.0, help="segundos de espera pelo apagamento antes dos dados (padrão 90)")

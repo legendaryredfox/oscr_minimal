@@ -548,10 +548,11 @@ namespace OSCR::Dumper
         }
         else if (system == oscr::SYS_SNES)
         {
-          rc = SnesFlash::check(chip, prg, size);
+          uint16_t code = optMapper;                                    // SNES: o campo inteiro (disposição << 8 | fiação)
+          rc = SnesFlash::check(code, prg, chr, size);
           if (rc) { err = rc; return false; }
           rc = oscr::E_CARTUCHO_IO;
-          ran = runCore([&rc, chip, prg] { rc = SnesFlash::prepare(chip, prg); SN::cartOff(); });
+          ran = runCore([&rc, code, prg, chr, size] { rc = SnesFlash::prepare(code, prg, chr, size); SN::cartOff(); });
         }
         else if (system == oscr::SYS_MD)
         {
@@ -571,7 +572,23 @@ namespace OSCR::Dumper
         uint16_t rc = oscr::E_CARTUCHO_IO;
         bool ran;
         if (isNes(system)) ran = runCore([&rc, &in, chip, prg, chr] { NE::cartOn(); rc = NesFlash::program(chip, prg, chr, in); NE::cartOff(); });
-        else if (system == oscr::SYS_SNES) { uint32_t n = romWriteSize; ran = runCore([&rc, &in, chip, n] { rc = SnesFlash::program(chip, n, in); SN::cartOff(); }); }
+        else if (system == oscr::SYS_SNES)
+        {
+          uint16_t code = optMapper; uint32_t n = romWriteSize;
+          bool generic = SnesFlash::isGeneric(code);
+          if (generic)                                                  // P0/P1: as funções do OSCR leem o "arquivo" (sharedFile); ligá-lo ao fluxo, como no WRITE_SAVE
+          {
+            countingSource.inner = &in; countingSource.bytes = 0;
+            activeSource = &countingSource;
+            OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+          }
+          ran = runCore([&rc, &in, code, prg, chr, n] { rc = SnesFlash::program(code, prg, chr, n, in); SN::cartOff(); });
+          if (generic)
+          {
+            activeSource = nullptr;
+            if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;     // o OSCR não avisa se o arquivo acabou antes
+          }
+        }
         else if (system == oscr::SYS_MD)
         {
           // As funções do OSCR leem o "arquivo" (sharedFile): ligá-lo ao fluxo, como no WRITE_SAVE.

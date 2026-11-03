@@ -11,11 +11,25 @@ from typing import Optional
 # Valor do campo "chip" do WRITE_ROM (firmware/oscr/include/dumper/NesFlash.h) e o mapper do cartucho de cada chip.
 # SNES (firmware/oscr/include/dumper/SnesFlash.h): flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR).
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID.
-CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1}
-CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0}
+# No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
+CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
+         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4}
+CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
+               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
-              "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)"}
+              "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)",
+              "snes-lorom-p0": "SNES flash de 8 bits, LoROM (P0)", "snes-hirom-p0": "SNES flash de 8 bits, HiROM (P0)",
+              "snes-exlorom-p1": "SNES flash de 8 bits, ExLoROM (P1)", "snes-exhirom-p1": "SNES flash de 8 bits, ExHiROM (P1)"}
+SNES_CFI_CHIPS = ("snes-lorom", "snes-hirom")                     # menus "CFI LoROM / CFI HiROM": flash CFI de 1, 2 ou 4 chips (--layout)
+SNES_GENERIC_CHIPS = ("snes-lorom-p0", "snes-hirom-p0", "snes-exlorom-p1", "snes-exhirom-p1")   # menus P0 e P1: tipo do flash informado (--flash-type)
+SNES_CHIPS = SNES_CFI_CHIPS + SNES_GENERIC_CHIPS
+# Disposição do flash CFI (parte alta do campo chip; firmware/oscr/include/dumper/SnesPlan.h).
+SNES_LAYOUTS = {"1x": 0, "2x2mb": 1, "2x4mb": 2, "4x2mb": 3, "1x8mb": 4}
+SNES_GENERIC = 0x10
+# FlashType do OSCR (Flash.h) e o que cada tipo exige. Tipos com setor/buffer: o OSCR achava no banco CRDB; aqui o usuário informa.
+FLASH_TYPES = {"29f032": 1, "29f1610": 2, "lh28f0xx": 3, "29f1601": 4, "29lv640": 5, "29f800": 6, "29gl": 7, "e28fxxxj3a": 8}
+FLASH_TYPES_NEED_SECTOR = ("29gl", "lh28f0xx", "e28fxxxj3a")
 MD_MAX_BYTES = 4 * 1024 * 1024
 SNES_CAPACITIES_KB = (2048, 4096)     # as opções "1x 2MB" e "1x 4MB" do OSCR
 
@@ -27,6 +41,9 @@ class RomImage:
     chr_kb: int
     mapper: Optional[int]       # do cabeçalho iNES; None se o arquivo era cru
     flash_kb: int = 0           # só no SNES: capacidade do chip de flash em KB (vai no campo prg_kb do WRITE_ROM); prg_kb é o tamanho da ROM
+    layout: int = 0             # só no SNES: disposição (SNES_LAYOUTS) ou SNES_GENERIC
+    wire_chr: int = 0           # só no SNES genérico: campo chr_kb do WRITE_ROM (tipo | setor << 4 | buffer << 9)
+    rom: Optional[bytes] = None  # SNES: a ROM original, que a conferência compara com o que a leitura devolve (body vem reordenado e completado)
 
 
 def split_image(data: bytes, chip: str) -> RomImage:
@@ -49,23 +66,104 @@ def split_image(data: bytes, chip: str) -> RomImage:
     return RomImage(data, len(data) // 1024, 0, None)
 
 
-def split_snes(data: bytes, capacity_kb: Optional[int] = None) -> RomImage:
-    """ROM de SNES para o flash CFI: tira o cabeçalho de copiadora (512 bytes, quando o tamanho é múltiplo de 1024 mais 512) e acha a capacidade
-    do chip (a menor de 2 MB ou 4 MB em que a ROM cabe, ou a pedida). Levanta ValueError (texto para o usuário)."""
+MB = 1 << 20
+
+
+def snes_plan(layout: int, size: int, cap_bytes: int = 0) -> list[tuple[int, int, int, int]]:
+    """Espelho de `plan()` em firmware/oscr/include/dumper/SnesPlan.h: lista de (chip 1..4, endereço no chip, bytes, deslocamento no arquivo).
+    É a regra do `adjustFileSizeOffset` e do `writeCFI` do OSCR. A ordem é a dos trechos no fluxo. Lista vazia = tamanho ou disposição inválidos."""
+    if size == 0 or size % 512:
+        return []
+    if layout == 0:
+        return [(1, 0, size, 0)] if cap_bytes in (2 * MB, 4 * MB) and size <= cap_bytes else []
+    if layout == 1:
+        return [(1, 0, min(size, 2 * MB), 0), (2, 0, max(size - 2 * MB, 0), 2 * MB)] if size <= 4 * MB else []
+    if layout == 2:
+        return [(1, 0, size - 4 * MB, 4 * MB), (2, 0, 4 * MB, 0)] if 6 * MB <= size <= 8 * MB else []
+    if layout == 3:
+        return [(1, 0, 2 * MB, 4 * MB), (2, 0, 2 * MB if size > 6 * MB else 0, 6 * MB), (3, 0, 2 * MB, 0), (4, 0, 2 * MB, 2 * MB)] if 6 * MB <= size <= 8 * MB else []
+    if layout == 4:
+        return [(1, 0, size - 4 * MB, 4 * MB), (1, 4 * MB, 4 * MB, 0)] if size in (6 * MB, 8 * MB) else []
+    return []
+
+
+SNES_LAYOUT_TOTAL_KB = {1: 4096, 2: 8192, 3: 8192, 4: 8192}      # capacidade total de cada disposição (prg_kb do WRITE_ROM); a de 1 chip é 2048 ou 4096
+
+
+def _snes_strip_header(data: bytes) -> bytes:
+    """Tira o cabeçalho de copiadora (512 bytes, quando o tamanho é múltiplo de 1024 mais 512)."""
     if len(data) % 1024 == 512:
         data = data[512:]
     if len(data) == 0 or len(data) % 1024:
         raise ValueError("a ROM de SNES precisa ter tamanho múltiplo de 1 KB (com ou sem o cabeçalho de 512 bytes de copiadora)")
-    kb = len(data) // 1024
-    if capacity_kb is None:
-        capacity_kb = next((c for c in SNES_CAPACITIES_KB if kb <= c), None)
+    return data
+
+
+def split_snes(data: bytes, capacity_kb: Optional[int] = None, layout: str = "1x") -> RomImage:
+    """ROM de SNES para o flash CFI (menus "CFI LoROM / CFI HiROM" do OSCR). `layout`: 1x (1 chip de 2 ou 4 MB; `capacity_kb` força a capacidade,
+    senão a menor em que a ROM cabe), 2x2mb, 2x4mb, 4x2mb ou 1x8mb. O corpo devolvido é a ROM já reordenada nos trechos de cada chip, na ordem
+    em que o firmware os grava. Levanta ValueError (texto para o usuário)."""
+    if layout not in SNES_LAYOUTS:
+        raise ValueError(f"disposição desconhecida: {layout} (use {', '.join(SNES_LAYOUTS)})")
+    rom = _snes_strip_header(data)
+    kb = len(rom) // 1024
+    lay = SNES_LAYOUTS[layout]
+    if lay == 0:
         if capacity_kb is None:
-            raise ValueError(f"a ROM tem {kb} KB; o gravador de SNES cobre flash de 1 chip de 2 MB ou 4 MB (as opções com 2 ou 4 chips do OSCR ainda não existem aqui)")
-    elif capacity_kb not in SNES_CAPACITIES_KB:
-        raise ValueError("capacidade do flash: 2048 ou 4096 (KB)")
-    elif kb > capacity_kb:
-        raise ValueError(f"a ROM tem {kb} KB e não cabe em um flash de {capacity_kb} KB")
-    return RomImage(data, kb, 0, None, capacity_kb)
+            capacity_kb = next((c for c in SNES_CAPACITIES_KB if kb <= c), None)
+            if capacity_kb is None:
+                raise ValueError(f"a ROM tem {kb} KB; para mais de 4 MB use --layout 2x4mb, 4x2mb ou 1x8mb (ROM de 6 a 8 MB)")
+        elif capacity_kb not in SNES_CAPACITIES_KB:
+            raise ValueError("capacidade do flash: 2048 ou 4096 (KB)")
+        elif kb > capacity_kb:
+            raise ValueError(f"a ROM tem {kb} KB e não cabe em um flash de {capacity_kb} KB")
+    else:
+        if capacity_kb is not None:
+            raise ValueError("--capacity só vale na disposição de 1 chip (1x); as outras têm capacidade fixa")
+        capacity_kb = SNES_LAYOUT_TOTAL_KB[lay]
+    segs = snes_plan(lay, len(rom), capacity_kb * 1024 if lay == 0 else 0)
+    if not segs:
+        raise ValueError(f"a ROM de {kb} KB não serve para a disposição {layout} (o OSCR exige 6 a 8 MB nas de 8 MB, no máximo 4 MB em 2x2mb, e 1x8mb só aceita 6 ou 8 MB)")
+    body = b"".join(rom[off:off + n] for _c, _a, n, off in segs if n)
+    return RomImage(body, kb, 0, None, capacity_kb, lay, 0, rom)
+
+
+def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: Optional[int] = None, buffer: Optional[int] = None) -> RomImage:
+    """ROM de SNES para os menus "LoROM/HiROM (P0)" e "ExLoROM/ExHiROM (P1)" do OSCR: flash de 8 bits de tipo informado (no OSCR vinha do banco CRDB).
+    Os tipos 29gl, lh28f0xx e e28fxxxj3a precisam de setor (KB) e buffer (bytes), potências de 2; e28fxxxj3a assume 128 KB e 32 bytes se faltarem.
+    No 29gl o arquivo é completado com 0xFF até um múltiplo do setor (o OSCR grava setores inteiros). Levanta ValueError."""
+    if flash_type not in FLASH_TYPES:
+        raise ValueError(f"tipo de flash desconhecido: {flash_type} (use {', '.join(FLASH_TYPES)})")
+    if not 1 <= flash_mb <= 8:
+        raise ValueError("tamanho do flash: 1 a 8 (MB)")
+    rom = _snes_strip_header(data)
+    if len(rom) > flash_mb * MB:
+        raise ValueError(f"a ROM tem {len(rom) // 1024} KB e não cabe em um flash de {flash_mb} MB")
+    if flash_type == "e28fxxxj3a":
+        sector_kb = sector_kb or 128
+        buffer = buffer or 32
+    sec_exp = buf_exp = 0
+    if flash_type in FLASH_TYPES_NEED_SECTOR:
+        if not sector_kb or not buffer:
+            raise ValueError(f"o tipo {flash_type} precisa de --sector-kb (tamanho do setor) e --buffer (bytes do buffer de escrita); veja a folha de dados do chip")
+        if sector_kb & (sector_kb - 1) or not 1 <= sector_kb <= 16384:
+            raise ValueError("--sector-kb precisa ser potência de 2 (1 a 16384)")
+        if buffer & (buffer - 1) or not 2 <= buffer <= 128:
+            raise ValueError("--buffer precisa ser potência de 2 (2 a 128)")
+        sec_exp, buf_exp = (sector_kb * 1024).bit_length() - 1, buffer.bit_length() - 1
+    body = rom
+    if flash_type == "29gl":
+        sector = sector_kb * 1024
+        body = rom + b"\xff" * (-len(rom) % sector)
+        if len(body) > flash_mb * MB:
+            raise ValueError(f"a ROM completada até um múltiplo do setor ({len(body) // 1024} KB) não cabe em {flash_mb} MB")
+    word = FLASH_TYPES[flash_type] | (sec_exp << 4) | (buf_exp << 9)
+    return RomImage(body, len(rom) // 1024, 0, None, flash_mb * 1024, SNES_GENERIC, word, rom)
+
+
+def chip_code(chip: str, img: "RomImage") -> int:
+    """Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; nos demais, o número do chip."""
+    return (img.layout << 8) | CHIPS[chip] if chip in SNES_CHIPS else CHIPS[chip]
 
 
 def split_md(data: bytes) -> RomImage:
@@ -109,7 +207,7 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
 
     res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], img.prg_kb, img.chr_kb)     # SNES: prg_kb = tamanho da ROM; sem cabeçalho iNES
     data = res.data[16:] if res.data[:4] == b"NES\x1a" else res.data      # o firmware acrescenta um cabeçalho iNES sintético
-    exp = img.body
+    exp = img.rom if img.rom is not None else img.body
     diff = None
     if data != exp:
         diff = next((i for i in range(min(len(data), len(exp))) if data[i] != exp[i]), min(len(data), len(exp)))

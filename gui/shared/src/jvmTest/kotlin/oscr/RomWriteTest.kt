@@ -105,7 +105,7 @@ class RomWriteTest {
     }
 
     @Test fun chipsPorSistema() {
-        assertEquals(listOf(FlashChip.SNES_LOROM, FlashChip.SNES_HIROM), FlashChip.forSystem(CartSystem.SNES))
+        assertEquals(listOf(FlashChip.SNES_LOROM, FlashChip.SNES_HIROM, FlashChip.SNES_LOROM_P0, FlashChip.SNES_HIROM_P0, FlashChip.SNES_EXLOROM_P1, FlashChip.SNES_EXHIROM_P1), FlashChip.forSystem(CartSystem.SNES))
         assertEquals(listOf(FlashChip.NESMAKER, FlashChip.A29040B), FlashChip.forSystem(CartSystem.NES))
         assertEquals(FlashChip.entries.toList(), FlashChip.forSystem(CartSystem.MOCK))
     }
@@ -143,5 +143,70 @@ class RomWriteTest {
         val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "md-flash", "--yes")
         assertEquals(0, r.first, r.second); assertTrue("\"chip\":\"md-flash\"" in r.second); assertTrue("\"bytes\":524288" in r.second)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "md", "-i", f.path, "--chip", "nesmaker", "--yes").first)
+    }
+
+    // ---------------------------------------------------------------- SNES: 2 e 4 chips, 8 MB, P0/P1
+    @Test fun snesPlanoVetores() {
+        val m = SnesLayouts.MB
+        fun p(l: Int, size: Int, cap: Int = 0) = SnesLayouts.plan(l, size, cap).map { listOf(it.chip, it.addr, it.len, it.src) }
+        assertEquals(listOf(listOf(1, 0, m, 0)), p(0, 1 * m, 2 * m))
+        assertTrue(p(0, 3 * m, 2 * m).isEmpty() && p(0, m, 3 * m).isEmpty() && p(0, 1000, 2 * m).isEmpty())
+        assertEquals(listOf(listOf(1, 0, m, 0), listOf(2, 0, 0, 2 * m)), p(1, 1 * m))
+        assertEquals(listOf(listOf(1, 0, 2 * m, 0), listOf(2, 0, m, 2 * m)), p(1, 3 * m))
+        assertTrue(p(1, 5 * m).isEmpty())
+        assertEquals(listOf(listOf(1, 0, 4 * m, 4 * m), listOf(2, 0, 4 * m, 0)), p(2, 8 * m))
+        assertEquals(listOf(listOf(1, 0, 2 * m, 4 * m), listOf(2, 0, 4 * m, 0)), p(2, 6 * m))
+        assertTrue(p(2, 4 * m).isEmpty())
+        assertEquals(listOf(listOf(1, 0, 2 * m, 4 * m), listOf(2, 0, 2 * m, 6 * m), listOf(3, 0, 2 * m, 0), listOf(4, 0, 2 * m, 2 * m)), p(3, 8 * m))
+        assertEquals(listOf(listOf(1, 0, 2 * m, 4 * m), listOf(2, 0, 0, 6 * m), listOf(3, 0, 2 * m, 0), listOf(4, 0, 2 * m, 2 * m)), p(3, 6 * m))
+        assertTrue(p(3, 2 * m).isEmpty())
+        assertEquals(listOf(listOf(1, 0, 4 * m, 4 * m), listOf(1, 4 * m, 4 * m, 0)), p(4, 8 * m))
+        assertEquals(listOf(listOf(1, 0, 2 * m, 4 * m), listOf(1, 4 * m, 4 * m, 0)), p(4, 6 * m))
+        assertTrue(p(4, 7 * m).isEmpty() && p(9, m).isEmpty())
+    }
+
+    @Test fun snesReordenaComoOOscr() {
+        val m = SnesLayouts.MB
+        val rom = ByteArray(8 * m) { ((it / 4096) and 0xFF).toByte() }
+        fun r(from: Int, to: Int) = rom.copyOfRange(from, to)
+        val a = RomImages.splitSnes(rom, null, "1x8mb")
+        assertEquals(Triple(4, 8192, 8192), Triple(a.layout, a.flashKb, a.prgKb)); assertTrue(a.rom!!.contentEquals(rom))
+        assertTrue(a.body.contentEquals(r(4 * m, 8 * m) + r(0, 4 * m)))
+        assertTrue(RomImages.splitSnes(rom, null, "4x2mb").body.contentEquals(r(4 * m, 6 * m) + r(6 * m, 8 * m) + r(0, 2 * m) + r(2 * m, 4 * m)))
+        assertTrue(RomImages.splitSnes(rom.copyOf(6 * m), null, "4x2mb").body.contentEquals(r(4 * m, 6 * m) + r(0, 2 * m) + r(2 * m, 4 * m)))
+        val b = RomImages.splitSnes(rom.copyOf(3 * m), null, "2x2mb")
+        assertTrue(b.body.contentEquals(r(0, 3 * m))); assertEquals(4096, b.flashKb)
+        assertTrue(RomImages.splitSnes(rom, null, "2x4mb").body.contentEquals(r(4 * m, 8 * m) + r(0, 4 * m)))
+        assertEquals(RomImageProblem.SNES_BAD_LAYOUT, assertFailsWith<RomImageException> { RomImages.splitSnes(snesRom(512), null, "4x2mb") }.problem)
+        assertEquals(RomImageProblem.SNES_CAPACITY_FIXED, assertFailsWith<RomImageException> { RomImages.splitSnes(rom, 2048, "1x8mb") }.problem)
+        assertEquals(RomImageProblem.SNES_LAYOUT, assertFailsWith<RomImageException> { RomImages.splitSnes(rom, null, "3x") }.problem)
+    }
+
+    @Test fun snesCodigoDoChipEGenerico() {
+        val one = RomImages.splitSnes(snesRom(512))
+        assertEquals(0x0001, RomImages.chipCode(FlashChip.SNES_LOROM, one)); assertEquals(0x0002, RomImages.chipCode(FlashChip.SNES_HIROM, one))
+        assertEquals(0x0402, RomImages.chipCode(FlashChip.SNES_HIROM, RomImages.splitSnes(snesRom(6144), null, "1x8mb")))
+        val g = RomImages.splitSnesGeneric(snesRom(1024), 4, "29f032")
+        assertEquals(0x1004, RomImages.chipCode(FlashChip.SNES_EXHIROM_P1, g)); assertEquals(Triple(4096, 1, SnesLayouts.GENERIC), Triple(g.flashKb, g.wireChr, g.layout))
+        assertEquals(1, RomImages.chipCode(FlashChip.NESMAKER, one))
+        val gl = RomImages.splitSnesGeneric(snesRom(1000), 4, "29gl", 128, 32)
+        assertEquals(0, gl.body.size % (128 * 1024)); assertEquals(7 or (17 shl 4) or (5 shl 9), gl.wireChr)
+        assertTrue(gl.rom!!.contentEquals(snesRom(1000))); assertTrue(gl.body.drop(1000 * 1024).all { it == 0xFF.toByte() })
+        assertEquals(8 or (17 shl 4) or (5 shl 9), RomImages.splitSnesGeneric(snesRom(512), 1, "e28fxxxj3a").wireChr)
+        assertEquals(RomImageProblem.GEN_NEEDS_SECTOR, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(512), 4, "29gl") }.problem)
+        assertEquals(RomImageProblem.GEN_SECTOR, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(512), 4, "29gl", 100, 32) }.problem)
+        assertEquals(RomImageProblem.GEN_BUFFER, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(512), 4, "29gl", 128, 256) }.problem)
+        assertEquals(RomImageProblem.GEN_TYPE, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(512), 4, "xx") }.problem)
+        assertEquals(RomImageProblem.GEN_MB, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(512), 9, "29f032") }.problem)
+        assertEquals(RomImageProblem.GEN_NO_FIT, assertFailsWith<RomImageException> { RomImages.splitSnesGeneric(snesRom(5120), 4, "29f032") }.problem)
+    }
+
+    @Test fun romWriteSnesGenericoSimulado() {
+        val d = tmp(); val f = File(d, "jogo.sfc").also { it.writeBytes(snesRom(512)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "snes-exlorom-p1", "--flash-type", "29f032", "--flash-mb", "2", "--yes")
+        assertEquals(0, r.first, r.second); assertTrue("\"flash_kb\":2048" in r.second); assertTrue("\"bytes\":524288" in r.second)
+        val e = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "snes-exlorom-p1", "--yes")
+        assertEquals(64, e.first); assertTrue("--flash-type" in e.second)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "snes-lorom", "--layout", "4x2mb", "--yes").first)
     }
 }

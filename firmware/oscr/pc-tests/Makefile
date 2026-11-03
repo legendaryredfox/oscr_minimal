@@ -5,8 +5,13 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto
+test: build/test_proto build/test_snes_plan
 	./build/test_proto
+	./build/test_snes_plan
+
+build/test_snes_plan: test_snes_plan.cpp ../include/dumper/SnesPlan.h
+	mkdir -p build
+	$(CXX) -std=c++17 -Wall -Wextra -O1 -o $@ test_snes_plan.cpp
 
 build/test_proto: test_proto.cpp $(SRC) $(HDR)
 	mkdir -p build

@@ -107,6 +107,12 @@ fun App() {
     var romReq by remember { mutableStateOf<RomWriteRequest?>(null) }
     var verifyRom by remember { mutableStateOf(Prefs.verifyRom) }
     var romChip by remember { mutableStateOf<FlashChip?>(null) }          // null = automático (pelo mapper do cabeçalho)
+    var snesLayout by remember { mutableStateOf("1x") }                  // flash CFI do SNES: disposição dos chips
+    var snesCapacity by remember { mutableStateOf("") }                  // "" = a menor em que a ROM cabe (só na disposição 1x)
+    var flashType by remember { mutableStateOf("29f032") }               // P0/P1: tipo do flash de 8 bits
+    var flashMb by remember { mutableStateOf("4") }
+    var sectorKb by remember { mutableStateOf("") }
+    var bufferBytes by remember { mutableStateOf("") }
     var backupFirst by remember { mutableStateOf(true) }
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
@@ -320,6 +326,16 @@ fun App() {
         RomImageProblem.MD_SIZE -> t(S.RIMG_MD_SIZE)
         RomImageProblem.MD_TOO_BIG -> f(S.RIMG_MD_TOO_BIG, e.a)
         RomImageProblem.MD_SMD -> t(S.RIMG_MD_SMD)
+        RomImageProblem.SNES_LAYOUT -> t(S.RIMG_SNES_LAYOUT)
+        RomImageProblem.SNES_BAD_LAYOUT -> f(S.RIMG_SNES_BAD_LAYOUT, e.a)
+        RomImageProblem.SNES_CAPACITY_FIXED -> t(S.RIMG_SNES_CAPACITY_FIXED)
+        RomImageProblem.GEN_TYPE -> t(S.RIMG_GEN_TYPE)
+        RomImageProblem.GEN_MB -> t(S.RIMG_GEN_MB)
+        RomImageProblem.GEN_NO_FIT -> f(S.RIMG_GEN_NO_FIT, e.a, e.b)
+        RomImageProblem.GEN_NEEDS_SECTOR -> t(S.RIMG_GEN_NEEDS_SECTOR)
+        RomImageProblem.GEN_SECTOR -> t(S.RIMG_GEN_SECTOR)
+        RomImageProblem.GEN_BUFFER -> t(S.RIMG_GEN_BUFFER)
+        RomImageProblem.GEN_PADDED_NO_FIT -> f(S.RIMG_GEN_PADDED, e.a, e.b)
     }
 
     fun actRomWriteChoose() {
@@ -327,7 +343,8 @@ fun App() {
         if (isSnes && chipChoice == null) { say(t(S.ERR_PREFIX) + ": " + t(S.RIMG_SNES_NEEDS_CHIP)); return }
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
         try {
-            val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else chipChoice)
+            val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else chipChoice,
+                if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull())
             romReq = RomWriteRequest(file, chip, img)
         } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
     }
@@ -480,6 +497,34 @@ fun App() {
                 ComboBox(value = chipChoice?.label ?: (if (isSnes) "—" else t(S.FLASH_CHIP_AUTO)), modifier = Modifier.fillMaxWidth()) { close ->
                     if (isNes) DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
                     FlashChip.forSystem(system).forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
+                }
+            }
+            if (stub == null && isSnes && chipChoice != null) {
+                if (chipChoice.generic) {
+                    LabeledField(t(S.LBL_FLASH_TYPE)) {
+                        ComboBox(value = flashType, modifier = Modifier.fillMaxWidth()) { close ->
+                            SnesLayouts.FLASH_TYPES.keys.forEach { k -> DropdownMenuItem(text = { Text(k) }, onClick = { close(); flashType = k }) }
+                        }
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(flashMb, { flashMb = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.LBL_FLASH_MB)) }, singleLine = true, modifier = Modifier.width(120.dp))
+                        if (flashType in SnesLayouts.NEED_SECTOR) {
+                            OutlinedTextField(sectorKb, { sectorKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.LBL_SECTOR_KB)) }, singleLine = true, modifier = Modifier.width(140.dp))
+                            OutlinedTextField(bufferBytes, { bufferBytes = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.LBL_BUFFER)) }, singleLine = true, modifier = Modifier.width(140.dp))
+                        }
+                    }
+                } else {
+                    LabeledField(t(S.LBL_LAYOUT)) {
+                        ComboBox(value = snesLayout, modifier = Modifier.fillMaxWidth()) { close ->
+                            SnesLayouts.NAMES.keys.forEach { k -> DropdownMenuItem(text = { Text(k) }, onClick = { close(); snesLayout = k }) }
+                        }
+                    }
+                    if (snesLayout == "1x") LabeledField(t(S.LBL_CAPACITY)) {
+                        ComboBox(value = if (snesCapacity.isEmpty()) t(S.LBL_CAPACITY_AUTO) else "$snesCapacity KB", modifier = Modifier.fillMaxWidth()) { close ->
+                            DropdownMenuItem(text = { Text(t(S.LBL_CAPACITY_AUTO)) }, onClick = { close(); snesCapacity = "" })
+                            RomImages.SNES_CAPACITIES_KB.forEach { c -> DropdownMenuItem(text = { Text("$c KB") }, onClick = { close(); snesCapacity = c.toString() }) }
+                        }
+                    }
                 }
             }
             if (stub == null && canWriteRom) Row(verticalAlignment = Alignment.CenterVertically) {

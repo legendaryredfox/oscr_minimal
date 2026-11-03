@@ -74,7 +74,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 lastRomOptions = Triple(chip, prg, chr)
                 if (sys != 0 && sys != 255) return error(2)
                 if (chip == 9) return error(11, "id")
-                if (wSize < 0 || (wSize != (prg + chr) * 1024 && !(chr == 0 && wSize in 1..(prg * 1024) && wSize % 2 == 0))) return error(4, "tamanho")   // NES: PRG+CHR; SNES e MD: ROM dentro do flash
+                if (wSize < 0 || (chip < 0x100 && wSize != (prg + chr) * 1024 && !(chr == 0 && wSize in 1..(prg * 1024) && wSize % 2 == 0))) return error(4, "tamanho")   // NES: PRG+CHR; SNES e MD: ROM dentro do flash
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true; writingRom = true
                 push(Proto.T_D_ACK, le32(0))
             }

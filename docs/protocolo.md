@@ -179,12 +179,20 @@ Campos: `sistema` (NES = 2 ou Famicom = 3), `tamanho` (bytes do que vai ser envi
 | 1 | NES Maker, SST 39SF040 (mapper 30) | múltiplo de 16 KB, até 512 KB | 0 | `NESmaker_*` em `NES.cpp` |
 | 2 | A29040B (mapper 0) | 16 ou 32 KB | 0 ou 8 KB | `A29040B_*` em `NES.cpp` |
 
-**SNES (D79):** `sistema` = 1; `chip` 1 = flash CFI com a fiação de LoROM, 2 = com a fiação de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR, um chip só); `prg_kb` = **capacidade do flash** (2048 ou 4096); `chr_kb` = 0; `tamanho` = bytes da ROM (múltiplo de 512, no máximo a capacidade; o PC tira o cabeçalho de copiadora de 512 bytes). O `rom_prepare` identifica o CFI (`E_FLASH` se não responde ou se o chip é menor que a capacidade) e apaga o chip inteiro (espera DQ7 por até 80 s); depois os dados entram a partir do endereço 0.
+**SNES (D79, D82):** `sistema` = 1; o campo `chip` (u16) é `(disposição << 8) | fiação`. Fiação: 1 = LoROM, 2 = HiROM, 3 = ExLoROM, 4 = ExHiROM (3 e 4 só no modo genérico). `tamanho` = bytes da ROM sem o cabeçalho de copiadora (múltiplo de 512). O `rom_prepare` identifica o chip e apaga **todos** os chips (E_FLASH se não responde ou é menor que o necessário); depois os dados entram na ordem dos segmentos.
 
-| chip (`sistema` = 1) | Cartucho | Capacidade (`prg_kb`) | Origem no OSCR |
-|---|---|---|---|
-| 1 | flash CFI, fiação LoROM | 2048 ou 4096 | `Flash::writeCFI` / `Flash::mapping = 1` |
-| 2 | flash CFI, fiação HiROM | 2048 ou 4096 | `Flash::writeCFI` / `Flash::mapping = 2` |
+| disposição | Menu do OSCR | `prg_kb` | `chr_kb` | Trechos do fluxo (chip, endereço, bytes, de onde no arquivo) |
+|---|---|---|---|---|
+| 0 | CFI, 1x 2MB / 1x 4MB | 2048 ou 4096 | 0 | chip 1, 0, tamanho, 0 |
+| 1 | CFI, 2x 2MB | 4096 | 0 | chip 1: 0, min(tam, 2 MB), 0; chip 2: 0, tam − 2 MB (ou 0), a partir de 2 MB |
+| 2 | CFI, 2x 4MB | 8192 | 0 | ROM de 6 a 8 MB; chip 1: tam − 4 MB do arquivo a partir de 4 MB; chip 2: 4 MB do começo |
+| 3 | CFI, 4x 2MB | 8192 | 0 | ROM de 6 a 8 MB; chip 1: arquivo 4 a 6 MB; chip 2: 6 a 8 MB (vazio se a ROM tem 6 MB); chip 3: 0 a 2 MB; chip 4: 2 a 4 MB |
+| 4 | CFI, 1x 8MB | 8192 | 0 | ROM de 6 ou 8 MB; chip 1 endereço 0: arquivo a partir de 4 MB (tam − 4 MB); endereço 4 MB: arquivo 0 a 4 MB |
+| 0x10 (genérico) | LoROM/HiROM (P0), ExLoROM/ExHiROM (P1) | tamanho do chip em KB (1024 a 8192) | tipo do flash \| (log2 do setor em bytes << 4) \| (log2 do buffer em bytes << 9) | o arquivo inteiro, na ordem |
+
+As disposições 1 a 4 são as regras do `adjustFileSizeOffset` e do `writeCFI` do OSCR (Flash.cpp) aplicadas pelo PC: o firmware não faz `seek` no fluxo, então o PC manda os trechos já reordenados, e o plano está em `firmware/oscr/include/dumper/SnesPlan.h` (código puro, testado em `pc-tests/test_snes_plan.cpp`), espelhado em `host/oscr_host/romimage.py` (`snes_plan`) e `RomImage.kt`, com os mesmos vetores nos três testes. Os chips apagam ao mesmo tempo e o firmware espera DQ7 de cada um por até 80 s no total. Em 1x 8MB o OSCR só se comporta bem com 6 ou 8 MB (em outros tamanhos lê além do fim do arquivo), então só esses dois são aceitos.
+
+**Modo genérico (P0/P1):** o firmware chama direto `eraseFlash*`, `writeFlash*` e `idFlash*` do `menuFlash8` do OSCR, escolhidos pelo tipo (`FlashType` do `Flash.h`: 1 29F032, 2 29F1610, 3 LH28F0XX, 4 29F1601, 5 29LV640, 6 29F800, 7 29GL, 8 E28FXXXJ3A). No OSCR o tipo, o tamanho, o setor e o buffer vinham do banco CRDB do cartão SD; aqui o PC informa. Tipos 29GL, LH28F0XX e E28FXXXJ3A exigem setor e buffer; no 29GL o PC completa a ROM com 0xFF até um múltiplo do setor (o OSCR grava setores inteiros). Esses laços do OSCR **não têm limite de tempo**.
 
 Erros: `0x0004` (chip ou tamanhos inválidos, antes de tocar no cartucho), `0x000B` (ID do chip diferente do esperado: nada foi gravado), `0x0007` (um byte não gravou dentro do limite de tempo: o chip pode ter ficado apagado ou pela metade, regrave), `0x0001` (firmware sem `WRITE_ROM`), `0x0006` (CRC32 do arquivo não confere).
 
