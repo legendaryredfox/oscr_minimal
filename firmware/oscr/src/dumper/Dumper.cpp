@@ -20,6 +20,7 @@
 # include "cores/NES.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
+# include "dumper/SnesFlash.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -529,25 +530,41 @@ namespace OSCR::Dumper
         return ok || (!fatalHit && countingSource.bytes == expected);
       }
 
-      // WRITE_ROM (flash do NES). Opções: `mapper` = chip (NesFlash::kNesMaker, kA29040B), `prg_kb` e `chr_kb` = tamanhos que o PC tirou do arquivo.
+      // WRITE_ROM. Opções: `mapper` = chip (NES: NesFlash::kNesMaker, kA29040B; SNES: SnesFlash::kCfiLoRom, kCfiHiRom);
+      // NES: `prg_kb` e `chr_kb` = tamanhos que o PC tirou do arquivo; SNES: `prg_kb` = capacidade do flash em KB.
       bool rom_prepare(uint8_t system, uint32_t size, uint16_t & err) override
       {
-        if (!isNes(system)) { err = oscr::E_COMANDO; return false; }
         uint8_t chip = uint8_t(optMapper); uint16_t prg = optPrgKb, chr = optChrKb;
-        uint16_t rc = NesFlash::check(chip, prg, chr, size);
-        if (rc) { err = rc; return false; }
-        rc = oscr::E_CARTUCHO_IO;
-        bool ran = runCore([&rc, chip, prg, chr] { NE::cartOn(); rc = NesFlash::prepare(chip, prg, chr); NE::cartOff(); });
+        uint16_t rc;
+        bool ran;
+        romWriteSize = size;
+        if (isNes(system))
+        {
+          rc = NesFlash::check(chip, prg, chr, size);
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_CARTUCHO_IO;
+          ran = runCore([&rc, chip, prg, chr] { NE::cartOn(); rc = NesFlash::prepare(chip, prg, chr); NE::cartOff(); });
+        }
+        else if (system == oscr::SYS_SNES)
+        {
+          rc = SnesFlash::check(chip, prg, size);
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_CARTUCHO_IO;
+          ran = runCore([&rc, chip, prg] { rc = SnesFlash::prepare(chip, prg); SN::cartOff(); });
+        }
+        else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
       }
 
       bool stream_write_rom(uint8_t system, oscr::StreamSource & in, uint16_t & err) override
       {
-        if (!isNes(system)) { err = oscr::E_COMANDO; return false; }
         uint8_t chip = uint8_t(optMapper); uint16_t prg = optPrgKb, chr = optChrKb;
         uint16_t rc = oscr::E_CARTUCHO_IO;
-        bool ran = runCore([&rc, &in, chip, prg, chr] { NE::cartOn(); rc = NesFlash::program(chip, prg, chr, in); NE::cartOff(); });
+        bool ran;
+        if (isNes(system)) ran = runCore([&rc, &in, chip, prg, chr] { NE::cartOn(); rc = NesFlash::program(chip, prg, chr, in); NE::cartOff(); });
+        else if (system == oscr::SYS_SNES) { uint32_t n = romWriteSize; ran = runCore([&rc, &in, chip, n] { rc = SnesFlash::program(chip, n, in); SN::cartOff(); }); }
+        else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
       }
@@ -561,6 +578,7 @@ namespace OSCR::Dumper
 
     private:
       uint16_t optMapper = 0, optPrgKb = 0, optChrKb = 0;
+      uint32_t romWriteSize = 0;      // tamanho do arquivo do último WRITE_ROM (rom_prepare -> stream_write_rom)
 
       /** Lê o cabeçalho do cartucho (preenche cartSize, saveType, sramSize...) antes de ler ou gravar. */
       bool prepare(uint8_t system, bool forSave, uint16_t & err)

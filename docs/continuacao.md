@@ -15,6 +15,7 @@
 | Firmware = fork do OSCR (`firmware/oscr/`) | SD trocado pela serial (`StreamFile`), UI muda, laço do protocolo em `src/dumper/Dumper.cpp`; **SNES, NES/Famicom, Mega Drive, GBA e GB/GBC** com `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. Compila: 151.176 B de flash (59,5%), 3.465 B de RAM (42,3%). | D65, D66, D75 |
 | NES no fork | mapper, PRG, CHR e RAM vêm do PC; 37 mappers de ROM (inclui o 30); saves dos mappers 1, 4, 5, 69 e 118; MMC6 tem save de 1 KB | D75, D78 |
 | **Gravação de ROM** | `WRITE_ROM` (`0x0B`) para **NES Maker (SST 39SF040, mapper 30)** e **A29040B (mapper 0)**, usando direto `NESmaker_*` e `A29040B_*` do OSCR (`flash = true` em `user.ini`); `NesFlash.cpp` só tem o laço de gravação, com limite de tempo; apagar acontece **antes** do primeiro `ACK` | D77 |
+| **Gravação de ROM no SNES** | `WRITE_ROM` para flash **CFI de 1 chip de 2 ou 4 MB** (fiação LoROM ou HiROM), chamando `Flash::setup8`, `identifyCFIbyIds`, `sendCFICommand`, `writeByte` do OSCR; `SnesFlash.cpp` só tem o laço com limite de tempo; CLI Python, CLI Kotlin e GUI (combo de chip por sistema) | D79 |
 | Conferência depois de gravar a ROM | o PC lê a ROM de volta e compara byte a byte (CLI, GUI, `--no-verify`) | D78 |
 | Banco de dados no PC | No-Intro `.dat` (Logiqx) e NES 2.0 XML; identifica por CRC32 (NES também sem cabeçalho e por PRG+CHR); `identify`, `search`, `dump --db`, `dump --game`; nome do jogo na GUI e busca de jogo no NES | D76 |
 | Firmware próprio arquivado | `firmware/arquivo/` (oscr_serial, arduino, platformio); o protocolo do fork tem testes em `firmware/oscr/pc-tests/` | D76 |
@@ -44,7 +45,7 @@
 - Reescrever as seções 2 a 5 deste arquivo para o fork (hoje descrevem o arquivo).
 
 **C. Funções do OSCR original que faltam (meta D77).** Lista completa e estado em `docs/funcoes-oscr.md`. Resumo, na ordem que sugiro:
-1. **Programador de flash genérico** (`Flash.cpp`: CFI, 8 e 16 bits, ID, blank check, ler, gravar, apagar, verificar, EPROM, PLCC32 para SNES): serve de base para as flash repro de vários sistemas; `flash = true` já está ligado, falta `flash16`.
+1. **Programador de flash genérico** (o SNES CFI de 1 chip já existe, D79; `Flash.cpp`: CFI, 8 e 16 bits, ID, blank check, ler, gravar, apagar, verificar, EPROM, PLCC32 para SNES): serve de base para as flash repro de vários sistemas; `flash = true` já está ligado, falta `flash16`.
 2. Flash repro por sistema: SNES (CFI e LoROM/HiROM/ExLoROM/ExHiROM), Mega Drive (29F1610, 29GL), GBA (Intel 4000/4400, MSP55LV128, MX29GL128E, 369-in-1), GB (29F/39SF, CFI, GB Smart, NPower, GameShark, Mega Memory, Datel).
 3. SNES: SF Memory (SFM), Satellaview, Sufami Turbo, Game Processor RAM, Test RAM, calibrar o relógio; chips raros (Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110).
 4. NES: leitura raw (PRG/CHR separados), mais mappers (o upstream trata mais de 100; ver `docs/limites-nes.md`), EEPROM dos mappers 16 e 159, saves de outros mappers, flash de CHR em outros chips.

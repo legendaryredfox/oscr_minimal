@@ -77,6 +77,7 @@
 - **D76** Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
 - **D77** Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
 - **D78** Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
+- **D79** Gravação de ROM em flash CFI do SNES (1 chip de 2 ou 4 MB) com `WRITE_ROM` (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -630,3 +631,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - Para o NES Maker ser conferível, o **mapper 30** (UNROM 512) entrou na leitura: `nesCheckRom` aceita PRG até 512 KB e só CHR-RAM; o `readPRG` do OSCR já tinha o caso 30, então nenhum código do upstream mudou. Entrou nas listas de mappers (CLI, GUI nos 4 idiomas, `docs/uso.md`, `docs/protocolo.md`, `docs/limites-nes.md`), com teste de sincronia.
 - Limite honesto: a conferência pega gravação errada e setor apagado, mas não distingue "o chip gravou errado" de "o barramento leu errado"; um `verify_failed` pede limpar contatos e regravar. Nunca rodou em cartucho.
 
+
+### D79 — Gravação de ROM em flash CFI do SNES (2026-11-03)
+- Segunda gravação de ROM (meta D77): flash repro de SNES com **um chip CFI de 2 ou 4 MB**, as opções "CFI LoROM / CFI HiROM" e "1x 2MB / 1x 4MB" do OSCR. Mesmo `WRITE_ROM` do NES (`docs/protocolo.md` seção 9): `sistema` = 1, `chip` 1 = fiação LoROM, 2 = fiação HiROM, `prg_kb` = capacidade do flash.
+- **Reaproveitado do OSCR** (`Flash.cpp`): `setup8`, `identifyCFIbyIds`, `sendCFICommand`, `writeByte`, `readByte`, `writeByteCompensated`, `readByteCompensated`, `mapping`, `flashX16Mode`, `flashSwitchLastBits`. **Código novo** (`src/dumper/SnesFlash.cpp`, só a costura): o laço de apagar e gravar, porque o `writeCFI` lê o SD e o `busyWait` espera para sempre; aqui o apagamento tem limite de 80 s (o host espera 90 s pelo primeiro `ACK`) e cada byte tem limite de 10 ms. `identifyCFI` foi trocado por `identifyCFIbyIds` porque o original, quando falha, espera um botão.
+- A **fiação (LoROM ou HiROM) é escolha do usuário** (`--chip snes-lorom|snes-hirom`, combo na GUI): a ROM sozinha não diz como o cartucho repro foi montado. O PC tira o cabeçalho de copiadora de 512 bytes e escolhe a menor capacidade em que a ROM cabe (`--capacity` força).
+- Conferência depois de gravar (D78) vale: `DUMP_ROM` com `prg_kb` = tamanho da ROM, comparação byte a byte.
+- **Não existem ainda:** 2x e 4x chips, 1x 8 MB, LoROM/HiROM (P0) e ExLoROM/ExHiROM (P1) do `menuFlash8`. **Nunca rodou em cartucho**: o `DQ7` é conferido contra o dado gravado (o `busyWait` do OSCR espera sempre 0x80), o tempo de 10 ms por byte e a energização (`cartOn` do SNES e depois `setup8`) são pontos de ajuste prováveis.

@@ -166,7 +166,7 @@ class MockDevice:
             self.last_rom_options = (chip, prg, chr_)
             if chip == 9:
                 return self._error(t, f.seq, 11, "id")
-            if size != (prg + chr_) * 1024:
+            if size != (prg + chr_) * 1024 and not (chr_ == 0 and 0 < size <= prg * 1024 and size % 512 == 0):    # NES: PRG+CHR; SNES: ROM dentro do flash
                 return self._error(t, f.seq, 4, "tamanho")
         if sysid not in (0, 255) or size > 1 << 20:
             return self._error(t, f.seq, 2 if sysid not in (0, 255) else 4)

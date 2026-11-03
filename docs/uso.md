@@ -55,6 +55,14 @@ Grave o firmware de teste (`OSCR_MOCK`). Selecione `mock`, **Ler ROM**: deve dar
 ### 2.6 Ler uma ROM de NES/Famicom com mapper
 Exemplo (Mega Man 3, MMC3, 256 KB de PRG e 128 KB de CHR): `dumper.py dump -s nes --mapper 4 --prg 256 --chr 128 -o megaman3`. Se os tamanhos estiverem errados a ROM sai com o CRC32 errado: confira no banco. Se `0x0002` (mapper não suportado) ou `0x0004` (tamanho inválido), veja a seção 4.
 
+### 2.6b Gravar a ROM em um cartucho repro de flash
+
+**APAGA a ROM atual do cartucho.** Nunca rodou em hardware: teste primeiro num repro barato e sem valor.
+
+- **NES/Famicom:** NES Maker (mapper 30, até 512 KB) e A29040B (mapper 0, 16/32 KB + CHR 0/8 KB). `dumper rom-write -s nes -i jogo.nes --yes`; o chip sai do mapper do cabeçalho.
+- **SNES:** repro com **um chip de flash CFI de 2 ou 4 MB**. Você escolhe a fiação do cartucho: `dumper rom-write -s snes -i jogo.sfc --chip snes-lorom --yes` (ou `snes-hirom`). O cabeçalho de copiadora de 512 bytes é removido sozinho. Na GUI: sistema SNES, "Chip de flash", botão "Gravar ROM". Repros com 2 ou 4 chips ou de 8 MB ainda não são suportados.
+- Depois de gravar, o programa **lê a ROM de volta e compara** (desligue com `--no-verify`). Se a gravação falhar no meio, o chip fica apagado ou pela metade: regrave.
+
 ### 2.7 Usar vários sistemas na mesma sessão
 Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1). SNES, NES e Famicom usam 5 V; GBA 3,3 V. Nunca com dois cartuchos nos slots.
 

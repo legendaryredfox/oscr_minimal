@@ -58,7 +58,7 @@ object Cli {
         EXIT_INTERRUPTED to "interrupted (Ctrl+C)",
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout")
+    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity")
     private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "no-verify", "help", "version")
     private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
@@ -97,7 +97,9 @@ options (accepted before or after the command):
   --db PATH            game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
   --game NAME          dump, NES/Famicom: game name in the NES 2.0 XML database; fills --mapper/--prg/--chr left at 0
   --limit N            search: maximum results (default 20)
-  --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0); default: from the file's iNES mapper
+  --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
+                       SNES: snes-lorom or snes-hirom (required, the wiring of the CFI flash)
+  --capacity KB        rom-write, SNES: flash size, 2048 or 4096 (default: the smallest the ROM fits)
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
   --no-verify          rom-write: do not read the ROM back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
@@ -398,10 +400,13 @@ Full contract: docs/cli.md
     private fun cmdRomWrite(io: CliIo, a: Args): Int {
         val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
         val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
-        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.MOCK)
-            throw CliError("usage", "rom-write exists only for NES and Famicom so far (NES Maker and A29040B flash); see docs/funcoes-oscr.md", EXIT_USAGE)
+        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MOCK)
+            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash) and SNES (CFI flash of 2 or 4 MB); see docs/funcoes-oscr.md", EXIT_USAGE)
         val chipOpt = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
-        val (chip, img) = try { RomImages.prepare(File(input).readBytes(), chipOpt) }
+        if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
+        if (sys == CartSystem.SNES && chipOpt == null) throw CliError("usage", "on the SNES choose the flash wiring with --chip snes-lorom or --chip snes-hirom (the ROM alone does not say how the cartridge was built)", EXIT_USAGE)
+        val capacityOpt = a.opts["capacity"]?.let { it.toIntOrNull() ?: throw CliError("usage", "--capacity needs a number of KB (2048 or 4096)", EXIT_USAGE) }
+        val (chip, img) = try { RomImages.prepare(File(input).readBytes(), chipOpt, capacityOpt) }
         catch (e: RomImageException) {
             val msg = when (e.problem) {
                 RomImageProblem.TRUNCATED_HEADER -> "incomplete iNES header"
@@ -410,11 +415,17 @@ Full contract: docs/cli.md
                 RomImageProblem.NEEDS_HEADER -> "the A29040B needs a .nes file with an iNES header (PRG and CHR come from the header)"
                 RomImageProblem.RAW_SIZE -> "raw file: the size must be a multiple of 16 KB (use a .nes with header, or raw PRG)"
                 RomImageProblem.CHIP_UNKNOWN -> "cannot tell the chip: use --chip nesmaker (mapper 30) or --chip a29040b (mapper 0)"
+                RomImageProblem.SNES_SIZE -> "the SNES ROM size must be a multiple of 1 KB (with or without the 512-byte copier header)"
+                RomImageProblem.SNES_TOO_BIG -> "the ROM has ${e.a} KB; the SNES writer covers a single 2 MB or 4 MB flash chip (the 2 and 4 chip options of the OSCR do not exist here yet)"
+                RomImageProblem.SNES_NO_FIT -> "the ROM has ${e.a} KB and does not fit a ${e.b} KB flash"
+                RomImageProblem.SNES_CAPACITY -> "flash capacity: 2048 or 4096 (KB)"
+                RomImageProblem.SNES_NEEDS_CHIP -> "on the SNES choose --chip snes-lorom or --chip snes-hirom"
             }
             throw CliError(if (e.problem == RomImageProblem.CHIP_UNKNOWN) "usage" else "bad_rom", msg, EXIT_USAGE)
         }
         if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err("warning: the file is mapper ${img.mapper}, but chip ${chip.key} belongs to mapper ${chip.mapper} cartridges")
-        val what = "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
+        val what = if (img.flashKb > 0) "${chip.label}: ROM ${img.prgKb} KB in a ${img.flashKb} KB flash (${img.body.size} bytes)"
+                   else "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
         if ("yes" !in a.flags) {
             if (!io.interactive) throw CliError("refused", "refused: writing the ROM ERASES the cartridge's flash chip. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")
             io.err("Write $what? This ERASES the current ROM of the cartridge. Continue? [y/N] ")
@@ -425,10 +436,11 @@ Full contract: docs/cli.md
         try {
             if (!c.info.writeRom) throw CliError("unsupported_firmware", "this firmware does not support WRITE_ROM", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
             val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()
-            crc = c.client.writeRom(sys, img.body, chip.code, img.prgKb, img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
+            crc = c.client.writeRom(sys, img.body, chip.code, if (img.flashKb > 0) img.flashKb else img.prgKb, img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
         } finally { c.transport.close() }
         val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
         val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
+        if (img.flashKb > 0) out["flash_kb"] = img.flashKb
         val lines = mutableListOf("ROM written: $what  CRC32 $hex")
         if ("no-verify" in a.flags || sys == CartSystem.MOCK) {          // o simulador não guarda a ROM gravada para ler de volta
             out["verify"] = "skipped"; lines += "verification after writing: skipped"

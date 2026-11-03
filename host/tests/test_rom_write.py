@@ -129,3 +129,56 @@ def test_rom_write_no_simulador_pula_a_conferencia(tmp_path, capsys):
     f.write_bytes(ines(32, 8, 0))
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--yes")
     assert code == 0 and json.loads(out)["verify"] == "skipped"
+
+
+# ---------------------------------------------------------------- SNES (flash CFI)
+def snes_rom(kb: int, copier: bool = False) -> bytes:
+    body = bytes((i * 5 + 3) & 0xFF for i in range(kb * 1024))
+    return (bytes(512) if copier else b"") + body
+
+
+def test_split_snes():
+    img = RI.split_snes(snes_rom(1024))
+    assert (img.prg_kb, img.flash_kb, img.chr_kb, len(img.body)) == (1024, 2048, 0, 1024 * 1024)
+    assert RI.split_snes(snes_rom(3072)).flash_kb == 4096
+    assert RI.split_snes(snes_rom(1024), 4096).flash_kb == 4096
+
+
+def test_split_snes_tira_cabecalho_de_copiadora():
+    img = RI.split_snes(snes_rom(512, copier=True))
+    assert len(img.body) == 512 * 1024 and img.body == snes_rom(512)
+
+
+def test_split_snes_erros():
+    with pytest.raises(ValueError):
+        RI.split_snes(bytes(1000))                    # não é múltiplo de 1 KB
+    with pytest.raises(ValueError):
+        RI.split_snes(snes_rom(6144))                 # 6 MB: precisa de 2 chips, ainda não existe
+    with pytest.raises(ValueError):
+        RI.split_snes(snes_rom(3072), 2048)           # não cabe
+    with pytest.raises(ValueError):
+        RI.split_snes(snes_rom(1024), 1024)           # capacidade que o firmware não aceita
+    with pytest.raises(ValueError):
+        RI.split_snes(b"")
+
+
+def test_rom_write_snes_simulado(tmp_path, capsys):
+    f = tmp_path / "jogo.sfc"
+    f.write_bytes(snes_rom(1024, copier=True))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "snes-lorom", "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["chip"] == "snes-lorom" and (o["prg_kb"], o["flash_kb"], o["bytes"]) == (1024, 2048, 1024 * 1024)
+
+
+def test_rom_write_snes_exige_chip(tmp_path, capsys):
+    f = tmp_path / "jogo.sfc"
+    f.write_bytes(snes_rom(512))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "snes", "-i", str(f), "--yes")
+    assert code == 64 and "snes-lorom" in json.loads(out)["error"]["message"]
+
+
+def test_rom_write_chip_de_nes_no_snes(tmp_path, capsys):
+    f = tmp_path / "jogo.sfc"
+    f.write_bytes(snes_rom(512))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "snes", "-i", str(f), "--chip", "nesmaker", "--yes")
+    assert code == 64 and json.loads(out)["error"]["kind"] == "usage"

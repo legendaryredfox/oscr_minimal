@@ -84,5 +84,42 @@ class RomWriteTest {
         val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--yes")
         assertTrue("\"verify\":\"skipped\"" in r.second, r.second)
     }
-}
 
+    // ---------------------------------------------------------------- SNES (flash CFI)
+    private fun snesRom(kb: Int, copier: Boolean = false): ByteArray = (if (copier) ByteArray(512) else ByteArray(0)) + ByteArray(kb * 1024) { ((it * 5 + 3) and 0xFF).toByte() }
+
+    @Test fun snesDividePorCapacidadeETiraCabecalhoDeCopiadora() {
+        val a = RomImages.splitSnes(snesRom(1024))
+        assertEquals(Triple(1024, 2048, 0), Triple(a.prgKb, a.flashKb, a.chrKb)); assertEquals(1024 * 1024, a.body.size)
+        assertEquals(4096, RomImages.splitSnes(snesRom(3072)).flashKb)
+        assertEquals(4096, RomImages.splitSnes(snesRom(1024), 4096).flashKb)
+        assertTrue(RomImages.splitSnes(snesRom(512, copier = true)).body.contentEquals(snesRom(512)))
+    }
+
+    @Test fun snesErros() {
+        assertEquals(RomImageProblem.SNES_SIZE, assertFailsWith<RomImageException> { RomImages.splitSnes(ByteArray(1000)) }.problem)
+        assertEquals(RomImageProblem.SNES_SIZE, assertFailsWith<RomImageException> { RomImages.splitSnes(ByteArray(0)) }.problem)
+        assertEquals(RomImageProblem.SNES_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitSnes(snesRom(6144)) }.problem)
+        assertEquals(RomImageProblem.SNES_NO_FIT, assertFailsWith<RomImageException> { RomImages.splitSnes(snesRom(3072), 2048) }.problem)
+        assertEquals(RomImageProblem.SNES_CAPACITY, assertFailsWith<RomImageException> { RomImages.splitSnes(snesRom(1024), 1024) }.problem)
+    }
+
+    @Test fun chipsPorSistema() {
+        assertEquals(listOf(FlashChip.SNES_LOROM, FlashChip.SNES_HIROM), FlashChip.forSystem(CartSystem.SNES))
+        assertEquals(listOf(FlashChip.NESMAKER, FlashChip.A29040B), FlashChip.forSystem(CartSystem.NES))
+        assertEquals(FlashChip.entries.toList(), FlashChip.forSystem(CartSystem.MOCK))
+    }
+
+    @Test fun romWriteSnesSimulado() {
+        val d = tmp(); val f = File(d, "jogo.sfc").also { it.writeBytes(snesRom(1024, copier = true)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--chip", "snes-lorom", "--yes")
+        assertEquals(0, r.first, r.second)
+        assertTrue("\"chip\":\"snes-lorom\"" in r.second); assertTrue("\"flash_kb\":2048" in r.second); assertTrue("\"bytes\":1048576" in r.second)
+    }
+
+    @Test fun romWriteSnesExigeChipDoSnes() {
+        val d = tmp(); val f = File(d, "jogo.sfc").also { it.writeBytes(snesRom(512)) }
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "snes", "-i", f.path, "--yes").first)
+        assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "snes", "-i", f.path, "--chip", "nesmaker", "--yes").first)
+    }
+}
