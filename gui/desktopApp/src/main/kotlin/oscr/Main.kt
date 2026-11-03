@@ -105,6 +105,7 @@ fun App() {
     var pending by remember { mutableStateOf<Pending?>(null) }
     var writeReq by remember { mutableStateOf<WriteRequest?>(null) }
     var romReq by remember { mutableStateOf<RomWriteRequest?>(null) }
+    var verifyRom by remember { mutableStateOf(Prefs.verifyRom) }
     var romChip by remember { mutableStateOf<FlashChip?>(null) }          // null = automático (pelo mapper do cabeçalho)
     var backupFirst by remember { mutableStateOf(true) }
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
@@ -324,7 +325,12 @@ fun App() {
         run(S.STAGE_WRITING_ROM) {
             val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker()) }
             say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
-            say(t(S.ROM_VERIFY_HINT))
+            if (verifyRom) {
+                stage = S.STAGE_VERIFYING_ROM; progress = 0f
+                val v = withContext(Dispatchers.IO) { verifyWritten(c, system, req.chip, req.image, ticker()) }
+                fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
+                say(if (v.ok) f(S.ROM_VERIFY_OK, v.readBytes, hex(v.readCrc)) else t(S.ERR_PREFIX) + ": " + f(S.ROM_VERIFY_BAD, v.firstDiff ?: 0, hex(v.readCrc), hex(v.expectedCrc)))
+            } else say(t(S.ROM_VERIFY_HINT))
         }
     }
 
@@ -462,6 +468,9 @@ fun App() {
                     DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
                     FlashChip.entries.forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
                 }
+            }
+            if (stub == null && isNes) Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(verifyRom, { verifyRom = it; Prefs.verifyRom = it }); Text(t(S.VERIFY_AFTER), style = MaterialTheme.typography.bodyMedium)
             }
             Text(if (stub == null && isNes) (if (info?.writeRom == false && connected) t(S.ROM_NO_FW) else t(S.ROM_WRITE_HINT)) else t(S.ROM_ONLY_NES),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)

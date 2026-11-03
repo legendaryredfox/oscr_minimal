@@ -90,3 +90,42 @@ def test_info_do_simulador_anuncia_write_rom():
     t, _dev, _stop, _th = sim.start()
     assert Client(t, timeout=0.5).info()["write_rom"] is True
     t.close()
+
+
+# ---- conferência depois de gravar
+
+class FakeClient:
+    def __init__(self, data: bytes):
+        self.data, self.calls = data, []
+
+    def dump_rom(self, system, block, progress, mapper, prg_kb, chr_kb):
+        self.calls.append((system, mapper, prg_kb, chr_kb))
+        from types import SimpleNamespace
+        return SimpleNamespace(data=self.data)
+
+
+def test_verify_ok_tira_o_cabecalho_sintetico():
+    raw = ines(32, 8, 0)
+    img = RI.split_image(raw, "a29040b")
+    c = FakeClient(raw)                                   # o firmware devolve cabeçalho iNES + PRG + CHR
+    v = RI.verify_written(c, 2, "a29040b", img)
+    assert v.ok and v.first_diff is None and c.calls == [(2, 0, 32, 8)]
+
+
+def test_verify_acha_o_primeiro_byte_diferente():
+    raw = ines(512, 0, 30)
+    img = RI.split_image(raw, "nesmaker")
+    bad = bytearray(raw)
+    bad[16 + 1234] ^= 0xFF
+    c = FakeClient(bytes(bad))
+    v = RI.verify_written(c, 2, "nesmaker", img)
+    assert not v.ok and v.first_diff == 1234 and c.calls == [(2, 30, 512, 0)]
+    short = RI.verify_written(FakeClient(raw[:-100]), 2, "nesmaker", img)
+    assert not short.ok and short.first_diff == len(img.body) - 100
+
+
+def test_rom_write_no_simulador_pula_a_conferencia(tmp_path, capsys):
+    f = tmp_path / "jogo.nes"
+    f.write_bytes(ines(32, 8, 0))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--yes")
+    assert code == 0 and json.loads(out)["verify"] == "skipped"

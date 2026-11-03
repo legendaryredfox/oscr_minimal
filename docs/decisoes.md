@@ -76,6 +76,7 @@
 - **D75** Fork do OSCR: NES/Famicom ligado ao protocolo (2026-11-03)
 - **D76** Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
 - **D77** Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
+- **D78** Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -623,3 +624,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Protocolo:** novo `WRITE_ROM` (`0x0B`), erro `0x000B` (flash não reconhecida), bit 3 de `INFO_RESP.flags`. `Backend::rom_prepare` roda antes do primeiro `ACK` (confere o chip e apaga) porque a UART do AVR perderia blocos durante um apagamento de segundos; o host espera até 90 s e nunca reenvia o comando. Detalhes em `docs/protocolo.md` seção 9.
 - **PC:** `host/oscr_host/romimage.py` e `gui/shared/.../RomImage.kt` tiram o cabeçalho iNES e escolhem o chip (mapper 30 = NES Maker, 0 = A29040B); CLI `rom-write` (as duas); GUI: botão "Gravar ROM" no cartão Gravação, seletor de chip e confirmação que avisa que o chip é apagado. Textos novos nos 4 idiomas.
 - **Estado:** compila; testado no PC só o protocolo e o PC (simulador, sessão C++ real em modo fluxo: apagar antes do ACK, chip 9 = não reconhecido, tamanho errado, dado errado). **Nunca rodou em cartucho.** Falta: leitura do mapper 30 (para conferir depois de gravar), e as outras flash do inventário.
+
+### D78 — Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
+- O `rom-write` (as duas CLIs) e a GUI **leem a ROM de volta e comparam** com o que foi enviado, por padrão: `DUMP_ROM` com o mapper do chip e os tamanhos gravados, sem o cabeçalho iNES sintético, byte a byte. Se difere: erro `verify_failed` (CLI) ou aviso na GUI com o primeiro offset diferente e os CRC32 lido e esperado. `--no-verify` e a caixa "Conferir depois de gravar" desligam. No simulador (`mock`) a conferência é pulada, porque ele não guarda a ROM gravada.
+- Para o NES Maker ser conferível, o **mapper 30** (UNROM 512) entrou na leitura: `nesCheckRom` aceita PRG até 512 KB e só CHR-RAM; o `readPRG` do OSCR já tinha o caso 30, então nenhum código do upstream mudou. Entrou nas listas de mappers (CLI, GUI nos 4 idiomas, `docs/uso.md`, `docs/protocolo.md`, `docs/limites-nes.md`), com teste de sincronia.
+- Limite honesto: a conferência pega gravação errada e setor apagado, mas não distingue "o chip gravou errado" de "o barramento leu errado"; um `verify_failed` pede limpar contatos e regravar. Nunca rodou em cartucho.
+

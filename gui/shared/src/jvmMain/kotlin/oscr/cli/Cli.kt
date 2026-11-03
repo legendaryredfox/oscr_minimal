@@ -59,7 +59,7 @@ object Cli {
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
     private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout")
-    private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "help", "version")
+    private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "no-verify", "help", "version")
     private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
         "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "mock" to emptyList())
@@ -99,6 +99,7 @@ options (accepted before or after the command):
   --limit N            search: maximum results (default 20)
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0); default: from the file's iNES mapper
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
+  --no-verify          rom-write: do not read the ROM back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
   --no-backup          save-write: do not read the current save first
   --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)
@@ -427,8 +428,20 @@ Full contract: docs/cli.md
             crc = c.client.writeRom(sys, img.body, chip.code, img.prgKb, img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
         } finally { c.transport.close() }
         val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
-        emit(io, a, Json.obj("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex),
-            listOf("ROM written: $what  CRC32 $hex", "to verify, read the cartridge back (dump) and compare the CRC32"))
+        val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
+        val lines = mutableListOf("ROM written: $what  CRC32 $hex")
+        if ("no-verify" in a.flags || sys == CartSystem.MOCK) {          // o simulador não guarda a ROM gravada para ler de volta
+            out["verify"] = "skipped"; lines += "verification after writing: skipped"
+        } else {
+            val c2 = connect(io, a)
+            val v = try { verifyWritten(c2.client, sys, chip, img, progress(io, a, "verify")) } finally { c2.transport.close() }
+            val vj = Json.obj("ok" to v.ok, "read_crc32" to hex8(v.readCrc), "expected_crc32" to hex8(v.expectedCrc), "first_diff" to v.firstDiff, "read_bytes" to v.readBytes)
+            out["verify"] = vj
+            if (!v.ok) throw CliError("verify_failed", "the ROM read back does NOT match what was written (first differing byte at offset ${v.firstDiff}; read ${hex8(v.readCrc)}, expected ${hex8(v.expectedCrc)})",
+                EXIT_ERROR, "clean the contacts, check that the chip is the one chosen and write again; the chip may be erased or half written", mapOf("written" to out, "first_diff" to v.firstDiff))
+            lines += "verification after writing: OK (read ${v.readBytes} bytes, CRC32 ${hex8(v.readCrc)})"
+        }
+        emit(io, a, out, lines)
         return EXIT_OK
     }
 

@@ -17,6 +17,7 @@ object Prefs {
     var saveReport: Boolean get() = safe(true) { p.getBoolean("saveReport", true) }; set(v) = safe(Unit) { p.putBoolean("saveReport", v) }
     /** Bases de dados de jogos (arquivos ou pastas), uma por linha. */
     var dbPaths: List<String> get() = safe(emptyList()) { p.get("dbPaths", "").split("\n").filter { it.isNotEmpty() } }; set(v) = safe(Unit) { p.put("dbPaths", v.joinToString("\n")) }
+    var verifyRom: Boolean get() = safe(true) { p.getBoolean("verifyRom", true) }; set(v) = safe(Unit) { p.putBoolean("verifyRom", v) }
     var winW: Int get() = safe(1000) { p.getInt("winW", 1000) }; set(v) = safe(Unit) { p.putInt("winW", v) }
     var winH: Int get() = safe(820) { p.getInt("winH", 820) }; set(v) = safe(Unit) { p.putInt("winH", v) }
 }

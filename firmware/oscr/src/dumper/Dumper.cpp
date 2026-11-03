@@ -232,11 +232,11 @@ namespace OSCR::Dumper
     {
       bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 9 || m == 10 || m == 11 || m == 33 || m == 48 || m == 66 || m == 69 || m == 70 || m == 71
                    || m == 75 || m == 78 || m == 79 || m == 87 || m == 118 || m == 206
-                   || m == 13 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184;
+                   || m == 13 || m == 30 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184;
       if (!known) return oscr::E_SISTEMA;
       // O núcleo do OSCR conta bancos em potências de 2 (NES_PRG e NES_CHR são expoentes).
       if (prg == 0 || prg % 16 != 0 || chr % 8 != 0 || !isPow2(prg / 16) || (chr && !isPow2(chr / 8))) return oscr::E_ARGUMENTO;
-      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 73 || m == 93 || m == 94 || m == 180) && chr != 0) return oscr::E_ARGUMENTO;     // CHR-RAM
+      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 30 || m == 73 || m == 93 || m == 94 || m == 180) && chr != 0) return oscr::E_ARGUMENTO;     // CHR-RAM
       if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206 || m == 67 || m == 68 || m == 72 || m == 92 || m == 86 || m == 140 || m == 152 || m == 184) && chr == 0) return oscr::E_ARGUMENTO;   // CHR-ROM
       if ((m == 7 || m == 11 || m == 66 || m == 79 || m == 34 || m == 86 || m == 140 || m == 13) && prg % 32 != 0) return oscr::E_ARGUMENTO;
       if (((m == 0 || m == 3) && prg > 32) || (m == 1 && (prg > 256 || chr > 128)) || (m == 4 && (prg > 512 || chr > 256)) || ((m == 9 || m == 10) && chr > 128) || (m == 69 && chr > 256)) return oscr::E_SISTEMA;
@@ -245,7 +245,7 @@ namespace OSCR::Dumper
           || ((m == 33 || m == 48) && (prg > 256 || chr > 256)) || (m == 70 && (prg > 256 || chr > 128)) || (m == 75 && (prg > 128 || chr > 128))
           || (m == 78 && (prg > 128 || chr > 128)) || (m == 79 && (prg > 64 || chr > 64)) || (m == 87 && (prg > 32 || chr > 32))
           || (m == 118 && (prg > 512 || chr > 256)) || (m == 206 && (prg > 128 || chr > 64))
-          || (m == 13 && prg > 32) || (m == 34 && (prg > 512 || chr > 64)) || (m == 67 && (prg > 128 || chr > 128)) || (m == 68 && (prg > 256 || chr > 256))
+          || (m == 30 && prg > 512) || (m == 13 && prg > 32) || (m == 34 && (prg > 512 || chr > 64)) || (m == 67 && (prg > 128 || chr > 128)) || (m == 68 && (prg > 256 || chr > 256))
           || (m == 72 && (prg > 128 || chr > 128)) || (m == 92 && (prg > 256 || chr > 128)) || (m == 73 && prg > 128) || (m == 86 && (prg > 128 || chr > 64))
           || ((m == 93 || m == 94 || m == 180) && prg > 128) || (m == 140 && (prg > 128 || chr > 128)) || (m == 152 && (prg > 128 || chr > 128))
           || (m == 184 && (prg > 32 || chr > 32))) return oscr::E_SISTEMA;

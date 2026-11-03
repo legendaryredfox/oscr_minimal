@@ -67,4 +67,22 @@ class RomWriteTest {
         val crc = c.writeRom(CartSystem.MOCK, ByteArray(16384) { 3 }, 1, 16, 0)
         assertEquals(crc32(ByteArray(16384) { 3 }), crc); assertEquals(Triple(1, 16, 0), dev.lastRomOptions)
     }
+
+    @Test fun conferenciaDepoisDeGravar() {
+        val c = OscrClient(SimDevice(), 500, 5000)
+        val ok = verifyWritten(c, CartSystem.MOCK, FlashChip.A29040B, RomImage(mockData(), 32, 0, 0))
+        assertTrue(ok.ok); assertNull(ok.firstDiff)
+        val bad = mockData().also { it[1234] = (it[1234].toInt() xor 0xFF).toByte() }
+        val v = verifyWritten(c, CartSystem.MOCK, FlashChip.A29040B, RomImage(bad, 32, 0, 0))
+        assertFalse(v.ok); assertEquals(1234, v.firstDiff)
+        val short = verifyWritten(c, CartSystem.MOCK, FlashChip.A29040B, RomImage(mockData().copyOf(mockData().size + 10), 32, 0, 0))
+        assertFalse(short.ok); assertEquals(mockData().size, short.firstDiff)
+    }
+
+    @Test fun simuladorPulaAConferencia() {
+        val d = tmp(); val f = File(d, "jogo.nes").also { it.writeBytes(ines(32, 8, 0)) }
+        val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--yes")
+        assertTrue("\"verify\":\"skipped\"" in r.second, r.second)
+    }
 }
+

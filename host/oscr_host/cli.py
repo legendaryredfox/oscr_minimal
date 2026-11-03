@@ -381,8 +381,24 @@ def cmd_rom_write(args) -> int:
                           _progress("write-rom", args.progress), args.begin_timeout)
     finally:
         t.close()
-    emit(args, {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"},
-         [f"ROM gravada: {what}  CRC32 {crc:08X}", "para conferir, leia o cartucho de volta (dump) e compare o CRC32"])
+    out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}
+    lines = [f"ROM gravada: {what}  CRC32 {crc:08X}"]
+    if args.no_verify or args.system == "mock":      # o simulador não guarda a ROM gravada para ler de volta
+        out["verify"] = "skipped"
+        lines.append("conferência depois de gravar: pulada")
+    else:
+        c2, t2, _ = connect(args)
+        try:
+            v = RI.verify_written(c2, system_id(args.system), chip, img, _progress("verify", args.progress))
+        finally:
+            t2.close()
+        out["verify"] = v.to_dict()
+        if not v.ok:
+            raise CliError("verify_failed", f"a ROM lida de volta NÃO confere com a gravada (primeiro byte diferente no offset {v.first_diff}; lido {v.read_crc32:08X}, esperado {v.expected_crc32:08X})",
+                           EXIT_ERROR, "limpe os contatos, confira se o chip é o escolhido e grave de novo; o chip pode estar apagado ou pela metade",
+                           written=out, first_diff=v.first_diff)
+        lines.append(f"conferência depois de gravar: OK (leu {v.read_bytes} bytes, CRC32 {v.read_crc32:08X})")
+    emit(args, out, lines)
     return 0
 
 
@@ -455,7 +471,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp_.add_argument("query", help="palavras do nome (todas precisam aparecer)")
     sp_.add_argument("--limit", type=int, default=20, help="máximo de resultados (padrão 20)")
     dp = add("dump", cmd_dump, "lê a ROM", out=True)
-    dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206)")
+    dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206)")
     dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive e SNES ExHiROM: tamanho da ROM em KB (0 = pelo cabeçalho)")
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
     dp.add_argument("--game", help="NES/Famicom: nome do jogo na base NES 2.0 XML (--db); preenche --mapper, --prg e --chr que ficaram em 0")
@@ -470,6 +486,7 @@ def build_parser() -> argparse.ArgumentParser:
     rp.set_defaults(system="nes")
     rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (padrão: pelo mapper do cabeçalho: 30 = nesmaker, 0 = a29040b)")
     rp.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
+    rp.add_argument("--no-verify", action="store_true", help="não lê a ROM de volta para conferir depois de gravar (padrão: confere)")
     rp.add_argument("--begin-timeout", type=float, default=90.0, help="segundos de espera pelo apagamento antes dos dados (padrão 90)")
     return ap
 

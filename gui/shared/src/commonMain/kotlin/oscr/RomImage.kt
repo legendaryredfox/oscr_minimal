@@ -42,3 +42,24 @@ object RomImages {
         return inferred to split(data, inferred)
     }
 }
+
+class VerifyResult(val ok: Boolean, val readCrc: Int, val expectedCrc: Int, val firstDiff: Int?, val readBytes: Int)
+
+/**
+ * Confere a gravação: lê o cartucho de volta (DUMP_ROM com o mapper do chip e os tamanhos gravados) e compara com o que foi enviado.
+ * O OSCR original só confere cada byte durante a gravação; esta leitura completa pega também o que mudou depois. Igual a verify_written em romimage.py.
+ */
+fun verifyWritten(client: OscrClient, system: CartSystem, chip: FlashChip, img: RomImage, progress: Progress? = null): VerifyResult {
+    val res = client.dumpRom(system, 0, chip.mapper, img.prgKb, img.chrKb, progress)
+    val d = res.data
+    val hasHeader = d.size >= 4 && d[0] == 'N'.code.toByte() && d[1] == 'E'.code.toByte() && d[2] == 'S'.code.toByte() && d[3] == 0x1A.toByte()
+    val read = if (hasHeader) d.copyOfRange(16, d.size) else d       // o firmware acrescenta um cabeçalho iNES sintético
+    val exp = img.body
+    var diff: Int? = null
+    if (!read.contentEquals(exp)) {
+        val n = minOf(read.size, exp.size)
+        diff = (0 until n).firstOrNull { read[it] != exp[it] } ?: n
+    }
+    return VerifyResult(diff == null, crc32(read), crc32(exp), diff, read.size)
+}
+

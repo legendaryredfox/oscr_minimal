@@ -33,6 +33,7 @@ enum class S {
     READ_SECTION, WRITE_SECTION,
     SETTINGS, DB_TITLE, DB_HINT, DB_CHOOSE, DB_CLEAR, DB_LOADING, DB_LOADED, DB_NONE, DB_ERROR, GAME_LABEL, GAME_NOT_FOUND, GAME_SEARCH, GAME_FILLED, GAME_NO_RESULTS, SOON_TITLE, SOON_HINT, STUB_NOTICE, CONNECTION_TITLE, CARTRIDGE_TITLE,
     ERR_DEV_11, WRITE_ROM, FLASH_CHIP, FLASH_CHIP_AUTO, ROM_WRITE_HINT, CONFIRM_ROM_TITLE, CONFIRM_ROM_BODY, STAGE_WRITING_ROM, ROM_WRITTEN, ROM_VERIFY_HINT, ROM_NO_FW, ROM_ONLY_NES, RIMG_TRAINER, RIMG_SIZE, RIMG_NEEDS_HEADER, RIMG_RAW, RIMG_CHIP, RIMG_TRUNCATED,
+    VERIFY_AFTER, STAGE_VERIFYING_ROM, ROM_VERIFY_OK, ROM_VERIFY_BAD,
 }
 
 object I18n {
@@ -49,7 +50,7 @@ object I18n {
         S.PRG_KB to "PRG (KB)",
         S.CHR_KB to "CHR (KB)",
         S.RAM_KB to "RAM (KB)",
-        S.NES_HINT to "Mapper 0: deixe tudo em 0. Outros (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): informe mapper, PRG e CHR (do No-Intro/NESCartDB). Save do mapper 1 com 16 ou 32 KB (SOROM/SXROM): informe a RAM em KB (0 = 8 KB).",
+        S.NES_HINT to "Mapper 0: deixe tudo em 0. Outros (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): informe mapper, PRG e CHR (do No-Intro/NESCartDB). Save do mapper 1 com 16 ou 32 KB (SOROM/SXROM): informe a RAM em KB (0 = 8 KB).",
         S.TITLE to "Dumper de cartuchos",
         S.LANGUAGE to "Idioma",
         S.PORT to "Porta serial",
@@ -95,7 +96,7 @@ object I18n {
         S.HELP_USE_3 to "Restaurar o save: Gravar save com um arquivo do tamanho exato do save. A gravação é conferida (CRC32 e leitura de volta).",
         S.HELP_USE_4 to "Conferir um cartucho (compra ou venda): Detectar mostra título e tamanhos; o CRC32 mostra se a ROM é a esperada.",
         S.HELP_USE_5 to "Testar sem cartucho: com o firmware em modo de teste, o sistema MOCK devolve dados conhecidos e confirma cabo, driver e permissões.",
-        S.HELP_USE_6 to "Limites atuais: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 e SA-1 (este exige o módulo Si5351 e o PIC montados), NES e Famicom mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 e 206 (informe mapper e tamanhos), Mega Drive (ROM) e GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
+        S.HELP_USE_6 to "Limites atuais: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 e SA-1 (este exige o módulo Si5351 e o PIC montados), NES e Famicom mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 e 206 (informe mapper e tamanhos), Mega Drive (ROM) e GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
         S.HELP_FIX_1 to "Nenhuma porta aparece: use um cabo USB de dados (não só de carga); no Linux entre no grupo dialout; no Windows/macOS instale o driver CH340 se o Mega for clone.",
         S.HELP_FIX_2 to "Não conecta ou dá tempo esgotado: feche outros programas que usem a porta, reconecte o cabo e tente 115200 baud.",
         S.HELP_FIX_3 to "Cartucho não detectado: encaixe até o fim, um cartucho por vez, limpe os contatos com álcool isopropílico e confira o sistema escolhido.",
@@ -214,6 +215,10 @@ object I18n {
         S.RIMG_RAW to "Arquivo cru: o tamanho precisa ser múltiplo de 16 KB.",
         S.RIMG_CHIP to "Não deu para saber o chip pelo mapper do arquivo: escolha o chip.",
         S.RIMG_TRUNCATED to "Cabeçalho iNES incompleto.",
+        S.VERIFY_AFTER to "Conferir depois de gravar (lê a ROM de volta)",
+        S.STAGE_VERIFYING_ROM to "Conferindo a ROM gravada (lendo de volta)",
+        S.ROM_VERIFY_OK to "Conferência OK: a ROM lida de volta é igual à gravada ({0} bytes, CRC32 {1})",
+        S.ROM_VERIFY_BAD to "ATENÇÃO: a ROM lida de volta NÃO confere (primeiro byte diferente no offset {0}; lido {1}, esperado {2}). Limpe os contatos e grave de novo; o chip pode estar apagado ou pela metade.",
         S.WRITE_SECTION to "Gravação (sobrescreve o cartucho)",
     )
     private val en = mapOf(
@@ -229,7 +234,7 @@ object I18n {
         S.PRG_KB to "PRG (KB)",
         S.CHR_KB to "CHR (KB)",
         S.RAM_KB to "RAM (KB)",
-        S.NES_HINT to "Mapper 0: leave all at 0. Others (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): enter mapper, PRG and CHR (from No-Intro/NESCartDB). Mapper 1 save with 16 or 32 KB (SOROM/SXROM): enter the RAM in KB (0 = 8 KB).",
+        S.NES_HINT to "Mapper 0: leave all at 0. Others (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): enter mapper, PRG and CHR (from No-Intro/NESCartDB). Mapper 1 save with 16 or 32 KB (SOROM/SXROM): enter the RAM in KB (0 = 8 KB).",
         S.TITLE to "Cartridge dumper",
         S.LANGUAGE to "Language",
         S.PORT to "Serial port",
@@ -275,7 +280,7 @@ object I18n {
         S.HELP_USE_3 to "Restore a save: Write save with a file of the exact save size. The write is verified (CRC32 and read-back).",
         S.HELP_USE_4 to "Check a cartridge (buying or selling): Detect shows the title and sizes; the CRC32 tells whether the ROM is the expected one.",
         S.HELP_USE_5 to "Test without a cartridge: with the firmware in test mode, the MOCK system returns known data and confirms cable, driver and permissions.",
-        S.HELP_USE_6 to "Current limits: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 and SA-1 (which needs the Si5351 module and the PIC fitted), NES and Famicom mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 and 206 (enter mapper and sizes), Mega Drive (ROM) and GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
+        S.HELP_USE_6 to "Current limits: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 and SA-1 (which needs the Si5351 module and the PIC fitted), NES and Famicom mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 and 206 (enter mapper and sizes), Mega Drive (ROM) and GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
         S.HELP_FIX_1 to "No port appears: use a data USB cable (not charge-only); on Linux join the dialout group; on Windows/macOS install the CH340 driver if the Mega is a clone.",
         S.HELP_FIX_2 to "Cannot connect or times out: close other programs using the port, replug the cable and try 115200 baud.",
         S.HELP_FIX_3 to "Cartridge not detected: insert it fully, one cartridge at a time, clean the contacts with isopropyl alcohol and check the selected system.",
@@ -394,6 +399,10 @@ object I18n {
         S.RIMG_RAW to "Raw file: the size must be a multiple of 16 KB.",
         S.RIMG_CHIP to "Could not tell the chip from the file's mapper: choose the chip.",
         S.RIMG_TRUNCATED to "Incomplete iNES header.",
+        S.VERIFY_AFTER to "Verify after writing (reads the ROM back)",
+        S.STAGE_VERIFYING_ROM to "Verifying the written ROM (reading back)",
+        S.ROM_VERIFY_OK to "Verification OK: the ROM read back equals the one written ({0} bytes, CRC32 {1})",
+        S.ROM_VERIFY_BAD to "WARNING: the ROM read back does NOT match (first differing byte at offset {0}; read {1}, expected {2}). Clean the contacts and write again; the chip may be erased or half written.",
         S.WRITE_SECTION to "Write (overwrites the cartridge)",
     )
     private val ru = mapOf(
@@ -409,7 +418,7 @@ object I18n {
         S.PRG_KB to "PRG (КБ)",
         S.CHR_KB to "CHR (КБ)",
         S.RAM_KB to "RAM (КБ)",
-        S.NES_HINT to "Mapper 0: оставьте всё равным 0. Другие (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): укажите маппер, PRG и CHR (из No-Intro/NESCartDB). Сохранение mapper 1 на 16 или 32 КБ (SOROM/SXROM): укажите RAM в КБ (0 = 8 КБ).",
+        S.NES_HINT to "Mapper 0: оставьте всё равным 0. Другие (1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206): укажите маппер, PRG и CHR (из No-Intro/NESCartDB). Сохранение mapper 1 на 16 или 32 КБ (SOROM/SXROM): укажите RAM в КБ (0 = 8 КБ).",
         S.TITLE to "Дамп картриджей",
         S.LANGUAGE to "Язык",
         S.PORT to "Последовательный порт",
@@ -455,7 +464,7 @@ object I18n {
         S.HELP_USE_3 to "Восстановление сохранения: «Записать сохранение» файлом точного размера. Запись проверяется (CRC32 и обратное чтение).",
         S.HELP_USE_4 to "Проверка картриджа (покупка или продажа): «Определить» показывает название и размеры; CRC32 покажет, та ли это ROM.",
         S.HELP_USE_5 to "Проверка без картриджа: при прошивке в тестовом режиме система MOCK возвращает известные данные и проверяет кабель, драйвер и права.",
-        S.HELP_USE_6 to "Текущие ограничения: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 и SA-1 (нужны модуль Si5351 и PIC), NES и Famicom мапперы 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 и 206 (укажите маппер и размеры), Mega Drive (ROM) и GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
+        S.HELP_USE_6 to "Текущие ограничения: SNES LoROM/HiROM/ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 и SA-1 (нужны модуль Si5351 и PIC), NES и Famicom мапперы 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184 и 206 (укажите маппер и размеры), Mega Drive (ROM) и GBA (ROM), Game Boy/Color (MBC1, 2, 3, 5).",
         S.HELP_FIX_1 to "Порт не появляется: используйте USB-кабель для данных (не только зарядный); в Linux добавьте себя в группу dialout; в Windows/macOS установите драйвер CH340, если Mega — клон.",
         S.HELP_FIX_2 to "Не подключается или тайм-аут: закройте другие программы, использующие порт, переподключите кабель и попробуйте 115200 бод.",
         S.HELP_FIX_3 to "Картридж не обнаружен: вставьте до упора, только один картридж, очистите контакты изопропиловым спиртом и проверьте выбранную систему.",
@@ -574,6 +583,10 @@ object I18n {
         S.RIMG_RAW to "Необработанный файл: размер должен быть кратен 16 КБ.",
         S.RIMG_CHIP to "Не удалось определить чип по мапперу файла: выберите чип.",
         S.RIMG_TRUNCATED to "Неполный заголовок iNES.",
+        S.VERIFY_AFTER to "Проверить после записи (читает ROM обратно)",
+        S.STAGE_VERIFYING_ROM to "Проверка записанного ROM (чтение обратно)",
+        S.ROM_VERIFY_OK to "Проверка пройдена: прочитанный ROM совпадает с записанным ({0} байт, CRC32 {1})",
+        S.ROM_VERIFY_BAD to "ВНИМАНИЕ: прочитанный обратно ROM НЕ совпадает (первый отличающийся байт по смещению {0}; прочитано {1}, ожидалось {2}). Почистите контакты и запишите снова; чип может быть стёрт или записан частично.",
         S.WRITE_SECTION to "Запись (перезаписывает картридж)",
     )
     private val zh = mapOf(
@@ -589,7 +602,7 @@ object I18n {
         S.PRG_KB to "PRG (KB)",
         S.CHR_KB to "CHR (KB)",
         S.RAM_KB to "RAM (KB)",
-        S.NES_HINT to "Mapper 0：全部保持为 0。其他（1、2、3、4、5、7、9、10、11、13、33、34、48、66、67、68、69、70、71、72、73、75、78、79、86、87、92、93、94、118、140、152、180、184、206）：填写 mapper、PRG 和 CHR（取自 No-Intro/NESCartDB）。mapper 1 存档为 16 或 32 KB（SOROM/SXROM）时，请填写 RAM 大小（KB，0 = 8 KB）。",
+        S.NES_HINT to "Mapper 0：全部保持为 0。其他（1、2、3、4、5、7、9、10、11、13、30、33、34、48、66、67、68、69、70、71、72、73、75、78、79、86、87、92、93、94、118、140、152、180、184、206）：填写 mapper、PRG 和 CHR（取自 No-Intro/NESCartDB）。mapper 1 存档为 16 或 32 KB（SOROM/SXROM）时，请填写 RAM 大小（KB，0 = 8 KB）。",
         S.TITLE to "卡带读取器",
         S.LANGUAGE to "语言",
         S.PORT to "串口",
@@ -635,7 +648,7 @@ object I18n {
         S.HELP_USE_3 to "恢复存档：用大小完全一致的文件点击“写入存档”。写入会被校验（CRC32 与回读）。",
         S.HELP_USE_4 to "检查卡带（买卖时）：“检测”会显示标题和大小；CRC32 可判断 ROM 是否正确。",
         S.HELP_USE_5 to "无卡带测试：固件处于测试模式时，MOCK 主机返回已知数据，可确认线缆、驱动和权限。",
-        S.HELP_USE_6 to "当前限制：SNES LoROM/HiROM/ExHiROM、SuperFX、S-DD1、SPC7110、Cx4 与 SA-1（需装好 Si5351 模块和 PIC）、NES 与 Famicom 的 mapper 0、1、2、3、4、5、7、9、10、11、13、33、34、48、66、67、68、69、70、71、72、73、75、78、79、86、87、92、93、94、118、140、152、180、184、206（需填写 mapper 和大小）、Mega Drive（ROM）、GBA（ROM）、Game Boy/Color（MBC1、2、3、5）。",
+        S.HELP_USE_6 to "当前限制：SNES LoROM/HiROM/ExHiROM、SuperFX、S-DD1、SPC7110、Cx4 与 SA-1（需装好 Si5351 模块和 PIC）、NES 与 Famicom 的 mapper 0、1、2、3、4、5、7、9、10、11、13、30、33、34、48、66、67、68、69、70、71、72、73、75、78、79、86、87、92、93、94、118、140、152、180、184、206（需填写 mapper 和大小）、Mega Drive（ROM）、GBA（ROM）、Game Boy/Color（MBC1、2、3、5）。",
         S.HELP_FIX_1 to "没有串口：请使用数据线（非仅充电线）；Linux 需加入 dialout 组；若 Mega 是克隆板，Windows/macOS 需安装 CH340 驱动。",
         S.HELP_FIX_2 to "无法连接或超时：关闭占用该串口的其他程序，重新插拔线缆，并尝试 115200 波特率。",
         S.HELP_FIX_3 to "检测不到卡带：插到底，一次只插一个，用异丙醇清洁触点，并确认所选主机正确。",
@@ -754,6 +767,10 @@ object I18n {
         S.RIMG_RAW to "原始文件：大小必须是 16 KB 的倍数。",
         S.RIMG_CHIP to "无法根据文件的 mapper 判断芯片：请选择芯片。",
         S.RIMG_TRUNCATED to "iNES 文件头不完整。",
+        S.VERIFY_AFTER to "写入后校验（读回 ROM）",
+        S.STAGE_VERIFYING_ROM to "正在校验已写入的 ROM（读回）",
+        S.ROM_VERIFY_OK to "校验通过：读回的 ROM 与写入的一致（{0} 字节，CRC32 {1}）",
+        S.ROM_VERIFY_BAD to "警告：读回的 ROM 与写入的不一致（首个不同字节在偏移 {0}；读到 {1}，应为 {2}）。请清洁触点后重新写入；芯片可能已被擦除或只写了一半。",
         S.WRITE_SECTION to "写入（会覆盖卡带）",
     )
     private val tables = mapOf(Lang.PT to pt, Lang.EN to en, Lang.RU to ru, Lang.ZH to zh)

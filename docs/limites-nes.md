@@ -6,7 +6,7 @@ A leitura do `readCHR` parou por volta do mapper 19 (a lista de CHR dos mappers 
 
 ## 1. O que o firmware faz hoje
 
-Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206 (36; o lote de D64 acrescentou 14). São 36 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/protocolo.md` e D50, D57.
+Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206 (36; o lote de D64 acrescentou 14). São 36 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/protocolo.md` e D50, D57.
 
 ## 2. Limites de tamanho dos mappers já suportados
 

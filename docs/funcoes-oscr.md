@@ -41,9 +41,9 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Escolher mapper, tamanhos e RAM (menu + banco CRDB) | **PC** (campos e base NES 2.0) | ✅ |
 | Identificar por CRC32 | **PC** (base No-Intro / NES 2.0) | ✅ |
 | Navegar a base de dados | **PC** | ✅ (busca) |
-| Mappers de leitura além dos 36 já ligados (o upstream trata mais de 100) | firmware | ⬜ (ver `docs/limites-nes.md`) |
-| Flash repro: NES Maker (SST 39SF040, mapper 30) | firmware (laço) + PC (arquivo) | ✅ `WRITE_ROM` (D77; nunca rodou; sem leitura de ROM do mapper 30 para conferir) |
-| Flash repro: A29040B (mapper 0, PRG e CHR) | firmware + PC | ✅ `WRITE_ROM` (D77; nunca rodou) |
+| Mappers de leitura além dos 37 já ligados (o upstream trata mais de 100; o 30 entrou em D78) | firmware | ⬜ (ver `docs/limites-nes.md`) |
+| Flash repro: NES Maker (SST 39SF040, mapper 30) | firmware (laço) + PC (arquivo) | ✅ `WRITE_ROM` (D77; nunca rodou); conferência por leitura de volta (D78) |
+| Flash repro: A29040B (mapper 0, PRG e CHR) | firmware + PC | ✅ `WRITE_ROM` (D77; nunca rodou); conferência por leitura de volta (D78) |
 | EEPROM 24C01/24C02 dos mappers 159 e 16 (ler e gravar) | firmware | ⬜ |
 
 ## Mega Drive / Genesis

@@ -47,3 +47,33 @@ def infer_chip(img: RomImage) -> Optional[str]:
         if img.mapper == m:
             return name
     return None
+
+
+@dataclass
+class VerifyResult:
+    ok: bool
+    read_crc32: int
+    expected_crc32: int
+    first_diff: Optional[int]       # offset (dentro de PRG+CHR) do primeiro byte diferente; None se iguais
+    read_bytes: int
+
+    def to_dict(self) -> dict:
+        return {"ok": self.ok, "read_crc32": f"{self.read_crc32:08X}", "expected_crc32": f"{self.expected_crc32:08X}",
+                "first_diff": self.first_diff, "read_bytes": self.read_bytes}
+
+
+def verify_written(client, system: int, chip: str, img: RomImage, progress=None) -> VerifyResult:
+    """Confere a gravação: lê o cartucho de volta (DUMP_ROM com o mapper do chip e os tamanhos gravados) e compara com o que foi enviado.
+
+    O OSCR original só confere cada byte durante a gravação (leituras logo depois de programar); esta leitura completa pega também
+    o que mudou depois (um setor apagado por engano, um banco que não responde)."""
+    import zlib
+
+    res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], img.prg_kb, img.chr_kb)
+    data = res.data[16:] if res.data[:4] == b"NES\x1a" else res.data      # o firmware acrescenta um cabeçalho iNES sintético
+    exp = img.body
+    diff = None
+    if data != exp:
+        diff = next((i for i in range(min(len(data), len(exp))) if data[i] != exp[i]), min(len(data), len(exp)))
+    return VerifyResult(diff is None, zlib.crc32(data), zlib.crc32(exp), diff, len(data))
+
