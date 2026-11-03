@@ -60,6 +60,7 @@
 - **D59** Correções das revisões de código e de UX/UI
 - **D60** Game Boy: MBC7 (ROM e EEPROM)
 - **D61** Game Boy: MMM01, MBC6 e TAMA5
+- **D62** NES: levantamento dos mappers do OSCR e limites (sem código novo)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -478,4 +479,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
   - **Gravação não foi portada** (`WRITE_SAVE` responde `0x0002`). A sequência do OSCR programa páginas de 128 bytes com AA/55/A0, grava `$00` no último endereço e espera ler `$80`, e apaga setores de 128 KB com AA/55/80/AA/55/30. Não consegui conferir o que o chip faz nesses passos (inclusive por que o fim do programa espera `$80` depois de gravar `$00`), e um erro aqui estragaria o save de 1 MB. Portar isso exige a folha de dados do chip ou um cartucho para experimentar.
 - **Testes:** `SimGb` ganhou MMM01 (menu no fim, trava, deslocamento, bancos), MBC6 (bancos de 8 KB, seleção ROM/Flash, SRAM, Flash atrás da trava `$1000`) e TAMA5 (nibbles do banco). Casos: ROM de 1 MB MMM01 por tipo e por título, com e sem save de 32 KB, 2 MB recusado; TAMA5 ROM; MBC6 ROM, save inteiro (com estado velho de seleção Flash), tudo desmapeado no fim, `WRITE_SAVE` recusado. 914 verificações; seis erros plantados (ordem dos nibbles do TAMA5, trava `$1000`, deslocamento do bloco do MMM01, seleção ROM do MBC6, map antes do save e reinício do MMM01) derrubam entre 1 e 3 cada, depois de o teste do MBC6 passar a plantar estado velho de seleção Flash; só sobrevive a remoção do reinício do MMM01 em `probe_gb`, que é defesa e já é coberta pelo `acquire`. ASan e UBSan limpos. Arduino compila (40,2 KB, 15%).
 - **Não validado em hardware.**
+
+### D62 — NES: levantamento dos mappers do OSCR e limites (sem código novo)
+- Li `readPRG` (inteiro) e `readCHR` (até o mapper 19) do `NES.ino` para escolher o próximo lote de mappers. Resultado em `docs/limites-nes.md`: os limites de tamanho dos 22 mappers que já temos; o que falta no `NesBus` (espera em ms para os mappers 34 e 60, pulsos de M2 do 57, escritas próprias do 19 e do 59); o que depende de variante ou submapper (VRC2/4/6, Bandai FCG); os clones de MMC3 com bloco externo e os multicartuchos (cada um uma sequência própria); e a lista dos mappers pequenos que dá para portar sem primitiva nova.
+- **Decisão:** o próximo lote começa pelos mappers da seção 4.5 (13, 180, 97, 93, 94, 73, 68, 72, 92, 140, 86, 152, 184), depois o 34 com `NesBus::wait_ms`. VRC e clones de MMC3 ficam para quando houver cartucho para testar.
+- Nenhuma mudança de firmware nesta entrada.
 
