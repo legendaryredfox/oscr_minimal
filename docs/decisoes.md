@@ -1,5 +1,65 @@
 # Log de decisões e desvios
 
+## Índice
+
+<!-- indice -->
+- **D1** Upstream mudou de estrutura (desvio da seção 2 do CLAUDE.md)
+- **D0** Git
+- **D2** HW5 usa "Mega Pro", este projeto usa Mega R3
+- **D3** Tensão
+- **D4** /CART do Mega Drive em D40 (divergência entre fontes)
+- **D5** D0/D1
+- **D6** Diferenças só de nome (mesmo pino)
+- **D7** `-fw` no Mega Drive
+- **D8** Clock
+- **D9** Pull-up
+- **D10** LED de status
+- **D11** Pinos do slot sem ligação
+- **D12** Famicom
+- **D13** Slots de cartucho
+- **D14** Mega 2560 R3
+- **D15** Módulo Si5351 (fotos do usuário)
+- **D16** Peças THT padrão
+- **D17** Medidas dos slots e cartuchos (pesquisa; usuário autorizou best guess)
+- **D18** Si5351 com pin headers (usuário)
+- **D19** KiCad atualizado de 9.0.9 para 10.0.8 (autorizado pelo usuário)
+- **D20** Limites do MCP descobertos
+- **D21** Esquemático (`hardware/dumper.kicad_sch`, folha A0)
+- **D22** GBA incluído (pedido do usuário), com ressalvas
+- **D23** Placa e layout
+- **D24** Silkscreen
+- **D25** Mecânica (a validar)
+- **D26** DRC (`kicad-cli pcb drc`, sem trilhas ainda)
+- **D27** Orientação da etiqueta (resposta do usuário)
+- **D28** GBA/GB entra na horizontal (usuário)
+- **D29** Silkscreen em português do Brasil (usuário)
+- **D30** Interface com o PC: USB-C (usuário, 2026-11-02)
+- **D31** Resultado
+- **D32** Arquivos e verificação
+- **D38** Firmware: leitores novos, em vez de copiar o Cart_Reader
+- **D39** GUI: russo e chinês, ajuda embutida
+- **D40** Documentação de uso
+- **D41** NES/Famicom: mappers 1, 2, 3, 4 e 7
+- **D42** GBA: leitura da SRAM de 32 KB
+- **D43** Mega Drive: SRAM e mapper SSF2
+- **D44** Mega Drive: tamanho da ROM e verificação do checksum; EEPROM fica de fora
+- **D45** NES/Famicom: saves de PRG-RAM (mappers 1 e 4)
+- **D46** GBA: leitura de saves Flash e EEPROM
+- **D47** Mega Drive: leitura de EEPROM serial (revisa D44)
+- **D48** GBA: gravação de saves (SRAM, Flash, EEPROM)
+- **D49** Mega Drive: gravação de EEPROM serial (revisa D47)
+- **D50** NES: mappers 5, 9, 10, 11, 66, 69 e 71 (leitura de ROM)
+- **D51** NES: RAM de 16 KB (SOROM) e 32 KB (SXROM) no MMC1
+- **D52** NES: save do MMC5 (8/16/32 KB) e do FME-7 (8 KB)
+- **D53** SNES: ExHiROM, e CS elevado na SRAM de HiROM/ExHiROM
+- **D54** SNES: SA-1 (ROM e BW-RAM) com driver do Si5351 e CIC
+- **D55** SNES: SuperFX, S-DD1, SPC7110, Cx4 e LoROM de mais de 3 MB
+- **D56** Game Boy / Game Boy Color pelo slot GBA (decisão do usuário, 2026-11-02)
+- **D57** NES: mais mappers (33, 48, 70, 75, 78, 79, 87, 118, 206) e escrita segura do MMC1
+- **D58** Revisões de código e de UX/UI
+- **D59** Correções das revisões de código e de UX/UI
+<!-- /indice -->
+
 ## Fase 1 — referência e pinmap (2026-11-02)
 
 ### Ambiente
@@ -392,3 +452,11 @@ Traduções feitas por mim (sem revisão de falante nativo): peça uma revisão.
 - Revisão da base toda e de UX/UI documentadas em `docs/revisao-codigo.md` e `docs/revisao-ux.md` (achados numerados C-xx e U-xx, com gravidade e recomendação).
 - **Corrigido na revisão:** limites de tamanho do NES que faltavam (MMC1 CHR 128 KB, MMC3 PRG 512 KB e CHR 256 KB, MMC2/MMC4 CHR 128 KB, FME-7 CHR 256 KB), que faziam o banco truncar em silêncio; e um estouro de deslocamento no simulador de teste do GB achado pelo UBSan. ASan e UBSan limpos em todo o firmware portátil (864 + 16 verificações).
 - **Abertos:** 7 de gravidade média e 9 baixas no código; 3 altas, 10 médias e 7 baixas em UX. Os de maior risco para o primeiro teste real: U-01, U-02, U-03, C-13, C-14, C-15.
+
+### D59 — Correções das revisões de código e de UX/UI
+Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`; o estado de cada achado está no fim dos dois documentos.
+- **Firmware:** `oscr_carts.cpp` dividido por sistema (`oscr_carts_{snes,nes,md,gba,gb}.cpp` e `oscr_carts_internal.h`; o núcleo guarda dispatch, leitura e gravação comuns); teste do HAL do AVR no PC com registradores e `Wire` simulados (`tests/test_avr_hal.cpp`, 41 verificações, conferem as sequências de porta, inclusive `write_reg_byte`); leitura da ROM do GBA por palavras; opções do comando limpas ao fim de todo comando (`DETECT` não herda nada); novo status 4 em `DETECT` (SNES e GB: há dados, checksum errado); `Wire.begin()` sem pull-ups internos no SDA/SCL (`-DOSCR_I2C_PULLUPS` religa), porque o módulo Si5351 é 3,3 V.
+- **Host Python:** `write` sincronizado e conferido; teto de tamanho e checagem do `kind` no `BEGIN`; checksum do cabeçalho do Game Boy; mensagens de erro com a ação a tomar; `save-write` pede confirmação (`--yes`), lê o save atual e guarda o backup antes de gravar; `--json`; nome do arquivo pelo título detectado e `.gbc`; teste que confere as listas de mappers entre firmware, CLI, GUI e docs.
+- **GUI:** erros viram códigos no código compartilhado e o texto sai de `I18n` nos 4 idiomas (nenhum texto fixo); validação de PRG/CHR/RAM/tamanho enquanto digita (`NesRules.kt`), nome do mapper; leitura pronta fica na memória até salvar; confirmação e backup antes de gravar; barra fixa de estado, progresso, velocidade e tempo restante; registro selecionável com copiar e salvar; estado por sistema; indicador de conexão, nome amigável da porta, desconexão detectada, fallback de baud automático; primeira execução guiada; preferências persistentes; atalhos; tema escuro; leitura e gravação em seções separadas.
+- **Repositório:** CI do GitHub (`.github/workflows/ci.yml`: firmware com sanitizers, compilação do Arduino, Python, Gradle), `tools/README.md`, índice em `decisoes.md` (`tools/gen_decisoes_index.py`).
+- **Ainda aberto:** U-18 (conferir com o slot físico o lado da etiqueta e a direção de entrada; só o hardware responde), tradução revista por falantes nativos de ru e zh, rótulos para leitor de tela, presets de mapper por jogo, mensagens de etapa vindas do firmware (`PROGRESSO`), a opção de forçar a leitura com cabeçalho inválido, e rodar o CI de fato (o arquivo foi escrito, mas não executado nesta máquina).

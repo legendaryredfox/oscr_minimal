@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import queue
+import threading
 import time
 
 
@@ -24,10 +25,14 @@ class SerialTransport(Transport):
 
         self.ser = serial.Serial(port, baud, timeout=0.05, write_timeout=2.0)
         self.baud = baud
+        self._wlock = threading.Lock()       # o Cancelar pode vir de outra thread: dois quadros não podem se intercalar
 
     def write(self, data: bytes) -> None:
-        self.ser.write(data)
-        self.ser.flush()
+        with self._wlock:
+            n = self.ser.write(data)
+            self.ser.flush()
+        if n is not None and n != len(data):
+            raise OSError(f"escrita parcial na porta serial: {n} de {len(data)} bytes")
 
     def read(self, size: int, timeout: float) -> bytes:
         end = time.monotonic() + timeout
@@ -76,13 +81,15 @@ class ProcessTransport(Transport):
         import os
         import subprocess
 
+        self._wlock = threading.Lock()
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
         self._fd = self.proc.stdout.fileno()
         self._os = os
 
     def write(self, data: bytes) -> None:
-        self.proc.stdin.write(data)
-        self.proc.stdin.flush()
+        with self._wlock:
+            self.proc.stdin.write(data)
+            self.proc.stdin.flush()
 
     def read(self, size: int, timeout: float) -> bytes:
         import select

@@ -543,7 +543,7 @@ static void test_snes() {
     CHECK(!be.write_begin(SYS_SNES, 4096, e2) && e2 == E_ARGUMENTO);
   }
   SimSnes bad(false, 9, 0, true); CartBackend be(&bad, nullptr, nullptr, nullptr);
-  DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 1);              // checksum não confere = sem cartucho
+  DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 4);              // há dados mas o checksum não confere = cabeçalho inválido
   std::vector<uint8_t> o; uint16_t err; dump(be, SYS_SNES, KIND_ROM, o, err); CHECK(err == E_SEM_CARTUCHO);
   SimSnes nosave(false, 9, 0); CartBackend b2(&nosave, nullptr, nullptr, nullptr);
   dump(b2, SYS_SNES, KIND_SAVE, o, err); CHECK(err == E_SEM_SAVE);
@@ -666,7 +666,7 @@ static void test_snes_sa1() {
   { SimSa1 s(10, 5); s.avail = false; CartBackend be(&s, nullptr, nullptr, nullptr);     // sem Si5351: o cabeçalho nunca aparece
     DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 1 && s.boots == 0); CHECK((be.flags() & 2) == 0); }
   { SimSa1 s(10, 5, true); CartBackend be(&s, nullptr, nullptr, nullptr);                // cabeçalho inválido mesmo com clocks
-    DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 1 && s.boots == 1 && !s.booted); }
+    DetectInfo d; be.detect(SYS_SNES, d); CHECK(d.status == 4 && s.boots == 1 && !s.booted); }
   { SimSa1 s(10, 5); s.lose_first = false; CartBackend be(&s, nullptr, nullptr, nullptr);   // gravação que não confere: falha
     std::vector<uint8_t> save(32768, 0x55); uint16_t e2 = 0; CHECK(be.write_begin(SYS_SNES, 32768, e2));
     s.sbwe = 0; s.cpu = false;                                         // simula a BW-RAM protegida
@@ -677,7 +677,7 @@ static void test_snes_sa1() {
     Counting plain(false, 9, 3); CartBackend be(&plain, nullptr, nullptr, nullptr); DetectInfo d; be.detect(SYS_SNES, d);
     CHECK(d.status == 0 && plain.boots == 0);
     Counting none(false, 9, 3, true); CartBackend b2(&none, nullptr, nullptr, nullptr); b2.detect(SYS_SNES, d);   // sem cartucho: tenta os clocks uma vez
-    CHECK(d.status == 1 && none.boots == 1); }
+    CHECK(d.status == 4 && none.boots == 1); }
 }
 
 static void test_gb() {
@@ -715,7 +715,7 @@ static void test_gb() {
   }
   // sem cartucho, checksum errado, mappers sem suporte
   { SimGb none(0x01, 4, 0); none.absent = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &none); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
-  { SimGb bad(0x01, 4, 0, "RUIM"); bad.rom[0x14D] ^= 0x55; CartBackend be(nullptr, nullptr, nullptr, nullptr, &bad); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
+  { SimGb bad(0x01, 4, 0, "RUIM"); bad.rom[0x14D] ^= 0x55; CartBackend be(nullptr, nullptr, nullptr, nullptr, &bad); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 4); }
   for (int t : {0x20, 0x22, 0x0B, 0xFD}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
   { SimGb s(0x01, 0x52, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }   // tamanho fora da tabela
   { SimGb s(0x01, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); CHECK((be.systems() >> SYS_GB) & 1); }
@@ -907,9 +907,10 @@ static void test_md_tamanho() {
   // tamanho informado vence o cabeçalho
   be.set_options(0, 8192, 0); CHECK(!be.open_read(SYS_MD, KIND_ROM, size, err) && err == E_ARGUMENTO);   // acima do limite de 4 MB
   be.set_options(0, 16, 0);   CHECK(!be.open_read(SYS_MD, KIND_ROM, size, err) && err == E_ARGUMENTO);   // abaixo de 32 KB
-  // DETECT ignora as opções; close_read as apaga
+  // DETECT ignora e apaga as opções (nada herdado entre comandos); close_read também as apaga
   be.set_options(0, 512, 0); be.detect(SYS_MD, d); CHECK(d.rom_size == 0x100000);
-  CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x80000); be.close_read();
+  CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x100000); be.close_read();
+  be.set_options(0, 512, 0); CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x80000); be.close_read();
   CHECK(be.open_read(SYS_MD, KIND_ROM, size, err) && size == 0x100000); be.close_read();
   // ROM real de 2 MB com cabeçalho correto não é reduzida
   SimMd real(0x200000); CartBackend b2(nullptr, nullptr, &real, nullptr); b2.detect(SYS_MD, d); CHECK(d.rom_size == 0x200000);
@@ -1065,6 +1066,14 @@ static void test_gba_write() {
 }
 
 static void test_gba() {
+  { SimGba g(1 << 20); CartBackend be(nullptr, nullptr, nullptr, &g);       // leitura por palavras: deslocamento e tamanho ímpares
+    uint32_t size = 0; uint16_t err = 0; CHECK(be.open_read(SYS_GBA, KIND_ROM, size, err));
+    std::vector<uint8_t> a(301), b(1024), one(1);
+    CHECK(be.read(SYS_GBA, KIND_ROM, 0, b.data(), 1024));
+    CHECK(be.read(SYS_GBA, KIND_ROM, 77, a.data(), 301));                    // começa e termina no meio de uma palavra
+    CHECK(memcmp(a.data(), &b[77], 301) == 0);
+    CHECK(be.read(SYS_GBA, KIND_ROM, 1, one.data(), 1) && one[0] == b[1]);
+    be.close_read(); }
   for (uint32_t mb : {1u, 4u, 16u}) {
     SimGba s(mb << 20); CartBackend be(nullptr, nullptr, nullptr, &s);
     DetectInfo d; be.detect(SYS_GBA, d);

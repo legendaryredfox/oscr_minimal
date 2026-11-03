@@ -90,6 +90,7 @@ void Session::handle() {
     case T_ABORT: send_offset(T_D_ACK, seq, 0); break;
     default: send_error(seq, E_COMANDO, "cmd"); break;
   }
+  be_.set_options(0, 0, 0);   // as opções valem para um comando só; nenhum estado herdado (inclusive nos erros precoces)
 }
 
 void Session::do_info(uint8_t seq) {

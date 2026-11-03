@@ -114,9 +114,62 @@ def test_cli_save_roundtrip(tmp_path, capsys):
 
     src = tmp_path / "in.sav"
     src.write_bytes(bytes(range(200)))
-    assert main(["--simulate", "save-write", "-s", "mock", "-i", str(src)]) == 0
+    bdir = tmp_path / "bk"
+    assert main(["--simulate", "save-write", "-s", "mock", "-i", str(src), "--yes", "--backup-dir", str(bdir)]) == 0
+    assert len(list(bdir.glob("mock_*.sav"))) == 1                       # backup do save anterior, antes de gravar
     assert main(["--simulate", "save-read", "-s", "mock", "-o", str(tmp_path / "s")]) == 0
     assert (tmp_path / "s.sav").stat().st_size == 8192
+
+
+def test_cli_save_write_recusa_sem_confirmacao(tmp_path):
+    import pytest
+    from oscr_host.cli import main
+
+    src = tmp_path / "in.sav"
+    src.write_bytes(b"\x00" * 16)
+    with pytest.raises(SystemExit) as e:                                  # pytest não tem terminal: sem --yes recusa
+        main(["--simulate", "save-write", "-s", "mock", "-i", str(src), "--backup-dir", str(tmp_path / "bk")])
+    assert "--yes" in str(e.value)
+    assert not (tmp_path / "bk").exists()                                 # nada foi lido nem gravado
+
+
+def test_cli_saida_json(tmp_path, capsys):
+    import json
+    from oscr_host.cli import main
+
+    assert main(["--simulate", "--json", "detect", "-s", "mock"]) == 0
+    assert json.loads(capsys.readouterr().out.strip().splitlines()[-1])["status"] == 0
+    assert main(["--simulate", "--json", "dump", "-s", "mock", "-o", str(tmp_path / "j")]) == 0
+    o = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert o["bytes"] == P.MOCK_SIZE and o["crc32"] == f"{P.crc32(P.mock_data()):08X}"
+
+
+def test_dump_sem_o_usa_o_titulo_como_nome(tmp_path, monkeypatch, capsys):
+    from oscr_host.cli import main
+
+    monkeypatch.chdir(tmp_path)
+    assert main(["--simulate", "dump", "-s", "mock"]) == 0
+    assert (tmp_path / "MOCK.bin").exists()                               # título do DETECT do simulador
+
+
+def test_erro_do_dispositivo_traz_dica():
+    e = P.DeviceError(4, "args")
+    assert "argumento inválido" in str(e) and "Dica:" in str(e) and "PRG" in str(e)
+    assert "Dica" not in str(P.DeviceError(99))
+
+
+def test_cliente_recusa_tipo_e_tamanho_errados(env):
+    import pytest
+    c, _dev = env
+    with pytest.raises(P.ProtocolError, match="tipo de dados"):
+        c._stream_in(P.T_DUMP_ROM, P.build_dump(255), None, P.KIND_SAVE)   # o simulador responde ROM
+    old = P.MAX_STREAM_BYTES
+    try:
+        P.MAX_STREAM_BYTES = 100
+        with pytest.raises(P.ProtocolError, match="absurdo"):
+            c.dump_rom(255)
+    finally:
+        P.MAX_STREAM_BYTES = old
 
 
 def test_opcoes_de_mapper_chegam_ao_dispositivo(env):

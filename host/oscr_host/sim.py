@@ -3,6 +3,9 @@
 
 Implementa o protocolo v1 com dados sintéticos (modo MOCK). Aceita injeção de falhas
 (`corrupt_data`, `drop_acks`) para testar a recuperação do host.
+
+Limite conhecido: só entende os sistemas 0 e 255 (MOCK) e não reproduz a lógica de nenhum cartucho real. O comportamento por sistema (cabeçalhos,
+mappers, saves) é testado contra o firmware em C++ compilado no PC (`tests/test_firmware_cpp.py`, `firmware/oscr_serial/tests`).
 """
 from __future__ import annotations
 

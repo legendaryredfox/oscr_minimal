@@ -91,7 +91,7 @@ O cartucho de NES não tem cabeçalho com o mapper. Para mappers diferentes de 0
 
 ```
 u8  sistema
-u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware
+u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware, 4 = cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: contato sujo ou ROM de hack; só SNES e Game Boy)
 u32 tamanho_rom     bytes (0 se desconhecido)
 u32 tamanho_save    bytes (0 se não tem)
 u8  tipo_save       0 = nenhum, 1 = SRAM, 2 = FLASH, 3 = EEPROM, 255 = desconhecido

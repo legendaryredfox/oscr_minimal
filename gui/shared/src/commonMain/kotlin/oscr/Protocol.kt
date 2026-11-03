@@ -13,6 +13,8 @@ object Proto {
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
     const val T_PROGRESSO = 0x88
     const val KIND_ROM = 1; const val KIND_SAVE = 2
+    /** Maior leitura aceita (GBA: 32 MB). Acima disso o BEGIN é tratado como defeito. */
+    const val MAX_STREAM = 64 shl 20
 }
 
 /** Sistemas e extensão do arquivo de ROM. */
@@ -20,9 +22,13 @@ enum class CartSystem(val id: Int, val ext: String) {
     SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), MOCK(255, ".bin");
 }
 
-class DeviceError(val code: Int, val text: String = "") : Exception("erro 0x${code.toString(16).padStart(4, '0')}${if (text.isNotEmpty()) " ($text)" else ""}")
-class ProtocolError(msg: String) : Exception(msg)
-class TimeoutError(msg: String) : Exception(msg)
+/** Motivos de falha do lado do programa. O texto para o usuário vem de `describeError` (traduzido); nenhuma mensagem fixa aqui. */
+enum class Fail { NO_RESPONSE, STALLED, OPEN_PORT, SHORT_REPLY, BAD_END, BAD_PAYLOAD, BAD_KIND, BAD_SIZE, PARTIAL_WRITE, DISCONNECTED }
+
+/** O dispositivo respondeu ERRO com este código (docs/protocolo.md, seção de erros). */
+class DeviceError(val code: Int, val text: String = "") : Exception("0x${code.toString(16).padStart(4, '0')}${if (text.isNotEmpty()) " ($text)" else ""}")
+class ProtocolError(val fail: Fail, val detail: String = "") : Exception("${fail.name}${if (detail.isNotEmpty()) ": $detail" else ""}")
+class TimeoutError(val fail: Fail = Fail.NO_RESPONSE, val detail: String = "") : Exception("${fail.name}${if (detail.isNotEmpty()) ": $detail" else ""}")
 
 private val CRC_TABLE = IntArray(256) { n ->
     var c = n
@@ -46,7 +52,7 @@ fun ByteArray.u16(i: Int) = u8(i) or (u8(i + 1) shl 8)
 fun ByteArray.u32(i: Int) = u8(i) or (u8(i + 1) shl 8) or (u8(i + 2) shl 16) or (u8(i + 3) shl 24)
 
 fun encodeFrame(type: Int, seq: Int, payload: ByteArray = ByteArray(0)): ByteArray {
-    if (payload.size > Proto.MAX_PAYLOAD) throw ProtocolError("payload de ${payload.size} bytes")
+    if (payload.size > Proto.MAX_PAYLOAD) throw ProtocolError(Fail.BAD_PAYLOAD, "${payload.size}")
     val body = byteArrayOf(type.toByte(), seq.toByte()) + le16(payload.size) + payload
     return byteArrayOf(0xA5.toByte(), 0x5A) + body + le32(crc32(body))
 }

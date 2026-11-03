@@ -99,3 +99,31 @@ A janela abre com 800×600 e o log (única forma de ver "CRC32", "salvo em...", 
 3. **U-06, U-07, U-08**: reduzem erros de operação do NES.
 4. **U-09, U-12, U-19**: conexão, progresso e primeira execução.
 5. O restante, junto com o empacotamento.
+
+## 6. Estado depois das correções (2026-11-02)
+
+Verificação: a GUI foi aberta de novo no display virtual (layout e troca de idioma); **o fluxo com o Mega ligado continua sem teste** (sem porta serial nesta máquina).
+
+| Achado | Estado |
+|---|---|
+| U-01 cancelar o "Salvar como" perde a leitura | **Corrigido**: a leitura fica na memória com **Salvar como...** e **Descartar** |
+| U-02 gravar sem confirmação nem backup | **Corrigido**: diálogo de confirmação e backup do save atual em `~/oscr_backups` (marcado por padrão); a CLI também pergunta (`--yes`) e faz backup |
+| U-03 resultado fora da tela | **Corrigido**: barra fixa embaixo com estado, progresso, última mensagem e registro |
+| U-04 registro não copiável | **Corrigido**: selecionável, **Copiar** e **Salvar registro**, com versão do programa e do firmware |
+| U-05 erros técnicos | **Corrigido**: mensagem traduzida com causa e ação para cada código |
+| U-06 estado compartilhado | **Corrigido**: os campos zeram ao trocar de sistema |
+| U-07 opções do NES | **Em parte**: nome do mapper e validação enquanto digita; **faltam** presets por jogo e o link para o NESCartDB |
+| U-08 validação inline | **Corrigido** (NES, SNES ExHiROM e Mega Drive) |
+| U-09 conexão | **Corrigido**: indicador permanente, nome amigável da porta, desconexão detectada, botão Reconectar |
+| U-10 baud | **Corrigido**: tenta o escolhido e cai para o outro sozinho; a escolha fica em **Avançado** |
+| U-11 nome do arquivo e saída | **Corrigido**: título detectado no nome, `.gbc`, relatório `.txt` opcional |
+| U-12 progresso sem contexto | **Em parte**: etapa, velocidade, tempo restante e aviso de operação demorada; **faltam** as etapas que o firmware informaria (`PROGRESSO`) |
+| U-13 acessibilidade | **Em parte**: ícones nos avisos, tema escuro, atalhos, texto maior; **faltam** rótulos para leitor de tela e ajuste de fonte |
+| U-14 textos fixos e traduções | **Em parte**: "bytes" traduzido; revisão nativa de ru e zh pendente |
+| U-15 aviso de segurança | **Corrigido**: cartão de destaque no topo e aviso no diálogo de gravação |
+| U-16 ajuda | **Em parte**: seções recolhíveis e indicação do guia; sem busca |
+| U-17 CLI | **Corrigido**: confirmação, `--yes`, backup, `--json`, mensagens com dica |
+| U-18 hardware físico | **Aberto**: confirmar com o slot físico o lado da etiqueta e a direção de entrada (D27, D28) |
+| U-19 primeira execução | **Corrigido**: cartão de primeiros passos; dica do grupo `dialout` na falha de abertura |
+| U-20 hierarquia dos botões | **Corrigido**: leitura e gravação em seções separadas, gravação destacada, Cancelar em vermelho |
+| U-21 preferências | **Corrigido**: idioma, porta, baud, sistema, pasta e tamanho da janela |

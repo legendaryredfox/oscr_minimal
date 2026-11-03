@@ -3,7 +3,7 @@ package oscr
 
 enum class CheckStatus { OK, MISMATCH, NA }
 
-/** Resultado da verificação do checksum do cabeçalho (Mega Drive, SNES, GBA). Igual a host/oscr_host/verify.py. */
+/** Resultado da verificação do checksum do cabeçalho (Mega Drive, SNES, GBA, Game Boy). Igual a host/oscr_host/verify.py. */
 data class Check(val status: CheckStatus, val name: String = "", val expected: Int = 0, val computed: Int = 0) {
     fun hex(v: Int) = (v and 0xFFFF).toString(16).uppercase().padStart(4, '0')
 }
@@ -24,6 +24,13 @@ private fun gba(d: ByteArray): Check {
     if (d.size < 0xC0 || d.u8(4) != 0x24 || d.u8(5) != 0xFF || d.u8(6) != 0xAE || d.u8(7) != 0x51) return Check(CheckStatus.NA)
     val comp = (-(d.sumRange(0xA0, 0xBD).toInt() + 0x19)) and 0xFF
     return Check(if (comp == d.u8(0xBD)) CheckStatus.OK else CheckStatus.MISMATCH, "GBA", d.u8(0xBD), comp)
+}
+
+private fun gb(d: ByteArray): Check {
+    if (d.size < 0x150 || d.u8(0x104) != 0xCE || d.u8(0x105) != 0xED || d.u8(0x106) != 0x66 || d.u8(0x107) != 0x66) return Check(CheckStatus.NA)   // logo da Nintendo
+    var x = 0
+    for (i in 0x134 until 0x14D) x = (x - d.u8(i) - 1) and 0xFF
+    return Check(if (x == d.u8(0x14D)) CheckStatus.OK else CheckStatus.MISMATCH, "Game Boy", d.u8(0x14D), x)
 }
 
 private fun snes(d: ByteArray): Check {
@@ -48,6 +55,7 @@ fun verifyRom(system: CartSystem, data: ByteArray): Check = when (system) {
     CartSystem.MD -> md(data)
     CartSystem.GBA -> gba(data)
     CartSystem.SNES -> snes(data)
+    CartSystem.GB -> gb(data)
     else -> Check(CheckStatus.NA)
 }
 

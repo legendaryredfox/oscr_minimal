@@ -22,10 +22,14 @@ Interfaces:
 | Detectar | botão **Detectar** | `dumper.py detect -s snes` |
 | Ler ROM | **Ler ROM** | `dumper.py dump -s snes -o jogo` (acrescenta `.sfc`) |
 | Ler save | **Ler save** | `dumper.py save-read -s snes -o jogo` |
-| Gravar save | **Gravar save** | `dumper.py save-write -s snes -i jogo.sav` |
+| Gravar save | **Gravar save** (pede confirmação e guarda um backup do save atual em `~/oscr_backups`) | `dumper.py save-write -s snes -i jogo.sav` (pergunta antes; `--yes` para scripts, `--no-backup`, `--backup-dir`) |
 | Sem hardware | (não há) | `dumper.py --simulate dump -s mock` |
 
-Sistemas: `snes`, `nes`, `famicom`, `md`, `gba` (`mock` só no firmware de teste).
+Sistemas: `snes`, `nes`, `famicom`, `md`, `gba`, `gb` (`mock` só no firmware de teste).
+
+Na CLI, `--json` (antes do comando) imprime o resultado em uma linha de JSON, para scripts; `dump` sem `-o` usa o título detectado como nome do arquivo (`.gbc` para jogos de Game Boy Color).
+
+**GUI:** a barra de baixo mostra sempre o estado, o progresso (com velocidade e tempo restante) e o registro, que pode ser **copiado** ou **salvo** (útil para pedir ajuda). Uma leitura pronta fica na memória até você escolher onde salvar (cancelar o "Salvar como" não perde nada). Atalhos: Ctrl+D detectar, Ctrl+R ler ROM, Ctrl+S ler save, Esc cancelar. A janela lembra idioma, porta, sistema, pasta e tamanho.
 
 ## 2. Casos de uso principais
 
@@ -75,6 +79,7 @@ Depois de cada dump o programa confere o **checksum do cabeçalho** (Mega Drive,
 |---|---|---|
 | Nenhuma porta aparece | cabo só de carga; falta de permissão; driver | Troque o cabo; Linux: grupo `dialout`; clone com CH340 pede driver (Windows/macOS). Em `ls /dev/ttyUSB* /dev/ttyACM*` o clone aparece como `ttyUSB0`. |
 | "sem resposta do dispositivo" ao conectar | firmware não gravado; baud errado; porta ocupada | Regrave o firmware; tente `--baud 115200`; feche monitor serial/IDE; reconecte o cabo. |
+| Detecta "cabeçalho inválido" (status 4) | há dados no cartucho, mas o checksum do cabeçalho não confere | Contato sujo quase sempre: limpe, encaixe de novo e repita; em ROM de hack o checksum pode estar errado de fábrica |
 | Detecta "nenhum cartucho" | encaixe, contatos, sistema errado | Encaixe até o fim; limpe com álcool isopropílico; confira o sistema na lista; teste outro cartucho. |
 | "sistema não suportado" (`0x0002`) | chip especial / mapper fora da lista | Veja a seção 3. NES: mappers 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 33, 48, 66, 69, 70, 71, 75, 78, 79, 87, 118 e 206. |
 | NES: "argumento inválido" (`0x0004`) | PRG/CHR errados para o mapper | PRG múltiplo de 16 KB (7, 11 e 66: de 32 KB), CHR múltiplo de 8 KB; mappers 2, 7 e 71 sem CHR; limites: MMC1 256 KB, mapper 9 PRG 128 KB, 10 PRG 256 KB, 11 PRG e CHR 128 KB, 66 PRG 128 KB e CHR 32 KB, 69 PRG 512 KB, 5 PRG 1 MB (acima disso `0x0002`). |

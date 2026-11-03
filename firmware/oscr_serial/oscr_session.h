@@ -14,7 +14,7 @@ struct Io {
 };
 
 struct DetectInfo {
-  uint8_t status = 1;       // 0 detectado, 1 nenhum, 2 não suportado, 3 erro de hardware
+  uint8_t status = 1;       // 0 detectado, 1 nenhum, 2 não suportado, 3 erro de hardware, 4 cabeçalho inválido (há dados, checksum errado)
   uint32_t rom_size = 0, save_size = 0;
   uint8_t save_type = 0;
   char name[33] = {0};      // ASCII, até 32 caracteres

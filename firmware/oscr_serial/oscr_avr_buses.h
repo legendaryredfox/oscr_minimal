@@ -55,6 +55,9 @@ struct AvrSnesBus : SnesBus {
   bool clocks_available() override {
     if (clk_state_ == 0) {
       Wire.begin();
+#ifndef OSCR_I2C_PULLUPS
+      PORTD &= ~((1 << 0) | (1 << 1));                                 // SCL/SDA sem pull-up interno (5 V): o módulo Si5351 tem os seus, em 3,3 V; compile com -DOSCR_I2C_PULLUPS para ligar
+#endif
 #ifdef WIRE_HAS_TIMEOUT
       Wire.setWireTimeout(25000, true);                                // não trava se o barramento ficar preso
 #endif

@@ -83,3 +83,24 @@ Nenhum problema de memória nem comportamento indefinido no código portátil do
 2. C-10, C-11 e C-12 (GUI e transporte): pequenos, mas afetam o uso real; entram junto com as correções de UX de `revisao-ux.md`.
 3. C-15 antes de ligar o módulo Si5351.
 4. C-20 e C-21 só quando houver hardware para medir desempenho.
+
+## 7. Estado depois das correções (2026-11-02)
+
+| Achado | Estado |
+|---|---|
+| C-10 textos fixos na GUI | **Corrigido**: exceções com código e textos em `I18n` (4 idiomas), `describeError`; teste para todos os erros nos 4 idiomas |
+| C-11 `abort` e escrita concorrente | **Corrigido** (Kotlin e Python): `write` sincronizado |
+| C-12 escrita parcial | **Corrigido**: o retorno é conferido e vira erro |
+| C-13 sem CI | **Escrito** (`.github/workflows/ci.yml`); **não executado** nesta máquina |
+| C-14 HAL sem teste | **Corrigido**: `tests/test_avr_hal.cpp`, 41 verificações com registradores simulados, testadas por mutação |
+| C-15 pull-ups do I²C | **Corrigido no firmware** (sem pull-up interno; `-DOSCR_I2C_PULLUPS` religa). Falta conferir o módulo comprado e anotar no `montagem.md` |
+| C-16 listas repetidas | **Coberto por teste** (`test_docs_sync.py`); a fonte única em si não foi criada |
+| C-20 arquivo de 1.000 linhas | **Corrigido**: um arquivo por sistema |
+| C-21 leitura byte a byte do GBA | **Corrigido para o GBA** (palavras); os outros sistemas continuam por byte |
+| C-22 opções herdadas | **Corrigido**: limpas ao fim de todo comando |
+| C-23 teto e `kind` do `BEGIN` | **Corrigido** (Python e Kotlin, com teste) |
+| C-24 verify do GB | **Corrigido** (checksum `$14D`, Python e Kotlin); NES continua sem verificação (não há o que conferir) |
+| C-25 "sem cartucho" para cabeçalho ruim | **Corrigido**: status 4; a opção de forçar a leitura **não** foi feita |
+| C-26 simulador do host | **Documentado** |
+| C-27 `tools/` | **Documentado** (`tools/README.md`) |
+| C-28 `decisoes.md` | **Corrigido**: índice gerado por `tools/gen_decisoes_index.py` |

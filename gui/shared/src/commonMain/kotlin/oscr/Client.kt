@@ -8,6 +8,8 @@ interface Transport {
     fun write(data: ByteArray)
     fun read(max: Int, timeoutMs: Long): ByteArray
     fun close() {}
+    /** false depois de a porta ser fechada ou perdida (cabo desligado). */
+    val isOpen: Boolean get() = true
 }
 
 typealias Progress = (done: Long, total: Long) -> Unit
@@ -47,7 +49,7 @@ class OscrClient(
                 if (f.type in expect && accept(f)) return f
             }
         }
-        throw TimeoutError("sem resposta ao comando 0x${type.toString(16)}")
+        throw TimeoutError(Fail.NO_RESPONSE, "0x${type.toString(16)}")
     }
 
     private fun parseError(p: ByteArray): DeviceError {
@@ -57,30 +59,33 @@ class OscrClient(
 
     fun info(): DeviceInfo {
         val p = request(Proto.T_INFO, ByteArray(0), nextSeq(), setOf(Proto.T_INFO_RESP), timeoutMs).payload
-        if (p.size < 7) throw ProtocolError("INFO_RESP curto")
+        if (p.size < 7) throw ProtocolError(Fail.SHORT_REPLY, "INFO_RESP")
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
     fun detect(system: CartSystem): DetectResult {
         val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()), nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload
-        if (p.size < 12) throw ProtocolError("DETECT_RESP curto")
+        if (p.size < 12) throw ProtocolError(Fail.SHORT_REPLY, "DETECT_RESP")
         return DetectResult(p.u8(0), p.u8(1), p.u32(2).toLong() and 0xFFFFFFFFL, p.u32(6).toLong() and 0xFFFFFFFFL,
             p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString())
     }
 
+    /** Pode ser chamado de outra thread (botão Cancelar): o `write` do transporte é sincronizado. */
     fun abort() = send(Proto.T_ABORT, ByteArray(0), nextSeq())
 
-    private fun streamIn(cmd: Int, payload: ByteArray, progress: Progress?): DumpResult {
+    private fun streamIn(cmd: Int, payload: ByteArray, progress: Progress?, expectKind: Int): DumpResult {
         val seq = nextSeq()
         val begin = request(cmd, payload, seq, setOf(Proto.T_BEGIN), longTimeoutMs).payload
         val kind = begin.u8(0); val size = begin.u32(1)
+        if (kind != expectKind) { abort(); throw ProtocolError(Fail.BAD_KIND, "$kind") }
+        if (size < 0 || size > Proto.MAX_STREAM) { abort(); throw ProtocolError(Fail.BAD_SIZE, "$size") }
         send(Proto.T_ACK, le32(0), seq)
         val buf = ByteArray(size)
         var expected = 0; var idle = 0
         while (true) {
             val f = recv(if (expected == 0) longTimeoutMs else timeoutMs * 3, seq)
             if (f == null) {
-                if (++idle > retries) throw TimeoutError("o dispositivo parou de enviar dados")
+                if (++idle > retries) throw TimeoutError(Fail.STALLED)
                 send(Proto.T_NAK, le32(expected), seq); continue
             }
             idle = 0
@@ -98,9 +103,9 @@ class OscrClient(
                 }
                 Proto.T_END -> {
                     val total = f.payload.u32(0); val crc = f.payload.u32(4)
-                    if (total != size || expected != size) { abort(); throw ProtocolError("END com total $total, recebido $expected, esperado $size") }
+                    if (total != size || expected != size) { abort(); throw ProtocolError(Fail.BAD_END, "$total/$expected/$size") }
                     val mine = crc32(buf)
-                    if (mine != crc) { abort(); throw DeviceError(6, "CRC32 não confere") }
+                    if (mine != crc) { abort(); throw DeviceError(6) }
                     send(Proto.T_ACK, le32(total), seq)
                     return DumpResult(buf, mine, kind)
                 }
@@ -114,14 +119,14 @@ class OscrClient(
     fun dumpRom(system: CartSystem, block: Int = 0, mapper: Int = 0, prgKb: Int = 0, chrKb: Int = 0, progress: Progress? = null): DumpResult {
         var p = byteArrayOf(system.id.toByte()) + le16(block)
         if (mapper != 0 || prgKb != 0 || chrKb != 0) p += le16(mapper) + le16(prgKb) + le16(chrKb)
-        return streamIn(Proto.T_DUMP_ROM, p, progress)
+        return streamIn(Proto.T_DUMP_ROM, p, progress, Proto.KIND_ROM)
     }
 
     /** NES/Famicom: `mapper` 1, 4, 5 ou 69 (PRG-RAM com bateria, 8 KB); `ramKb` 16 ou 32 só nos mappers 1 e 5 (0 = 8 KB). */
     fun readSave(system: CartSystem, block: Int = 0, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): DumpResult {
         var p = byteArrayOf(system.id.toByte()) + le16(block)
         if (mapper != 0 || ramKb != 0) p += le16(mapper) + le16(ramKb) + le16(0)
-        return streamIn(Proto.T_READ_SAVE, p, progress)
+        return streamIn(Proto.T_READ_SAVE, p, progress, Proto.KIND_SAVE)
     }
 
     fun writeSave(system: CartSystem, data: ByteArray, block: Int = Proto.DEFAULT_BLOCK, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): Int {

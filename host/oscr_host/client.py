@@ -82,10 +82,16 @@ class Client:
     def abort(self) -> None:
         self._send(P.T_ABORT, b"", self._next_seq())
 
-    def _stream_in(self, cmd: int, payload: bytes, progress: Optional[Progress]) -> DumpResult:
+    def _stream_in(self, cmd: int, payload: bytes, progress: Optional[Progress], expect_kind: int = 0) -> DumpResult:
         seq = self._next_seq()
         begin = self._request(cmd, payload, seq, {P.T_BEGIN}, self.long_timeout)
         kind, size, block = P.parse_begin(begin.payload)
+        if expect_kind and kind != expect_kind:
+            self.abort()
+            raise P.ProtocolError(f"o dispositivo respondeu com o tipo de dados {kind}, esperado {expect_kind}")
+        if size > P.MAX_STREAM_BYTES:
+            self.abort()
+            raise P.ProtocolError(f"tamanho anunciado absurdo: {size} bytes (máximo {P.MAX_STREAM_BYTES})")
         self._send(P.T_ACK, P.build_offset(0), seq)
         buf = bytearray(size)
         expected, idle = 0, 0
@@ -129,10 +135,10 @@ class Client:
 
     def dump_rom(self, system: int, block: int = 0, progress: Optional[Progress] = None,
                  mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> DumpResult:
-        return self._stream_in(P.T_DUMP_ROM, P.build_dump(system, block, mapper, prg_kb, chr_kb), progress)
+        return self._stream_in(P.T_DUMP_ROM, P.build_dump(system, block, mapper, prg_kb, chr_kb), progress, P.KIND_ROM)
 
     def read_save(self, system: int, block: int = 0, progress: Optional[Progress] = None, mapper: int = 0, ram_kb: int = 0) -> DumpResult:
-        return self._stream_in(P.T_READ_SAVE, P.build_dump(system, block, mapper, ram_kb), progress)
+        return self._stream_in(P.T_READ_SAVE, P.build_dump(system, block, mapper, ram_kb), progress, P.KIND_SAVE)
 
     def write_save(self, system: int, data: bytes, block: int = 512, progress: Optional[Progress] = None, mapper: int = 0, ram_kb: int = 0) -> int:
         seq = self._next_seq()

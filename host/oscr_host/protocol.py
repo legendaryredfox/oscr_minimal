@@ -35,6 +35,22 @@ ERRORS = {
     8: "dispositivo ocupado", 9: "abortado", 10: "cartucho não tem save",
 }
 
+# o que fazer para cada erro (a GUI tem os mesmos textos traduzidos em I18n.kt)
+ERROR_HINTS = {
+    1: "atualize o firmware e o programa para a mesma versão",
+    2: "o chip, o mapper ou o sistema deste cartucho ainda não é lido (veja docs/uso.md)",
+    3: "encaixe o cartucho até o fim, limpe os contatos e confira o sistema escolhido",
+    4: "confira mapper, PRG, CHR, RAM e o tamanho do arquivo (docs/protocolo.md)",
+    5: "troque o cabo, evite hubs USB ou use --baud 115200",
+    6: "refaça a leitura; se repetir, limpe os contatos e troque o cabo",
+    7: "confira a bateria e os contatos; numa gravação o save pode ter ficado incompleto: tente de novo e use o backup",
+    8: "espere o fim da operação anterior",
+    9: "operação cancelada",
+    10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
+}
+
+MAX_STREAM_BYTES = 64 << 20          # maior leitura aceita (GBA: 32 MB); acima disso o BEGIN é tratado como defeito
+
 
 class ProtocolError(Exception):
     pass
@@ -45,7 +61,8 @@ class DeviceError(Exception):
 
     def __init__(self, code: int, text: str = ""):
         self.code, self.text = code, text
-        super().__init__(f"erro 0x{code:04X}: {ERRORS.get(code, 'desconhecido')}" + (f" ({text})" if text else ""))
+        hint = ERROR_HINTS.get(code)
+        super().__init__(f"erro 0x{code:04X}: {ERRORS.get(code, 'desconhecido')}" + (f" ({text})" if text else "") + (f". Dica: {hint}" if hint else ""))
 
 
 def crc32(data: bytes, start: int = 0) -> int:

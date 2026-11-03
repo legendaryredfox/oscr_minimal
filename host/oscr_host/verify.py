@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Verificação do checksum do cabeçalho depois do dump (Mega Drive, SNES, GBA).
+"""Verificação do checksum do cabeçalho depois do dump (Mega Drive, SNES, GBA, Game Boy).
 
 Serve para pegar tamanho errado, contato ruim ou ROM corrompida. Não substitui o CRC32 do No-Intro:
 alguns jogos têm checksum errado de fábrica ("mismatch" pode ser normal em ROMs modificadas ou antigas).
@@ -66,7 +66,18 @@ def _snes(data: bytes) -> Check:
     return Check("na")
 
 
+def _gb(data: bytes) -> Check:
+    if len(data) < 0x150 or data[0x104:0x108] != bytes([0xCE, 0xED, 0x66, 0x66]):     # começo do logo da Nintendo
+        return Check("na")
+    x = 0
+    for b in data[0x134:0x14D]:
+        x = (x - b - 1) & 0xFF
+    return Check("ok" if x == data[0x14D] else "mismatch", "Game Boy", data[0x14D], x)
+
+
 def verify_rom(system: int, data: bytes) -> Check:
+    if system == 6:
+        return _gb(data)
     if system == 4:
         return _md(data)
     if system == 5:

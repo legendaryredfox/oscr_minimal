@@ -83,3 +83,19 @@ def test_eeprom_4k_lida_como_8k_repete():
     assert eeprom_is_4k(blk * 16)
     assert not eeprom_is_4k(bytes(_rom(8192, 5)))
     assert not eeprom_is_4k(blk)
+
+
+def test_gb_checksum_do_cabecalho():
+    from oscr_host.verify import verify_rom
+
+    rom = bytearray(0x8000)
+    rom[0x104:0x108] = bytes([0xCE, 0xED, 0x66, 0x66])
+    rom[0x134:0x13B] = b"TESTE  "
+    x = 0
+    for b in rom[0x134:0x14D]:
+        x = (x - b - 1) & 0xFF
+    rom[0x14D] = x
+    assert verify_rom(6, bytes(rom)).status == "ok"
+    rom[0x14D] ^= 1
+    assert verify_rom(6, bytes(rom)).status == "mismatch"
+    assert verify_rom(6, b"\x00" * 0x200).status == "na"                  # sem o logo: não é um cabeçalho de GB

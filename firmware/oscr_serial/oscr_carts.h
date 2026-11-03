@@ -110,6 +110,16 @@ class CartBackend : public Backend {
   uint8_t nes_chr_byte(uint32_t o);
 
   bool probe(uint8_t sys, Cart& out, bool for_save = false);   // abre o barramento e lê o cabeçalho
+  bool probe_snes(uint8_t sys, Cart& o, bool for_save);   // um por sistema, em oscr_carts_<sistema>.cpp
+  bool probe_nes(uint8_t sys, Cart& o, bool for_save);
+  bool probe_md(uint8_t sys, Cart& o, bool for_save);
+  bool probe_gba(uint8_t sys, Cart& o, bool for_save);
+  bool probe_gb(uint8_t sys, Cart& o, bool for_save);
+  uint8_t snes_byte(uint32_t off);   // byte da ROM no deslocamento `off` (mapa de cada sistema)
+  uint8_t nes_byte(uint32_t off);
+  uint8_t md_byte(uint32_t off);
+  uint8_t gba_byte(uint32_t off);
+  uint8_t gb_byte(uint32_t off);
   void acquire(uint8_t sys);
   void release();
   uint8_t snes_save_byte_read(uint32_t i);

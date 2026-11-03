@@ -1,6 +1,6 @@
 # Continuação — estado do projeto e como retomar
 
-Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D57).
+Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D59, com índice no topo).
 
 ## 1. Onde estamos
 
@@ -12,7 +12,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | Host (Python) | CLI `dumper.py` completa, 50 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi mais mappers do NES e a escrita segura do MMC1, D57). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi a aplicação das correções das revisões de código e de UX/UI, D59). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
@@ -24,7 +24,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
 | GB / GBC (adaptador no slot GBA, 3,3 V) | sem mapper, MBC1, MBC1M, MBC2, MBC3, MBC5, GB Camera | SRAM: ler e gravar (sem RTC) |
 
-Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D57 de `docs/decisoes.md`.
+Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D59 de `docs/decisoes.md`.
 
 **Ainda não existe:** SNES com Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110; NES mappers além da lista acima, outros mappers com save; GB/GBC; Pier Solar, lock-on, mappers piratas.
 
@@ -35,16 +35,21 @@ firmware/oscr_serial/        biblioteca C++ portátil (testável no PC)
   oscr_proto.*               quadros, CRC32, decodificador
   oscr_session.*             máquina de estados do protocolo; interface Backend; MockBackend
   oscr_bus.h                 interfaces SnesBus, NesBus, MdBus, GbaBus (o que o hardware precisa fazer)
-  oscr_carts.*               CartBackend: toda a lógica de cartuchos (probe, ler, gravar, mappers, I2C)
+  oscr_carts.cpp             CartBackend: dispatch, leitura e gravação de save comuns
+  oscr_carts_<sistema>.cpp   snes, nes, md, gba, gb: cabeçalho (probe_*), ROM (*_byte), mappers, saves, I2C do Mega Drive
+  oscr_carts_internal.h      o que esses arquivos compartilham
+  oscr_si5351.h              cálculo dos registradores do Si5351 (portátil)
   oscr_avr_buses.h           HAL do ATmega2560: sequências de porta copiadas do OSCR (NÃO validado)
   oscr_arduino.h             cola com a Serial
-  tests/                     test_proto, test_carts (cartuchos simulados), sim_stdio (usado pelo host)
+  tests/                     test_proto, test_carts (cartuchos simulados), test_si5351, test_avr_hal (HAL do AVR no PC com
+                             registradores simulados em tests/avr_mock), sim_stdio (usado pelo host)
 firmware/arduino/oscr_dumper/   sketch (real por padrão; -DOSCR_MOCK = modo de teste)
 firmware/platformio/            envs megaatmega2560 e megaatmega2560_mock
 host/oscr_host/                 protocol, client, sim (MockDevice), cli, transport, verify
 host/tests/                     inclui test_firmware_cpp: o cliente Python contra o C++ real
-gui/shared/                     Kotlin comum: Protocol, Client, I18n, Verify (+ testes)
-gui/desktopApp/                 Main.kt (Compose) e SerialTransport.kt (jSerialComm)
+gui/shared/                     Kotlin comum: Protocol, Client, I18n, Errors, NesRules, Verify (+ testes)
+gui/desktopApp/                 Main.kt (Compose), Prefs.kt (preferências) e SerialTransport.kt (jSerialComm)
+.github/workflows/ci.yml        CI (escrito, ainda não executado)
 tools/                          scripts do KiCad (ver README)
 vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (README explica como recriar)
 ```
@@ -52,7 +57,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 864 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 870 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -119,7 +124,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MBC7, MMM01, TAMA5), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 864 de cartuchos, 50 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
+Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 870 de cartuchos, 60 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 
