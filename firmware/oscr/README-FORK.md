@@ -15,9 +15,10 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 | `include/cores/MegaDrive.h`, `include/cores/GameBoy.h` | `extern` de `eepSize`, `romBanks` e `sramBanks` (o laço de comandos precisa deles). |
 | `src/cores/GameBoyAdvance.cpp`, `src/cores/GameBoy.cpp` | `readROM` termina depois do último byte (sem reler o arquivo nem a base de dados). |
 | `src/apps/Prompts.cpp`, `src/apps/FileBrowser.cpp` | Sem usuário: os prompts não esperam; `selectFile` abre o arquivo virtual que o PC manda. |
+| `src/cores/SNES.cpp` | Sem `checkAltConf` (base de dados); o tamanho vem do cabeçalho ou da opção `prg_kb`. |
 | `include/dumper/*`, `src/dumper/*` (novos) | `Dumper` (laço de comandos e backend do Mega Drive), `StreamFile`, e cópias de `oscr_proto`/`oscr_session` de `firmware/oscr_serial`. |
 | `README-FORK.md` (novo) | Este arquivo. |
 
-Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardware 5, E/S por serial, sem tela nem botões). Medida em 2026-11-03 com o laço de comandos: flash 118.372 bytes (46,6%), RAM 3.146 bytes (38,4%). O upstream puro ocupa 141.824 bytes.
+Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardware 5, E/S por serial, sem tela nem botões). Medida em 2026-11-03 com o laço de comandos: flash 118.572 bytes (46,7%), RAM 3.147 bytes (38,4%). O upstream puro ocupa 141.824 bytes.
 
-**Estado (ver `docs/fork-oscr.md`):** Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). SNES e NES/Famicom ainda não.
+**Estado (ver `docs/fork-oscr.md`):** SNES, Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). NES/Famicom ainda não.

@@ -1,3 +1,4 @@
+#include "dumper/Dumper.h"
 #include "common.h"
 #include "api.h"
 
@@ -26,7 +27,8 @@ namespace OSCR::Prompts
   AbortRetryContinue abortRetryContinue()
   {
 # if OSCR_DUMPER
-    return AbortRetryContinue::Abort;   // fork oscr_minimal: sem usuário; o comando termina com erro
+    OSCR::Dumper::noteAbort();   // fork oscr_minimal: sem usuário; o comando segue como "cabeçalho inválido"
+    return AbortRetryContinue::Abort;
 # endif
     return static_cast<AbortRetryContinue>(OSCR::UI::menu(FS(OSCR::Strings::Headings::CartridgeError), abortRetryContinueOptions, sizeofarray(abortRetryContinueOptions)));
   }

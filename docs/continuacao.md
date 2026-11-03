@@ -2,7 +2,7 @@
 
 Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D59, com índice no topo).
 
-> **Estado do fork (D66):** SD trocado pela serial, modo fluxo no protocolo, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). Faltam SNES, NES/Famicom e a identificação por banco de dados no PC.
+> **Estado do fork (D66):** SD trocado pela serial, modo fluxo no protocolo, SNES, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). Faltam NES/Famicom e a identificação por banco de dados no PC.
 >
 > **Mudança de rumo (2026-11-03, D65):** o firmware passa a ser um fork do firmware novo do OSCR (`firmware/oscr/`, plano em `docs/fork-oscr.md`). O resto deste documento descreve o firmware próprio (`firmware/oscr_serial`), que continua funcionando até o fork cobrir o mesmo.
 

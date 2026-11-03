@@ -1300,10 +1300,14 @@ namespace OSCR::Cores::SNES
     }
 
     //Check SD card for alt config, pass CRC32 of snesHeader but filter out 0000 and FFFF checksums
+# if !OSCR_DUMPER   // fork oscr_minimal: sem SD nem base de dados; o PC corrige tamanhos fora do padrão (opção `prg_kb`)
     if ((0x0000 != checksum) && (0xFFFF != checksum))
     {
       checkAltConf(checksum, crc);
     }
+# else
+    (void)crc;
+# endif
 
     // Get name
     uint8_t nameLen = setOutName((char *)&snesHeader[0xFFC0 - headerStart], 21);

@@ -67,6 +67,7 @@
 - **D66** Fork: SD trocado pela serial e protocolo ligado ao Mega Drive; identificação por banco de dados no PC (decisão do usuário, 2026-11-03)
 - **D67** Gerbers para pedir a placa (2026-11-03)
 - **D68** Fork: GBA e GB/GBC ligados ao protocolo (2026-11-03)
+- **D69** Fork: SNES ligado ao protocolo (2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -543,4 +544,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Compila (118.372 B de flash, 46,6%); nunca rodou.** Sem teste no PC: o código do OSCR não roda fora do AVR.
 - **Perdas:** correção de preenchimento de GBA 32 MB + EEPROM, e a verificação do save depois de gravar (o PC precisa reler). A gravação da Flash do MBC6 é a do OSCR, sem teste.
 - Faltam SNES e NES/Famicom, e a identificação por banco de dados no PC.
+
+### D69 — Fork: SNES ligado ao protocolo (2026-11-03)
+- Detalhes em `docs/fork-oscr.md` seção 1.4. O `readROM`, `readSRAM` e `writeSRAM` do upstream são chamados sem mudança; só o `checkAltConf` (base de dados) foi desligado e o prompt de cabeçalho inválido virou `noteAbort`. Com isso o SNES passa a cobrir SA-1, SuperFX, S-DD1, SPC7110, Cx4, Derby Stallion 96 e S-RTC, que o firmware próprio recusava.
+- Opção `prg_kb` = tamanho da ROM em KB para tamanhos fora do padrão (o que a base de dados corrigia). `DETECT` ignora as opções.
+- **Compila (118.572 B de flash, 46,7%); nunca rodou.** Sem teste no PC. A verificação do save depois de gravar e a comparação do checksum interno ficam com o PC.
+- Falta o NES/Famicom e a identificação por banco de dados no host e na GUI.
 

@@ -19,6 +19,9 @@ namespace OSCR::Dumper
   /// Erro não fatal dos núcleos (UI::error): o comando termina com ERRO ao fim da função do núcleo.
   void noteError();
 
+  /// O núcleo desistiu por um prompt de abortar/tentar de novo/continuar (cabeçalho inválido ou sem cartucho).
+  void noteAbort();
+
   /// Erro fatal dos núcleos (UI::fatalError*): volta ao laço de comandos sem terminar a função do núcleo.
   [[ noreturn ]] void fatal();
 }

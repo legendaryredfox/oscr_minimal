@@ -16,6 +16,7 @@
 # include "cores/MegaDrive.h"
 # include "cores/GameBoyAdvance.h"
 # include "cores/GameBoy.h"
+# include "cores/SNES.h"
 # include "dumper/Dumper.h"
 
 # ifndef OSCR_DUMPER_BAUD
@@ -57,12 +58,14 @@ namespace OSCR::Dumper
      * Devolve false se o núcleo falhou.
      */
     bool fatalHit = false;
+    bool abortHit = false;
 
     template <typename Fn>
     bool runCore(Fn fn, bool softErrors = false)
     {
       errorFlag = false;
       fatalHit = false;
+      abortHit = false;
       armed = true;
       bool ok = true;
 
@@ -104,6 +107,7 @@ namespace OSCR::Dumper
     namespace MD = OSCR::Cores::MegaDrive;
     namespace GBA = OSCR::Cores::GameBoyAdvance;
     namespace GB = OSCR::Cores::GameBoy;
+    namespace SN = OSCR::Cores::SNES;
 
     /**
      * GBA sem a base de dados do OSCR: lê o cabeçalho, confere o logo da Nintendo e o checksum e acha o tamanho da ROM pelo espelhamento
@@ -174,17 +178,41 @@ namespace OSCR::Dumper
       return uint32_t(GB::sramBanks) * (uint32_t(GB::lastByteAddress) - 0xA000UL + 1UL);
     }
 
-    /** Backend dos núcleos do OSCR: Mega Drive, Game Boy Advance e Game Boy/Color. */
+    /**
+     * SNES: o `getCartInfo` do OSCR lê o cabeçalho ($FFB0) e preenche romSize (Mbit), numBanks, sramSize (Kbit), romChips, romType e checksum
+     * (sem a base de dados: tamanhos fora do padrão, como 6 MB, vêm do PC pela opção `prg_kb`). `sizeKb` > 0 troca o tamanho da ROM.
+     * Devolve 0 = ok, 1 = sem cartucho, 4 = há dados mas o cabeçalho não confere.
+     */
+    uint8_t snesProbe(uint16_t sizeKb)
+    {
+      using namespace OSCR::Cores;
+      checksum = 0; romSize = 0; numBanks = 0; sramSize = 0;
+      SN::getCartInfo();
+      SN::cartOff();
+      if (abortHit) return (checksum == 0 || checksum == 0xFFFF) ? 1 : 4;
+      if (romSize == 0 || numBanks < 1) return 1;
+
+      if (sizeKb)                                                 // tamanho informado pelo usuário/PC (Mbit = KB / 128)
+      {
+        romSize = sizeKb / 128;
+        constexpr uint8_t kSA = 3, kEX = 4;
+        numBanks = (romType == kEX || romType == kSA) ? long(romSize) * 2 : (long(romSize) * 1024 * 1024 / 8) / (32768 + (long(romType) * 32768));
+      }
+      return 0;
+    }
+
+    /** Backend dos núcleos do OSCR: SNES, Mega Drive, Game Boy Advance e Game Boy/Color. */
     class CoreBackend : public oscr::Backend
     {
     public:
       uint8_t flags() override { return 0; }
-      uint16_t systems() override { return (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
-      void set_options(uint16_t mapper, uint16_t prg, uint16_t chr) override { optMapper = mapper; (void)prg; (void)chr; }
+      // SNES: `prg_kb` é o tamanho da ROM em KB (0 = pelo cabeçalho).
+      void set_options(uint16_t mapper, uint16_t prg, uint16_t chr) override { optMapper = mapper; optPrgKb = prg; (void)chr; }
 
       void detect(uint8_t system, oscr::DetectInfo & out) override
       {
@@ -200,6 +228,20 @@ namespace OSCR::Dumper
           out.rom_size = OSCR::Cores::cartSize;
           out.save_size = 32768;                  // o tipo real (SRAM, Flash ou EEPROM) o usuário informa; o cabeçalho não diz
           out.save_type = 255;
+          strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
+          return;
+        }
+
+        if (system == oscr::SYS_SNES)
+        {
+          uint8_t st = 1;
+          uint16_t kb = 0;                                       // o DETECT ignora as opções
+          runCore([&st, kb] { st = snesProbe(kb); });
+          out.status = st;
+          if (st == 1) return;
+          out.rom_size = uint32_t(OSCR::Cores::romSize) * 131072UL;
+          out.save_size = uint32_t(OSCR::Cores::sramSize) * 128UL;
+          out.save_type = out.save_size ? 1 : 0;
           strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
           return;
         }
@@ -235,7 +277,8 @@ namespace OSCR::Dumper
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
-        if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
+        if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
+        else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (kind == oscr::KIND_SAVE && saveType == 0) { err = oscr::E_SEM_SAVE; return false; }
 
         countingSink.inner = &sink; countingSink.bytes = 0;
@@ -245,6 +288,12 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_GBA)
           {
             if (kind == oscr::KIND_ROM) GBA::readROM(); else GBA::readSave();
+            return;
+          }
+          if (system == oscr::SYS_SNES)
+          {
+            if (kind == oscr::KIND_ROM) SN::readROM(); else SN::readSRAM();
+            SN::cartOff();
             return;
           }
           if (system == oscr::SYS_GB)
@@ -279,9 +328,11 @@ namespace OSCR::Dumper
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
-        uint32_t expected = system == oscr::SYS_GBA ? gbaSaveBytes(saveType) : (system == oscr::SYS_GB ? gbSaveBytes() : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize));
+        uint32_t expected = system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
+                          : (system == oscr::SYS_GB ? gbSaveBytes()
+                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)));
 
-        if ((system != oscr::SYS_GB && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
@@ -292,6 +343,12 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_GBA)
           {
             GBA::writeSave();
+            return;
+          }
+          if (system == oscr::SYS_SNES)
+          {
+            SN::writeSRAM(true);          // a verificação do OSCR relê o arquivo (não existe no fluxo): o PC relê o save e compara
+            SN::cartOff();
             return;
           }
           if (system == oscr::SYS_GB)
@@ -324,7 +381,7 @@ namespace OSCR::Dumper
       bool write_commit() override { return false; }
 
     private:
-      uint16_t optMapper = 0;
+      uint16_t optMapper = 0, optPrgKb = 0;
 
       /** Lê o cabeçalho do cartucho (preenche cartSize, saveType, sramSize...) antes de ler ou gravar. */
       bool prepare(uint8_t system, bool forSave, uint16_t & err)
@@ -335,6 +392,15 @@ namespace OSCR::Dumper
           uint8_t st = 1;
           runCore([&st, this] { st = gbaProbe(uint8_t(optMapper)); });
           if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }     // 4 (checksum do cabeçalho errado) segue: o PC decide
+          return true;
+        }
+        if (system == oscr::SYS_SNES)
+        {
+          uint8_t st = 1;
+          uint16_t kb = forSave ? uint16_t(0) : optPrgKb;
+          runCore([&st, kb] { st = snesProbe(kb); });
+          if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }
+          if (st != 0) { err = oscr::E_CARTUCHO_IO; return false; }
           return true;
         }
         if (system == oscr::SYS_GB)
@@ -360,6 +426,8 @@ namespace OSCR::Dumper
   oscr::StreamSource * source() { return activeSource; }
 
   void noteError() { errorFlag = true; }
+
+  void noteAbort() { abortHit = true; }
 
   [[ noreturn ]] void fatal()
   {
