@@ -1,12 +1,87 @@
 # Continuação — estado do projeto e como retomar
 
-Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D59, com índice no topo).
+Última atualização: **2026-11-03**, fim da sessão do fork do OSCR (D65 a D78). Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas), `docs/funcoes-oscr.md` (o que falta do OSCR original) e `docs/decisoes.md` (log D1 a D78, com índice no topo).
 
-> **Placas (D70, D71):** o hardware agora é `boards/<variante>/`; a placa de 5 slots está em `boards/16_and_8_bits/` e a de SNES e Mega Drive em `boards/16_bits/`. Os caminhos de hardware deste documento valem para a `16_and_8_bits`.
->
-> **Estado do fork (D66, D75):** SD trocado pela serial, modo fluxo no protocolo, SNES, NES/Famicom, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). A identificação por banco de dados no PC e o arquivamento do firmware próprio (`firmware/arquivo/`) estão feitos (D76); a GUI ganhou o painel Configurações (idioma, base de dados, ajuda) e marcadores de lugar para os outros cartuchos do OSCR.
->
-> **Mudança de rumo (2026-11-03, D65):** o firmware passa a ser um fork do firmware novo do OSCR (`firmware/oscr/`, plano em `docs/fork-oscr.md`). O resto deste documento descreve o firmware próprio (`firmware/oscr_serial`), que continua funcionando até o fork cobrir o mesmo.
+> **As seções 2 a 5 descrevem o firmware próprio antigo** (`firmware/arquivo/oscr_serial`, arquivado em D76). O firmware atual é `firmware/oscr/` (fork do OSCR); o mapa dele e o estado estão na seção 0 e em `docs/fork-oscr.md`. O que cada sistema lê e grava hoje no fork: seção 0.1.
+
+## 0. Retomada (2026-11-03)
+
+### 0.1 O que está feito
+
+**Meta do projeto (decisão do usuário, 2026-11-03, D77):** ter **todas as funções do OSCR original**. Só **não** entram nas placas os **botões de operação sem computador** e o **cartão SD**. Parte das funções vai para o PC. Regra de implementação: **usar o máximo de código pronto do OSCR** (chamar as funções do upstream, não reescrever). Inventário por função: `docs/funcoes-oscr.md`.
+
+| Área | Feito | Commit / decisão |
+|---|---|---|
+| Firmware = fork do OSCR (`firmware/oscr/`) | SD trocado pela serial (`StreamFile`), UI muda, laço do protocolo em `src/dumper/Dumper.cpp`; **SNES, NES/Famicom, Mega Drive, GBA e GB/GBC** com `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. Compila: 151.176 B de flash (59,5%), 3.465 B de RAM (42,3%). | D65, D66, D75 |
+| NES no fork | mapper, PRG, CHR e RAM vêm do PC; 37 mappers de ROM (inclui o 30); saves dos mappers 1, 4, 5, 69 e 118; MMC6 tem save de 1 KB | D75, D78 |
+| **Gravação de ROM** | `WRITE_ROM` (`0x0B`) para **NES Maker (SST 39SF040, mapper 30)** e **A29040B (mapper 0)**, usando direto `NESmaker_*` e `A29040B_*` do OSCR (`flash = true` em `user.ini`); `NesFlash.cpp` só tem o laço de gravação, com limite de tempo; apagar acontece **antes** do primeiro `ACK` | D77 |
+| Conferência depois de gravar a ROM | o PC lê a ROM de volta e compara byte a byte (CLI, GUI, `--no-verify`) | D78 |
+| Banco de dados no PC | No-Intro `.dat` (Logiqx) e NES 2.0 XML; identifica por CRC32 (NES também sem cabeçalho e por PRG+CHR); `identify`, `search`, `dump --db`, `dump --game`; nome do jogo na GUI e busca de jogo no NES | D76 |
+| Firmware próprio arquivado | `firmware/arquivo/` (oscr_serial, arduino, platformio); o protocolo do fork tem testes em `firmware/oscr/pc-tests/` | D76 |
+| Host Python | CLI com `rom-write`, `identify`, `search`, `--db`, `--game`; 104 testes | D74, D76 a D78 |
+| GUI Kotlin | painel **Configurações** (idioma, base de dados, ajuda); layout em cartões, duas colunas a partir de 840 dp; **sistema e porta em combo box**, sistemas em ordem alfabética por grupo; botão **Gravar ROM** com seletor de chip, confirmação e conferência; 41 outros cartuchos do OSCR como **stubs** (aviso, ações desabilitadas) | D76, D77 |
+| CLI Kotlin | mesmo contrato da Python (`rom-write`, `identify`, `search`) | D74, D76 a D78 |
+| Hardware (KiCad) | `16_and_8_bits` e `16_bits` prontas para fabricar; **nada encomendado nem montado** | D70 a D73 |
+
+**Estado dos testes na última verificação (2026-11-03):** host 104 (`cd host && python3 -m pytest -q`); `make -C firmware/oscr/pc-tests test` (16 do protocolo); `cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin`; `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII`. O arquivo antigo ainda passa (`make -C firmware/arquivo/oscr_serial test`: 16 + 19 + 41 + 990). **Nenhum teste cobre o código dos núcleos do OSCR (só roda no AVR); nada rodou em hardware.** O CI do GitHub foi reescrito (D76) e **nunca executou**.
+
+### 0.2 O que está pendente, em ordem de valor
+
+**A. Validação em hardware (nada foi feito).** Roteiro em `docs/uso.md` seção 7.
+1. Encomendar a placa (`boards/16_and_8_bits/fab/dumper-v1.0-jlcpcb.zip` ou a `16_bits`) e as peças da BOM; conferir medidas dos slots e do módulo Si5351 (D17, D23), lado da etiqueta (D27, D28), espaçadores (D25).
+2. Montar, testar continuidade e tensão, gravar o firmware **do fork** (`pio run -e SerialASCII -t upload` em `firmware/oscr`), `INFO`, depois um cartucho simples (SNES LoROM ou NES mapper 0) e comparar o CRC32 com o No-Intro. Pedir os logs.
+3. **Ordem de risco nas gravações:** SRAM com backup, depois EEPROM, depois Flash do GBA, e por último `WRITE_ROM` (apaga o chip). Primeiro `WRITE_ROM`: num cartucho repro barato e **sem valor**, A29040B (mapper 0, 16/32 KB) antes do NES Maker (512 KB).
+4. Se o fork falhar num cartucho, gravar o firmware arquivado (`firmware/arquivo/`, comando no README dele) para separar defeito do fork de defeito da placa.
+5. Pontos mais prováveis de ajuste no fork: tempos do `readPRG`/`readCHR` do NES, `Power::setVoltage` sem VSELECT (**não conferido**), `enableCartridge` sem `ENABLE_ONBOARD_ATMEGA`, baud 1.000.000, laço de gravação do `NesFlash.cpp` (esperas de 14 us e de 8 s), `rom_prepare` com apagamento longo (o host espera 90 s).
+
+**B. Faltas no que já existe (fáceis de pegar).**
+- **`save-write` não confere depois de gravar** (CLI Python, Kotlin e GUI): o `WRITE_SAVE` do fork não relê o arquivo (o OSCR relia do SD), então o PC deve **reler o save e comparar**, como já faz com a ROM (`verify_written`). Hoje só existe o backup antes de gravar.
+- Detecção de NES sem cartucho é heurística (64 bytes iguais a `$00`/`$FF`).
+- Abortar no meio de uma gravação de flash deixa o chip pela metade (inerente; avisar na GUI?).
+- Testar a GUI de verdade: conexão serial a 1.000.000 baud (jSerialComm em Linux, macOS e Windows), seletor de arquivo, base de dados carregada, busca do NES, diálogo de gravação de ROM, janela estreita (uma coluna). Só foram vistos: janela, Configurações, combo, stubs e o cartão Gravação (display virtual).
+- Revisão das traduções ru e zh por falante nativo. Empacotamento (deb/AppImage, dmg, msi).
+- Leitor da base **CRDB** do OSCR (binária; `databases/` do clone vem vazio): só se o usuário trouxer os arquivos.
+- Reescrever as seções 2 a 5 deste arquivo para o fork (hoje descrevem o arquivo).
+
+**C. Funções do OSCR original que faltam (meta D77).** Lista completa e estado em `docs/funcoes-oscr.md`. Resumo, na ordem que sugiro:
+1. **Programador de flash genérico** (`Flash.cpp`: CFI, 8 e 16 bits, ID, blank check, ler, gravar, apagar, verificar, EPROM, PLCC32 para SNES): serve de base para as flash repro de vários sistemas; `flash = true` já está ligado, falta `flash16`.
+2. Flash repro por sistema: SNES (CFI e LoROM/HiROM/ExLoROM/ExHiROM), Mega Drive (29F1610, 29GL), GBA (Intel 4000/4400, MSP55LV128, MX29GL128E, 369-in-1), GB (29F/39SF, CFI, GB Smart, NPower, GameShark, Mega Memory, Datel).
+3. SNES: SF Memory (SFM), Satellaview, Sufami Turbo, Game Processor RAM, Test RAM, calibrar o relógio; chips raros (Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110).
+4. NES: leitura raw (PRG/CHR separados), mais mappers (o upstream trata mais de 100; ver `docs/limites-nes.md`), EEPROM dos mappers 16 e 159, saves de outros mappers, flash de CHR em outros chips.
+5. Mega Drive: Sega CD RAM, Realtec. GB/GBC: RTC do MBC3, Flash do MBC6, ROM do TAMA5.
+6. **Outros sistemas do OSCR** (Atari, N64, PC Engine, Master System, WonderSwan etc.): hoje só stubs na GUI (`PlannedSystems.kt` e `planned.py`). Cada um precisa de pinagem, adaptador, id no protocolo, firmware (o upstream tem o núcleo), host e GUI; o hardware de partida é a placa `completa/`.
+
+**D. Decisões que dependem do usuário.**
+- Qual flash repro vem depois da NES (sugestão: o programador genérico, depois SNES CFI).
+- Quando encomendar a placa (e qual: `16_bits` ou `16_and_8_bits`).
+- Se o CRDB do OSCR deve ser lido (só com arquivos de exemplo).
+
+### 0.3 Como retomar (passo a passo)
+
+```
+git pull                                     # (um clone só; remotos github e codeberg, repositórios privados)
+git log --oneline | head -20                 # o último commit desta sessão: d877ed9
+cat docs/funcoes-oscr.md                     # o que falta do OSCR
+cd host && python3 -m pytest -q              # 104 passam
+make -C firmware/oscr/pc-tests test          # 16 passam
+(cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin)
+(cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII)
+cd gui && ./gradlew :desktopApp:run          # abre a GUI
+python3 host/dumper.py --simulate detect     # sem hardware
+```
+
+Para cada função nova do OSCR, o caminho (D77): ler o menu no `firmware/oscr/src/cores/*.cpp` → ligar o núcleo em `user.ini` se preciso → **chamar** a função do OSCR de uma costura em `src/dumper/` (uma `Backend`: `rom_prepare` e `stream_write_rom` para gravar ROM; `stream_read` para ler) → comandos e erros em `docs/protocolo.md` e `oscr_proto.h` → host (`protocol.py`, `client.py`, `cli.py`) e GUI (`Client.kt`, `Cli.kt`, `Main.kt`, `I18n.kt` nos 4 idiomas) → simulador (`sim.py`, `SimDevice.kt`, `pc-tests/sim_stdio.cpp`) e testes → docs (`funcoes-oscr.md`, `decisoes.md`, `uso.md`, `cli.md`) → commit e push nos dois remotos.
+
+### 0.4 Armadilhas desta sessão
+
+- **`pkill -f` e `pgrep -f` com um padrão que aparece na própria linha de comando matam o shell** (aconteceu duas vezes). Use `pkill -x Xvfb` e `kill <pid>`.
+- Para ver a GUI sem tela: `Xvfb :97 -screen 0 1920x1100x24 -ac &`, depois `DISPLAY=:97 SKIKO_RENDER_API=SOFTWARE ./gradlew --offline :desktopApp:run` e `import -window root x.png`; `xdotool mousemove X Y click 1` clica. O GL do Skiko falha no Xvfb (por isso o renderizador por software).
+- PlatformIO: `~/.platformio/penv/bin/pio` (não está no PATH). O ambiente do fork é `SerialASCII`.
+- `HAS_FLASH` custa ~27 KB de flash. `flashfound` e `mmc6` do `NES.cpp` só são ligados, nunca desligados: o firmware os zera antes de cada comando.
+- Listas de mappers: acrescentar um mapper exige atualizar CLI (`--mapper`), `I18n.kt` (`NES_HINT` e `HELP_USE_6` nos 4 idiomas; o chinês usa `、`), `docs/uso.md`, `docs/protocolo.md`, `docs/limites-nes.md`, `NesRules.kt`; `host/tests/test_docs_sync.py` confere.
+- A lista de stubs (`planned.py` e `PlannedSystems.kt`) precisa ser idêntica; `test_planned.py` confere. A ordem alfabética do combo é só na tela.
+- O firmware só volta a ser testável no PC pelo protocolo (`pc-tests`); o que os núcleos do OSCR fazem com o cartucho só se vê em hardware.
+- Os arquivos `boards/16_bits/hardware/~dumper.kicad_*.lck` são travas do KiCad aberto: não commitar.
 
 ## 1. Onde estamos
 
@@ -14,11 +89,11 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 |---|---|
 | Hardware (KiCad 10) | Pronto para fabricar: DRC com 0 erros e 4 avisos justificados (furos de canto), netlist confere com `boards/16_and_8_bits/docs/pinmap.md`. Gerbers, drill e zip em `boards/16_and_8_bits/fab/`. **Nada foi encomendado nem montado.** |
 | Documentação | `README.md`, `docs/{pinmap,bom,montagem,protocolo,uso,decisoes}.md`, este arquivo. |
-| Firmware | Protocolo v1 e leitura de cartuchos escritos e testados **só no PC**, com cartuchos simulados. Compila para o Mega (Arduino e PlatformIO). **Nunca rodou em hardware.** |
-| Host (Python) | CLI `dumper.py` completa, 50 testes. |
+| Firmware | **Fork do OSCR** (`firmware/oscr/`, ver seção 0); o firmware próprio antigo está em `firmware/arquivo/`. Compila; **nunca rodou em hardware.** |
+| Host (Python) | CLI `dumper.py` completa (inclui `rom-write`, `identify`, `search`), 104 testes. |
 | GUI (Kotlin) | Compose Desktop, 4 idiomas (pt-BR, en, ru, zh). Compila e tem testes; **a janela nunca foi aberta** nesta máquina. |
 
-Último commit na `main`: ver `git log` (o último incremento foi a aplicação das correções das revisões de código e de UX/UI, D59). Remotos `github` e `codeberg`, repositórios **privados**.
+Último commit na `main`: ver `git log` (o último incremento foi a conferência depois de gravar a ROM, D78). Remotos `github` e `codeberg`, repositórios **privados**.
 
 ## 2. O que cada sistema lê e grava (firmware)
 
