@@ -13,7 +13,7 @@ Baseado no **Open Source Cartridge Reader (OSCR)** de sanni e comunidade.
 - Hardware original: <https://github.com/sanni/cartreader> (licença **CC BY 4.0**).
   Upstream atual: <https://github.com/oscartreader>.
 - Firmware original: GPL v3. O firmware deste projeto continuará GPL v3.
-- Slots (símbolos e footprints) copiados do OSCR, com alterações descritas em `hardware/lib/README.md`.
+- Slots (símbolos e footprints) copiados do OSCR, com alterações descritas em `boards/_lib/README.md`.
 
 Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 
@@ -22,22 +22,25 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | Pasta | O que tem |
 |---|---|
 | `CLAUDE.md` | Decisões de projeto e fases |
-| `docs/pinmap.md` | **Fonte da verdade:** pino do slot → pino do Mega (gerado) |
+| `boards/` | **Variantes de hardware**, uma pasta cada (índice em `boards/README.md`). Hoje só `16_bits/` tem projeto KiCad |
+| `boards/16_bits/docs/pinmap.md` | **Fonte da verdade** da placa atual: pino do slot → pino do Mega (gerado) |
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
 | `docs/continuacao.md` | **Comece aqui para retomar:** estado, mapa do código, como rodar, pendências |
-| `hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) e `lib/` (símbolos e footprints) |
+| `boards/16_bits/hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) da placa atual |
+| `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
 | `docs/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
 | `docs/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
 | `docs/sessao-2026-11-02.md` | Histórico da sessão de 2026-11-02: o que foi feito, defeitos achados, o que falta |
 | `docs/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
+| `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |
 | `tools/` | `gen_pinmap.py`, `check_netlist.py`, `build_lib.py`, `plan_layout.py`, `gen_connections.py`, `fill_zones.py`, `sync_net_names.py` |
 
 ## Verificação
 
 ```
 python3 tools/check_netlist.py                       # netlist do esquemático vs docs/pinmap.md
-kicad-cli sch erc hardware/dumper.kicad_sch          # ERC
-kicad-cli pcb drc hardware/dumper.kicad_pcb          # DRC
+kicad-cli sch erc boards/16_bits/hardware/dumper.kicad_sch          # ERC
+kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb          # DRC
 ```
 
 ## Recriar o `vendor/` (não versionado)

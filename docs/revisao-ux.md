@@ -89,7 +89,7 @@ A janela abre com 800×600 e o log (única forma de ver "CRC32", "salvo em...", 
 |---|---|
 | Silkscreen: "UM CARTUCHO POR VEZ", nome do sistema em cada slot, pino 1, versão e data, créditos do OSCR | Presentes (D24, D29). O slot GBA agora diz "GBA/GB 3V3" e "GBA E GB (ADAPTADOR) - 3,3 V". |
 | Direção de entrada e lado da etiqueta de cada cartucho | **Pendente de conferir com o slot físico** (D27, D28): o texto do silk pode estar ao contrário. É a pendência de UX mais barata de errar e mais cara de descobrir depois da fabricação. |
-| `docs/montagem.md` | Ordem de solda e testes antes de ligar são claros. Falta uma foto ou desenho da placa pronta com as referências (`R1`, `C2`...) e uma checklist imprimível. |
+| `boards/16_bits/docs/montagem.md` | Ordem de solda e testes antes de ligar são claros. Falta uma foto ou desenho da placa pronta com as referências (`R1`, `C2`...) e uma checklist imprimível. |
 | Cartuchos de 3,3 V e 5 V no mesmo conjunto de slots | Só um aviso no silk e na GUI protege quem insere um cartucho de 5 V no slot GBA; o hardware não impede. Considerar um chanfro físico ou batente no slot GBA. |
 
 ## 5. Ordem sugerida

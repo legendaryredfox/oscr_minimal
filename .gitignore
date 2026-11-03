@@ -1,11 +1,11 @@
 # Clones do upstream (referência, somente leitura). Ver README.md para recriar.
 vendor/oscr/
 # Gerados pelo KiCad / MCP
-hardware/.mcp-backups/
-hardware/*_drc_violations.json
-hardware/*.kicad_prl
-hardware/fp-info-cache
-hardware/*-backups/
+boards/*/hardware/.mcp-backups/
+boards/*/hardware/*_drc_violations.json
+boards/*/hardware/*.kicad_prl
+boards/*/hardware/fp-info-cache
+boards/*/hardware/*-backups/
 *.bak
 __pycache__/
 *.pyc
@@ -18,5 +18,5 @@ gui/.kotlin/
 host/.pytest_cache/
 .pytest_cache/
 *.egg-info/
-hardware/.history/
+boards/*/hardware/.history/
 firmware/oscr/.pio/

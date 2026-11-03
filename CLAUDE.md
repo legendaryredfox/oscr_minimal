@@ -10,7 +10,9 @@ Este arquivo orienta o Claude Code neste repositório. Leia inteiro antes de qua
 
 ## 1. Visão geral
 
-Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs e saves de cartuchos de **SNES/SFC, NES, Famicom, Mega Drive e GBA**. O controle e a transferência dos dumps são feitos **pela USB, direto para o PC**. O projeto não tem LCD nem cartão SD.
+Projeto com **várias versões mínimas de hardware** (uma por pasta em `boards/`, ver `boards/README.md`). As seções 1 a 8 e 10 descrevem a placa `boards/16_bits/`, a única com projeto KiCad hoje; as outras variantes herdam as regras e ajustam slots e pinagem. Firmware, `host/` e `gui/` são comuns a todas.
+
+Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs e saves de cartuchos de **SNES/SFC, NES, Famicom, Mega Drive e GBA**. O controle e a transferência dos dumps são feitos **pela USB, direto para o PC**. O projeto não tem LCD nem cartão SD.
 
 É derivado do **Open Source Cartridge Reader (OSCR)**, de sanni e comunidade:
 - Hardware original: CC BY 4.0. A atribuição é obrigatória no silkscreen e no README.
@@ -38,17 +40,20 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 ├── CLAUDE.md
 ├── README.md                 # inclui atribuição ao OSCR
 ├── vendor/oscr/              # clone do upstream (somente leitura, referência)
-├── docs/
-│   ├── pinmap.md             # FONTE DA VERDADE: sinal do slot → pino do Mega
+├── boards/                   # várias versões mínimas de hardware; uma pasta por variante (ver boards/README.md)
+│   ├── _lib/                 # símbolos e footprints KiCad compartilhados (slots, Mega R3)
+│   ├── 16_bits/              # placa atual: SNES, NES, Famicom, Mega Drive e GBA (fabricável, nada encomendado)
+│   │   ├── README.md
+│   │   ├── hardware/         # dumper.kicad_pro / .kicad_sch / .kicad_pcb
+│   │   ├── fab/              # gerbers, drill, bom.csv e zips para a JLCPCB
+│   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
+│   ├── 8_bits/               # esqueleto: NES, Famicom, Master System
+│   ├── gb_gba/               # esqueleto: GB, GBC, GBA
+│   └── completa/             # esqueleto: todos os slots do OSCR, sem SD e sem tela (só USB)
+├── docs/                     # docs gerais (valem para todas as placas)
 │   ├── uso.md                # guia de uso: casos de uso, cenários, troubleshooting
-│   ├── bom.md
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
-│   ├── montagem.md           # gerado na fase 7
 │   └── decisoes.md           # log de decisões e desvios
-├── hardware/
-│   ├── dumper.kicad_pro / .kicad_sch / .kicad_pcb
-│   ├── lib/                  # símbolos e footprints próprios
-│   └── fab/                  # gerbers, drill e zip para a JLCPCB
 ├── firmware/                 # fork enxuto do Cart_Reader do OSCR + protocolo
 │   ├── oscr_serial/          # biblioteca do protocolo (C++ portátil, testes no PC)
 │   ├── arduino/              # projeto Arduino (arduino-cli / IDE)
@@ -57,7 +62,7 @@ Shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs
 └── gui/                      # GUI multiplataforma (Kotlin Multiplatform), Linux, macOS e Windows
 ```
 
-Nunca edite nada em `vendor/`. Copie o que precisar para `hardware/lib/` ou `firmware/`.
+Nunca edite nada em `vendor/`. Copie o que precisar para `boards/_lib/` ou `firmware/`.
 
 ## 3. Regra de ouro: pinagem idêntica ao OSCR
 
@@ -69,7 +74,7 @@ Procedimento obrigatório antes do esquemático:
    - `pinout.ods` na raiz do repositório;
    - os projetos KiCad em `hardware/` (main_pcb_hw5, six_slot_adapter, adaptadores individuais, cic_adapter);
    - o firmware (`Cart_Reader/SNES.ino`, `NES.ino`, `MD.ino`, `Cart_Reader.ino`), confirmando quais portas e bits são usados para endereço, dados e controle.
-3. Gere `docs/pinmap.md` com uma tabela por slot: `pino do slot | sinal | pino Arduino | porta/bit AVR | fonte`.
+3. Gere `boards/16_bits/docs/pinmap.md` com uma tabela por slot: `pino do slot | sinal | pino Arduino | porta/bit AVR | fonte`.
 4. Liste qualquer divergência entre as fontes em `docs/decisoes.md`.
 5. **Pare e peça aprovação do usuário** antes de seguir.
 
@@ -130,20 +135,20 @@ Pare e peça confirmação do usuário ao final de cada fase marcada com ⏸.
 
 | Fase | Entrega | Verificação |
 |---|---|---|
-| 1. Referência | `vendor/oscr/`, `docs/pinmap.md` | Três fontes cruzadas ⏸ |
-| 2. Footprints | `hardware/lib/` com os 4 slots, reaproveitando os footprints do OSCR | Pitch e furos conferidos com as medidas do usuário ⏸ |
+| 1. Referência | `vendor/oscr/`, `boards/16_bits/docs/pinmap.md` | Três fontes cruzadas ⏸ |
+| 2. Footprints | `boards/_lib/` com os 4 slots, reaproveitando os footprints do OSCR | Pitch e furos conferidos com as medidas do usuário ⏸ |
 | 3. Esquemático | `.kicad_sch` | ERC sem erros; netlist bate com `pinmap.md` (script da seção 8) ⏸ |
 | 4. Posicionamento | Contorno + componentes posicionados | Revisão visual com o usuário ⏸ |
 | 5. Roteamento | Trilhas, planos, zonas preenchidas | DRC sem erros nem avisos não justificados |
-| 6. Fabricação | `hardware/fab/` com gerbers, drill e zip | Gerbers revisados em visualizador; `docs/bom.md` atualizado ⏸ |
-| 7. Montagem | `docs/montagem.md` | Revisado pelo usuário |
+| 6. Fabricação | `boards/16_bits/fab/` com gerbers, drill e zip | Gerbers revisados em visualizador; `boards/16_bits/docs/bom.md` atualizado ⏸ |
+| 7. Montagem | `boards/16_bits/docs/montagem.md` | Revisado pelo usuário |
 | 8. Firmware | `firmware/` + `host/` | Testes da seção 9 |
 
 ## 8. Verificação automática da netlist
 
 Crie `tools/check_netlist.py`, que:
 1. exporta a netlist (`kicad-cli sch export netlist`);
-2. lê `docs/pinmap.md`;
+2. lê `boards/16_bits/docs/pinmap.md`;
 3. confirma que cada pino de cada slot está na mesma net do pino do Mega esperado;
 4. confirma que o VCC de todos os slots está no 5V e o GND no GND;
 5. sai com código diferente de zero e lista as divergências se algo estiver errado.
@@ -186,7 +191,7 @@ Requisito do usuário (2026-11-02): interface gráfica para **Linux, macOS e Win
 - Testes unitários do host (pytest) para framing, CRC e reconstrução do arquivo.
 - O teste com hardware real é feito pelo usuário; peça os logs.
 
-## 10. Instruções de montagem (gerar em `docs/montagem.md` na fase 7)
+## 10. Instruções de montagem (gerar em `boards/16_bits/docs/montagem.md` na fase 7)
 
 O documento deve ter, nesta ordem:
 

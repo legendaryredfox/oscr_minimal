@@ -1,4 +1,4 @@
-# hardware/lib — símbolos e footprints do dumper
+# boards/_lib — símbolos e footprints do dumper
 
 Gerado por `tools/build_lib.py` (não edite à mão).
 

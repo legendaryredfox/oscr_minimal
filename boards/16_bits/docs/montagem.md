@@ -1,12 +1,12 @@
 # Montagem — oscr_minimal v1.0
 
-Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto, com as adaptações do GBA e do regulador de 3,3 V. Todas as referências (R1, C1...) estão no silkscreen e na `docs/bom.md`.
+Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto, com as adaptações do GBA e do regulador de 3,3 V. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 
 > **Segurança:** só um cartucho por vez. Nunca insira cartucho no slot GBA com 5V (o slot GBA é 3,3 V). Desligue o USB antes de trocar de cartucho.
 
 ## 1. Lista de peças
 
-Ver `docs/bom.md` (quantidades e referências). Resumo:
+Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 | Grupo | Referências |
 |---|---|
@@ -63,7 +63,7 @@ Ver `docs/bom.md` (quantidades e referências). Resumo:
 1. **Continuidade 5V–GND** entre os pinos 5V e GND do header do Mega (por exemplo, o canto 2x18). **Não pode haver curto.**
 2. **Continuidade 3,3 V–GND** no pino 1 do GBA (3,3 V) e no GND. Também não pode ter curto.
 3. **Isolação 5V–3,3 V:** a saída do regulador (pino 3 do U3) **não pode** ter continuidade com o 5V.
-4. **Algumas linhas até o Mega** (conforme `docs/pinmap.md`):
+4. **Algumas linhas até o Mega** (conforme `boards/16_bits/docs/pinmap.md`):
 
 | Do slot | Para o pino do Mega | Sinal |
 |---|---|---|
@@ -78,7 +78,7 @@ Ver `docs/bom.md` (quantidades e referências). Resumo:
 | GBA 6 | A0 | AD0 |
 | GBA 2 | D16 | CLK |
 
-5. Slots sem ligação (devem **não** ter continuidade com nada): GBA 31, Mega Drive B32 e os pinos listados como sem ligação em `docs/pinmap.md`.
+5. Slots sem ligação (devem **não** ter continuidade com nada): GBA 31, Mega Drive B32 e os pinos listados como sem ligação em `boards/16_bits/docs/pinmap.md`.
 6. D0 e D1 do Mega (serial USB) não podem ter continuidade com nenhum slot.
 
 ## 6. Primeira energização

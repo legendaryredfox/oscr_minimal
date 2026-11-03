@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Gera hardware/lib/ (símbolos e footprints próprios).
+"""Gera boards/_lib/ (símbolos e footprints próprios).
 
 - Slots SNES/NES/Famicom/Mega Drive: copiados do OSCR (CC BY 4.0),
   vendor/oscr/legacy/hardware/{symbols,footprints}. O footprint original só tem
@@ -9,14 +9,14 @@
   (furos e headers em mm; origem no canto inferior esquerdo da placa, Y negativo = para cima, vista de cima, USB à esquerda).
 - Si5351: símbolo do módulo de 7 pinos (VIN GND SDA SCL CLK2 CLK1 CLK0).
 
-Uso: python3 tools/build_lib.py && kicad-cli fp upgrade hardware/lib/dumper.pretty
+Uso: python3 tools/build_lib.py && kicad-cli fp upgrade boards/_lib/dumper.pretty
 """
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "vendor/oscr/legacy/hardware"
-LIB = ROOT / "hardware/lib"
+LIB = ROOT / "boards/_lib"
 PRETTY = LIB / "dumper.pretty"
 LIBNAME = "dumper"
 
@@ -256,12 +256,12 @@ def main():
     build_gba_footprint()
     print("GBA_Slot: 32 pads SMD + 2 blindagem + 2 furos (OSCR)")
     print("Mega2560_R3_Shield:", build_mega_footprint(), "pads +", len(MEGA_HOLES), "furos")
-    (ROOT / "hardware/fp-lib-table").write_text(
+    (ROOT / "boards/16_bits/hardware/fp-lib-table").write_text(
         '(fp_lib_table\n  (version 7)\n'
-        f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/lib/dumper.pretty")(options "")(descr "Footprints do dumper (slots OSCR CC BY 4.0, Mega R3)"))\n)\n')
-    (ROOT / "hardware/sym-lib-table").write_text(
+        f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/../../_lib/dumper.pretty")(options "")(descr "Footprints do dumper (slots OSCR CC BY 4.0, Mega R3)"))\n)\n')
+    (ROOT / "boards/16_bits/hardware/sym-lib-table").write_text(
         '(sym_lib_table\n  (version 7)\n'
-        f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/lib/dumper.kicad_sym")(options "")(descr "Simbolos do dumper (slots OSCR CC BY 4.0, Mega R3, Si5351)"))\n)\n')
+        f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/../../_lib/dumper.kicad_sym")(options "")(descr "Simbolos do dumper (slots OSCR CC BY 4.0, Mega R3, Si5351)"))\n)\n')
 
 
 main()

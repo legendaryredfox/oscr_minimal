@@ -1,12 +1,12 @@
 # Guia de uso: casos de uso, cenários e solução de problemas
 
-Este guia vale para a **GUI** (`gui/`, aba "Ajuda" também traz um resumo em português, inglês, russo e chinês) e para a **CLI** (`host/dumper.py`). Montagem da placa: `docs/montagem.md`. Protocolo: `docs/protocolo.md`.
+Este guia vale para a **GUI** (`gui/`, aba "Ajuda" também traz um resumo em português, inglês, russo e chinês) e para a **CLI** (`host/dumper.py`). Montagem da placa: `boards/16_bits/docs/montagem.md`. Protocolo: `docs/protocolo.md`.
 
 > **Estado do firmware:** a leitura dos cartuchos (SNES, NES/Famicom, Mega Drive, GBA) foi escrita a partir das sequências do OSCR e a lógica foi testada no PC com cartuchos simulados, mas **ainda não foi validada com hardware real**. Faça primeiro a seção 7.
 
 ## 1. Antes de começar
 
-1. Placa montada e testada (`docs/montagem.md`, seções 4 a 7).
+1. Placa montada e testada (`boards/16_bits/docs/montagem.md`, seções 4 a 7).
 2. Mega com o firmware gravado (`firmware/README.md`):
    - `arduino-cli upload ...` ou `pio run -t upload`.
    - Para testar o cabo sem cartucho, grave a versão de teste (`-DOSCR_MOCK` / ambiente `megaatmega2560_mock`).
@@ -89,7 +89,7 @@ Depois de cada dump o programa confere o **checksum do cabeçalho** (Mega Drive,
 | "CRC32 do arquivo não confere" (`0x0006`) | corrupção no USB | Repita a operação; troque o cabo. |
 | "erro de leitura/gravação no cartucho" (`0x0007`) | contato, bateria, cartucho com defeito | Limpe os contatos; no save, confira a bateria e o tamanho do arquivo. |
 | Gravação do save recusada (`0x0004`) | tamanho diferente do save do cartucho | Use um arquivo com exatamente o tamanho mostrado em **Detectar**. |
-| Placa esquenta, cheiro, LED sem acender | curto | Desligue o USB já. Refaça os testes de `docs/montagem.md` (seção 5). |
+| Placa esquenta, cheiro, LED sem acender | curto | Desligue o USB já. Refaça os testes de `boards/16_bits/docs/montagem.md` (seção 5). |
 | GBA não lê | cartucho de outro sistema; solda do slot | Só cartucho GBA; confira a solda dos pads de 1,5 mm e a tensão de 3,3 V no pino 1. |
 
 Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código de saída é 1 em erro, 2 se não houver cartucho.
@@ -118,4 +118,4 @@ Faça nesta ordem e anote o resultado em `docs/decisoes.md`:
 5. Mega Drive, Famicom e GBA.
 6. Save SNES: leia, faça backup, grave de volta o mesmo arquivo e leia de novo (devem ser iguais).
 
-Se algum sistema falhar, o ponto a olhar é o HAL em `firmware/oscr_serial/oscr_avr_buses.h` (tempos e linhas de controle), comparando com `SNES.ino`, `NES.ino`, `MD.ino` e `GBA.ino` do OSCR e com `docs/pinmap.md`.
+Se algum sistema falhar, o ponto a olhar é o HAL em `firmware/oscr_serial/oscr_avr_buses.h` (tempos e linhas de controle), comparando com `SNES.ino`, `NES.ino`, `MD.ino` e `GBA.ino` do OSCR e com `boards/16_bits/docs/pinmap.md`.

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Verifica a netlist do esquemático contra docs/pinmap.md (CLAUDE.md, seção 8).
+"""Verifica a netlist do esquemático contra boards/16_bits/docs/pinmap.md (CLAUDE.md, seção 8).
 
 1. exporta a netlist com `kicad-cli sch export netlist`;
-2. lê docs/pinmap.md;
+2. lê boards/16_bits/docs/pinmap.md;
 3. confirma que cada pino de cada slot está na mesma net do pino do Mega esperado
    (e que nenhuma net tem pino a mais ou a menos);
 4. confirma VCC dos slots = 5V (net do pino 5V do Mega) e GND = GND;
@@ -20,8 +20,8 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCH = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "hardware/dumper.kicad_sch"
-PINMAP = ROOT / "docs/pinmap.md"
+SCH = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "boards/16_bits/hardware/dumper.kicad_sch"
+PINMAP = ROOT / "boards/16_bits/docs/pinmap.md"
 
 SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1"}
 MEGA = "A1"          # shield
@@ -183,7 +183,7 @@ def main():
         for e in errors:
             print("  -", e)
         sys.exit(1)
-    print(f"OK: {len(exp)} nets e {n_pins} ligações conferem com docs/pinmap.md; "
+    print(f"OK: {len(exp)} nets e {n_pins} ligações conferem com boards/16_bits/docs/pinmap.md; "
           f"{len(pm_nc)} pinos de slot sem ligação conferidos.")
 
 

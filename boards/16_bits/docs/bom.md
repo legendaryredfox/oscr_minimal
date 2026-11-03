@@ -1,6 +1,6 @@
 # BOM — oscr_minimal v1.0
 
-Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `hardware/fab/bom.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
+Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bits/fab/bom.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
 > **Pendências antes de comprar (conferir quando as peças chegarem):**
 > - Medidas reais dos slots e do módulo Si5351 (estimadas: `docs/decisoes.md` D17, D23).
@@ -11,7 +11,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `hardware/fab/
 
 | Item | Valor |
 |---|---|
-| Arquivo | `hardware/fab/dumper-v1.0-jlcpcb.zip` |
+| Arquivo | `boards/16_bits/fab/dumper-v1.0-jlcpcb.zip` |
 | Camadas | 2 |
 | Dimensões | 144,05 × 108,05 mm (acima de 100 × 100 mm: preço maior) |
 | Espessura | 1,6 mm |
@@ -56,4 +56,4 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `hardware/fab/
 | Cabo USB-C para USB-C (ou USB-A) | 1 | Interface com o PC (D30). |
 
 ## Ferramentas e consumíveis
-Ver `docs/montagem.md`.
+Ver `boards/16_bits/docs/montagem.md`.

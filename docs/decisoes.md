@@ -68,6 +68,7 @@
 - **D67** Gerbers para pedir a placa (2026-11-03)
 - **D68** Fork: GBA e GB/GBC ligados ao protocolo (2026-11-03)
 - **D69** Fork: SNES ligado ao protocolo (2026-11-03)
+- **D70** Repositório passa a oferecer várias versões mínimas de hardware (decisão do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -535,7 +536,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificações antes de exportar** (placa sem mudanças desde o último zip): DRC `kicad-cli pcb drc` 0 erros e 4 avisos (`lib_footprint_mismatch` dos furos de canto, justificados em D26); 0 itens sem ligação; `tools/check_netlist.py` OK (67 nets, 375 ligações, 26 pinos sem ligação); ERC 0 erros e 1 aviso novo (`lib_symbol_mismatch` do `U3`: o símbolo MCP1700 do projeto difere da cópia da biblioteca do KiCad 10; só cosmético). Zonas conferidas com `--check-zones`.
 - **Exportado com `kicad-cli`** (o MCP não foi necessário): F.Cu, B.Cu, máscaras, silk, contorno (extensões Protel, sem X2) e furos Excellon métrico (PTH e NPTH separados). Cobre, máscara, contorno e silk de cima saíram **idênticos** aos de 2026-11-02; mudam só as datas de criação, e a silk de baixo (que não tem desenho) deixou de trazer recortes vazios.
 - **Conferido com `gerbonara`:** 7 camadas, contorno 144,05 × 108,05 mm, 915 furos metalizados (iguais a D32) e 14 não metalizados (12 de D32 mais os 2 de M2 do módulo Si5351, D34).
-- **Arquivo para a fábrica:** `dumper-v1.0-gerbers-jlcpcb.zip` na raiz do projeto (mesmo conteúdo de `hardware/fab/dumper-v1.0-jlcpcb.zip`). Pedido: 2 camadas, 1,6 mm, HASL, 5 peças (CLAUDE.md seção 1).
+- **Arquivo para a fábrica:** `dumper-v1.0-gerbers-jlcpcb.zip` na raiz do projeto (hoje em `boards/16_bits/fab/`) (mesmo conteúdo de `boards/16_bits/fab/dumper-v1.0-jlcpcb.zip`). Pedido: 2 camadas, 1,6 mm, HASL, 5 peças (CLAUDE.md seção 1).
 - **Configurações do pedido na JLCPCB (PCB, upload do zip):** Base material FR-4; camadas 2; dimensões 144 × 108 mm (lidas do arquivo); quantidade 5; espessura 1,6 mm; cobre 1 oz; acabamento HASL (com chumbo ou sem chumbo, a gosto; sem chumbo é a opção padrão da maioria dos pedidos de hobby); máscara e cor da seda: **escolha sua** (o CLAUDE.md manda perguntar; silk branco em máscara verde/preta é o padrão); trilha/espaço mínimo do projeto 0,2 mm; furo mínimo 0,3 mm (o padrão aceita); sem controle de impedância, sem dedos de ouro, sem castelo, sem borda em V; "Remove Order Number" (opcional, cobra à parte; sem isso, a JLCPCB imprime um código no silk de baixo, que está vazio); teste: o padrão. Sem montagem (PCBA) e sem stencil: todas as peças são THT, e o slot do GBA (SMD, 1,5 mm) é soldado à mão.
 - **O que continua estimado e só o hardware responde** (não impede o pedido, mas pode obrigar a girar um slot ou mudar o silk numa v1.1): corpo e altura dos slots (D17, ±3 mm), lado da etiqueta e direção de entrada do slot (D27, D28, U-18), posição dos furos M2 do módulo Si5351 (D34) e altura dos espaçadores (D25). As **trilhas, os furos e a pinagem** não dependem disso.
 
@@ -551,3 +552,12 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Compila (118.572 B de flash, 46,7%); nunca rodou.** Sem teste no PC. A verificação do save depois de gravar e a comparação do checksum interno ficam com o PC.
 - Falta o NES/Famicom e a identificação por banco de dados no host e na GUI.
 
+
+### D70 — Repositório passa a oferecer várias versões mínimas de hardware (decisão do usuário, 2026-11-03)
+- **Nova pasta `boards/`**, uma subpasta por variante, nomeada por geração: `16_bits/` (placa atual de 5 slots: SNES, NES, Famicom, Mega Drive, GBA), `8_bits/` (NES, Famicom, Master System), `gb_gba/` (GB, GBC, GBA), `completa/` (todos os slots do OSCR, sem SD e sem tela, só USB). As três últimas são **esqueletos** (README e pastas vazias).
+- **Movido** (`git mv`, histórico preservado): `hardware/` → `boards/16_bits/hardware/`, `hardware/fab/` → `boards/16_bits/fab/`, `hardware/lib/` → `boards/_lib/` (compartilhada), `docs/{pinmap,bom,montagem}.md` → `boards/16_bits/docs/`, zip da raiz → `boards/16_bits/fab/`.
+- **Mantidos na raiz e comuns a todas as placas:** `firmware/`, `host/`, `gui/`, `tools/`, `docs/` (uso, protocolo, decisões, continuação, fork). Firmware não foi alterado.
+- `fp-lib-table` e `sym-lib-table` da `16_bits` apontam para `${KIPRJMOD}/../../_lib/`. Os scripts de `tools/` têm o caminho `boards/16_bits/` fixo no código, a generalizar quando existir a segunda placa com KiCad.
+- Verificado depois da mudança: `tools/check_netlist.py` OK (67 nets, 375 ligações); DRC `kicad-cli` 4 avisos, 0 ligações abertas (igual a antes).
+- Os textos antigos deste log e de `sessao-2026-11-02.md` mantêm os caminhos da época (`hardware/...`, `docs/pinmap.md`).
+- **Em aberto:** conflito de nome. A pasta `16_bits/` guarda a placa de 5 slots (incluindo NES/Famicom e GBA), enquanto `8_bits/` e `gb_gba/` repetem sistemas que ela já cobre. Resolver quando as variantes ganharem projeto.

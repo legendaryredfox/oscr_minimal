@@ -10,7 +10,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 
 | Área | Estado |
 |---|---|
-| Hardware (KiCad 10) | Pronto para fabricar: DRC com 0 erros e 4 avisos justificados (furos de canto), netlist confere com `docs/pinmap.md`. Gerbers, drill e zip em `hardware/fab/`. **Nada foi encomendado nem montado.** |
+| Hardware (KiCad 10) | Pronto para fabricar: DRC com 0 erros e 4 avisos justificados (furos de canto), netlist confere com `boards/16_bits/docs/pinmap.md`. Gerbers, drill e zip em `boards/16_bits/fab/`. **Nada foi encomendado nem montado.** |
 | Documentação | `README.md`, `docs/{pinmap,bom,montagem,protocolo,uso,decisoes}.md`, este arquivo. |
 | Firmware | Protocolo v1 e leitura de cartuchos escritos e testados **só no PC**, com cartuchos simulados. Compila para o Mega (Arduino e PlatformIO). **Nunca rodou em hardware.** |
 | Host (Python) | CLI `dumper.py` completa, 50 testes. |
@@ -67,7 +67,7 @@ make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
 (cd firmware/platformio && pio run)                # precisa do PlatformIO (pip install platformio, num venv)
 python3 tools/check_netlist.py                     # netlist vs pinmap
-kicad-cli pcb drc hardware/dumper.kicad_pcb
+kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb
 cd gui && ./gradlew :desktopApp:run                # abre a GUI (nunca testado em tela)
 ```
 
@@ -115,9 +115,9 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **A. Validação com hardware (nada disso foi feito).** Roteiro em `docs/uso.md` seção 7:
 0. **Ordem de risco para os primeiros testes de gravação:** SRAM do SNES/GBA com backup feito, depois EEPROM do GBA, e a Flash do GBA por último (apaga o chip).
-1. Encomendar a placa (`hardware/fab/dumper-v1.0-jlcpcb.zip`) e as peças da `docs/bom.md`.
+1. Encomendar a placa (`boards/16_bits/fab/dumper-v1.0-jlcpcb.zip`) e as peças da `boards/16_bits/docs/bom.md`.
 2. Antes de comprar, conferir com as peças reais: medidas dos slots e do módulo Si5351 (D17, D23), lado da etiqueta de cada slot (D27, D28), altura dos espaçadores (D25).
-3. Montar (`docs/montagem.md`), testes de continuidade e de tensão, gravar o firmware, rodar o modo `MOCK`, depois um cartucho simples (SNES LoROM ou NES mapper 0) e comparar o CRC32 com o No-Intro.
+3. Montar (`boards/16_bits/docs/montagem.md`), testes de continuidade e de tensão, gravar o firmware, rodar o modo `MOCK`, depois um cartucho simples (SNES LoROM ou NES mapper 0) e comparar o CRC32 com o No-Intro.
 4. Pedir os logs. Pontos mais prováveis de ajuste: `oscr_avr_buses.h` (tempos), EEPROM do GBA (`eeprom_block`, `eeprom_write_block`), gravação de Flash do GBA, EEPROM do Mega Drive (bits por tipo em `eep_state`), troca de banco do GBA.
 
 **B. Pequenos itens de software.**

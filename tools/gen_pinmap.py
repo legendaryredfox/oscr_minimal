@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Gera docs/pinmap.md cruzando 3 fontes do OSCR HW5:
+"""Gera boards/16_bits/docs/pinmap.md cruzando 3 fontes do OSCR HW5:
   1. pinout.ods            (vendor/oscr/legacy/pinout.ods)
   2. esquemáticos KiCad    (vendor/oscr/legacy/hardware/*)
   3. firmware              (vendor/oscr/legacy/Cart_Reader/*.ino)
@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LEG = ROOT / "vendor/oscr/legacy"
 HW = LEG / "hardware"
 FW = LEG / "Cart_Reader"
-OUT = ROOT / "docs/pinmap.md"
+OUT = ROOT / "boards/16_bits/docs/pinmap.md"
 
 # --- Mega 2560: pino Arduino -> (porta, bit) -----------------------------------
 ARD2AVR = {}

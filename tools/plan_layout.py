@@ -6,7 +6,7 @@ PCB: pcb_x = OX + x_m ; pcb_y = OY + (YTOP - y_m)."""
 import json, math, re, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
-PRETTY = ROOT / "hardware/lib/dumper.pretty"
+PRETTY = ROOT / "boards/_lib/dumper.pretty"
 OX, OY = 20.0, 20.0
 YMIN, YMAX = -17.0, 91.0            # bordas da placa no quadro Mega
 XMIN, XMAX = 0.0, 144.0

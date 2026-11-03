@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Preenche as zonas de cobre fora do MCP (o refill do MCP via SWIG pode travar).
-# Uso: ~/development/llms/KiCAD-MCP-Server/.venv/bin/python tools/fill_zones.py hardware/dumper.kicad_pcb
+# Uso: ~/development/llms/KiCAD-MCP-Server/.venv/bin/python tools/fill_zones.py boards/16_bits/hardware/dumper.kicad_pcb
 import pcbnew, sys
 p=sys.argv[1]
 b=pcbnew.LoadBoard(p)
