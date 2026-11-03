@@ -1,4 +1,6 @@
-# Mapa de pinos — slot do cartucho → pino do Arduino Mega 2560
+# Mapa de pinos — placa 16_bits (SNES e Mega Drive) → pino do Arduino Mega 2560
+
+> Recorte de `boards/16_and_8_bits/docs/pinmap.md` (mesma pinagem do OSCR HW5): só as tabelas de SNES e Mega Drive. Sem NES, Famicom e GBA; sem regulador de 3,3 V.
 
 **FONTE DA VERDADE.** Gerado por `tools/gen_pinmap.py` (não edite à mão; edite o script ou `docs/decisoes.md`).
 
@@ -85,148 +87,6 @@ Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva
 | 61 | PA5_61 | D27 | PA5 | sch ods fw six |
 | 62 | Right_Audio_Input_62 | NC (sem ligação) | - | sch |
 
-## NES (ref. `U1` em `nes_adapter`, 72 pinos)
-
-| pino do slot | sinal | net / pino Arduino | porta/bit AVR | fonte |
-|---|---|---|---|---|
-| 1 | GND_1 | GND | - | sch six |
-| 2 | PRG_A11_2 | D25 | PA3 | sch ods fw six |
-| 3 | PRG_A10_3 | D24 | PA2 | sch ods fw six |
-| 4 | PRG_A9_4 | D23 | PA1 | sch ods fw six |
-| 5 | PRG_A8_5 | D22 | PA0 | sch ods fw six |
-| 6 | PRG_A7_6 | D42 | PL7 | sch ods fw six |
-| 7 | PRG_A6_7 | D43 | PL6 | sch ods fw six |
-| 8 | PRG_A5_8 | D44 | PL5 | sch ods fw six |
-| 9 | PRG_A4_9 | D45 | PL4 | sch ods fw six |
-| 10 | PRG_A3_10 | D46 | PL3 | sch ods fw six |
-| 11 | PRG_A2_11 | D47 | PL2 | sch ods fw six |
-| 12 | PRG_A1_12 | D48 | PL1 | sch ods fw six |
-| 13 | PRG_A0_13 | D49 | PL0 | sch ods fw six |
-| 14 | PRG_RW_14 | A7 | PF7 | sch ods fw six |
-| 15 | IRQ_15 | A6 | PF6 | sch ods fw six |
-| 16 | EXP_0_16 | NC (sem ligação) | - | sch |
-| 17 | EXP_1_17 | NC (sem ligação) | - | sch |
-| 18 | EXP_2_18 | NC (sem ligação) | - | sch |
-| 19 | EXP_3_19 | NC (sem ligação) | - | sch |
-| 20 | EXP_4_20 | NC (sem ligação) | - | sch |
-| 21 | CHR_RD_21 | A5 | PF5 | sch ods fw six |
-| 22 | CIRAM_A10_22 | D35 | PC2 | sch ods fw six |
-| 23 | CHR_A6_23 | D43 | PL6 | sch ods fw six |
-| 24 | CHR_A5_24 | D44 | PL5 | sch ods fw six |
-| 25 | CHR_A4_25 | D45 | PL4 | sch ods fw six |
-| 26 | CHR_A3_26 | D46 | PL3 | sch ods fw six |
-| 27 | CHR_A2_27 | D47 | PL2 | sch ods fw six |
-| 28 | CHR_A1_28 | D48 | PL1 | sch ods fw six |
-| 29 | CHR_A0_29 | D49 | PL0 | sch ods fw six |
-| 30 | CHR_D0_30 | A8 | PK0 | sch ods fw six |
-| 31 | CHR_D1_31 | A9 | PK1 | sch ods fw six |
-| 32 | CHR_D2_32 | A10 | PK2 | sch ods fw six |
-| 33 | CHR_D3_33 | A11 | PK3 | sch ods fw six |
-| 34 | Security3_34 | NC (sem ligação) | - | sch |
-| 35 | Security4_35 | NC (sem ligação) | - | sch |
-| 36 | VCC_36 | 5V (fixo) | - | sch six |
-| 37 | CLK_37 | CLK0 (Si5351) | (Si5351) | sch -ods six |
-| 38 | M2_38 | A0 | PF0 | sch ods fw six |
-| 39 | PRG_A12_39 | D26 | PA4 | sch ods fw six |
-| 40 | PRG_A13_40 | D27 | PA5 | sch ods fw six |
-| 41 | PRG_A14_41 | D28 | PA6 | sch ods fw six |
-| 42 | PRG_D7_42 | A15 | PK7 | sch ods fw six |
-| 43 | PRG_D6_43 | A14 | PK6 | sch ods fw six |
-| 44 | PRG_D5_44 | A13 | PK5 | sch ods fw six |
-| 45 | PRG_D4_45 | A12 | PK4 | sch ods fw six |
-| 46 | PRG_D3_46 | A11 | PK3 | sch ods fw six |
-| 47 | PRG_D2_47 | A10 | PK2 | sch ods fw six |
-| 48 | PRG_D1_48 | A9 | PK1 | sch ods fw six |
-| 49 | PRG_D0_49 | A8 | PK0 | sch ods fw six |
-| 50 | PRG_CE_50 | A1 | PF1 | sch ods fw six |
-| 51 | EXP_9_51 | NC (sem ligação) | - | sch |
-| 52 | EXP_8_52 | NC (sem ligação) | - | sch |
-| 53 | EXP_7_53 | NC (sem ligação) | - | sch |
-| 54 | EXP_6_54 | NC (sem ligação) | - | sch |
-| 55 | EXP_5_55 | NC (sem ligação) | - | sch |
-| 56 | CHR_WR_56 | A2 | PF2 | sch ods fw six |
-| 57 | CIRAM_CE_57 | A3 | PF3 | sch ods fw six |
-| 58 | CHR_/A13_58 | A4 | PF4 | sch ods fw six |
-| 59 | CHR_A7_59 | D42 | PL7 | sch ods fw six |
-| 60 | CHR_A8_60 | D22 | PA0 | sch ods fw six |
-| 61 | CHR_A9_61 | D23 | PA1 | sch ods fw six |
-| 62 | CHR_A11_62 | D25 | PA3 | sch ods fw six |
-| 63 | CHR_A10_63 | D24 | PA2 | sch ods fw six |
-| 64 | CHR_A12_64 | D26 | PA4 | sch ods fw six |
-| 65 | CHR_A13_65 | D27 | PA5 | sch ods fw six |
-| 66 | CHR_D7_66 | A15 | PK7 | sch ods fw six |
-| 67 | CHR_D6_67 | A14 | PK6 | sch ods fw six |
-| 68 | CHR_D5_68 | A13 | PK5 | sch ods fw six |
-| 69 | CHR_D4_69 | A12 | PK4 | sch ods fw six |
-| 70 | Security1_70 | NC (sem ligação) | - | sch |
-| 71 | Security2_71 | NC (sem ligação) | - | sch |
-| 72 | GND_72 | GND | - | sch six |
-
-## Famicom (ref. `U1` em `famicom_adapter`, 60 pinos)
-
-| pino do slot | sinal | net / pino Arduino | porta/bit AVR | fonte |
-|---|---|---|---|---|
-| 1 | GND_1 | GND | - | sch six |
-| 2 | PRG_A11_2 | D25 | PA3 | sch ods fw six |
-| 3 | PRG_A10_3 | D24 | PA2 | sch ods fw six |
-| 4 | PRG_A9_4 | D23 | PA1 | sch ods fw six |
-| 5 | PRG_A8_5 | D22 | PA0 | sch ods fw six |
-| 6 | PRG_A7_6 | D42 | PL7 | sch ods fw six |
-| 7 | PRG_A6_7 | D43 | PL6 | sch ods fw six |
-| 8 | PRG_A5_8 | D44 | PL5 | sch ods fw six |
-| 9 | PRG_A4_9 | D45 | PL4 | sch ods fw six |
-| 10 | PRG_A3_10 | D46 | PL3 | sch ods fw six |
-| 11 | PRG_A2_11 | D47 | PL2 | sch ods fw six |
-| 12 | PRG_A1_12 | D48 | PL1 | sch ods fw six |
-| 13 | PRG_A0_13 | D49 | PL0 | sch ods fw six |
-| 14 | PRG_RW_14 | A7 | PF7 | sch ods fw six |
-| 15 | IRQ_15 | A6 | PF6 | sch ods fw six |
-| 16 | GND_16 | GND | - | sch six |
-| 17 | CHR_RD_17 | A5 | PF5 | sch ods fw six |
-| 18 | CIRAM_A10_18 | D35 | PC2 | sch ods fw six |
-| 19 | CHR_A6_19 | D43 | PL6 | sch ods fw six |
-| 20 | CHR_A5_20 | D44 | PL5 | sch ods fw six |
-| 21 | CHR_A4_21 | D45 | PL4 | sch ods fw six |
-| 22 | CHR_A3_22 | D46 | PL3 | sch ods fw six |
-| 23 | CHR_A2_23 | D47 | PL2 | sch ods fw six |
-| 24 | CHR_A1_24 | D48 | PL1 | sch ods fw six |
-| 25 | CHR_A0_25 | D49 | PL0 | sch ods fw six |
-| 26 | CHR_D0_26 | A8 | PK0 | sch ods fw six |
-| 27 | CHR_D1_27 | A9 | PK1 | sch ods fw six |
-| 28 | CHR_D2_28 | A10 | PK2 | sch ods fw six |
-| 29 | CHR_D3_29 | A11 | PK3 | sch ods fw six |
-| 30 | 5V_30 | 5V (fixo) | - | sch six |
-| 31 | VCC_31 | 5V (fixo) | - | sch six |
-| 32 | M2_32 | A0 | PF0 | sch ods fw six |
-| 33 | PRG_A12_33 | D26 | PA4 | sch ods fw six |
-| 34 | PRG_A13_34 | D27 | PA5 | sch ods fw six |
-| 35 | PRG_A14_35 | D28 | PA6 | sch ods fw six |
-| 36 | PRG_D7_36 | A15 | PK7 | sch ods fw six |
-| 37 | PRG_D6_37 | A14 | PK6 | sch ods fw six |
-| 38 | PRG_D5_38 | A13 | PK5 | sch ods fw six |
-| 39 | PRG_D4_39 | A12 | PK4 | sch ods fw six |
-| 40 | PRG_D3_40 | A11 | PK3 | sch ods fw six |
-| 41 | PRG_D2_41 | A10 | PK2 | sch ods fw six |
-| 42 | PRG_D1_42 | A9 | PK1 | sch ods fw six |
-| 43 | PRG_D0_43 | A8 | PK0 | sch ods fw six |
-| 44 | PRG_CE_44 | A1 | PF1 | sch ods fw six |
-| 45 | EXP_45 | NC (sem ligação) | - | sch |
-| 46 | EXP_46 | NC (sem ligação) | - | sch |
-| 47 | CHR_WR_47 | A2 | PF2 | sch ods fw six |
-| 48 | CIRAM_CE_48 | A3 | PF3 | sch ods fw six |
-| 49 | CHR_/A13_49 | A4 | PF4 | sch ods fw six |
-| 50 | CHR_A7_50 | D42 | PL7 | sch ods fw six |
-| 51 | CHR_A8_51 | D22 | PA0 | sch ods fw six |
-| 52 | CHR_A9_52 | D23 | PA1 | sch ods fw six |
-| 53 | CHR_A10_53 | D24 | PA2 | sch ods fw six |
-| 54 | CHR_A11_54 | D25 | PA3 | sch ods fw six |
-| 55 | CHR_A12_55 | D26 | PA4 | sch ods fw six |
-| 56 | CHR_A13_56 | D27 | PA5 | sch ods fw six |
-| 57 | CHR_D7_57 | A15 | PK7 | sch ods fw six |
-| 58 | CHR_D6_58 | A14 | PK6 | sch ods fw six |
-| 59 | CHR_D5_59 | A13 | PK5 | sch ods fw six |
-| 60 | CHR_D4_60 | A12 | PK4 | sch ods fw six |
-
 ## Mega Drive (ref. `U1` em `megadrive_adapter`, 64 pinos)
 
 | pino do slot | sinal | net / pino Arduino | porta/bit AVR | fonte |
@@ -296,45 +156,6 @@ Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva
 | B31 | /TIME_B31 | D15 | PJ0 | sch ods fw six |
 | B32 | /CART_B32 | NC (sem ligação) | - | sch |
 
-## GBA (ref. `J10` em `main_pcb_hw5`, 34 pinos)
-
-| pino do slot | sinal | net / pino Arduino | porta/bit AVR | fonte |
-|---|---|---|---|---|
-| 1 | VCC_1 | 3V3 (regulador U3) | - | sch |
-| 2 | CLK_2 | D16 | PH1 | sch ods -fw |
-| 3 | WR_3 | D8 | PH5 | sch ods fw |
-| 4 | RD_4 | D9 | PH6 | sch ods fw |
-| 5 | CS1_5 | D6 | PH3 | sch ods fw |
-| 6 | AD0_6 | A0 | PF0 | sch ods fw |
-| 7 | AD1_7 | A1 | PF1 | sch ods fw |
-| 8 | AD2_8 | A2 | PF2 | sch ods fw |
-| 9 | AD3_9 | A3 | PF3 | sch ods fw |
-| 10 | AD4_10 | A4 | PF4 | sch ods fw |
-| 11 | AD5_11 | A5 | PF5 | sch ods fw |
-| 12 | AD6_12 | A6 | PF6 | sch ods fw |
-| 13 | AD7_13 | A7 | PF7 | sch ods fw |
-| 14 | AD8_14 | A8 | PK0 | sch ods fw |
-| 15 | AD9_15 | A9 | PK1 | sch ods fw |
-| 16 | AD10_16 | A10 | PK2 | sch ods fw |
-| 17 | AD11_17 | A11 | PK3 | sch ods fw |
-| 18 | AD12_18 | A12 | PK4 | sch ods fw |
-| 19 | AD13_19 | A13 | PK5 | sch ods fw |
-| 20 | AD14_20 | A14 | PK6 | sch ods fw |
-| 21 | AD15_21 | A15 | PK7 | sch ods fw |
-| 22 | D0_A16_22 | D37 | PC0 | sch ods fw |
-| 23 | D1_A17_23 | D36 | PC1 | sch ods fw |
-| 24 | D2_A18_24 | D35 | PC2 | sch ods fw |
-| 25 | D3_A19_25 | D34 | PC3 | sch ods fw |
-| 26 | D4_A20_26 | D33 | PC4 | sch ods fw |
-| 27 | D5_A21_27 | D32 | PC5 | sch ods fw |
-| 28 | D6_A22_28 | D31 | PC6 | sch ods fw |
-| 29 | D7_A23_29 | D30 | PC7 | sch ods fw |
-| 30 | RST_CS2_30 | D17 | PH0 | sch ods fw |
-| 31 | AUD_IRQ_31 | NC (sem ligação) | - | sch |
-| 32 | GND_32 | GND | - | sch |
-| SHIELD_3 | SHIELD_3_33 | GND | - | sch |
-| SHIELD_4 | SHIELD_4_34 | GND | - | sch |
-
 ## Placa principal — o que o HW5 liga além dos slots (referência)
 
 | item | pino Arduino | fonte |
@@ -363,6 +184,5 @@ Nota: o PIC12F629 usa a pinagem do `JCIC1` (1=VCC, 2=CLK2, 3=D41, 4=D40, 5=RESET
 ## Pinos do slot sem ligação no OSCR (mantidos sem ligação)
 
 - SNES: pino 31 (Left Audio), pino 62 (Right Audio).
-- NES: `EXP_0..EXP_9` (16-20, 51-55), `Security1..4` (70, 71, 34, 35).
-- Famicom/Mega Drive: ver pinos ausentes na tabela de cada sistema.
+- Mega Drive: ver pinos ausentes na tabela.
 

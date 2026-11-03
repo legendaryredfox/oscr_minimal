@@ -256,10 +256,10 @@ def main():
     build_gba_footprint()
     print("GBA_Slot: 32 pads SMD + 2 blindagem + 2 furos (OSCR)")
     print("Mega2560_R3_Shield:", build_mega_footprint(), "pads +", len(MEGA_HOLES), "furos")
-    (ROOT / "boards/16_bits/hardware/fp-lib-table").write_text(
+    (ROOT / "boards/16_and_8_bits/hardware/fp-lib-table").write_text(
         '(fp_lib_table\n  (version 7)\n'
         f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/../../_lib/dumper.pretty")(options "")(descr "Footprints do dumper (slots OSCR CC BY 4.0, Mega R3)"))\n)\n')
-    (ROOT / "boards/16_bits/hardware/sym-lib-table").write_text(
+    (ROOT / "boards/16_and_8_bits/hardware/sym-lib-table").write_text(
         '(sym_lib_table\n  (version 7)\n'
         f'  (lib (name "{LIBNAME}")(type "KiCad")(uri "${{KIPRJMOD}}/../../_lib/dumper.kicad_sym")(options "")(descr "Simbolos do dumper (slots OSCR CC BY 4.0, Mega R3, Si5351)"))\n)\n')
 

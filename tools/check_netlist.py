@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Verifica a netlist do esquemático contra boards/16_bits/docs/pinmap.md (CLAUDE.md, seção 8).
+"""Verifica a netlist do esquemático contra boards/<placa>/docs/pinmap.md (`--board <placa>`, padrão 16_and_8_bits) (CLAUDE.md, seção 8).
 
 1. exporta a netlist com `kicad-cli sch export netlist`;
-2. lê boards/16_bits/docs/pinmap.md;
+2. lê boards/16_and_8_bits/docs/pinmap.md;
 3. confirma que cada pino de cada slot está na mesma net do pino do Mega esperado
    (e que nenhuma net tem pino a mais ou a menos);
 4. confirma VCC dos slots = 5V (net do pino 5V do Mega) e GND = GND;
@@ -20,10 +20,23 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCH = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "boards/16_bits/hardware/dumper.kicad_sch"
-PINMAP = ROOT / "boards/16_bits/docs/pinmap.md"
+_args = sys.argv[1:]
+BOARD = "16_and_8_bits"          # --board <pasta em boards/>
+if "--board" in _args:
+    i = _args.index("--board")
+    BOARD = _args[i + 1]
+    del _args[i:i + 2]
+SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad_sch"
+PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
+# Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa
+BOARD_CFG = {
+    "16_and_8_bits": dict(caps=range(2, 7), reg=True),
+    "16_bits": dict(caps=(3, 5, 6), reg=False),
+}
+CFG = BOARD_CFG[BOARD]
 
 SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1"}
+SLOTS = set()      # slots presentes no pinmap da placa
 MEGA = "A1"          # shield
 SI = "U1"            # Si5351: 1 VIN 2 GND 3 SDA 4 SCL 5 CLK2 6 CLK1 7 CLK0
 PIC = "U2"           # PIC12F629: 1 VDD 2 CLK2 3 D41 4 D40 5 RESET 6 DATA1 7 DATA0 8 VSS
@@ -42,10 +55,12 @@ def read_pinmap():
     nets = defaultdict(set)
     nc = []
     sec = None
+    SLOTS.clear()
     for ln in PINMAP.read_text().splitlines():
         m = re.match(r"## (SNES|NES|Famicom|Mega Drive|GBA) \(", ln)
         if m:
             sec = SLOT_REF[m.group(1)]
+            SLOTS.add(sec)
             continue
         if ln.startswith("## "):
             sec = None
@@ -90,13 +105,14 @@ def expected_nets(pm_nets):
     exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
     exp["+5V"].update({(MEGA, p) for p in MEGA_5V})
     exp["+5V"].update({(SI, "1"), (PIC, "1"), ("D1", "2"), ("R2", "1"), ("C1", "1"), ("FLG1", "1")})
-    exp["+5V"].update({(f"C{i}", "1") for i in range(2, 7)})
-    exp["+5V"].update({("U3", "2"), ("C7", "1")})
-    exp.setdefault("+3V3", set()).update({("U3", "3"), ("C8", "1"), ("C9", "1")})
-    exp["GND"].update({("U3", "1"), ("C7", "2"), ("C8", "2"), ("C9", "2")})
+    exp["+5V"].update({(f"C{i}", "1") for i in CFG["caps"]})
+    if CFG["reg"]:
+        exp["+5V"].update({("U3", "2"), ("C7", "1")})
+        exp.setdefault("+3V3", set()).update({("U3", "3"), ("C8", "1"), ("C9", "1")})
+        exp["GND"].update({("U3", "1"), ("C7", "2"), ("C8", "2"), ("C9", "2")})
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
     exp["GND"].update({(SI, "2"), (PIC, "8"), ("C1", "2"), ("FLG2", "1")})
-    exp["GND"].update({(f"C{i}", "2") for i in range(2, 7)})
+    exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
     return exp
 
 
@@ -147,16 +163,20 @@ def main():
 
     # 3. alimentação
     for ref, pins in (("SNES1", ("27", "58")), ("NES1", ("36",)), ("FC1", ("30", "31")), ("MD1", ("A2", "A31"))):
+        if ref not in SLOTS:
+            continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
             if net is None or (MEGA, "5V1") not in act[net]:
                 errors.append(f"{ref}.{pin} (VCC) não está na net do 5V do Mega")
-    for pin in ("1",):
+    for pin in ("1",) if "GBA1" in SLOTS else ():
         net = next((k for k, v in act.items() if ("GBA1", pin) in v), None)
         if net is None or ("U3", "3") not in act[net] or (MEGA, "5V1") in act[net]:
             errors.append("GBA1.1 (VCC) deve estar só na saída de 3,3 V do U3, nunca no 5V")
     for ref, pins in (("SNES1", ("5", "36")), ("NES1", ("1", "72")), ("FC1", ("1", "16")),
                       ("MD1", ("A1", "A18", "A32")), ("GBA1", ("32", "SHIELD_3", "SHIELD_4"))):
+        if ref not in SLOTS:
+            continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
             if net is None or (MEGA, "GND1") not in act[net]:
@@ -168,7 +188,7 @@ def main():
             errors.append(f"CURTO 5V-GND na net '{k}'")
     for p in ("D0", "D1"):
         net = next((k for k, v in act.items() if (MEGA, p) in v), None)
-        if net and any(r in ("SNES1", "NES1", "FC1", "MD1", "GBA1") for r, _ in act[net]):
+        if net and any(r in SLOTS for r, _ in act[net]):
             errors.append(f"{p} (serial USB) ligado a um slot na net '{net}'")
 
     # 5. nets reais sem correspondência (ligações que não estão no pinmap)
@@ -183,7 +203,7 @@ def main():
         for e in errors:
             print("  -", e)
         sys.exit(1)
-    print(f"OK: {len(exp)} nets e {n_pins} ligações conferem com boards/16_bits/docs/pinmap.md; "
+    print(f"OK: {len(exp)} nets e {n_pins} ligações conferem com boards/{BOARD}/docs/pinmap.md; "
           f"{len(pm_nc)} pinos de slot sem ligação conferidos.")
 
 

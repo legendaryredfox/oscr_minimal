@@ -4,11 +4,12 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 
 | Pasta | Slots | Estado |
 |---|---|---|
-| [`16_bits/`](16_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.0 gerados. Nada encomendado |
+| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. Gerbers v1.0 gerados. Nada encomendado |
+| [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.0 gerados. Nada encomendado |
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
 | [`gb_gba/`](gb_gba/) | GB, GBC, GBA | Esqueleto |
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
-| [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por `16_bits/` |
+| [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por `16_bits/` e `16_and_8_bits/` |
 
 ## Layout de cada variante
 
@@ -20,4 +21,4 @@ boards/<variante>/
 └── docs/            # pinmap.md, bom.md, montagem.md da variante
 ```
 
-As tabelas de bibliotecas apontam para `${KIPRJMOD}/../../_lib/`. Pinagem idêntica ao OSCR HW5 continua regra de ouro (`CLAUDE.md`, seção 3). Uma variante nova nasce copiando o esqueleto e gerando o próprio `docs/pinmap.md`; os scripts de `tools/` hoje apontam para `16_bits/`.
+As tabelas de bibliotecas apontam para `${KIPRJMOD}/../../_lib/`. Pinagem idêntica ao OSCR HW5 continua regra de ouro (`CLAUDE.md`, seção 3). Uma variante nova nasce copiando o esqueleto e gerando o próprio `docs/pinmap.md`; `tools/check_netlist.py` aceita `--board <pasta>`; os outros scripts de `tools/` apontam para `16_and_8_bits/`.

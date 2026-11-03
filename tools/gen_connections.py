@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Lê boards/16_bits/docs/pinmap.md e imprime {ref: {pino: net}} (JSON) e a lista de no-connect.
+"""Lê boards/16_and_8_bits/docs/pinmap.md e imprime {ref: {pino: net}} (JSON) e a lista de no-connect.
 Usado para alimentar batch_connect do MCP do KiCad na fase 3."""
 import json, re, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
-txt = (ROOT / "boards/16_bits/docs/pinmap.md").read_text()
+txt = (ROOT / "boards/16_and_8_bits/docs/pinmap.md").read_text()
 REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1"}
 conn, nc = {}, []
 sec = None

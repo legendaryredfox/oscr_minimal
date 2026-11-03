@@ -10,7 +10,7 @@ Este arquivo orienta o Claude Code neste repositório. Leia inteiro antes de qua
 
 ## 1. Visão geral
 
-Projeto com **várias versões mínimas de hardware** (uma por pasta em `boards/`, ver `boards/README.md`). As seções 1 a 8 e 10 descrevem a placa `boards/16_bits/`, a única com projeto KiCad hoje; as outras variantes herdam as regras e ajustam slots e pinagem. Firmware, `host/` e `gui/` são comuns a todas.
+Projeto com **várias versões mínimas de hardware** (uma por pasta em `boards/`, ver `boards/README.md`). As seções 1 a 8 e 10 descrevem a placa `boards/16_and_8_bits/`, a única com projeto KiCad hoje; as outras variantes herdam as regras e ajustam slots e pinagem. Firmware, `host/` e `gui/` são comuns a todas.
 
 Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)** que lê ROMs e saves de cartuchos de **SNES/SFC, NES, Famicom, Mega Drive e GBA**. O controle e a transferência dos dumps são feitos **pela USB, direto para o PC**. O projeto não tem LCD nem cartão SD.
 
@@ -42,7 +42,8 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 ├── vendor/oscr/              # clone do upstream (somente leitura, referência)
 ├── boards/                   # várias versões mínimas de hardware; uma pasta por variante (ver boards/README.md)
 │   ├── _lib/                 # símbolos e footprints KiCad compartilhados (slots, Mega R3)
-│   ├── 16_bits/              # placa atual: SNES, NES, Famicom, Mega Drive e GBA (fabricável, nada encomendado)
+│   ├── 16_bits/              # SNES e Mega Drive (derivada da 16_and_8_bits, menor)
+│   ├── 16_and_8_bits/        # placa de 5 slots: SNES, NES, Famicom, Mega Drive e GBA (fabricável, nada encomendado)
 │   │   ├── README.md
 │   │   ├── hardware/         # dumper.kicad_pro / .kicad_sch / .kicad_pcb
 │   │   ├── fab/              # gerbers, drill, bom.csv e zips para a JLCPCB
@@ -74,7 +75,7 @@ Procedimento obrigatório antes do esquemático:
    - `pinout.ods` na raiz do repositório;
    - os projetos KiCad em `hardware/` (main_pcb_hw5, six_slot_adapter, adaptadores individuais, cic_adapter);
    - o firmware (`Cart_Reader/SNES.ino`, `NES.ino`, `MD.ino`, `Cart_Reader.ino`), confirmando quais portas e bits são usados para endereço, dados e controle.
-3. Gere `boards/16_bits/docs/pinmap.md` com uma tabela por slot: `pino do slot | sinal | pino Arduino | porta/bit AVR | fonte`.
+3. Gere `boards/16_and_8_bits/docs/pinmap.md` com uma tabela por slot: `pino do slot | sinal | pino Arduino | porta/bit AVR | fonte`.
 4. Liste qualquer divergência entre as fontes em `docs/decisoes.md`.
 5. **Pare e peça aprovação do usuário** antes de seguir.
 
@@ -135,20 +136,20 @@ Pare e peça confirmação do usuário ao final de cada fase marcada com ⏸.
 
 | Fase | Entrega | Verificação |
 |---|---|---|
-| 1. Referência | `vendor/oscr/`, `boards/16_bits/docs/pinmap.md` | Três fontes cruzadas ⏸ |
+| 1. Referência | `vendor/oscr/`, `boards/16_and_8_bits/docs/pinmap.md` | Três fontes cruzadas ⏸ |
 | 2. Footprints | `boards/_lib/` com os 4 slots, reaproveitando os footprints do OSCR | Pitch e furos conferidos com as medidas do usuário ⏸ |
 | 3. Esquemático | `.kicad_sch` | ERC sem erros; netlist bate com `pinmap.md` (script da seção 8) ⏸ |
 | 4. Posicionamento | Contorno + componentes posicionados | Revisão visual com o usuário ⏸ |
 | 5. Roteamento | Trilhas, planos, zonas preenchidas | DRC sem erros nem avisos não justificados |
-| 6. Fabricação | `boards/16_bits/fab/` com gerbers, drill e zip | Gerbers revisados em visualizador; `boards/16_bits/docs/bom.md` atualizado ⏸ |
-| 7. Montagem | `boards/16_bits/docs/montagem.md` | Revisado pelo usuário |
+| 6. Fabricação | `boards/16_and_8_bits/fab/` com gerbers, drill e zip | Gerbers revisados em visualizador; `boards/16_and_8_bits/docs/bom.md` atualizado ⏸ |
+| 7. Montagem | `boards/16_and_8_bits/docs/montagem.md` | Revisado pelo usuário |
 | 8. Firmware | `firmware/` + `host/` | Testes da seção 9 |
 
 ## 8. Verificação automática da netlist
 
 Crie `tools/check_netlist.py`, que:
 1. exporta a netlist (`kicad-cli sch export netlist`);
-2. lê `boards/16_bits/docs/pinmap.md`;
+2. lê `boards/16_and_8_bits/docs/pinmap.md`;
 3. confirma que cada pino de cada slot está na mesma net do pino do Mega esperado;
 4. confirma que o VCC de todos os slots está no 5V e o GND no GND;
 5. sai com código diferente de zero e lista as divergências se algo estiver errado.
@@ -191,7 +192,7 @@ Requisito do usuário (2026-11-02): interface gráfica para **Linux, macOS e Win
 - Testes unitários do host (pytest) para framing, CRC e reconstrução do arquivo.
 - O teste com hardware real é feito pelo usuário; peça os logs.
 
-## 10. Instruções de montagem (gerar em `boards/16_bits/docs/montagem.md` na fase 7)
+## 10. Instruções de montagem (gerar em `boards/16_and_8_bits/docs/montagem.md` na fase 7)
 
 O documento deve ter, nesta ordem:
 

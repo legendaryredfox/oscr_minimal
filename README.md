@@ -22,11 +22,11 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | Pasta | O que tem |
 |---|---|
 | `CLAUDE.md` | Decisões de projeto e fases |
-| `boards/` | **Variantes de hardware**, uma pasta cada (índice em `boards/README.md`). Hoje só `16_bits/` tem projeto KiCad |
-| `boards/16_bits/docs/pinmap.md` | **Fonte da verdade** da placa atual: pino do slot → pino do Mega (gerado) |
+| `boards/` | **Variantes de hardware**, uma pasta cada (índice em `boards/README.md`). Hoje `16_and_8_bits/` (5 slots) e `16_bits/` (SNES e Mega Drive) têm projeto KiCad |
+| `boards/16_and_8_bits/docs/pinmap.md` | **Fonte da verdade** da placa atual: pino do slot → pino do Mega (gerado) |
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
 | `docs/continuacao.md` | **Comece aqui para retomar:** estado, mapa do código, como rodar, pendências |
-| `boards/16_bits/hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) da placa atual |
+| `boards/16_and_8_bits/hardware/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`) da placa atual |
 | `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
 | `docs/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
 | `docs/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
@@ -39,8 +39,8 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 
 ```
 python3 tools/check_netlist.py                       # netlist do esquemático vs docs/pinmap.md
-kicad-cli sch erc boards/16_bits/hardware/dumper.kicad_sch          # ERC
-kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb          # DRC
+kicad-cli sch erc boards/16_and_8_bits/hardware/dumper.kicad_sch          # ERC
+kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb          # DRC
 ```
 
 ## Recriar o `vendor/` (não versionado)
