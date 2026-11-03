@@ -39,7 +39,8 @@ offset  tamanho  campo
 | `0x07` | `NAK` | `u32 offset` do bloco que precisa ser reenviado |
 | `0x08` | `ABORT` | vazio |
 | `0x09` | `DATA` | `u32 offset` + dados (só em `WRITE_SAVE`, host → dispositivo) |
-| `0x0A` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro (só em `WRITE_SAVE`) |
+| `0x0A` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro (só em `WRITE_SAVE` e `WRITE_ROM`) |
+| `0x0B` | `WRITE_ROM` | `u8 sistema`, `u32 tamanho`, `u16 bloco`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (os três últimos são sempre enviados). Grava a **ROM** em cartucho de flash (D77). Só no firmware em modo fluxo (fork do OSCR); `INFO_RESP.flags` bit 3 diz que existe |
 
 ### Dispositivo → host
 
@@ -147,6 +148,7 @@ O dispositivo só grava na memória do cartucho **depois** do `END` com CRC32 co
 | 0x0008 | dispositivo ocupado |
 | 0x0009 | abortado |
 | 0x000A | cartucho não tem save |
+| 0x000B | chip de flash não reconhecido (`WRITE_ROM`): nada foi gravado |
 
 ## 9. Vetores de teste
 
@@ -165,3 +167,19 @@ Padrão do modo `MOCK` (para `DUMP_ROM` com sistema 255 ou 0): tamanho 32.768 by
 ## 10. Compatibilidade e evolução
 
 `versão_proto` no `INFO_RESP`. Mudanças que quebram o formato incrementam a versão; o host recusa versão maior que a que conhece. Campos novos só entram no fim dos payloads (o receptor ignora bytes a mais).
+
+## 9. `WRITE_ROM` (gravação de ROM em flash, D77)
+
+Fluxo igual ao do `WRITE_SAVE` (`ACK` inicial, blocos `DATA` com `ACK` por bloco, `END` com o CRC32), com uma diferença que importa: **o primeiro `ACK` só sai depois que o firmware conferiu o chip e apagou o que era preciso** (`Backend::rom_prepare`). A UART do AVR guarda 64 bytes e perderia os blocos que chegassem durante um apagamento de segundos, então o PC só manda dados depois do `ACK`. Por isso o host espera até 90 s por esse `ACK` e **nunca reenvia o comando** (reenviar apagaria de novo).
+
+Campos: `sistema` (NES = 2 ou Famicom = 3), `tamanho` (bytes do que vai ser enviado), `chip`, `prg_kb`, `chr_kb`. O PC tira o cabeçalho iNES (o arquivo enviado é PRG e depois CHR) e escolhe o chip; `tamanho` tem que ser `(prg_kb + chr_kb) * 1024`.
+
+| chip | Cartucho | PRG | CHR | Origem no OSCR |
+|---|---|---|---|---|
+| 1 | NES Maker, SST 39SF040 (mapper 30) | múltiplo de 16 KB, até 512 KB | 0 | `NESmaker_*` em `NES.cpp` |
+| 2 | A29040B (mapper 0) | 16 ou 32 KB | 0 ou 8 KB | `A29040B_*` em `NES.cpp` |
+
+Erros: `0x0004` (chip ou tamanhos inválidos, antes de tocar no cartucho), `0x000B` (ID do chip diferente do esperado: nada foi gravado), `0x0007` (um byte não gravou dentro do limite de tempo: o chip pode ter ficado apagado ou pela metade, regrave), `0x0001` (firmware sem `WRITE_ROM`), `0x0006` (CRC32 do arquivo não confere).
+
+O firmware usa direto as funções do OSCR original (`NESmaker_ID`, `NESmaker_SectorErase`, `NESmaker_ByteProgram`, `A29040B_*`); o laço de gravação é novo porque o original lê o arquivo do SD e espera para sempre (`do { } while`) por um byte que talvez nunca confira, enquanto aqui toda espera tem limite de tempo. A conferência depois da gravação (ler a ROM de volta e comparar o CRC32) é do PC; o mapper 30 ainda não tem leitura de ROM no firmware, então só o A29040B (mapper 0) pode ser conferido por `dump` hoje.
+

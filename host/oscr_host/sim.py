@@ -26,6 +26,8 @@ class MockDevice:
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
+        self.written_rom: Optional[bytes] = None
+        self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
         self.drop_next_acks = 0    # quantos ACK do host serão ignorados
         self.log: list[str] = []
@@ -88,7 +90,7 @@ class MockDevice:
     def _handle(self, t: Transport, f: P.Frame) -> None:
         if f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
-            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b001]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
+            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b1001]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
         elif f.type == P.T_DETECT:
             sysid = f.payload[0] if f.payload else 0
             if sysid in (0, 255):
@@ -114,6 +116,8 @@ class MockDevice:
             self._stream_out(t, f.seq, kind, data, block)
         elif f.type == P.T_WRITE_SAVE:
             self._write_save(t, f)
+        elif f.type == P.T_WRITE_ROM:
+            self._write_save(t, f, rom=True)
         elif f.type == P.T_ABORT:
             self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
         else:
@@ -150,13 +154,20 @@ class MockDevice:
                 return
         self._error(t, seq, 5, "end")
 
-    def _write_save(self, t: Transport, f: P.Frame) -> None:
+    def _write_save(self, t: Transport, f: P.Frame, rom: bool = False) -> None:
         if len(f.payload) < 7:
             return self._error(t, f.seq, 4, "args")
         sysid = f.payload[0]
         size = int.from_bytes(f.payload[1:5], "little")
         self.last_write_mapper = int.from_bytes(f.payload[7:9], "little") if len(f.payload) >= 9 else 0
         self.last_write_ram_kb = int.from_bytes(f.payload[9:11], "little") if len(f.payload) >= 11 else 0
+        if rom:                                        # WRITE_ROM: chip, PRG e CHR em KB; no simulador o chip 9 "não é reconhecido"
+            chip, prg, chr_ = (int.from_bytes(f.payload[7 + 2 * i:9 + 2 * i], "little") for i in range(3))
+            self.last_rom_options = (chip, prg, chr_)
+            if chip == 9:
+                return self._error(t, f.seq, 11, "id")
+            if size != (prg + chr_) * 1024:
+                return self._error(t, f.seq, 4, "tamanho")
         if sysid not in (0, 255) or size > 1 << 20:
             return self._error(t, f.seq, 2 if sysid not in (0, 255) else 4)
         self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
@@ -183,7 +194,10 @@ class MockDevice:
                 total, crc = P.parse_end(g.payload)
                 if total != size or expected != size or P.crc32(bytes(buf)) != crc:
                     return self._error(t, f.seq, 6, "crc")
-                self.written_save = bytes(buf)
+                if rom:
+                    self.written_rom = bytes(buf)
+                else:
+                    self.written_save = bytes(buf)
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(total))
                 return
         self._error(t, f.seq, 5, "timeout")

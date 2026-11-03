@@ -54,6 +54,9 @@ private class Pending(val data: ByteArray, val defaultName: String, val label: S
 /** Gravação à espera da confirmação do usuário. */
 private class WriteRequest(val file: File, val data: ByteArray)
 
+/** Gravação de ROM em flash à espera da confirmação (apaga o chip). */
+private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage)
+
 fun main() = application {
     val state = rememberWindowState(size = DpSize(Prefs.winW.dp, Prefs.winH.dp))
     Window(onCloseRequest = {
@@ -101,6 +104,8 @@ fun App() {
     var slowNote by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<Pending?>(null) }
     var writeReq by remember { mutableStateOf<WriteRequest?>(null) }
+    var romReq by remember { mutableStateOf<RomWriteRequest?>(null) }
+    var romChip by remember { mutableStateOf<FlashChip?>(null) }          // null = automático (pelo mapper do cabeçalho)
     var backupFirst by remember { mutableStateOf(true) }
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
@@ -295,6 +300,34 @@ fun App() {
         }
     }
 
+    fun describeRomImage(e: RomImageException): String = when (e.problem) {
+        RomImageProblem.TRUNCATED_HEADER -> t(S.RIMG_TRUNCATED)
+        RomImageProblem.TRAINER -> t(S.RIMG_TRAINER)
+        RomImageProblem.SIZE_MISMATCH -> f(S.RIMG_SIZE, e.a, e.b, e.c)
+        RomImageProblem.NEEDS_HEADER -> t(S.RIMG_NEEDS_HEADER)
+        RomImageProblem.RAW_SIZE -> t(S.RIMG_RAW)
+        RomImageProblem.CHIP_UNKNOWN -> t(S.RIMG_CHIP)
+    }
+
+    fun actRomWriteChoose() {
+        if (planned != null || !isNes) return
+        val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
+        try {
+            val (chip, img) = RomImages.prepare(file.readBytes(), romChip)
+            romReq = RomWriteRequest(file, chip, img)
+        } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
+    }
+
+    fun actRomWriteConfirmed(req: RomWriteRequest) {
+        val c = client ?: return
+        if (info?.writeRom != true) { say(t(S.ERR_PREFIX) + ": " + t(S.ROM_NO_FW)); return }
+        run(S.STAGE_WRITING_ROM) {
+            val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker()) }
+            say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+            say(t(S.ROM_VERIFY_HINT))
+        }
+    }
+
     fun actAbort() { client?.abort() }
 
     fun copyLog() {
@@ -418,8 +451,20 @@ fun App() {
     }
     val writeCard: @Composable () -> Unit = {
         SectionCard(t(S.WRITE_SECTION), container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f), titleColor = MaterialTheme.colorScheme.error) {
-            OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() },
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE_SAVE)) }
+            val dangerBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            val dangerColors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_SAVE)) }
+                OutlinedButton(enabled = canRun && isNes && info?.writeRom == true, onClick = { actRomWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_ROM)) }
+            }
+            if (stub == null && isNes) LabeledField(t(S.FLASH_CHIP)) {
+                ComboBox(value = romChip?.label ?: t(S.FLASH_CHIP_AUTO), modifier = Modifier.fillMaxWidth()) { close ->
+                    DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
+                    FlashChip.entries.forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
+                }
+            }
+            Text(if (stub == null && isNes) (if (info?.writeRom == false && connected) t(S.ROM_NO_FW) else t(S.ROM_WRITE_HINT)) else t(S.ROM_ONLY_NES),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
     val pendingCard: @Composable () -> Unit = {
@@ -492,6 +537,16 @@ fun App() {
                 }
             }
         }
+    }
+
+    romReq?.let { req ->
+        AlertDialog(
+            onDismissRequest = { romReq = null },
+            title = { Text(t(S.CONFIRM_ROM_TITLE)) },
+            text = { Text(f(S.CONFIRM_ROM_BODY, req.file.name, "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB", req.chip.label)) },
+            confirmButton = { Button(onClick = { romReq = null; actRomWriteConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE_ROM)) } },
+            dismissButton = { OutlinedButton(onClick = { romReq = null }) { Text(t(S.CANCEL)) } },
+        )
     }
 
     writeReq?.let { req ->

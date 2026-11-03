@@ -58,6 +58,10 @@ class Backend {
   virtual bool streams() { return false; }
   virtual bool stream_read(uint8_t system, uint8_t kind, StreamSink& out, uint16_t& err) { (void)system; (void)kind; (void)out; err = E_COMANDO; return false; }
   virtual bool stream_write(uint8_t system, StreamSource& in, uint16_t& err) { (void)system; (void)in; err = E_COMANDO; return false; }
+  // WRITE_ROM (só modo fluxo): `rom_prepare` roda ANTES do primeiro ACK, para o trabalho demorado (conferir o chip, apagar) não perder blocos
+  // na UART; `stream_write_rom` consome o arquivo. As opções (set_options) dizem o chip e os tamanhos.
+  virtual bool rom_prepare(uint8_t system, uint32_t size, uint16_t& err) { (void)system; (void)size; err = E_COMANDO; return false; }
+  virtual bool stream_write_rom(uint8_t system, StreamSource& in, uint16_t& err) { (void)system; (void)in; err = E_COMANDO; return false; }
 };
 
 class MockBackend : public Backend {
@@ -100,9 +104,9 @@ class Session {
   void do_info(uint8_t seq);
   void do_detect(uint8_t seq, uint8_t sys);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
-  void do_write(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);
   void do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block);
-  void do_stream_write(uint8_t seq, uint8_t sys, uint32_t size);
+  void do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t kind = KIND_SAVE);
   friend struct StreamOut;
   friend struct StreamIn;
   // 1 = ACK(off), 0 = NAK/timeout, -1 = ABORT

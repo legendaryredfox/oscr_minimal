@@ -58,9 +58,9 @@ object Cli {
         EXIT_INTERRUPTED to "interrupted (Ctrl+C)",
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit")
+    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout")
     private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "help", "version")
-    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search")
+    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
         "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "mock" to emptyList())
     private val STATUS = mapOf(0 to "cartridge detected", 1 to "no cartridge", 2 to "not supported", 3 to "hardware error",
@@ -80,6 +80,7 @@ commands:
   dump         read the ROM                    (-s SYSTEM [-o FILE])
   save-read    read the save                   (-s SYSTEM [-o FILE])
   save-write   write the save                  (-s SYSTEM -i FILE --yes)
+  rom-write    write the ROM to a flash cartridge, ERASES the chip (-i FILE [--chip nesmaker|a29040b] --yes)
 
 options (accepted before or after the command):
   -p, --port PORT      serial port (default: first ttyUSB/ttyACM/COM)
@@ -96,6 +97,8 @@ options (accepted before or after the command):
   --db PATH            game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
   --game NAME          dump, NES/Famicom: game name in the NES 2.0 XML database; fills --mapper/--prg/--chr left at 0
   --limit N            search: maximum results (default 20)
+  --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0); default: from the file's iNES mapper
+  --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
   --yes                do not ask before writing (required outside a terminal)
   --no-backup          save-write: do not read the current save first
   --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)
@@ -155,6 +158,7 @@ Full contract: docs/cli.md
                 "save-read" -> cmdSaveRead(io, a)
                 "identify" -> cmdIdentify(io, a)
                 "search" -> cmdSearch(io, a)
+                "rom-write" -> cmdRomWrite(io, a)
                 else -> cmdSaveWrite(io, a)
             }
         } catch (e: CliError) {
@@ -264,7 +268,7 @@ Full contract: docs/cli.md
     }
 
     private fun cmdErrors(io: CliIo, a: Args, lang: Lang): Int {
-        val dev = (1..10).map { Json.obj("code" to it, "text" to I18n.t(lang, S.valueOf("ERR_DEV_$it"))) }
+        val dev = (1..11).map { Json.obj("code" to it, "text" to I18n.t(lang, S.valueOf("ERR_DEV_$it"))) }
         val exits = EXIT_MEANING.map { (c, m) -> Json.obj("exit_code" to c, "meaning" to m) }
         emit(io, a, Json.obj("device_errors" to dev, "exit_codes" to exits),
             EXIT_MEANING.map { (c, m) -> "exit $c: $m" } + dev.map { "${it["code"]}: ${it["text"]}" })
@@ -388,6 +392,44 @@ Full contract: docs/cli.md
         emit(io, a, Json.obj("entries_in_database" to db.size, "results" to found.map { entryJson(it) }),
             found.map { e -> "${hex8(e.crc)}  ${e.name}" + (e.nesOptions()?.let { "  [mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB, RAM ${it.ramKb} KB]" } ?: "") }.ifEmpty { listOf("no results") })
         return if (found.isNotEmpty()) EXIT_OK else EXIT_ERROR
+    }
+
+    private fun cmdRomWrite(io: CliIo, a: Args): Int {
+        val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
+        val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
+        if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.MOCK)
+            throw CliError("usage", "rom-write exists only for NES and Famicom so far (NES Maker and A29040B flash); see docs/funcoes-oscr.md", EXIT_USAGE)
+        val chipOpt = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
+        val (chip, img) = try { RomImages.prepare(File(input).readBytes(), chipOpt) }
+        catch (e: RomImageException) {
+            val msg = when (e.problem) {
+                RomImageProblem.TRUNCATED_HEADER -> "incomplete iNES header"
+                RomImageProblem.TRAINER -> "the file has a 512-byte trainer; remove it before writing"
+                RomImageProblem.SIZE_MISMATCH -> "the file has ${e.a} bytes after the header, but the header says PRG ${e.b} KB and CHR ${e.c} KB"
+                RomImageProblem.NEEDS_HEADER -> "the A29040B needs a .nes file with an iNES header (PRG and CHR come from the header)"
+                RomImageProblem.RAW_SIZE -> "raw file: the size must be a multiple of 16 KB (use a .nes with header, or raw PRG)"
+                RomImageProblem.CHIP_UNKNOWN -> "cannot tell the chip: use --chip nesmaker (mapper 30) or --chip a29040b (mapper 0)"
+            }
+            throw CliError(if (e.problem == RomImageProblem.CHIP_UNKNOWN) "usage" else "bad_rom", msg, EXIT_USAGE)
+        }
+        if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err("warning: the file is mapper ${img.mapper}, but chip ${chip.key} belongs to mapper ${chip.mapper} cartridges")
+        val what = "${chip.label}: PRG ${img.prgKb} KB, CHR ${img.chrKb} KB (${img.body.size} bytes)"
+        if ("yes" !in a.flags) {
+            if (!io.interactive) throw CliError("refused", "refused: writing the ROM ERASES the cartridge's flash chip. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")
+            io.err("Write $what? This ERASES the current ROM of the cartridge. Continue? [y/N] ")
+            if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim")) { io.out("cancelled"); return EXIT_ERROR }
+        }
+        val c = connect(io, a)
+        val crc: Int
+        try {
+            if (!c.info.writeRom) throw CliError("unsupported_firmware", "this firmware does not support WRITE_ROM", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
+            val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()
+            crc = c.client.writeRom(sys, img.body, chip.code, img.prgKb, img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
+        } finally { c.transport.close() }
+        val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
+        emit(io, a, Json.obj("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex),
+            listOf("ROM written: $what  CRC32 $hex", "to verify, read the cartridge back (dump) and compare the CRC32"))
+        return EXIT_OK
     }
 
     private fun cmdSaveRead(io: CliIo, a: Args): Int {

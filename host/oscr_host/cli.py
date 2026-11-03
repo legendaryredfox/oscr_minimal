@@ -18,6 +18,7 @@ from . import protocol as P
 from .client import Client, TimeoutError_
 from . import database as DB
 from .planned import PLANNED
+from . import romimage as RI
 from .verify import eeprom_is_4k, gba_save_hint, verify_rom
 from .transport import SerialTransport, Transport
 
@@ -346,6 +347,45 @@ def cmd_save_write(args) -> int:
     return 0
 
 
+def cmd_rom_write(args) -> int:
+    """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
+    if args.system not in ("nes", "famicom", "mock"):
+        raise CliError("usage", "rom-write ainda existe só para NES e Famicom (flash NES Maker e A29040B); veja docs/funcoes-oscr.md", EXIT_USAGE)
+    try:
+        data = Path(args.input).read_bytes()
+        chip = args.chip
+        img = RI.split_image(data, chip or "nesmaker")
+        if chip is None:
+            chip = RI.infer_chip(img)
+            if chip is None:
+                raise CliError("usage", "não deu para saber o chip: use --chip nesmaker (mapper 30) ou --chip a29040b (mapper 0)", EXIT_USAGE)
+            img = RI.split_image(data, chip)
+    except ValueError as e:
+        raise CliError("bad_rom", str(e), EXIT_USAGE) from e
+    if img.mapper is not None and img.mapper != RI.CHIP_MAPPER[chip] and not args.json:
+        print(f"aviso: o arquivo é do mapper {img.mapper}, mas o chip {chip} é de cartucho de mapper {RI.CHIP_MAPPER[chip]}", file=sys.stderr)
+    what = f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)"
+    if not args.yes:
+        if not sys.stdin.isatty():
+            raise CliError("refused", "recusado: gravar a ROM APAGA o chip de flash do cartucho. Em modo não interativo confirme com --yes.", EXIT_REFUSED,
+                           "repita o comando com --yes")
+        ans = input(f"Gravar {what}? Isso APAGA a ROM atual do cartucho. Continuar? [s/N] ")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
+            print("cancelado")
+            return 1
+    c, t, info = connect(args)
+    try:
+        if not info.get("write_rom"):
+            raise CliError("unsupported_firmware", "este firmware não aceita WRITE_ROM", EXIT_ERROR, "atualize o firmware (docs/funcoes-oscr.md)")
+        crc = c.write_rom(system_id(args.system), img.body, RI.CHIPS[chip], img.prg_kb, img.chr_kb, args.block or P.DEFAULT_BLOCK,
+                          _progress("write-rom", args.progress), args.begin_timeout)
+    finally:
+        t.close()
+    emit(args, {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"},
+         [f"ROM gravada: {what}  CRC32 {crc:08X}", "para conferir, leia o cartucho de volta (dump) e compare o CRC32"])
+    return 0
+
+
 class _Parser(argparse.ArgumentParser):
     """Erro de uso vira saída 64 (e JSON com --json), não o 2 do argparse, que é 'nenhum cartucho'."""
 
@@ -399,7 +439,7 @@ def build_parser() -> argparse.ArgumentParser:
         if out:
             sp.add_argument("-o", "--output", help="arquivo de saída (a extensão certa é acrescentada; sobrescreve se existir)")
         if inp:
-            sp.add_argument("-i", "--input", required=True, help="arquivo de save para gravar")
+            sp.add_argument("-i", "--input", required=True, help="arquivo para gravar (save, ou ROM no rom-write)")
         if out or inp:
             sp.add_argument("--block", type=int, default=0, help="tamanho do bloco (padrão 512)")
         return sp
@@ -426,6 +466,11 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
             sp.add_argument("--no-backup", action="store_true", help="não lê o save atual antes de gravar")
             sp.add_argument("--backup-dir", default="~/oscr_backups", help="pasta do backup (padrão ~/oscr_backups)")
+    rp = add("rom-write", cmd_rom_write, "grava a ROM em um cartucho de flash (apaga o chip)", inp=True)
+    rp.set_defaults(system="nes")
+    rp.add_argument("--chip", choices=sorted(RI.CHIPS), help="chip de flash (padrão: pelo mapper do cabeçalho: 30 = nesmaker, 0 = a29040b)")
+    rp.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
+    rp.add_argument("--begin-timeout", type=float, default=90.0, help="segundos de espera pelo apagamento antes dos dados (padrão 90)")
     return ap
 
 

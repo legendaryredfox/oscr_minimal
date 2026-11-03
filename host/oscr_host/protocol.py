@@ -16,6 +16,7 @@ CRC_LEN = 4
 # host -> dispositivo
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
+T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
@@ -33,6 +34,7 @@ ERRORS = {
     3: "nenhum cartucho detectado", 4: "argumento inválido", 5: "reenvios excedidos",
     6: "CRC32 do arquivo não confere", 7: "erro de leitura/gravação no cartucho",
     8: "dispositivo ocupado", 9: "abortado", 10: "cartucho não tem save",
+    11: "chip de flash não reconhecido",
 }
 
 # o que fazer para cada erro (a GUI tem os mesmos textos traduzidos em I18n.kt)
@@ -47,6 +49,7 @@ ERROR_HINTS = {
     8: "espere o fim da operação anterior",
     9: "operação cancelada",
     10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
+    11: "o cartucho não é uma flash do tipo escolhido (ou está sujo/mal encaixado): confira o chip, os contatos e o encaixe; nada foi gravado",
 }
 
 UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
@@ -153,6 +156,11 @@ def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ra
     return base
 
 
+def build_write_rom(system: int, size: int, block: int = 0, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
+    """WRITE_ROM: como o WRITE_SAVE, mas as três opções são sempre enviadas: chip, PRG e CHR em KB (docs/protocolo.md)."""
+    return struct.pack("<BIHHHH", system, size, block, chip, prg_kb, chr_kb)
+
+
 def build_offset(offset: int) -> bytes:  # ACK / NAK
     return struct.pack("<I", offset)
 
@@ -171,7 +179,7 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4),
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8),
             "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
 
 

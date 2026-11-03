@@ -87,6 +87,7 @@ void Session::handle() {
       do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
       break;
     case T_WRITE_SAVE: do_write(seq, p, len); break;
+    case T_WRITE_ROM: do_write(seq, p, len, KIND_ROM); break;
     case T_ABORT: send_offset(T_D_ACK, seq, 0); break;
     default: send_error(seq, E_COMANDO, "cmd"); break;
   }
@@ -177,13 +178,14 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
   if (r <= 0) send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "end");
 }
 
-void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len) {
+void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind) {
   if (len < 7) { send_error(seq, E_ARGUMENTO); return; }
   uint8_t sys = p[0];
   uint32_t size = get_u32(p + 1);
   if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
   be_.set_options(len >= 9 ? get_u16(p + 7) : 0, len >= 11 ? get_u16(p + 9) : 0, len >= 13 ? get_u16(p + 11) : 0);   // NES/Famicom: mapper (opcional)
-  if (be_.streams()) { do_stream_write(seq, sys, size); return; }
+  if (kind == KIND_ROM && !be_.streams()) { send_error(seq, E_COMANDO, "rom"); return; }   // WRITE_ROM só existe no modo fluxo
+  if (be_.streams()) { do_stream_write(seq, sys, size, kind); return; }
   uint16_t err = E_CARTUCHO_IO;
   if (!be_.write_begin(sys, size, err)) { send_error(seq, err); return; }
   send_offset(T_D_ACK, seq, 0);
@@ -320,11 +322,12 @@ struct StreamIn : StreamSource {
   }
 };
 
-void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size) {
+void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t kind) {
+  uint16_t err = E_CARTUCHO_IO;
+  if (kind == KIND_ROM && !be_.rom_prepare(sys, size, err)) { send_error(seq, err); return; }   // conferir o chip e apagar: só depois o PC manda os dados
   send_offset(T_D_ACK, seq, 0);
   StreamIn in(*this, seq, size);
-  uint16_t err = E_CARTUCHO_IO;
-  bool ok = be_.stream_write(sys, in, err);
+  bool ok = kind == KIND_ROM ? be_.stream_write_rom(sys, in, err) : be_.stream_write(sys, in, err);
   if (in.dead) { send_error(seq, E_REENVIOS, "timeout"); return; }
   if (!ok) { send_error(seq, err); return; }
   in.ack();                                              // confirma o último bloco, já consumido

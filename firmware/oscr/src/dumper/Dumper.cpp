@@ -19,6 +19,7 @@
 # include "cores/SNES.h"
 # include "cores/NES.h"
 # include "dumper/Dumper.h"
+# include "dumper/NesFlash.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -320,7 +321,7 @@ namespace OSCR::Dumper
     class CoreBackend : public oscr::Backend
     {
     public:
-      uint8_t flags() override { return 0; }
+      uint8_t flags() override { return 8; }     // bit3: o firmware aceita WRITE_ROM (hoje: flash do NES; ver docs/funcoes-oscr.md)
       uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
       bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
       bool streams() override { return true; }
@@ -526,6 +527,29 @@ namespace OSCR::Dumper
         // A verificação do OSCR relê o arquivo, que não existe no fluxo; vale ter consumido o arquivo inteiro sem erro fatal.
         err = oscr::E_CARTUCHO_IO;
         return ok || (!fatalHit && countingSource.bytes == expected);
+      }
+
+      // WRITE_ROM (flash do NES). Opções: `mapper` = chip (NesFlash::kNesMaker, kA29040B), `prg_kb` e `chr_kb` = tamanhos que o PC tirou do arquivo.
+      bool rom_prepare(uint8_t system, uint32_t size, uint16_t & err) override
+      {
+        if (!isNes(system)) { err = oscr::E_COMANDO; return false; }
+        uint8_t chip = uint8_t(optMapper); uint16_t prg = optPrgKb, chr = optChrKb;
+        uint16_t rc = NesFlash::check(chip, prg, chr, size);
+        if (rc) { err = rc; return false; }
+        rc = oscr::E_CARTUCHO_IO;
+        bool ran = runCore([&rc, chip, prg, chr] { NE::cartOn(); rc = NesFlash::prepare(chip, prg, chr); NE::cartOff(); });
+        if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        return true;
+      }
+
+      bool stream_write_rom(uint8_t system, oscr::StreamSource & in, uint16_t & err) override
+      {
+        if (!isNes(system)) { err = oscr::E_COMANDO; return false; }
+        uint8_t chip = uint8_t(optMapper); uint16_t prg = optPrgKb, chr = optChrKb;
+        uint16_t rc = oscr::E_CARTUCHO_IO;
+        bool ran = runCore([&rc, &in, chip, prg, chr] { NE::cartOn(); rc = NesFlash::program(chip, prg, chr, in); NE::cartOff(); });
+        if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        return true;
       }
 
       // Caminhos que o modo fluxo não usa.

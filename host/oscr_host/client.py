@@ -54,9 +54,9 @@ class Client:
                 self._queue += self.dec.feed(data)
 
     def _request(self, type_: int, payload: bytes, seq: int, expect: set[int], timeout: float,
-                 accept: Optional[Callable[[P.Frame], bool]] = None) -> P.Frame:
-        """Envia e espera uma resposta de tipo esperado (ERRO vira exceção). Reenvia em timeout."""
-        for _ in range(self.retries + 1):
+                 accept: Optional[Callable[[P.Frame], bool]] = None, retries: Optional[int] = None) -> P.Frame:
+        """Envia e espera uma resposta de tipo esperado (ERRO vira exceção). Reenvia em timeout (`retries` = 0: nunca reenvia)."""
+        for _ in range((self.retries if retries is None else retries) + 1):
             self._send(type_, payload, seq)
             end = time.monotonic() + timeout
             while True:
@@ -164,3 +164,25 @@ class Client:
         self._request(P.T_H_END, P.build_end(len(data), crc), seq, {P.T_D_ACK}, self.long_timeout,
                       accept=lambda fr: P.parse_offset(fr.payload) == len(data))
         return crc
+
+    def write_rom(self, system: int, data: bytes, chip: int, prg_kb: int, chr_kb: int, block: int = 512,
+                  progress: Optional[Progress] = None, begin_timeout: float = 90.0) -> int:
+        """Grava `data` (PRG e depois CHR, sem cabeçalho) numa flash. O dispositivo confere o chip e apaga ANTES do primeiro ACK
+        (até ~20 s no A29040B), por isso o comando espera `begin_timeout` e nunca é reenviado (reenviar apagaria de novo)."""
+        seq = self._next_seq()
+        block = block or P.DEFAULT_BLOCK
+        f = self._request(P.T_WRITE_ROM, P.build_write_rom(system, len(data), block, chip, prg_kb, chr_kb), seq,
+                          {P.T_D_ACK}, begin_timeout, retries=0)
+        if P.parse_offset(f.payload) != 0:
+            raise P.ProtocolError("ACK inicial com offset diferente de 0")
+        for off in range(0, len(data), block):
+            chunk = data[off:off + block]
+            self._request(P.T_H_DATA, P.build_data(off, chunk), seq, {P.T_D_ACK}, self.long_timeout,
+                          accept=lambda fr, o=off: P.parse_offset(fr.payload) == o)
+            if progress:
+                progress(off + len(chunk), len(data))
+        crc = P.crc32(data)
+        self._request(P.T_H_END, P.build_end(len(data), crc), seq, {P.T_D_ACK}, self.long_timeout,
+                      accept=lambda fr: P.parse_offset(fr.payload) == len(data))
+        return crc
+

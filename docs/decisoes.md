@@ -75,6 +75,7 @@
 - **D74** CLI pensada para agentes de IA (pedido do usuário, 2026-11-03)
 - **D75** Fork do OSCR: NES/Famicom ligado ao protocolo (2026-11-03)
 - **D76** Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
+- **D77** Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -616,3 +617,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Marcadores de lugar** dos outros cartuchos do OSCR (41 sistemas: Atari, Colecovision, N64, PC Engine, Master System, WonderSwan etc.): `host/oscr_host/planned.py` e `PlannedSystems.kt` (um teste confere que as listas são iguais); `systems` mostra em `planned`; na GUI, os stubs ficam direto na seção "Sistema", abaixo dos reais, como chips selecionáveis; escolher um mostra um aviso e desabilita Detectar, Ler e Gravar (nada vai ao dispositivo). Sem id no protocolo, sem hardware, sem firmware; não valem em `-s`.
 - **Layout da GUI (pedido do usuário, 2026-11-03):** cabeçalho com título, pílula de estado da conexão e Configurações; aviso de um cartucho por vez sempre visível; cartões por assunto (Conexão, Cartucho, Leitura, Gravação), a Gravação com cor própria e separada da Leitura; duas colunas quando a janela tem 840 dp ou mais e uma coluna abaixo disso; avisos em linha com cor por gravidade; painel de estado fixo embaixo (etapa, progresso, última mensagem, registro recolhível). **Sistema** e **porta serial** viram combo box; sistemas suportados e stubs aparecem em ordem alfabética, cada grupo separado (ignora maiúsculas e acentos).
 
+### D77 — Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
+- **Meta:** o projeto deve ter **todas as funções do OSCR original**; as únicas que não entram nas placas são os **botões de operação sem computador** e o **cartão SD** (correção do usuário). Parte das funções vai para o PC (menus, arquivos, banco de dados, verificação, backup). Inventário e estado por função: `docs/funcoes-oscr.md`.
+- **Regra de implementação:** usar o máximo de código pronto do OSCR original. Aplicado aqui: `firmware/oscr/user.ini` liga `flash = true` (HAS_FLASH, +27 KB de flash: 59,5% do Mega) e `src/dumper/NesFlash.cpp` chama direto `NESmaker_ID/SectorErase/ByteProgram` e `A29040B_*` de `NES.cpp`. Só o laço de gravação é novo (o original lê o arquivo do SD e usa `do { } while` sem limite).
+- **Protocolo:** novo `WRITE_ROM` (`0x0B`), erro `0x000B` (flash não reconhecida), bit 3 de `INFO_RESP.flags`. `Backend::rom_prepare` roda antes do primeiro `ACK` (confere o chip e apaga) porque a UART do AVR perderia blocos durante um apagamento de segundos; o host espera até 90 s e nunca reenvia o comando. Detalhes em `docs/protocolo.md` seção 9.
+- **PC:** `host/oscr_host/romimage.py` e `gui/shared/.../RomImage.kt` tiram o cabeçalho iNES e escolhem o chip (mapper 30 = NES Maker, 0 = A29040B); CLI `rom-write` (as duas); GUI: botão "Gravar ROM" no cartão Gravação, seletor de chip e confirmação que avisa que o chip é apagado. Textos novos nos 4 idiomas.
+- **Estado:** compila; testado no PC só o protocolo e o PC (simulador, sessão C++ real em modo fluxo: apagar antes do ACK, chip 9 = não reconhecido, tamanho errado, dado errado). **Nunca rodou em cartucho.** Falta: leitura do mapper 30 (para conferir depois de gravar), e as outras flash do inventário.

@@ -18,6 +18,9 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
     private var wBuf = ByteArray(0)
     private var wExpected = 0
     private var writing = false
+    private var writingRom = false
+    var writtenRom: ByteArray? = null
+    var lastRomOptions: Triple<Int, Int, Int>? = null
 
     private fun push(type: Int, payload: ByteArray = ByteArray(0)) { out += encodeFrame(type, seq, payload) }
     private fun error(code: Int, text: String = "") = push(Proto.T_ERRO, le16(code) + byteArrayOf(text.length.toByte()) + text.encodeToByteArray())
@@ -29,7 +32,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
 
     private fun handle(f: Frame) {
         when (f.type) {
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, 1) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, 9) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
@@ -63,6 +66,18 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true
                 push(Proto.T_D_ACK, le32(0))
             }
+            Proto.T_WRITE_ROM -> {                  // chip, PRG e CHR em KB; no simulador o chip 9 "não é reconhecido"
+                val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
+                if (f.payload.size < 13) return error(4, "args")
+                wSize = f.payload.u32(1)
+                val chip = f.payload.u16(7); val prg = f.payload.u16(9); val chr = f.payload.u16(11)
+                lastRomOptions = Triple(chip, prg, chr)
+                if (sys != 0 && sys != 255) return error(2)
+                if (chip == 9) return error(11, "id")
+                if (wSize < 0 || wSize != (prg + chr) * 1024) return error(4, "tamanho")
+                wBuf = ByteArray(wSize); wExpected = 0; writing = true; writingRom = true
+                push(Proto.T_D_ACK, le32(0))
+            }
             Proto.T_H_DATA -> if (writing) {
                 val off = f.payload.u32(0); val n = f.payload.size - 4
                 if (off == wExpected && off + n <= wSize) { f.payload.copyInto(wBuf, off, 4, 4 + n); wExpected += n; push(Proto.T_D_ACK, le32(off)) }
@@ -71,7 +86,8 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
             Proto.T_H_END -> if (writing) {
                 val total = f.payload.u32(0); val crc = f.payload.u32(4)
                 if (total != wSize || wExpected != wSize || crc32(wBuf) != crc) return error(6, "crc")
-                save = wBuf; writing = false
+                if (writingRom) writtenRom = wBuf else save = wBuf
+                writing = false; writingRom = false
                 push(Proto.T_D_ACK, le32(total))
             }
             Proto.T_ABORT -> { phase = 0; writing = false; push(Proto.T_D_ACK, le32(0)) }

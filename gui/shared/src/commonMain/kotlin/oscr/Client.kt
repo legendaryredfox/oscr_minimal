@@ -39,8 +39,8 @@ class OscrClient(
         }
     }
 
-    private fun request(type: Int, payload: ByteArray, seq: Int, expect: Set<Int>, timeout: Long, accept: (Frame) -> Boolean = { true }): Frame {
-        repeat(retries + 1) {
+    private fun request(type: Int, payload: ByteArray, seq: Int, expect: Set<Int>, timeout: Long, resend: Int = retries, accept: (Frame) -> Boolean = { true }): Frame {
+        repeat(resend + 1) {
             send(type, payload, seq)
             val start = TimeSource.Monotonic.markNow()
             while (true) {
@@ -138,6 +138,25 @@ class OscrClient(
     fun writeSave(system: CartSystem, data: ByteArray, block: Int = Proto.DEFAULT_BLOCK, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): Int {
         val seq = nextSeq()
         request(Proto.T_WRITE_SAVE, byteArrayOf(system.id.toByte()) + le32(data.size) + le16(block) + (if (mapper != 0 || ramKb != 0) le16(mapper) + le16(ramKb) + le16(0) else ByteArray(0)), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == 0 }
+        var off = 0
+        while (off < data.size) {
+            val n = minOf(block, data.size - off); val o = off
+            request(Proto.T_H_DATA, le32(o) + data.copyOfRange(o, o + n), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == o }
+            off += n; progress?.invoke(off.toLong(), data.size.toLong())
+        }
+        val crc = crc32(data)
+        request(Proto.T_H_END, le32(data.size) + le32(crc), seq, setOf(Proto.T_D_ACK), longTimeoutMs) { it.payload.u32(0) == data.size }
+        return crc
+    }
+
+    /**
+     * Grava [data] (PRG e depois CHR, sem cabeçalho) numa flash (WRITE_ROM). O dispositivo confere o chip e apaga ANTES do primeiro ACK
+     * (até ~20 s no A29040B): o comando espera [beginTimeoutMs] e nunca é reenviado, porque reenviar apagaria de novo.
+     */
+    fun writeRom(system: CartSystem, data: ByteArray, chip: Int, prgKb: Int, chrKb: Int, block: Int = Proto.DEFAULT_BLOCK, progress: Progress? = null, beginTimeoutMs: Long = 90_000): Int {
+        val seq = nextSeq()
+        request(Proto.T_WRITE_ROM, byteArrayOf(system.id.toByte()) + le32(data.size) + le16(block) + le16(chip) + le16(prgKb) + le16(chrKb), seq, setOf(Proto.T_D_ACK), beginTimeoutMs,
+            resend = 0) { it.payload.u32(0) == 0 }
         var off = 0
         while (off < data.size) {
             val n = minOf(block, data.size - off); val o = off

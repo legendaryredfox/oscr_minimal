@@ -44,6 +44,16 @@ struct StreamMock : oscr::MockBackend {
     }
     return true;
   }
+  // WRITE_ROM: chip 9 "não é reconhecido" (E_FLASH, nada é lido); senão confere o mesmo padrão do save (byte i = i*5)
+  uint16_t chip_ = 0, prg_ = 0, chr_ = 0;
+  void set_options(uint16_t m, uint16_t p, uint16_t c) override { chip_ = m; prg_ = p; chr_ = c; }
+  bool rom_prepare(uint8_t, uint32_t size, uint16_t& err) override {
+    if (chip_ == 9) { err = oscr::E_FLASH; return false; }
+    if (size != (uint32_t(prg_) + chr_) * 1024u) { err = oscr::E_ARGUMENTO; return false; }
+    usleep(300000);                                          // "apagar": o PC tem que esperar o primeiro ACK
+    return true;
+  }
+  bool stream_write_rom(uint8_t s, oscr::StreamSource& in, uint16_t& err) override { return stream_write(s, in, err); }
   bool stream_write(uint8_t, oscr::StreamSource& in, uint16_t& err) override {
     uint8_t buf[77];
     uint32_t off = 0;

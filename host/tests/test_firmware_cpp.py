@@ -110,3 +110,37 @@ def test_fluxo_write_save_com_dado_errado_e_erro_7(stream_client):
     with pytest.raises(P.DeviceError) as e:
         stream_client.write_save(255, bytes(data), 512)
     assert e.value.code == 7
+
+
+# ---- WRITE_ROM contra a sessão REAL do firmware (modo fluxo): o apagamento acontece antes do primeiro ACK
+
+
+@pytest.fixture
+def stream_client(sim_bin):
+    t = ProcessTransport([str(sim_bin), "stream"])
+    yield Client(t, timeout=0.5, long_timeout=5.0)
+    t.close()
+
+
+def test_write_rom_fluxo(stream_client):
+    data = bytes((i * 5) & 0xFF for i in range(32 * 1024))
+    crc = stream_client.write_rom(255, data, chip=1, prg_kb=32, chr_kb=0, block=512)
+    assert crc == P.crc32(data)
+
+
+def test_write_rom_chip_nao_reconhecido(stream_client):
+    with pytest.raises(P.DeviceError) as e:
+        stream_client.write_rom(255, bytes(16384), chip=9, prg_kb=16, chr_kb=0)
+    assert e.value.code == 11
+
+
+def test_write_rom_tamanho_errado(stream_client):
+    with pytest.raises(P.DeviceError) as e:
+        stream_client.write_rom(255, bytes(16384), chip=1, prg_kb=32, chr_kb=0)
+    assert e.value.code == 4
+
+
+def test_write_rom_dado_errado_da_erro_de_cartucho(stream_client):
+    with pytest.raises(P.DeviceError) as e:
+        stream_client.write_rom(255, bytes(16384), chip=1, prg_kb=16, chr_kb=0)      # o simulador espera o padrão i*5
+    assert e.value.code in (7, 6)
