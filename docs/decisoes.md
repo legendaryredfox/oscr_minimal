@@ -70,6 +70,7 @@
 - **D69** Fork: SNES ligado ao protocolo (2026-11-03)
 - **D70** Repositório passa a oferecer várias versões mínimas de hardware (decisão do usuário, 2026-11-03)
 - **D71** Placa `16_bits` (SNES e Mega Drive) e renomeação da placa de 5 slots (decisão do usuário, 2026-11-03)
+- **D72** U2 (PIC12F629) da `16_bits` passa ao footprint DIP-8 tradicional (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -573,3 +574,8 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificações:** `tools/check_netlist.py --board 16_bits` OK (66 nets, 213 ligações, 9 pinos sem ligação); DRC 0 erros, 0 ligações abertas, 8 avisos (5 `lib_footprint_mismatch`, 3 `starved_thermal` em pinos de GND já ligados por trilha); paridade com o esquemático igual à da placa de 5 slots (footprints dos furos sem símbolo, `PWR_FLAG`, campos de descrição).
 - **Fabricação:** `tools/export_fab.sh 16_bits v1.0` gera `boards/16_bits/fab/` (7 camadas, 325 furos metalizados, 4 não metalizados, 108,1 × 86,1 mm, `dumper-v1.0-jlcpcb.zip`). Pedido na JLCPCB com as mesmas configurações da D67 (2 camadas, 1,6 mm, HASL, 5 peças), exceto as dimensões. Continuam estimados: corpo e altura dos slots (D17), lado da etiqueta (D27), altura dos espaçadores (D25).
 - **Divergência do CLAUDE.md:** a regra de usar `autoroute` do MCP (seção 6) não bastou para o GND; usei o Freerouting direto e registrei aqui.
+
+### D72 — U2 (PIC12F629) da `16_bits` passa ao footprint DIP-8 tradicional (pedido do usuário, 2026-11-03)
+- Footprint `Package_DIP:DIP-8_W7.62mm_Socket` trocado por `Package_DIP:DIP-8_W7.62mm` no esquemático (MCP `edit_schematic_component`) e na PCB. O `replace_component` do MCP não existe nesta versão, então a troca na PCB foi feita com `pcbnew` (mesma posição e orientação, redes copiadas pino a pino). Os 8 pads são idênticos (passo 2,54 mm, 7,62 mm entre colunas, 1,6 mm), então **trilhas, furos e roteamento não mudaram**; só mudam o desenho do silk e o courtyard, e a abertura do pad 1 nos gerbers.
+- Na prática continua valendo o soquete DIP-8 comum na hora da montagem (`docs/bom.md`); o footprint passa a ser o contorno do próprio CI.
+- Refeitos: zonas, DRC (os mesmos 8 avisos da D71, 0 erros, 0 ligações abertas), `check_netlist.py --board 16_bits` OK, ERC 0, `tools/export_fab.sh 16_bits v1.0`, previews e o SHA-256 em `fab/PEDIDO.md`. Gerbers conferidos com `gerbonara`: 7 camadas, 108,1 × 86,1 mm, 325 furos metalizados e 4 não metalizados. A `16_and_8_bits` não foi alterada.
