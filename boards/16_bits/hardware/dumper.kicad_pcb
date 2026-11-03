@@ -1925,7 +1925,7 @@
 				)
 			)
 		)
-		(property "Value" "PIC12F629 (snescic-lock-resync)"
+		(property "Value" "PIC12F629 (em soquete; snescic-lock-resync)"
 			(at 3.81 9.95 0)
 			(layer "F.Fab")
 			(uuid "4a0bc97a-297b-4dd5-a160-d1e0e61abcc0")
@@ -6253,6 +6253,17 @@
 		(at 73 97 0)
 		(layer "F.SilkS")
 		(uuid "9b7fe464-dc57-4130-930b-e80477b8abb6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.17)
+			)
+		)
+	)
+	(gr_text "PIC EM SOQUETE"
+		(at 84 49.8 0)
+		(layer "F.SilkS")
+		(uuid "75fb6e64-1940-40ee-96b3-523eaa624f30")
 		(effects
 			(font
 				(size 1 1)

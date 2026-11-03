@@ -9,4 +9,4 @@
 "R2","1k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","1"
 "SNES1","SNES_Slot","dumper:SNES_Slot","1"
 "U1","Si5351_Module","Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical","1"
-"U2","PIC12F629 (snescic-lock-resync)","Package_DIP:DIP-8_W7.62mm","1"
+"U2","PIC12F629 (em soquete; snescic-lock-resync)","Package_DIP:DIP-8_W7.62mm","1"

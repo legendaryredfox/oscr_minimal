@@ -71,6 +71,7 @@
 - **D70** Repositório passa a oferecer várias versões mínimas de hardware (decisão do usuário, 2026-11-03)
 - **D71** Placa `16_bits` (SNES e Mega Drive) e renomeação da placa de 5 slots (decisão do usuário, 2026-11-03)
 - **D72** U2 (PIC12F629) da `16_bits` passa ao footprint DIP-8 tradicional (pedido do usuário, 2026-11-03)
+- **D73** PIC removível indicado na placa `16_bits` (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -579,3 +580,8 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - Footprint `Package_DIP:DIP-8_W7.62mm_Socket` trocado por `Package_DIP:DIP-8_W7.62mm` no esquemático (MCP `edit_schematic_component`) e na PCB. O `replace_component` do MCP não existe nesta versão, então a troca na PCB foi feita com `pcbnew` (mesma posição e orientação, redes copiadas pino a pino). Os 8 pads são idênticos (passo 2,54 mm, 7,62 mm entre colunas, 1,6 mm), então **trilhas, furos e roteamento não mudaram**; só mudam o desenho do silk e o courtyard, e a abertura do pad 1 nos gerbers.
 - **O PIC continua removível** (pedido do usuário): soquete DIP-8 tradicional soldado nos mesmos 8 furos, PIC sempre no soquete, para manutenção e regravação (`boards/16_bits/docs/bom.md` e `montagem.md`). O footprint passa a ser o contorno do próprio CI; o soquete não aparece no desenho. Nada muda nos gerbers por causa disso.
 - Refeitos: zonas, DRC (os mesmos 8 avisos da D71, 0 erros, 0 ligações abertas), `check_netlist.py --board 16_bits` OK, ERC 0, `tools/export_fab.sh 16_bits v1.0`, previews e o SHA-256 em `fab/PEDIDO.md`. Gerbers conferidos com `gerbonara`: 7 camadas, 108,1 × 86,1 mm, 325 furos metalizados e 4 não metalizados. A `16_and_8_bits` não foi alterada.
+
+### D73 — PIC removível indicado na placa `16_bits` (pedido do usuário, 2026-11-03)
+- O footprint do U2 continua o DIP-8 tradicional (D72), mas a placa agora diz que o PIC fica em soquete: texto `PIC EM SOQUETE` no silk de cima (ao lado do U2) e valor do U2 `PIC12F629 (em soquete; snescic-lock-resync)` no esquemático, na PCB e no `fab/bom.csv`.
+- Só a camada de silk de cima mudou nos gerbers; cobre, máscaras, silk de baixo, contorno e furos saíram idênticos aos da D72. DRC igual (0 erros, 0 ligações abertas, 8 avisos da D71), ERC 0, netlist OK. Gerbers refeitos com `tools/export_fab.sh 16_bits v1.0`, SHA-256 atualizado em `fab/PEDIDO.md`.
+- Se o usuário quiser o desenho do soquete na placa, o footprint `Package_DIP:DIP-8_W7.62mm_Socket` (o da D71) tem os mesmos pads e pode voltar sem mexer no roteamento.

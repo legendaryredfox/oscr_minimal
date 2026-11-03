@@ -9538,7 +9538,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "PIC12F629 (snescic-lock-resync)"
+		(property "Value" "PIC12F629 (em soquete; snescic-lock-resync)"
 			(at 949.96 317.5 0)
 			(show_name no)
 			(do_not_autoplace no)

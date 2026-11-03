@@ -4,7 +4,7 @@ Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-03 a 
 
 ## Arquivo
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `278a5743eb391d9fa08d82532a8fa903fde73765f608ecdadf82372064caf48c`.
+Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `51a645f05a70042d60ee8428dad49fd2a321cccc569c3bc888e2ca30cdd12c05`.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
