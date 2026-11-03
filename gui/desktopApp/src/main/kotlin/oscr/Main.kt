@@ -70,6 +70,7 @@ fun App() {
     var ports by remember { mutableStateOf(SerialTransport.ports()) }
     var port by remember { mutableStateOf(Prefs.port.takeIf { p -> ports.any { it.name == p } } ?: ports.firstOrNull()?.name ?: "") }
     var baud by remember { mutableStateOf(Prefs.baud) }
+    var planned by remember { mutableStateOf<PlannedSystem?>(null) }   // cartucho do OSCR ainda sem suporte (stub): nada é enviado ao dispositivo
     var system by remember { mutableStateOf(CartSystem.entries.firstOrNull { it.name == Prefs.system && it != CartSystem.MOCK } ?: CartSystem.SNES) }
     var client by remember { mutableStateOf<OscrClient?>(null) }
     var transport by remember { mutableStateOf<Transport?>(null) }
@@ -213,6 +214,7 @@ fun App() {
     }
 
     fun actDetect() {
+        if (planned != null) return
         val c = client ?: return
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system) }
@@ -223,6 +225,7 @@ fun App() {
     }
 
     fun actDumpRom() {
+        if (planned != null) return
         val c = client ?: return
         if (problem != null) { say(describeProblem(lang, problem)); return }
         run(S.STAGE_READING_ROM) {
@@ -250,6 +253,7 @@ fun App() {
     }
 
     fun actReadSave() {
+        if (planned != null) return
         val c = client ?: return
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         run(S.STAGE_READING_SAVE) {
@@ -261,6 +265,7 @@ fun App() {
     }
 
     fun actWriteChoose() {
+        if (planned != null) return
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
         writeReq = WriteRequest(file, file.readBytes())
@@ -355,23 +360,29 @@ fun App() {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK }
                 systems.forEach { s ->
-                    FilterChip(selected = system == s, onClick = {
+                    FilterChip(selected = planned == null && system == s, onClick = {
+                        planned = null
                         if (s != system) { system = s; prgKb = "0"; chrKb = "0"; ramKb = "0"; mapper = "0"; Prefs.system = s.name }   // cada sistema começa limpo: nada "vaza" de um para outro
                     }, label = { Text(s.name) })
                 }
             }
-            PlannedPanel(lang)
-            if (system == CartSystem.GB) Text("⚠ " + t(S.GB_WARNING), color = MaterialTheme.colorScheme.error)
-            if (system == CartSystem.GBA) {
+            Text(t(S.SOON_TITLE), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline)
+            PlannedChips(planned) { planned = it }
+            val stub = planned
+            if (stub != null) Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
+                Text(f(S.STUB_NOTICE, stub.label), Modifier.padding(10.dp), style = MaterialTheme.typography.bodyMedium)
+            }
+            if (stub == null && system == CartSystem.GB) Text("⚠ " + t(S.GB_WARNING), color = MaterialTheme.colorScheme.error)
+            if (stub == null && system == CartSystem.GBA) {
                 Text("⚠ " + t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
                 OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true, modifier = Modifier.width(180.dp))
                 Text(t(S.GBA_SAVE_HINT), style = MaterialTheme.typography.bodyMedium)
             }
-            if (system == CartSystem.MD || system == CartSystem.SNES) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.width(420.dp))
             }
-            if (isNes) {
+            if (stub == null && isNes) {
                 Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
                 if (dbHasNes) {
                     OutlinedTextField(gameQuery, { gameQuery = it }, label = { Text(t(S.GAME_SEARCH)) }, singleLine = true, modifier = Modifier.width(420.dp))
@@ -404,14 +415,14 @@ fun App() {
             // ---- leitura (segura) e gravação (destrutiva), separadas
             Text(t(S.READ_SECTION), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = connected && !busy, onClick = { actDetect() }) { Text(t(S.DETECT)) }
-                Button(enabled = connected && !busy && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
-                Button(enabled = connected && !busy && ramProblem == null, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
+                OutlinedButton(enabled = connected && !busy && stub == null, onClick = { actDetect() }) { Text(t(S.DETECT)) }
+                Button(enabled = connected && !busy && stub == null && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
+                Button(enabled = connected && !busy && stub == null && ramProblem == null, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
             Text(t(S.WRITE_SECTION), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = connected && !busy && ramProblem == null, onClick = { actWriteChoose() },
+                Button(enabled = connected && !busy && stub == null && ramProblem == null, onClick = { actWriteChoose() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)) { Text(t(S.WRITE_SAVE)) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -527,19 +538,12 @@ private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<Stri
     }
 }
 
-/** Outros cartuchos do OSCR, ainda sem suporte: só marcadores de lugar (desabilitados), recolhidos por padrão. */
+/** Outros cartuchos do OSCR, ainda sem suporte: stubs selecionáveis (só mostram um aviso; nenhuma ação vai ao dispositivo). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PlannedPanel(lang: Lang) {
-    var open by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        TextButton(onClick = { open = !open }) { Text((if (open) "▾ " else "▸ ") + I18n.t(lang, S.SOON_TITLE), style = MaterialTheme.typography.titleSmall) }
-        if (open) {
-            Text(I18n.t(lang, S.SOON_HINT), style = MaterialTheme.typography.bodyMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                PLANNED_SYSTEMS.forEach { FilterChip(selected = false, enabled = false, onClick = {}, label = { Text(it.label) }) }
-            }
-        }
+private fun PlannedChips(selected: PlannedSystem?, onSelect: (PlannedSystem) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        PLANNED_SYSTEMS.forEach { p -> FilterChip(selected = selected?.key == p.key, onClick = { onSelect(p) }, label = { Text(p.label) }) }
     }
 }
 
