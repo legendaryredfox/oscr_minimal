@@ -98,6 +98,8 @@ Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código
 
 - Leia cada cartucho **duas ou três vezes** e confira que o CRC32 é o mesmo.
 - Guarde as ROMs com o nome do No-Intro; o CRC32 mostrado é o da ROM completa.
+- **Identificar o jogo pelo CRC32:** em Configurações, "Base de dados de jogos", adicione um `.dat` do No-Intro (ou uma pasta deles) e/ou o `nes20db.xml`. Depois do dump a GUI mostra o nome do jogo (ou "não encontrado": dump novo, variante ou erro de leitura) e usa o nome no arquivo. Na CLI: `dumper dump --db BASE ...`, `dumper identify rom.sfc --db BASE`, `dumper search "mario" --db BASE`. As bases não vêm no repositório: baixe-as das fontes (No-Intro/Redump e o projeto NES 2.0 XML Database).
+- **NES/Famicom:** com o `nes20db.xml` carregado, a GUI ganha o campo "Procurar jogo na base NES 2.0": escolha o jogo e mapper, PRG, CHR e RAM são preenchidos. Na CLI: `dumper dump -s nes --game "Nome do jogo" --db nes20db.xml`.
 - Para contribuir com um erro, anexe: sistema, título, saída do **Detectar**, versão do firmware (`dumper.py info`) e a mensagem exata.
 
 ## 6. Limites e segurança
@@ -118,4 +120,4 @@ Faça nesta ordem e anote o resultado em `docs/decisoes.md`:
 5. Mega Drive, Famicom e GBA.
 6. Save SNES: leia, faça backup, grave de volta o mesmo arquivo e leia de novo (devem ser iguais).
 
-Se algum sistema falhar, o ponto a olhar é o HAL em `firmware/oscr_serial/oscr_avr_buses.h` (tempos e linhas de controle), comparando com `SNES.ino`, `NES.ino`, `MD.ino` e `GBA.ino` do OSCR e com `boards/16_and_8_bits/docs/pinmap.md`.
+Se algum sistema falhar, o ponto a olhar é o HAL em `firmware/oscr/src/cores/*.cpp (o firmware do fork; o HAL antigo está em firmware/arquivo/oscr_serial/oscr_avr_buses.h)` (tempos e linhas de controle), comparando com `SNES.ino`, `NES.ino`, `MD.ino` e `GBA.ino` do OSCR e com `boards/16_and_8_bits/docs/pinmap.md`.

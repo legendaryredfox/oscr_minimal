@@ -5,21 +5,23 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Testes do firmware (protocolo, Si5351, HAL do AVR com registradores simulados, cartuchos)
-        run: make -C firmware/oscr_serial test
-      - name: ASan + UBSan nos testes de cartuchos e de protocolo
+      - name: Testes do protocolo no PC (framing, CRC32, sessão, modo fluxo)
+        run: make -C firmware/oscr/pc-tests test
+      - name: ASan + UBSan nos testes de protocolo
         run: |
-          cd firmware/oscr_serial
-          g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -o /tmp/asan_carts tests/test_carts.cpp oscr_carts.cpp oscr_carts_snes.cpp oscr_carts_nes.cpp oscr_carts_md.cpp oscr_carts_gba.cpp oscr_carts_gb.cpp oscr_session.cpp oscr_proto.cpp
-          g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -o /tmp/asan_proto tests/test_proto.cpp oscr_proto.cpp oscr_session.cpp
-          /tmp/asan_carts && /tmp/asan_proto
-      - name: Compila o sketch para o Mega 2560
-        uses: arduino/compile-sketches@v1
-        with:
-          fqbn: arduino:avr:mega
-          sketch-paths: firmware/arduino/oscr_dumper
-          libraries: |
-            - source-path: firmware/oscr_serial
+          cd firmware/oscr/pc-tests
+          g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -o /tmp/asan_proto test_proto.cpp ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
+          /tmp/asan_proto
+      - name: Compila o fork do OSCR para o Mega 2560 (PlatformIO)
+        run: |
+          pip install platformio
+          cd firmware/oscr && pio run -e SerialASCII
+  firmware-arquivo:
+    # firmware próprio arquivado (D76): continua testável, mas não é mais o firmware do projeto
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -C firmware/arquivo/oscr_serial test
   host:
     runs-on: ubuntu-24.04
     steps:
@@ -27,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install pytest pytest-cov pyserial
-      - run: make -C firmware/oscr_serial build/sim_stdio
+      - run: make -C firmware/oscr/pc-tests build/sim_stdio
       - run: cd host && python -m pytest -q --cov=oscr_host
   gui:
     runs-on: ubuntu-24.04
@@ -35,4 +37,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: zulu, java-version: "21" }
-      - run: cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin
+      - run: cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin

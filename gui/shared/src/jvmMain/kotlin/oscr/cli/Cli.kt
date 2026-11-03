@@ -38,7 +38,7 @@ class CliIo(
     }
 }
 
-private class Args(val cmd: String?, val opts: Map<String, String>, val flags: Set<String>) {
+private class Args(val cmd: String?, val opts: Map<String, String>, val flags: Set<String>, val positional: List<String> = emptyList()) {
     val json get() = "json" in flags
     fun int(name: String): Int {
         val v = opts[name] ?: return 0
@@ -58,9 +58,9 @@ object Cli {
         EXIT_INTERRUPTED to "interrupted (Ctrl+C)",
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir")
+    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit")
     private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "help", "version")
-    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write")
+    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
         "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "mock" to emptyList())
     private val STATUS = mapOf(0 to "cartridge detected", 1 to "no cartridge", 2 to "not supported", 3 to "hardware error",
@@ -75,6 +75,8 @@ commands:
   errors       list device error codes and CLI exit codes (does not open the port)
   info         firmware version and supported systems
   detect       detect the cartridge            (-s SYSTEM)
+  identify     identify saved ROMs by CRC32 in the database (--db), without opening the port
+  search       search games by name in the database (--db), without opening the port
   dump         read the ROM                    (-s SYSTEM [-o FILE])
   save-read    read the save                   (-s SYSTEM [-o FILE])
   save-write   write the save                  (-s SYSTEM -i FILE --yes)
@@ -91,6 +93,9 @@ options (accepted before or after the command):
   -i, --input FILE     save file to write
   --block N            block size (default 512)
   --mapper N --prg KB --chr KB --ram KB     NES/Famicom/GBA options (see 'systems')
+  --db PATH            game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
+  --game NAME          dump, NES/Famicom: game name in the NES 2.0 XML database; fills --mapper/--prg/--chr left at 0
+  --limit N            search: maximum results (default 20)
   --yes                do not ask before writing (required outside a terminal)
   --no-backup          save-write: do not read the current save first
   --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)
@@ -101,7 +106,7 @@ Full contract: docs/cli.md
 
     private fun parse(argv: List<String>): Args {
         var cmd: String? = null
-        val opts = linkedMapOf<String, String>(); val flags = linkedSetOf<String>()
+        val opts = linkedMapOf<String, String>(); val flags = linkedSetOf<String>(); val positional = ArrayList<String>()
         var i = 0
         while (i < argv.size) {
             val a = argv[i++]
@@ -112,7 +117,10 @@ Full contract: docs/cli.md
                     val name = if (eq >= 0) body.substring(0, eq) else body
                     when {
                         name in FLAGS -> { if (eq >= 0) throw CliError("usage", "--$name does not take a value", EXIT_USAGE); flags += name }
-                        name in LONG_VALUED -> opts[name] = if (eq >= 0) body.substring(eq + 1) else argv.getOrNull(i++) ?: throw CliError("usage", "--$name needs a value", EXIT_USAGE)
+                        name in LONG_VALUED -> {
+                            val v = if (eq >= 0) body.substring(eq + 1) else argv.getOrNull(i++) ?: throw CliError("usage", "--$name needs a value", EXIT_USAGE)
+                            opts[name] = if (name == "db" && name in opts) opts[name] + "\n" + v else v      // --db pode repetir
+                        }
                         else -> throw CliError("usage", "unknown option: --$name", EXIT_USAGE)
                     }
                 }
@@ -120,10 +128,11 @@ Full contract: docs/cli.md
                     opts[VALUED.getValue(a[1].toString())] = argv.getOrNull(i++) ?: throw CliError("usage", "$a needs a value", EXIT_USAGE)
                 a.startsWith("-") && a.length > 1 -> throw CliError("usage", "unknown option: $a", EXIT_USAGE)
                 cmd == null -> cmd = a
+                cmd == "identify" || cmd == "search" -> positional += a
                 else -> throw CliError("usage", "unexpected argument: $a", EXIT_USAGE)
             }
         }
-        return Args(cmd, opts, flags)
+        return Args(cmd, opts, flags, positional)
     }
 
     fun run(argv: List<String>, io: CliIo): Int {
@@ -144,6 +153,8 @@ Full contract: docs/cli.md
                 "detect" -> cmdDetect(io, a)
                 "dump" -> cmdDump(io, a)
                 "save-read" -> cmdSaveRead(io, a)
+                "identify" -> cmdIdentify(io, a)
+                "search" -> cmdSearch(io, a)
                 else -> cmdSaveWrite(io, a)
             }
         } catch (e: CliError) {
@@ -245,7 +256,10 @@ Full contract: docs/cli.md
     private fun cmdSystems(io: CliIo, a: Args): Int {
         val rows = CartSystem.entries.map { Json.obj("name" to it.name.lowercase(), "id" to it.id, "extension" to it.ext,
             "options" to OPTIONS.getValue(it.name.lowercase()), "needs_cartridge" to (it != CartSystem.MOCK)) }
-        emit(io, a, Json.obj("systems" to rows), rows.map { "${(it["name"] as String).padEnd(8)} id ${it["id"]}  ${it["extension"]}  options: ${(it["options"] as List<*>).joinToString(", ").ifEmpty { "-" }}" })
+        val planned = PLANNED_SYSTEMS.map { Json.obj("name" to it.key, "label" to it.label, "supported" to false) }
+        emit(io, a, Json.obj("systems" to rows, "planned" to planned),
+            rows.map { "${(it["name"] as String).padEnd(8)} id ${it["id"]}  ${it["extension"]}  options: ${(it["options"] as List<*>).joinToString(", ").ifEmpty { "-" }}" } +
+                listOf("", "coming soon (other OSCR cartridges, no hardware, firmware or protocol id yet):") + PLANNED_SYSTEMS.map { "  ${it.key.padEnd(13)} ${it.label}" })
         return EXIT_OK
     }
 
@@ -280,10 +294,19 @@ Full contract: docs/cli.md
     }
 
     private fun cmdDump(io: CliIo, a: Args): Int {
-        val c = connect(io, a); val sys = system(a)
+        val sys = system(a)
+        val db = loadDb(a, required = a.opts["game"] != null)
+        var mapper = a.int("mapper"); var prg = a.int("prg"); var chr = a.int("chr")
+        a.opts["game"]?.let { q ->
+            if (sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", "--game applies to NES and Famicom only", EXIT_USAGE)
+            val g = gameOptions(db!!, q); val o = g.nesOptions()!!
+            if (mapper == 0) mapper = o.mapper; if (prg == 0) prg = o.prgKb; if (chr == 0) chr = o.chrKb
+            if (!a.json) io.err("database game: ${g.name}  mapper ${o.mapper}  PRG ${o.prgKb} KB  CHR ${o.chrKb} KB  (${g.source})")
+        }
+        val c = connect(io, a)
         var title = ""
         if (a.opts["output"] == null) title = try { c.client.detect(sys).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
-        val res = try { c.client.dumpRom(sys, a.int("block"), a.int("mapper"), a.int("prg"), a.int("chr"), progress(io, a, "rom")) } finally { c.transport.close() }
+        val res = try { c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom")) } finally { c.transport.close() }
         val ext = if (sys == CartSystem.GB && res.data.size > 0x143 && res.data[0x143].toInt() and 0x80 != 0) ".gbc" else sys.ext
         val chk = verifyRom(sys, res.data)
         val extra = linkedMapOf<String, Any?>("checksum" to chk.status.name.lowercase())
@@ -294,8 +317,77 @@ Full contract: docs/cli.md
             if (h != null) { extra["gba_save_type"] = h.type; notes += "GBA save: ${h.tag}, ${h.label}: use --mapper ${h.type} with save-read" }
             else notes += "GBA save: no save library string in the ROM (no save, or unknown type)"
         }
+        if (db != null) {
+            val m = db.identify(sys, res.data)
+            extra["game"] = m?.let { matchJson(it) }
+            if (m != null) { title = m.entry.name; notes += "game: ${m.entry.name} (${m.entry.source}, ${m.how.text}" + (if (m.others > 0) ", ${m.others} identical more" else "") + ")" }
+            else notes += "game: not found in the database (${db.size} entries): new dump, variant, or a read error if the CRC32 should be there"
+        }
         saveResult(io, a, res, ext, safeName(title, "rom_${sys.name.lowercase()}"), extra, notes)
         return EXIT_OK
+    }
+
+    // ------------------------------------------------------------------ base de dados
+    private val DbMatch.How.text get() = when (this) { DbMatch.How.CRC32 -> "crc32"; DbMatch.How.CRC32_NO_HEADER -> "crc32 without iNES header"; DbMatch.How.CRC32_PRG_CHR -> "crc32 of PRG and CHR" }
+    private fun hex8(v: Int) = (v.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
+
+    private fun entryJson(e: DbEntry): MutableMap<String, Any?> {
+        val d = LinkedHashMap(Json.obj("name" to e.name, "crc32" to hex8(e.crc), "size" to e.size, "source" to e.source, "kind" to e.kind))
+        e.nesOptions()?.let { o -> d["mapper"] = o.mapper; d["submapper"] = e.submapper; d["prg_kb"] = o.prgKb; d["chr_kb"] = o.chrKb; d["ram_kb"] = o.ramKb; d["battery"] = e.battery }
+        return d
+    }
+
+    private fun matchJson(m: DbMatch): Map<String, Any?> = entryJson(m.entry).also { it["match"] = m.how.text; it["others"] = m.others }
+
+    private fun loadDb(a: Args, required: Boolean): Database? {
+        val paths = a.opts["db"]?.split("\n").orEmpty().ifEmpty { DatabaseLoader.pathsFromEnv() }
+        if (paths.isEmpty()) {
+            if (required) throw CliError("no_database", "no database: use --db FILE_OR_FOLDER (No-Intro .dat or NES 2.0 XML) or the OSCR_DB environment variable", EXIT_USAGE)
+            return null
+        }
+        try { return DatabaseLoader.loadAll(paths) }
+        catch (e: DatabaseError) { throw CliError("database", e.message ?: "database error", EXIT_ERROR, "check the path and that the file is a Logiqx .dat or nes20db.xml") }
+    }
+
+    private fun gameOptions(db: Database, query: String): DbEntry {
+        var found = db.searchNes(query, 200)
+        val exact = found.filter { it.name.equals(query, true) }
+        if (exact.isNotEmpty()) found = exact
+        val uniq = LinkedHashMap<List<Int?>, DbEntry>()
+        for (e in found) uniq[listOf(e.mapper, e.prgKb, e.chrKb, e.ramKb)] = e
+        if (uniq.isEmpty()) throw CliError("game_not_found", "no game with mapper and sizes in the database for: $query", EXIT_USAGE,
+            "the database must be the NES 2.0 XML (nes20db.xml); No-Intro has no mapper. Use 'search' to look up names")
+        if (uniq.size > 1) throw CliError("game_ambiguous", "${found.size} games match '$query' with different configurations", EXIT_USAGE,
+            "be more specific. Examples: " + uniq.values.take(5).joinToString("; ") { "${it.name} (mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB)" })
+        return uniq.values.first()
+    }
+
+    private val EXT_SYSTEM = mapOf("sfc" to CartSystem.SNES, "smc" to CartSystem.SNES, "nes" to CartSystem.NES, "md" to CartSystem.MD, "gen" to CartSystem.MD,
+        "smd" to CartSystem.MD, "gba" to CartSystem.GBA, "gb" to CartSystem.GB, "gbc" to CartSystem.GB)
+
+    private fun cmdIdentify(io: CliIo, a: Args): Int {
+        val db = loadDb(a, required = true)!!
+        if (a.positional.isEmpty()) throw CliError("usage", "identify needs at least one file", EXIT_USAGE)
+        val results = a.positional.map { f ->
+            val file = File(f); val data = file.readBytes()
+            val sys = if (a.opts["system"] != null) system(a) else EXT_SYSTEM[file.extension.lowercase()] ?: CartSystem.MOCK
+            val m = db.identify(sys, data)
+            Json.obj("file" to f, "bytes" to data.size, "crc32" to hex8(crc32(data)), "game" to m?.let { matchJson(it) })
+        }
+        emit(io, a, Json.obj("entries_in_database" to db.size, "results" to results), results.map { r ->
+            val g = r["game"] as? Map<*, *>
+            "${r["file"]}  CRC32 ${r["crc32"]}  " + (g?.let { "${it["name"]} (${it["source"]}, ${it["match"]})" } ?: "not found in the database")
+        })
+        return if (results.all { it["game"] != null }) EXIT_OK else EXIT_ERROR
+    }
+
+    private fun cmdSearch(io: CliIo, a: Args): Int {
+        val db = loadDb(a, required = true)!!
+        val q = a.positional.joinToString(" ").ifBlank { throw CliError("usage", "search needs a query", EXIT_USAGE) }
+        val found = db.search(q, a.opts["limit"]?.let { a.int("limit") } ?: 20)
+        emit(io, a, Json.obj("entries_in_database" to db.size, "results" to found.map { entryJson(it) }),
+            found.map { e -> "${hex8(e.crc)}  ${e.name}" + (e.nesOptions()?.let { "  [mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB, RAM ${it.ramKb} KB]" } ?: "") }.ifEmpty { listOf("no results") })
+        return if (found.isNotEmpty()) EXIT_OK else EXIT_ERROR
     }
 
     private fun cmdSaveRead(io: CliIo, a: Args): Int {

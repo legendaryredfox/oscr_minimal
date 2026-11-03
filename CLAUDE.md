@@ -55,10 +55,9 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   ├── uso.md                # guia de uso: casos de uso, cenários, troubleshooting
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
 │   └── decisoes.md           # log de decisões e desvios
-├── firmware/                 # fork enxuto do Cart_Reader do OSCR + protocolo
-│   ├── oscr_serial/          # biblioteca do protocolo (C++ portátil, testes no PC)
-│   ├── arduino/              # projeto Arduino (arduino-cli / IDE)
-│   └── platformio/           # projeto PlatformIO
+├── firmware/
+│   ├── oscr/                 # FIRMWARE ATUAL: fork do firmware novo do OSCR + laço do protocolo (src/dumper); pc-tests/ = testes do protocolo no PC
+│   └── arquivo/              # ARQUIVADO (D76): firmware próprio antigo (oscr_serial, arduino, platformio); só consulta, não evoluir
 ├── host/                     # CLI Python (pyserial) para o PC; referência e testes do protocolo
 └── gui/                      # GUI multiplataforma (Kotlin Multiplatform), Linux, macOS e Windows
 ```
@@ -161,7 +160,7 @@ Rode o script ao fim das fases 3 e 5. Uma placa com divergência não segue para
 Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o código de leitura de cartuchos do OSCR.
 
 ### Firmware (`firmware/`)
-- (Decisão do usuário em 2026-11-03, `docs/decisoes.md` D65, que **corrige** o desvio D38) O firmware é o **firmware novo do OSCR** (`vendor/oscr/firmware`), copiado para `firmware/oscr/` e reduzido: só SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, sem SD. Plano e estado: `docs/fork-oscr.md`. O firmware próprio `firmware/oscr_serial` (D38) fica até o fork cobrir o que ele cobre e então é arquivado. `host/` e `gui/` continuam no escopo.
+- (Decisão do usuário em 2026-11-03, `docs/decisoes.md` D65, que **corrige** o desvio D38) O firmware é o **firmware novo do OSCR** (`vendor/oscr/firmware`), copiado para `firmware/oscr/` e reduzido: só SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, sem SD. Plano e estado: `docs/fork-oscr.md`. O firmware próprio (D38) foi **arquivado** em `firmware/arquivo/` (D76) quando o fork passou a cobrir SNES, NES/Famicom, Mega Drive e GB/GBC/GBA; não evolua o arquivo. `host/` e `gui/` continuam no escopo.
 - Use as opções existentes em `Config.h` para habilitar só SNES, NES/Famicom e Mega Drive. Verifique se o upstream já tem um modo de interface serial antes de escrever um novo.
 - Isole duas camadas, com o mínimo de mudanças no resto:
   - **Interface:** menus do LCD e botões → comandos pela serial.

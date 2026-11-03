@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""CLI do dumper: detect, dump, save-read, save-write, info, ports, systems, errors.
+"""CLI do dumper: detect, dump, save-read, save-write, identify, search, info, ports, systems, errors.
 
 Feita para pessoas e para agentes de IA: --json (saída e erros), código de saída estável, progresso em JSON lines,
 nenhum prompt fora de um terminal. Referência: docs/cli.md."""
@@ -10,11 +10,14 @@ import json
 import re
 import sys
 import time
+import zlib
 from pathlib import Path
 
 from . import __version__
 from . import protocol as P
 from .client import Client, TimeoutError_
+from . import database as DB
+from .planned import PLANNED
 from .verify import eeprom_is_4k, gba_save_hint, verify_rom
 from .transport import SerialTransport, Transport
 
@@ -134,7 +137,10 @@ SYSTEM_OPTIONS = {"snes": ["prg"], "nes": ["mapper", "prg", "chr", "ram"], "fami
 def cmd_systems(args) -> int:
     rows = [{"name": n, "id": v[0], "extension": v[1], "options": SYSTEM_OPTIONS.get(n, []), "needs_cartridge": n != "mock"}
             for n, v in P.SYSTEMS.items()]
-    emit(args, {"systems": rows}, [f"{r['name']:8} id {r['id']:3}  {r['extension']:5} opções: {', '.join(r['options']) or '-'}" for r in rows])
+    planned = [{"name": k, "label": l, "supported": False} for k, l in PLANNED]
+    emit(args, {"systems": rows, "planned": planned},
+         [f"{r['name']:8} id {r['id']:3}  {r['extension']:5} opções: {', '.join(r['options']) or '-'}" for r in rows]
+         + ["", "em breve (outros cartuchos do OSCR, ainda sem hardware, firmware nem id no protocolo):"] + [f"  {p['name']:13} {p['label']}" for p in planned])
     return 0
 
 
@@ -158,6 +164,35 @@ def emit(args, obj: dict, lines: list[str]) -> None:
 def safe_name(title: str, default: str) -> str:
     n = re.sub(r"[^A-Za-z0-9._ -]+", "_", title or "").strip(" ._")
     return n or default
+
+
+def load_db(args, required: bool = False) -> DB.Database | None:
+    """Base de dados do PC (--db, repetível, ou a variável OSCR_DB). None se nenhuma foi pedida."""
+    paths = list(args.db or []) or DB.paths_from_env()
+    if not paths:
+        if required:
+            raise CliError("no_database", "nenhuma base de dados: use --db ARQUIVO_OU_PASTA (No-Intro .dat ou NES 2.0 XML) ou a variável OSCR_DB",
+                           EXIT_USAGE)
+        return None
+    try:
+        return DB.load_databases(paths)
+    except (ValueError, OSError) as e:
+        raise CliError("database", str(e), EXIT_ERROR, "confira o caminho e se o arquivo é um .dat (Logiqx) ou o nes20db.xml") from e
+
+
+def _game_options(db: DB.Database, query: str) -> DB.Entry:
+    """Escolhe a entrada do NES 2.0 XML pelo nome (para preencher mapper, PRG e CHR)."""
+    found = [e for e in db.search(query, 200) if e.nes_options()]
+    exact = [e for e in found if e.name.lower() == query.lower()]
+    found = exact or found
+    uniq = {(e.mapper, e.prg_kb, e.chr_kb, e.ram_kb): e for e in found}
+    if not uniq:
+        raise CliError("game_not_found", f"nenhum jogo com mapper e tamanhos na base para: {query}", EXIT_USAGE,
+                       "a base precisa ser o NES 2.0 XML (nes20db.xml); o No-Intro não traz o mapper. Use `dumper search` para procurar")
+    if len(uniq) > 1:
+        raise CliError("game_ambiguous", f"{len(found)} jogos combinam com '{query}' e têm configurações diferentes", EXIT_USAGE,
+                       "seja mais específico. Exemplos: " + "; ".join(f"{e.name} (mapper {e.mapper}, PRG {e.prg_kb} KB, CHR {e.chr_kb} KB)" for e in list(uniq.values())[:5]))
+    return next(iter(uniq.values()))
 
 
 def cmd_info(args) -> int:
@@ -195,8 +230,19 @@ def _save_result(args, res: P.Frame | object, ext: str, default: str, extra: dic
 
 
 def cmd_dump(args) -> int:
-    c, t, _ = connect(args)
     sid = system_id(args.system)
+    db = load_db(args, required=bool(args.game))
+    if args.game:
+        if sid not in DB.NES_SYSTEMS:
+            raise CliError("usage", "--game vale só para NES e Famicom", EXIT_USAGE)
+        g = _game_options(db, args.game)
+        o = g.nes_options()
+        args.mapper = args.mapper or o["mapper"]
+        args.prg = args.prg or o["prg"]
+        args.chr = args.chr or o["chr"]
+        if not args.json:
+            print(f"jogo da base: {g.name}  mapper {o['mapper']}  PRG {o['prg']} KB  CHR {o['chr']} KB  ({g.source})", file=sys.stderr)
+    c, t, _ = connect(args)
     title = ""
     if not args.output:                                   # sem -o: nome do arquivo pelo título do cartucho
         try:
@@ -213,6 +259,14 @@ def cmd_dump(args) -> int:
     extra: dict = {"checksum": chk.status}
     if chk.status != "na":
         notes.append(("aviso: " if chk.status == "mismatch" else "") + str(chk))
+    if db is not None:
+        m = db.identify(sid, res.data)
+        extra["game"] = m.to_dict() if m else None
+        if m:
+            title = m.entry.name
+            notes.append(f"jogo: {m.entry.name} ({m.entry.source}, {m.how}" + (f", mais {m.others} idêntica(s)" if m.others else "") + ")")
+        else:
+            notes.append(f"jogo: não encontrado na base ({len(db)} entradas): dump novo, variante, ou erro de leitura se o CRC32 devia estar lá")
     if sid == 5:
         hint = gba_save_hint(res.data)
         if hint:
@@ -223,6 +277,32 @@ def cmd_dump(args) -> int:
         else:
             notes.append("save do GBA: nenhuma cadeia de biblioteca de save na ROM (sem save, ou tipo desconhecido)")
     return _save_result(args, res, ext, safe_name(title, f"rom_{args.system}"), extra, notes)
+
+
+_EXT_SYSTEM = {".sfc": 1, ".smc": 1, ".nes": 2, ".md": 4, ".gen": 4, ".smd": 4, ".gba": 5, ".gb": 6, ".gbc": 6}
+
+
+def cmd_identify(args) -> int:
+    db = load_db(args, required=True)
+    results = []
+    for f in args.files:
+        data = Path(f).read_bytes()
+        sid = P.SYSTEMS[args.system][0] if args.system != "mock" else _EXT_SYSTEM.get(Path(f).suffix.lower(), 0)
+        m = db.identify(sid, data)
+        results.append({"file": f, "bytes": len(data), "crc32": f"{zlib.crc32(data):08X}", "game": m.to_dict() if m else None})
+    lines = [f"{r['file']}  CRC32 {r['crc32']}  " + (f"{r['game']['name']} ({r['game']['source']}, {r['game']['match']})" if r["game"] else "não encontrado na base")
+             for r in results]
+    emit(args, {"entries_in_database": len(db), "results": results}, lines)
+    return EXIT_OK if all(r["game"] for r in results) else EXIT_ERROR
+
+
+def cmd_search(args) -> int:
+    db = load_db(args, required=True)
+    found = db.search(args.query, args.limit)
+    emit(args, {"entries_in_database": len(db), "results": [e.to_dict() for e in found]},
+         [f"{e.crc:08X}  {e.name}" + (f"  [mapper {e.mapper}, PRG {e.prg_kb} KB, CHR {e.chr_kb} KB, RAM {e.ram_kb} KB]" if e.nes_options() else "") for e in found]
+         or ["nenhum resultado"])
+    return EXIT_OK if found else EXIT_ERROR
 
 
 def cmd_save_read(args) -> int:
@@ -285,6 +365,8 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
     d = (lambda v: v) if top else (lambda v: argparse.SUPPRESS)
     p.add_argument("-p", "--port", default=d(None), help="porta serial (padrão: primeira ttyUSB/ttyACM/COM)")
     p.add_argument("-b", "--baud", type=int, default=d(None), help="baud (padrão: 1000000, depois 115200)")
+    p.add_argument("--db", action="append", default=d(None), metavar="CAMINHO",
+                   help="base de dados para identificar o jogo: arquivo ou pasta de .dat (No-Intro) ou nes20db.xml; pode repetir; também lê a variável OSCR_DB")
     p.add_argument("--simulate", action="store_true", default=d(False), help="usa o simulador em memória (sem hardware)")
     p.add_argument("--json", action="store_true", default=d(False),
                    help='saída em JSON (uma linha em stdout, sempre com "ok"; erros: {"ok":false,"error":{kind,message,hint}})')
@@ -327,10 +409,16 @@ def build_parser() -> argparse.ArgumentParser:
     add("errors", cmd_errors, "lista os códigos de erro do dispositivo e os códigos de saída da CLI (não abre a porta)", system=False)
     add("info", cmd_info, "versão do firmware e sistemas suportados", system=False)
     add("detect", cmd_detect, "detecta o cartucho")
+    ip = add("identify", cmd_identify, "identifica arquivos já salvos pelo CRC32 na base de dados (--db), sem abrir a porta")
+    ip.add_argument("files", nargs="+", help="ROMs a identificar")
+    sp_ = add("search", cmd_search, "procura jogos pelo nome na base de dados (--db), sem abrir a porta", system=False)
+    sp_.add_argument("query", help="palavras do nome (todas precisam aparecer)")
+    sp_.add_argument("--limit", type=int, default=20, help="máximo de resultados (padrão 20)")
     dp = add("dump", cmd_dump, "lê a ROM", out=True)
     dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206)")
     dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive e SNES ExHiROM: tamanho da ROM em KB (0 = pelo cabeçalho)")
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
+    dp.add_argument("--game", help="NES/Famicom: nome do jogo na base NES 2.0 XML (--db); preenche --mapper, --prg e --chr que ficaram em 0")
     for sp in (add("save-read", cmd_save_read, "lê o save", out=True), add("save-write", cmd_save_write, "grava o save", inp=True)):
         sp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: mapper do cartucho (1, 4, 5 ou 69 têm save com bateria)")
         sp.add_argument("--ram", type=int, default=0, help="NES/Famicom: RAM do save em KB (8, 16 ou 32; 16 e 32 só nos mappers 1 e 5; 0 = 8)")

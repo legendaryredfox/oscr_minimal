@@ -15,7 +15,8 @@ Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware
 | Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **SNES**, **NES/Famicom**, **Mega Drive**, **GBA** e **GB/GBC**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`. **Compila; nunca rodou** |
 | NES/Famicom | **ligado (D75)**: `nesProbe` em `Dumper.cpp` monta o registro do núcleo (sem CRDB) a partir de mapper/PRG/CHR/RAM do PC; compila (121.722 B de flash, 47,9%; RAM 41,0%); nunca rodou |
 | Erros fatais e esperas por botão | `fatalError` volta ao laço por `longjmp`; `waitButton` não espera |
-| Identificação por banco de dados no PC | **não feita** (seção 3.2) |
+| Identificação por banco de dados no PC | **feita (D76)**: `host/oscr_host/database.py` e `gui/shared/.../Database.kt` (No-Intro `.dat` e NES 2.0 XML), `identify`/`search`/`--db`/`--game` nas duas CLIs e painel Configurações na GUI |
+| Firmware próprio `oscr_serial` | **arquivado (D76)** em `firmware/arquivo/`; o protocolo do fork tem testes próprios em `firmware/oscr/pc-tests/` |
 | Validação em hardware | nenhuma |
 
 ## 1.1 O que foi feito nesta rodada
@@ -76,7 +77,7 @@ O firmware novo identifica o jogo por uma base (CRDB) lida do cartão SD. Sem SD
 2. Laço de comandos com um núcleo de ponta a ponta: **Mega Drive, `DETECT` e `DUMP_ROM`** (itens 3.1.4 a 3.1.6), compilando para o Mega.
 3. `READ_SAVE` e `WRITE_SAVE` do Mega Drive; depois GBA, GB/GBC, SNES e NES (3.1.7 e 3.1.8).
 4. Host e GUI (3.3) e a base de dados no PC (3.2).
-5. Arquivar `firmware/oscr_serial` quando o fork cobrir o que ele cobre.
+5. ~~Arquivar `firmware/oscr_serial`~~ feito (D76).
 
 ## 5. Riscos
 

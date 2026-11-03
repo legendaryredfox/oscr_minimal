@@ -2,7 +2,7 @@
 """Confere que a lista de mappers do firmware aparece na CLI, na GUI (4 idiomas) e na documentação.
 
 A lista já ficou desatualizada em um lugar ou outro (a ajuda da GUI chegou a dizer que só o SNES tem save). A fonte da verdade é a linha
-`known` de oscr_carts_nes.cpp; qualquer mapper novo precisa entrar em todos os textos abaixo.
+`known` de nesCheckRom (firmware/oscr/src/dumper/Dumper.cpp); qualquer mapper novo precisa entrar em todos os textos abaixo.
 """
 import re
 from pathlib import Path
@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def firmware_mappers() -> set[int]:
-    src = (ROOT / "firmware/oscr_serial/oscr_carts_nes.cpp").read_text()
+    src = (ROOT / "firmware/oscr/src/dumper/Dumper.cpp").read_text()
     m = re.search(r"bool known = (.*?);", src, re.S)
-    assert m, "linha 'known' não encontrada em oscr_carts_nes.cpp"
+    assert m, "linha 'known' não encontrada em Dumper.cpp (nesCheckRom)"
     return {int(n) for n in re.findall(r"m == (\d+)", m.group(1))}
 
 

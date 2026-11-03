@@ -10,8 +10,9 @@ boards/*/hardware/*-backups/
 __pycache__/
 *.pyc
 # Builds
-firmware/platformio/.pio/
-firmware/oscr_serial/build/
+firmware/arquivo/platformio/.pio/
+firmware/arquivo/oscr_serial/build/
+firmware/oscr/pc-tests/build/
 gui/.gradle/
 gui/**/build/
 gui/.kotlin/

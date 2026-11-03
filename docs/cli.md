@@ -31,13 +31,21 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | Comando | Saída JSON (além de `ok`) |
 |---|---|
 | `ports` | `ports`: lista de portas |
-| `systems` | `systems`: `[{name, id, extension, options, needs_cartridge}]`; `options` diz quais de `--mapper`, `--prg`, `--chr`, `--ram` o sistema usa |
+| `systems` | `systems`: `[{name, id, extension, options, needs_cartridge}]`; `options` diz quais de `--mapper`, `--prg`, `--chr`, `--ram` o sistema usa. `planned`: `[{name, label, supported:false}]`, os outros cartuchos do OSCR ainda sem suporte (marcadores de lugar; não valem em `-s`) |
 | `errors` | `device_errors`, `exit_codes` |
 | `info` | `proto`, `firmware`, `mock`, `si5351`, `systems`, `max_payload` |
 | `detect -s SISTEMA` | `status`, `status_text`, `system`, `name`, `rom_size`, `save_size`. `ok` é `false` e a saída é 2 se não houver cartucho |
 | `dump -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` (hex maiúsculo, 8 dígitos), `checksum` (`ok`, `mismatch`, `na`), e `gba_save_type` no GBA |
+| `dump ... --db BASE` | acrescenta `game`: `null` ou `{name, crc32, size, source, kind, match, others}` (e, na base NES 2.0, `mapper`, `submapper`, `prg_kb`, `chr_kb`, `ram_kb`, `battery`). Sem `-o`, o arquivo recebe o nome do jogo |
+| `dump -s nes --game NOME --db BASE` | preenche `--mapper`, `--prg` e `--chr` que ficaram em 0 com os do jogo na base NES 2.0. Erros: `game_not_found`, `game_ambiguous` (saída 64) |
+| `identify ARQ... --db BASE` | `entries_in_database`, `results`: `[{file, bytes, crc32, game}]`; não abre a porta; saída 1 se algum não for achado. `-s` escolhe o sistema (padrão: pela extensão) |
+| `search TEXTO --db BASE [--limit N]` | `entries_in_database`, `results`: entradas da base cujo nome tem todas as palavras; não abre a porta; saída 1 se nada |
 | `save-read -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` |
 | `save-write -s SISTEMA -i ARQ --yes` | `backup` (arquivo do save anterior, salvo antes de gravar, a menos que `--no-backup`), `bytes`, `crc32` |
+
+## Base de dados de jogos (`--db`)
+
+A identificação do jogo é feita **no PC**, pelo CRC32; o firmware não carrega base. `--db` aceita um arquivo ou uma pasta (procura `.dat` e `.xml`), pode repetir, e a variável `OSCR_DB` (caminhos separados por `:`, ou `;` no Windows) vale como padrão. Formatos lidos: **No-Intro / Redump** (Logiqx XML, `.dat`) e **NES 2.0 XML** (`nes20db.xml`, traz mapper e tamanhos). A base binária CRDB do OSCR não é lida. No NES/Famicom a ROM também é procurada sem o cabeçalho iNES de 16 bytes (o "headerless" do No-Intro) e pelos CRC32 da PRG e da CHR (NES 2.0 XML). Erros: `no_database` (saída 64) e `database` (arquivo inexistente ou XML inválido, saída 1).
 
 ## Fluxo recomendado para um agente
 
@@ -60,6 +68,7 @@ Mesmo contrato (comandos, opções, JSON, códigos de saída), usando o protocol
 Diferenças em relação à Python:
 - Os textos livres (`message`, `hint`, `status_text`) são em inglês; os erros do dispositivo e do protocolo seguem `--lang` (`en`, `pt-BR`, `ru`, `zh-CN`). Agentes devem usar `ok`, `error.kind` e o código de saída, não o texto.
 - Opções são aceitas em qualquer comando (a Python rejeita as que o comando não usa).
+- `identify`, `search`, `--db` e `--game` existem nas duas; a Kotlin lê a base com StAX e a Python com `xml.etree`, e os dois acham as mesmas entradas (mesmos testes).
 - `errors` lista só `code` e `text` (a dica vem dentro do texto).
 - `--simulate` só entende o sistema `mock`; os outros respondem "sem cartucho" (igual à Python).
 - Os dois simuladores e as duas CLIs produzem o mesmo CRC32 para o mesmo dado (conferido: `mock` = `D1DF4327`).

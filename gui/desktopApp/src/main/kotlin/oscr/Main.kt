@@ -75,7 +75,12 @@ fun App() {
     var transport by remember { mutableStateOf<Transport?>(null) }
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var showHelp by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var db by remember { mutableStateOf<Database?>(null) }
+    var dbPaths by remember { mutableStateOf(Prefs.dbPaths) }
+    var dbLoading by remember { mutableStateOf(false) }
+    var dbError by remember { mutableStateOf<String?>(null) }
+    var gameQuery by remember { mutableStateOf("") }
     var showAdvanced by remember { mutableStateOf(false) }
     var firstRun by remember { mutableStateOf(!Prefs.firstRunDone) }
     var mapper by remember { mutableStateOf("0") }
@@ -100,6 +105,30 @@ fun App() {
 
     fun say(s: String) { lastMessage = s; log += "${clock.format(Date())}  $s" }
     LaunchedEffect(log.size) { logScroll.animateScrollTo(logScroll.maxValue) }
+
+    // ---- base de dados de jogos (identificação por CRC32 no PC; o firmware não a usa)
+    fun loadDatabases(paths: List<String>) {
+        dbPaths = paths; Prefs.dbPaths = paths; dbError = null
+        if (paths.isEmpty()) { db = null; return }
+        scope.launch {
+            dbLoading = true
+            try { db = withContext(Dispatchers.IO) { DatabaseLoader.loadAll(paths) } }
+            catch (e: Exception) { db = null; dbError = e.message ?: e.toString() }
+            finally { dbLoading = false }
+        }
+    }
+    LaunchedEffect(Unit) { if (Prefs.dbPaths.isNotEmpty()) loadDatabases(Prefs.dbPaths) }
+    val dbHasNes = remember(db) { db?.entries?.any { it.nesOptions() != null } == true }
+    fun addDatabase() {
+        val ch = javax.swing.JFileChooser(Prefs.lastDir.takeIf { File(it).isDirectory }).apply {
+            fileSelectionMode = javax.swing.JFileChooser.FILES_AND_DIRECTORIES; dialogTitle = I18n.t(lang, S.DB_CHOOSE)
+        }
+        if (ch.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+            ch.selectedFile.parent?.let { Prefs.lastDir = it }
+            val path = ch.selectedFile.path
+            if (path !in dbPaths) loadDatabases(dbPaths + path)
+        }
+    }
 
     // ---- validação enquanto digita (mesmas regras do firmware)
     val isNes = system == CartSystem.NES || system == CartSystem.FAMICOM
@@ -208,7 +237,12 @@ fun App() {
                 say(m); extra += m
             }
             val ext = if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
-            val title = detectedNames[system].orEmpty()
+            val game = db?.identify(system, res.data)
+            if (db != null) {
+                val m = if (game != null) "${t(S.GAME_LABEL)}: ${game.entry.name} (${game.entry.source})" else t(S.GAME_NOT_FOUND)
+                say(m); extra += m
+            }
+            val title = game?.entry?.name ?: detectedNames[system].orEmpty()
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             val report = reportText(title, res.crcHex, res.data.size, extra)
             offerSave(Pending(res.data, safeName(title, "rom_${system.name.lowercase()}") + ext, "ROM", report))
@@ -287,12 +321,10 @@ fun App() {
             }
             if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(S.LANGUAGE))
-                Lang.entries.forEach { l -> FilterChip(selected = lang == l, onClick = { lang = l; Prefs.lang = l.tag }, label = { Text(l.label) }) }
-                OutlinedButton(onClick = { showHelp = !showHelp }) { Text(t(S.HELP_BUTTON)) }
-            }
-            if (showHelp) HelpPanel(lang)
+            OutlinedButton(onClick = { showSettings = !showSettings }) { Text((if (showSettings) "▾ " else "▸ ") + t(S.SETTINGS)) }
+            if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, dbPaths,
+                when { dbLoading -> t(S.DB_LOADING); dbError != null -> f(S.DB_ERROR, dbError ?: ""); db != null -> f(S.DB_LOADED, db?.size ?: 0, db?.files?.size ?: 0); else -> t(S.DB_NONE) },
+                dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
 
             // ---- conexão
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -328,6 +360,7 @@ fun App() {
                     }, label = { Text(s.name) })
                 }
             }
+            PlannedPanel(lang)
             if (system == CartSystem.GB) Text("⚠ " + t(S.GB_WARNING), color = MaterialTheme.colorScheme.error)
             if (system == CartSystem.GBA) {
                 Text("⚠ " + t(S.GBA_WARNING), color = MaterialTheme.colorScheme.error)
@@ -340,6 +373,21 @@ fun App() {
             }
             if (isNes) {
                 Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
+                if (dbHasNes) {
+                    OutlinedTextField(gameQuery, { gameQuery = it }, label = { Text(t(S.GAME_SEARCH)) }, singleLine = true, modifier = Modifier.width(420.dp))
+                    if (gameQuery.trim().length >= 2) {
+                        val found = remember(gameQuery, db) { db?.searchNes(gameQuery, 8).orEmpty() }
+                        if (found.isEmpty()) Text(t(S.GAME_NO_RESULTS), style = MaterialTheme.typography.bodyMedium)
+                        found.forEach { g ->
+                            val o = g.nesOptions() ?: return@forEach
+                            TextButton(onClick = {
+                                mapper = o.mapper.toString(); prgKb = o.prgKb.toString(); chrKb = o.chrKb.toString()
+                                ramKb = if (o.ramKb in setOf(8, 16, 32)) o.ramKb.toString() else "0"
+                                say(f(S.GAME_FILLED, g.name)); gameQuery = ""
+                            }) { Text("${g.name} — mapper ${o.mapper}, PRG ${o.prgKb} KB, CHR ${o.chrKb} KB") }
+                        }
+                    }
+                }
                 val prgBad = problem?.key in setOf(S.V_PRG_REQUIRED, S.V_PRG_MULTIPLE16, S.V_PRG_MULTIPLE32, S.V_TOO_BIG_PRG)
                 val chrBad = problem?.key in setOf(S.V_CHR_MULTIPLE8, S.V_NO_CHR, S.V_NEEDS_CHR, S.V_TOO_BIG_CHR)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
@@ -448,6 +496,50 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         TextButton(onClick = { open = !open }) { Text((if (open) "▾ " else "▸ ") + title, style = MaterialTheme.typography.titleSmall) }
         if (open) content()
+    }
+}
+
+/** Configurações: idioma, base de dados de jogos e ajuda (a ajuda e o idioma deixaram a tela principal). */
+@Composable
+private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<String>, dbStatus: String, dbLoading: Boolean, onAddDb: () -> Unit, onClearDb: () -> Unit) {
+    fun t(k: S) = I18n.t(lang, k)
+    var helpOpen by remember { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t(S.SETTINGS), style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(t(S.LANGUAGE))
+                Lang.entries.forEach { l -> FilterChip(selected = lang == l, onClick = { onLang(l) }, label = { Text(l.label) }) }
+            }
+            HorizontalDivider()
+            Text(t(S.DB_TITLE), style = MaterialTheme.typography.titleSmall)
+            Text(t(S.DB_HINT), style = MaterialTheme.typography.bodyMedium)
+            dbPaths.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
+            Text(dbStatus, style = MaterialTheme.typography.bodyMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = !dbLoading, onClick = onAddDb) { Text(t(S.DB_CHOOSE)) }
+                OutlinedButton(enabled = dbPaths.isNotEmpty() && !dbLoading, onClick = onClearDb) { Text(t(S.DB_CLEAR)) }
+            }
+            HorizontalDivider()
+            TextButton(onClick = { helpOpen = !helpOpen }) { Text((if (helpOpen) "▾ " else "▸ ") + t(S.HELP_BUTTON), style = MaterialTheme.typography.titleSmall) }
+            if (helpOpen) HelpPanel(lang)
+        }
+    }
+}
+
+/** Outros cartuchos do OSCR, ainda sem suporte: só marcadores de lugar (desabilitados), recolhidos por padrão. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlannedPanel(lang: Lang) {
+    var open by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        TextButton(onClick = { open = !open }) { Text((if (open) "▾ " else "▸ ") + I18n.t(lang, S.SOON_TITLE), style = MaterialTheme.typography.titleSmall) }
+        if (open) {
+            Text(I18n.t(lang, S.SOON_HINT), style = MaterialTheme.typography.bodyMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                PLANNED_SYSTEMS.forEach { FilterChip(selected = false, enabled = false, onClick = {}, label = { Text(it.label) }) }
+            }
+        }
     }
 }
 

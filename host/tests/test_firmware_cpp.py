@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Teste cruzado: o cliente Python fala com o código REAL do firmware (compilado no PC).
 
-Compila firmware/oscr_serial (g++) e roda `sim_stdio`. Pula se não houver g++/make.
+Compila os arquivos do protocolo do fork (firmware/oscr/src/dumper, g++) e roda `sim_stdio`. Pula se não houver g++/make.
 """
 import shutil
 import subprocess
@@ -13,7 +13,7 @@ from oscr_host import protocol as P
 from oscr_host.client import Client
 from oscr_host.transport import ProcessTransport
 
-FW = Path(__file__).resolve().parents[2] / "firmware" / "oscr_serial"
+FW = Path(__file__).resolve().parents[2] / "firmware" / "oscr" / "pc-tests"
 
 
 @pytest.fixture(scope="module")

@@ -4,7 +4,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 
 > **Placas (D70, D71):** o hardware agora é `boards/<variante>/`; a placa de 5 slots está em `boards/16_and_8_bits/` e a de SNES e Mega Drive em `boards/16_bits/`. Os caminhos de hardware deste documento valem para a `16_and_8_bits`.
 >
-> **Estado do fork (D66, D75):** SD trocado pela serial, modo fluxo no protocolo, SNES, NES/Famicom, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). Falta a identificação por banco de dados no PC e arquivar `firmware/oscr_serial`.
+> **Estado do fork (D66, D75):** SD trocado pela serial, modo fluxo no protocolo, SNES, NES/Famicom, Mega Drive, GBA e GB/GBC ligados (compila, nunca rodou). A identificação por banco de dados no PC e o arquivamento do firmware próprio (`firmware/arquivo/`) estão feitos (D76); a GUI ganhou o painel Configurações (idioma, base de dados, ajuda) e marcadores de lugar para os outros cartuchos do OSCR.
 >
 > **Mudança de rumo (2026-11-03, D65):** o firmware passa a ser um fork do firmware novo do OSCR (`firmware/oscr/`, plano em `docs/fork-oscr.md`). O resto deste documento descreve o firmware próprio (`firmware/oscr_serial`), que continua funcionando até o fork cobrir o mesmo.
 
@@ -37,7 +37,7 @@ Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D59 d
 ## 3. Mapa do código
 
 ```
-firmware/oscr_serial/        biblioteca C++ portátil (testável no PC)
+firmware/arquivo/oscr_serial/  (ARQUIVADO, D76) biblioteca C++ portátil do firmware próprio; o firmware atual é firmware/oscr/
   oscr_proto.*               quadros, CRC32, decodificador
   oscr_session.*             máquina de estados do protocolo; interface Backend; MockBackend
   oscr_bus.h                 interfaces SnesBus, NesBus, MdBus, GbaBus (o que o hardware precisa fazer)
@@ -63,10 +63,12 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 990 de cartuchos simulados
+make -C firmware/arquivo/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 990 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
-arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
+arduino-cli compile --fqbn arduino:avr:mega --library firmware/arquivo/oscr_serial firmware/arquivo/arduino/oscr_dumper   # firmware arquivado
+(cd firmware/oscr && pio run -e SerialASCII)       # firmware atual
+make -C firmware/oscr/pc-tests test                # protocolo do fork
 (cd firmware/platformio && pio run)                # precisa do PlatformIO (pip install platformio, num venv)
 python3 tools/check_netlist.py                     # netlist vs pinmap
 kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb

@@ -74,6 +74,7 @@
 - **D73** PIC removível indicado na placa `16_bits` (pedido do usuário, 2026-11-03)
 - **D74** CLI pensada para agentes de IA (pedido do usuário, 2026-11-03)
 - **D75** Fork do OSCR: NES/Famicom ligado ao protocolo (2026-11-03)
+- **D76** Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -606,3 +607,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - Saves: mappers 1, 4, 5, 69 e 118, como antes. Diferença: o tamanho da RAM vem do `checkStatus` do OSCR, então um **MMC6 (mapper 4) é detectado pela assinatura "STAR" e tem 1 KB**, não 8 KB; o `WRITE_SAVE` tem que mandar 1.024 bytes nesse caso. `NES::mmc6` e `NES::flashfound` são zerados a cada comando (o núcleo só os liga, nunca desliga).
 - A conferência byte a byte do `WRITE_SAVE` do firmware próprio não existe aqui (o OSCR relê o arquivo): o PC precisa reler o save depois de gravar e comparar.
 - Não conferido: se o núcleo do OSCR espera 200 ms por troca de banco no mapper 34 como o firmware próprio (a ver em hardware). **Nunca rodou**; os núcleos do OSCR só rodam no AVR, então não há teste no PC.
+
+### D76 — Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
+- **Banco de dados no PC** (docs/fork-oscr.md seção 3.2): `host/oscr_host/database.py` e `gui/shared/.../Database.kt` + `DatabaseLoader.kt` (StAX). Lê **No-Intro/Redump (Logiqx `.dat`)** e **NES 2.0 XML**; arquivo ou pasta, várias bases, variável `OSCR_DB`. Acha o jogo pelo CRC32; no NES/Famicom também sem o cabeçalho iNES de 16 bytes e pelos CRC32 da PRG e da CHR. Comandos novos nas duas CLIs: `identify`, `search`, `dump --db`, `dump --game` (preenche mapper/PRG/CHR pela base NES 2.0). Testes: `host/tests/test_database.py` e `DatabaseTest.kt`.
+- **Desvio:** a base binária **CRDB** do OSCR não é lida. O formato é binário, o `databases/` do clone vem vazio e não há amostra para testar; escrever um leitor às cegas arriscaria dar nome errado a um jogo. Se o usuário trouxer arquivos `.crdb`, vira um incremento.
+- **Firmware próprio arquivado:** `firmware/oscr_serial`, `firmware/arduino` e `firmware/platformio` foram para `firmware/arquivo/` (README explica). O protocolo do fork (`firmware/oscr/src/dumper`) passou a ser a versão em uso e ganhou `firmware/oscr/pc-tests/` (Makefile, `test_proto`, `sim_stdio`); o teste cruzado do host (`test_firmware_cpp`) compila esses arquivos. `host/tests/test_fork_sync.py` saiu (não há mais duas cópias). A lista de mappers de `test_docs_sync` vem agora de `nesCheckRom` em `Dumper.cpp`. CI: jobs `firmware` (testes do protocolo, ASan/UBSan, `pio run` do fork) e `firmware-arquivo` (os 1.066 testes antigos). Os 990 testes de cartuchos simulados e os 41 do HAL do AVR continuam só no arquivo e **não cobrem o fork**.
+- **GUI:** idioma e ajuda saíram da tela principal para um painel **Configurações** (que também guarda a base de dados, lembrada entre execuções). Resultado da leitura mostra o jogo e usa o nome no arquivo; no NES há busca de jogo na base NES 2.0. Textos novos nos 4 idiomas (ru e zh sem revisão de falante nativo, como os anteriores).
+- **Marcadores de lugar** dos outros cartuchos do OSCR (41 sistemas: Atari, Colecovision, N64, PC Engine, Master System, WonderSwan etc.): `host/oscr_host/planned.py` e `PlannedSystems.kt` (um teste confere que as listas são iguais); `systems` mostra em `planned`; na GUI, seção recolhida "Em breve" com chips desabilitados. Sem id no protocolo, sem hardware, sem firmware; não valem em `-s`.
+
