@@ -25,15 +25,41 @@ Pontos que o plano precisa resolver:
 5. **Base de dados (CRDB):** usa o SD também. Sem SD, a identificação do cartucho por base de dados some (o mapper/tamanho do NES voltam a ser informados pelo usuário, como hoje).
 6. **Configurações, logs e atualizador:** também usam o SD; desligar.
 
-## 3. Ordem sugerida
+## 3. O que falta (levantado em 2026-11-03, antes de começar a troca)
 
-1. Um `Storage` alternativo (`src/arch/avr/serial/Storage.cpp`) com a mesma interface, que escreve numa porta serial em quadros do protocolo, só para **ler ROM** de um console (começar pelo Mega Drive ou pelo GBA, que têm menos opções), em modo `OSCR_MOCK` quando possível.
-2. Ligar `DETECT` e `DUMP_ROM` do protocolo a esse caminho; testar com o `host/dumper.py`.
-3. Ler save; depois gravar save (o caminho de leitura do arquivo).
-4. Console por console: SNES, NES/Famicom, GB/GBC/GBA. Os que dependem de opções (mapper e tamanhos do NES) passam pelas opções do protocolo.
-5. Quando o fork cobrir o que o firmware próprio cobre, **arquivar** `firmware/oscr_serial` (decisão do usuário: arquivar e aposentar), mantendo o protocolo (`oscr_proto`/`oscr_session`) e o modo MOCK onde ainda servirem de teste.
+### 3.1 Firmware (`firmware/oscr/`)
+1. **Silenciar a UI de texto.** Hoje a UI do OSCR imprime texto na mesma UART em que vai o protocolo binário; um `print` no meio de um quadro o corrompe. Plano: uma marca de "mudo" em `ClockedSerial` (a UI passa a descartar) e uma escrita crua separada para o protocolo.
+2. **Trocar o `OSCR::Storage` (SdFat) por uma saída serial.** `File::write/writeRaw` viram quadros `DATA` (com espera de `ACK`), `createFile` vira o `BEGIN`, `close` vira o `END` com o CRC32 que o `File` já calcula. `File::read` (usado ao gravar save) vira pedido de bloco ao PC. `rewind`, `seekSet/seekCur`, `getSize` e `Storage::sd.exists` precisam de um comportamento definido: em fluxo serial só há sequencial, então o que os núcleos fazem depois do dump (reler o arquivo para somar o checksum, 13 `rewind` no GB, 1 `seekSet(16)` e 1 `seekSet(16+PRG)` no NES) deixa de existir ou é refeito no PC.
+3. **Tirar o SD do build:** `setup()` chama `Storage::setup`, `Logger`, `Time` e `Configuration`; os dois últimos usam arquivo. Desligar por configuração ou por `#if`.
+4. **Laço de comandos do protocolo no lugar do menu.** `loop()` do upstream abre o menu dos consoles. O novo laço lê quadros, atende `INFO`, `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE` e chama a função do núcleo certo (por exemplo `MegaDrive::getCartInfo()` e `readROM()`). Isso exige declarar no cabeçalho de cada núcleo funções que hoje são internas ao `.cpp`.
+5. **Tamanho desconhecido no `BEGIN`.** Os núcleos só conhecem o tamanho dentro de `readROM()`. O `BEGIN` passa a aceitar `0xFFFFFFFF` (desconhecido); o `END` leva o tamanho e o CRC32 reais. O host e a GUI precisam aceitar isso (barra de progresso pelo tamanho do `DETECT`).
+6. **Erros fatais e esperas por botão.** `OSCR::UI::fatalError`, `error` e `waitButton` travam esperando o usuário. No modo protocolo, devem responder `ERRO` e voltar ao laço (candidato: `setjmp/longjmp`).
+7. **Opções do usuário (NES: mapper, PRG, CHR; GBA: tipo de save).** Os núcleos as leem de variáveis internas preenchidas por menu; o laço de comandos precisa preenchê-las a partir dos campos do protocolo.
+8. **Um núcleo por vez**, cada um com leitura e teste de compilação: Mega Drive (primeiro), GBA, GB/GBC, SNES, NES/Famicom.
+9. **Hardware do shield versus HW5 do upstream:** o upstream assume `ENABLE_ONBOARD_ATMEGA`/VSELECT em partes; o shield não tem VSELECT nem chave 3V/5V. Conferir as flags do ambiente `SerialASCII` e o que `Power::setVoltage` faz sem VSELECT.
 
-## 4. Riscos
+### 3.2 Banco de dados: identificação no computador (decisão do usuário, 2026-11-03)
+O firmware novo identifica o jogo por uma base (CRDB) lida do cartão SD. Sem SD, **a identificação passa para o computador**, pela serial:
+- O firmware **não** carrega a CRDB. Ele devolve ao PC o que o PC precisa para identificar: no `DETECT`, o nome do cabeçalho, os tamanhos e o checksum do cabeçalho; depois do dump, o `END` com o CRC32.
+- O PC (host/GUI) consulta uma base do usuário (No-Intro, NES 2.0 XML ou a CRDB do OSCR, em arquivo local) pelo CRC32 e mostra o nome do jogo, a versão e se o dump confere.
+- Para o **NES**, onde o cartucho não diz o mapper, o PC escolhe mapper, PRG, CHR e RAM na base (por nome do jogo escolhido pelo usuário) e os manda como opções do `DUMP_ROM`, que o protocolo já aceita. A tabela mapper → faixas válidas de tamanho (`crdbNESMapperRecord`) também fica no PC.
+- Ficam fora do firmware: `CRDB`, o navegador de base, os arquivos `.crdb`. Isso economiza flash e remove a dependência do SD.
+- Os arquivos da base **não vêm no clone** do OSCR (`databases/` está vazio). O usuário traz a base; o formato do No-Intro (`.dat` XML) e o da CRDB têm leitor simples no host.
+
+### 3.3 Host (`host/`) e GUI (`gui/`)
+1. Aceitar `BEGIN` com tamanho desconhecido.
+2. Leitor de base de dados local (CRC32 → nome, mapper, tamanhos) e o campo "base de dados" na GUI e na CLI.
+3. Mostrar o nome do jogo identificado ao lado do CRC32.
+4. Os testes do host que usam o firmware simulado em C++ (`test_firmware_cpp`) continuam valendo para o protocolo, mas não para os núcleos do OSCR.
+
+## 4. Ordem de trabalho
+1. Silenciar a UI de texto e escrever o `Storage` serial (itens 3.1.1 a 3.1.3).
+2. Laço de comandos com um núcleo de ponta a ponta: **Mega Drive, `DETECT` e `DUMP_ROM`** (itens 3.1.4 a 3.1.6), compilando para o Mega.
+3. `READ_SAVE` e `WRITE_SAVE` do Mega Drive; depois GBA, GB/GBC, SNES e NES (3.1.7 e 3.1.8).
+4. Host e GUI (3.3) e a base de dados no PC (3.2).
+5. Arquivar `firmware/oscr_serial` quando o fork cobrir o que ele cobre.
+
+## 5. Riscos
 
 - Nenhum teste existente no PC cobre o código do OSCR: ele não roda fora do AVR. Os testes com cartucho simulado (990 verificações) são do nosso código e deixam de valer para o fork.
 - O tamanho do firmware com tudo ligado fica perto de 125 KB de flash dos 253 KB; sobra espaço para o protocolo.
