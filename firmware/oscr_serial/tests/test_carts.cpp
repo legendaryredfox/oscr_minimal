@@ -127,8 +127,47 @@ struct SimGb : GbBus {
     if (use_cs) {                                                     // checksum válido E igual ao pedido: ajusta a versão ($14C), como nos cartuchos reais da tabela
       for (int v = 0; v < 256; v++) { rom[0x14C] = uint8_t(v); uint8_t x = 0; for (int i = 0x134; i < 0x14D; i++) x = uint8_t(x - rom[i] - 1); if (x == cs_override) { rom[0x14D] = x; break; } }
     }
-    size_t n = t == 6 ? 512 : (ssz == 1 ? 2048 : (ssz == 2 ? 8192 : (ssz == 3 ? 32768 : (ssz == 4 ? 131072 : (ssz == 5 ? 65536 : 0)))));
+    size_t n = t == 6 ? 512 : (t == 0x22 ? 256 : (ssz == 1 ? 2048 : (ssz == 2 ? 8192 : (ssz == 3 ? 32768 : (ssz == 4 ? 131072 : (ssz == 5 ? 65536 : 0))))));
     ram.assign(n, 0);
+  }
+  // MBC7: EEPROM 93LC56/66 em $A080 (bit 7 CS, bit 6 CLK, bit 1 DI, bit 0 DO), modelada pelo datasheet e não pelo código do firmware
+  bool e_cs = false, e_clk = false, e_wen = false, e_prog = false, e_do = true, e_stuck = false; int e_st = 0, e_n = 0, e_busy = 0, e_op = 0, e_busy_polls = 3, e_cmd = 0; uint16_t e_sh = 0, e_addr = 0, e_rd = 0; int e_rdn = 0, e_words_written = 0;
+  size_t e_words() const { return ram.size() / 2; }
+  uint16_t e_get(size_t a) const { a %= e_words(); return uint16_t(ram[2 * a] | (ram[2 * a + 1] << 8)); }
+  void e_put(size_t a, uint16_t v) { a %= e_words(); ram[2 * a] = uint8_t(v & 0xFF); ram[2 * a + 1] = uint8_t(v >> 8); e_words_written++; }
+  void e_finish_data() {                                              // 16 bits de dados recebidos
+    if (e_cmd == 1 && e_wen) { e_put(e_addr, e_sh); e_prog = true; }
+    if (e_cmd == 2 && e_wen) { for (size_t a = 0; a < e_words(); a++) e_put(a, e_sh); e_prog = true; }
+    e_st = 0;
+  }
+  void eep_write(uint8_t v) {
+    bool ncs = v & 0x80, nclk = v & 0x40, di = (v >> 1) & 1;
+    if (!ncs) { if (e_cs) { if (e_prog) { e_busy = e_stuck ? 1 << 30 : e_busy_polls; e_prog = false; } e_st = 0; } e_cs = false; e_clk = nclk; return; }
+    if (!e_cs) { e_cs = true; e_do = e_busy == 0; e_st = 0; }         // CS sobe: DO mostra pronto (1) ou ocupado (0)
+    bool rise = nclk && !e_clk; e_clk = nclk;
+    if (!rise) return;
+    if (e_st == 0) {
+      if (e_busy > 0) { if (!e_stuck) e_busy--; e_do = e_busy == 0; return; }
+      if (di) { e_st = 1; e_n = 0; e_op = 0; }
+    } else if (e_st == 1) { e_op = (e_op << 1) | di; if (++e_n == 2) { e_st = 2; e_n = 0; e_addr = 0; }
+    } else if (e_st == 2) {
+      e_addr = uint16_t((e_addr << 1) | di);
+      if (++e_n == 8) {
+        e_n = 0;
+        if (e_op == 2) { e_st = 4; e_do = false; e_rd = e_get(e_addr); e_rdn = 0; e_cmd = 0; }       // READ: bit zero falso, depois os 16 bits
+        else if (e_op == 1) { e_st = 3; e_cmd = 1; e_sh = 0; }
+        else if (e_op == 0) {
+          int sub = e_addr & 0xC0; e_st = 0;
+          if (sub == 0xC0) e_wen = true; else if (sub == 0x00) e_wen = false;
+          else if (sub == 0x80) { if (e_wen) { for (size_t a = 0; a < e_words(); a++) e_put(a, 0xFFFF); e_prog = true; } }
+          else { e_st = 3; e_cmd = 2; e_sh = 0; }
+        } else e_st = 0;
+      }
+    } else if (e_st == 3) { e_sh = uint16_t((e_sh << 1) | di); if (++e_n == 16) { e_n = 0; e_finish_data(); }
+    } else if (e_st == 4) {
+      e_do = (e_rd >> 15) & 1; e_rd = uint16_t(e_rd << 1);
+      if (++e_rdn == 16) { e_rdn = 0; e_addr++; e_rd = e_get(e_addr); }
+    }
   }
   bool mbc1m() const { return type >= 0x101 && type <= 0x103; }
   bool is5() const { return type >= 0x19 && type <= 0x1E; }
@@ -147,9 +186,11 @@ struct SimGb : GbBus {
     if (absent) return 0xFF;
     if (a < 0x4000) { size_t b = (is1() && !mbc1m() && mode) ? (size_t(r4000 & 3) << 5) : 0; return rom[(b * 16384 + a) % rom.size()]; }
     if (a < 0x8000) return rom[(bank_hi() * 16384 + (a - 0x4000)) % rom.size()];
+    if (type == 0x22 && a == 0xA080 && ram_en && r4000 == 0x40) return e_cs ? (e_do ? 1 : 0) : 1;
     return 0xFF;
   }
   void write(uint16_t a, uint8_t v) override {
+    if (type == 0x22 && a == 0xA080) { if (ram_en && r4000 == 0x40) eep_write(v); return; }
     if (a < 0x2000) { if (!is2() || !(a & 0x100)) ram_en = (v & 0x0F) == 0x0A; }
     else if (a < 0x4000) {
       if (is5()) { if (a < 0x3000) r2000 = v; else r3000 = v; }
@@ -685,7 +726,7 @@ static void test_gb() {
   const Cfg cfgs[] = {
     {0x00, 0, 0, "ROM SO"}, {0x01, 4, 0, "MBC1"}, {0x03, 5, 3, "MBC1 32K"}, {0x03, 6, 2, "MBC1 8K"}, {0x02, 6, 1, "MBC1 2K"},
     {0x06, 3, 0, "MBC2"}, {0x13, 6, 3, "MBC3"}, {0x10, 5, 2, "MBC3 RTC"}, {0x1B, 8, 4, "MBC5 128K"}, {0x1E, 7, 5, "MBC5 64K"},
-    {0x19, 8, 0, "MBC5 4MB"}, {0xFC, 5, 4, "CAMERA"}, {0x103, 5, 2, "MOMOCOL"},
+    {0x19, 8, 0, "MBC5 4MB"}, {0xFC, 5, 4, "CAMERA"}, {0x103, 5, 2, "MOMOCOL"}, {0x22, 3, 0, "KIRBY TNT"},
   };
   for (const Cfg& c : cfgs) {
     int hdr_type = c.type & 0xFF;
@@ -713,10 +754,29 @@ static void test_gb() {
     CHECK(s.cam_wrong == 0);
     CHECK(hdr_type != 0xFC || s.cam_calls > 0);
   }
+  // MBC7: EEPROM serial por bit-bang
+  { SimGb s(0x22, 3, 0, "COMMAND MASTER"); s.rom[0x14E] = 0xBE; s.rom[0x14F] = 0xA5; s.ram.assign(512, 0);   // só o Command Master tem 93LC66 (512 B)
+    CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 0 && d.save_size == 512);
+    for (size_t i = 0; i < 512; i++) s.ram[i] = pat(uint32_t(i) + 40);
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_GB, KIND_SAVE, out, err); CHECK(out == s.ram);
+    std::vector<uint8_t> sv(512); for (size_t i = 0; i < 512; i++) sv[i] = pat(uint32_t(i) + 900);
+    uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 512, e2));
+    bool ok = true; for (uint32_t off = 0; off < 512; off += 7) ok = ok && be.write_block(off, &sv[off], uint16_t(512 - off < 7 ? 512 - off : 7));   // blocos de 7 bytes: começam e terminam no meio de palavras
+    CHECK(ok && be.write_commit() && s.ram == sv && !s.e_wen && !s.ram_en && !s.e_cs); }
+  { SimGb s(0x22, 3, 0, "KIRBY TNT"); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s);
+    for (size_t i = 0; i < 256; i++) s.ram[i] = pat(uint32_t(i) + 5);
+    std::vector<uint8_t> same = s.ram; uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 256, e2));
+    int before = s.e_words_written; bool ok = be.write_block(0, same.data(), 256); CHECK(ok && be.write_commit() && s.e_words_written == before && s.ram == same);   // não regrava o que não mudou
+    CHECK(be.write_begin(SYS_GB, 256, e2)); std::vector<uint8_t> one = same; one[101] ^= 0x40;
+    ok = be.write_block(0, one.data(), 256); CHECK(ok && be.write_commit() && s.ram == one && s.e_words_written == before + 1); }       // muda 1 byte: grava 1 palavra
+  { SimGb s(0x22, 3, 0, "KIRBY TNT"); s.e_busy_polls = 50; CartBackend be(nullptr, nullptr, nullptr, nullptr, &s);                         // gravação lenta: espera o pronto
+    std::vector<uint8_t> sv(256, 0x5A); uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 256, e2)); bool ok = be.write_block(0, sv.data(), 256); CHECK(ok && be.write_commit() && s.ram == sv); }
+  { SimGb s(0x22, 3, 0, "KIRBY TNT"); s.e_stuck = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &s);                           // EEPROM que nunca fica pronta: erro, sem travar
+    std::vector<uint8_t> sv(256, 0x5A); uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 256, e2)); CHECK(!be.write_block(0, sv.data(), 256)); be.write_abort(); CHECK(!s.ram_en && !s.e_cs); }
   // sem cartucho, checksum errado, mappers sem suporte
   { SimGb none(0x01, 4, 0); none.absent = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &none); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
   { SimGb bad(0x01, 4, 0, "RUIM"); bad.rom[0x14D] ^= 0x55; CartBackend be(nullptr, nullptr, nullptr, nullptr, &bad); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 4); }
-  for (int t : {0x20, 0x22, 0x0B, 0xFD}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
+  for (int t : {0x20, 0x0B, 0xFD}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
   { SimGb s(0x01, 0x52, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }   // tamanho fora da tabela
   { SimGb s(0x01, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); CHECK((be.systems() >> SYS_GB) & 1); }
   { SimSnes s(false, 9, 3); CartBackend be(&s, nullptr, nullptr, nullptr); CHECK(!be.supports(SYS_GB)); }

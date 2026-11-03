@@ -35,7 +35,12 @@ void CartBackend::acquire(uint8_t sys) {
 }
 
 void CartBackend::release() {
-  if (active_ == SYS_GB && gb_ram_on_ && gb_) { gb_->write(0x0000, 0x00); gb_ram_on_ = false; }   // desabilita a RAM do cartucho
+  if (active_ == SYS_GB && gb_ram_on_ && gb_) {                      // desabilita a RAM do cartucho
+    if (c_.gb_type == 0x22) gb_->write(0xA080, 0x00);                // MBC7: solta o CS da EEPROM
+    gb_->write(0x0000, 0x00);
+    if (c_.gb_type == 0x22) gb_->write(0x4000, 0x00);
+    gb_ram_on_ = false;
+  }
   if (active_ == SYS_SNES && snes_) {                               // devolve os registradores dos chips especiais ao valor original
     if (sdd1_cur_ >= 0) snes_->write(0, 0x4807, uint8_t(sdd1_init_));
     if (spc_touched_) { snes_->write(0, 0x4833, 2); snes_->write(0, 0x4834, 0); }
@@ -130,6 +135,9 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
       if (!md_eep_read(uint16_t(off + i), buf[i])) return false;
     } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
+    } else if (kind == KIND_SAVE && sys == SYS_GB && c_.gb_type == 0x22) {
+      uint16_t w; if (!mbc7_read_word(uint8_t((off + i) >> 1), w)) return false;
+      buf[i] = ((off + i) & 1) ? uint8_t(w >> 8) : uint8_t(w & 0xFF);
     } else if (kind == KIND_SAVE && sys == SYS_GB) {
       buf[i] = gb_->sram_read(gb_ram_addr(off + i), c_.gb_type == 0xFC);
     } else if (kind == KIND_SAVE && sys == SYS_GBA) {
@@ -172,6 +180,7 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
 
 bool CartBackend::write_block(uint32_t off, const uint8_t* buf, uint16_t len) {
   if (active_ == SYS_GBA) return gba_write(off, buf, len);
+  if (active_ == SYS_GB && c_.gb_type == 0x22) return mbc7_write_range(off, buf, len);   // EEPROM serial do MBC7
   if (active_ == SYS_GB) {                                                     // grava e confere cada byte (MBC2 só guarda 4 bits)
     bool cam = c_.gb_type == 0xFC, mbc2 = c_.gb_type == 5 || c_.gb_type == 6;
     for (uint16_t i = 0; i < len; i++) {

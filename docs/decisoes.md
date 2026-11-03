@@ -58,6 +58,7 @@
 - **D57** NES: mais mappers (33, 48, 70, 75, 78, 79, 87, 118, 206) e escrita segura do MMC1
 - **D58** Revisões de código e de UX/UI
 - **D59** Correções das revisões de código e de UX/UI
+- **D60** Game Boy: MBC7 (ROM e EEPROM)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -460,3 +461,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **GUI:** erros viram códigos no código compartilhado e o texto sai de `I18n` nos 4 idiomas (nenhum texto fixo); validação de PRG/CHR/RAM/tamanho enquanto digita (`NesRules.kt`), nome do mapper; leitura pronta fica na memória até salvar; confirmação e backup antes de gravar; barra fixa de estado, progresso, velocidade e tempo restante; registro selecionável com copiar e salvar; estado por sistema; indicador de conexão, nome amigável da porta, desconexão detectada, fallback de baud automático; primeira execução guiada; preferências persistentes; atalhos; tema escuro; leitura e gravação em seções separadas.
 - **Repositório:** CI do GitHub (`.github/workflows/ci.yml`: firmware com sanitizers, compilação do Arduino, Python, Gradle), `tools/README.md`, índice em `decisoes.md` (`tools/gen_decisoes_index.py`).
 - **Ainda aberto:** U-18 (conferir com o slot físico o lado da etiqueta e a direção de entrada; só o hardware responde), tradução revista por falantes nativos de ru e zh, rótulos para leitor de tela, presets de mapper por jogo, mensagens de etapa vindas do firmware (`PROGRESSO`), a opção de forçar a leitura com cabeçalho inválido, e rodar o CI de fato (o arquivo foi escrito, mas não executado nesta máquina).
+
+### D60 — Game Boy: MBC7 (ROM e EEPROM)
+- **O que entra:** tipo `$22` do cabeçalho (Kirby Tilt 'n' Tumble, Command Master, Koro Koro Kirby). A ROM sai pelo mesmo caminho dos MBC2/3/5 (registrador de banco em `$2100`, dentro da faixa `$2000-$3FFF` do MBC7). O save é a EEPROM serial 93LC56 (256 B) ou 93LC66 (512 B), por bit-bang em `$A080` (bit 7 CS, bit 6 CLK, bit 1 DI, bit 0 DO) depois de `$0000 = $0A` e `$4000 = $40`. O cabeçalho não diz o tamanho: 512 B só quando `$14E/$14F` valem `BE A5` (Command Master, como o OSCR), 256 B nos outros.
+- **Sequências do OSCR** (`sendMBC7EEPROM_Inst_GB`): bit de início, 2 bits de operação, 8 de endereço, 16 de dados; READ, WRITE, EWEN (`$C0`) e EWDS (`$00`). Desvios meus, de propósito: (1) **sem ERAL**: o OSCR apaga a EEPROM inteira e regrava tudo; aqui só se grava a palavra que mudou (o WRITE da 93LC já apaga a palavra), então uma falha no meio não deixa o save zerado e a EEPROM sofre menos ciclos; (2) cada gravação faz EWEN, WRITE, espera pelo pronto e EWDS (o chip volta sempre protegido); (3) a espera do pronto tem teto de 100.000 consultas (o OSCR espera sem fim), e estourar vira `E_CARTUCHO_IO`; (4) cada palavra gravada é relida e conferida.
+- **Fora:** o acelerômetro (não faz parte da ROM nem do save) e MBC6, MMM01, TAMA5 (continuam recusados com `0x0002`).
+- **Testes:** `SimGb` ganhou uma EEPROM 93LC56/66 modelada pelo datasheet (CS, CLK, DI, DO, WEN, ocupado após gravar), independente do firmware. Casos: ROM e save de 256 B no laço geral; Command Master de 512 B (detecção, leitura, gravação em blocos de 7 bytes que cortam palavras ao meio); gravar igual não regrava nada; mudar 1 byte regrava 1 palavra; gravação lenta (50 consultas); EEPROM que nunca fica pronta (erro, sem travar). 890 verificações; três erros plantados (código do EWEN, ordem dos bits de dados, assinatura do Command Master) derrubam 4 verificações cada. Arduino compila (38,5 KB, 15%).
+- **Não validado em hardware.** Pontos de atenção: o tempo de gravação da EEPROM no slot a 3,3 V e se os pulsos de CLK em `$A080` precisam de atraso extra no AVR (o OSCR não usa).
+

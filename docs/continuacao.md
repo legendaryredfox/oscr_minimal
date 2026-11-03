@@ -22,7 +22,7 @@ Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa o
 | NES / Famicom | mappers 0, 1 (PRG até 256 KB), 2, 3, 4, 5, 7, 9, 10, 11, 66, 69, 71; o usuário informa mapper, PRG e CHR; cabeçalho iNES sintético | PRG-RAM de 8 KB nos mappers 1, 4, 5 e 69, 16/32 KB nos mappers 1 e 5 (`--ram`): ler e gravar |
 | Mega Drive | tamanho pelo cabeçalho, redução de espelho, SSF2 até 8 MB, tamanho forçado | SRAM (ímpar, par, ambos): ler e gravar. **EEPROM serial: ler e gravar** (38 checksums do OSCR) |
 | GBA | 256 KB a 32 MB (tamanho por espelhamento) | ler e gravar: SRAM 32 KB, Flash 64 e 128 KB, EEPROM 512 B e 8 KB (tipo informado pelo usuário; Flash só com chip conhecido) |
-| GB / GBC (adaptador no slot GBA, 3,3 V) | sem mapper, MBC1, MBC1M, MBC2, MBC3, MBC5, GB Camera | SRAM: ler e gravar (sem RTC) |
+| GB / GBC (adaptador no slot GBA, 3,3 V) | sem mapper, MBC1, MBC1M, MBC2, MBC3, MBC5, MBC7, GB Camera | SRAM: ler e gravar (sem RTC); EEPROM do MBC7: ler e gravar |
 
 Detalhes e limites: `docs/uso.md` (tabela por sistema) e as entradas D38 a D59 de `docs/decisoes.md`.
 
@@ -57,7 +57,7 @@ vendor/oscr/                    clones do OSCR, só leitura, ignorado pelo git (
 ## 4. Como rodar tudo
 
 ```
-make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 870 de cartuchos simulados
+make -C firmware/oscr_serial test                  # 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 890 de cartuchos simulados
 (cd host && python3 -m pytest -q)                  # 50 testes
 (cd gui && ./gradlew --offline :shared:jvmTest :desktopApp:compileKotlin)
 arduino-cli compile --fqbn arduino:avr:mega --library firmware/oscr_serial firmware/arduino/oscr_dumper
@@ -124,9 +124,9 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
-**Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MBC7, MMM01, TAMA5), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
+**Próximo passo sugerido:** ciclo C de novo: mappers raros do GB (MBC6, MMM01, TAMA5; o MBC7 está em D60), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
-Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 870 de cartuchos, 60 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
+Estado dos testes na última verificação: 16 do protocolo + 19 do Si5351 + 41 do HAL do AVR + 890 de cartuchos, 60 do host, Gradle `:shared:jvmTest` e `:desktopApp:compileKotlin` ok. PlatformIO não rodou nesta máquina (sem `pio`); o Arduino compila.
 
 Armadilha: um `until ! pgrep -f '<padrão>'` em segundo plano nunca termina se o padrão aparecer na própria linha de comando do `until`. Use `kill -0 <pid>` ou `wait`.
 

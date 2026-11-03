@@ -58,6 +58,12 @@ class CartBackend : public Backend {
   uint8_t cx4_orig_ = 0; bool cx4_touched_ = false;   // Cx4: valor original de $7F52
   bool gb_ram_on_ = false;       // Game Boy: RAM habilitada ($0000 = $0A)
   void gb_ram_enable();
+  int16_t mbc7_wa_ = -1; uint16_t mbc7_w_ = 0;   // MBC7: última palavra lida da EEPROM
+  void mbc7_inst(uint8_t op, uint8_t addr, uint16_t data);
+  bool mbc7_read_word(uint8_t a, uint16_t& w);
+  bool mbc7_write_word(uint8_t a, uint16_t w);
+  bool mbc7_wait_ready();
+  bool mbc7_write_range(uint32_t off, const uint8_t* buf, uint16_t len);
   void gb_select(int16_t bank);  // seleciona o banco de ROM em $4000-$7FFF conforme o mapper
   uint16_t gb_ram_addr(uint32_t off);   // endereço em $A000+ de um byte do save; troca o banco de RAM
   bool clocks_on_ = false;       // SNES: Si5351 e CIC ligados (SA-1)
