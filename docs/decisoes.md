@@ -78,6 +78,7 @@
 - **D77** Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
 - **D78** Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
 - **D79** Gravação de ROM em flash CFI do SNES (1 chip de 2 ou 4 MB) com `WRITE_ROM` (2026-11-03)
+- **D80** Capacitores da `16_bits` renumerados para C1 a C4 (pedido do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -638,3 +639,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - A **fiação (LoROM ou HiROM) é escolha do usuário** (`--chip snes-lorom|snes-hirom`, combo na GUI): a ROM sozinha não diz como o cartucho repro foi montado. O PC tira o cabeçalho de copiadora de 512 bytes e escolhe a menor capacidade em que a ROM cabe (`--capacity` força).
 - Conferência depois de gravar (D78) vale: `DUMP_ROM` com `prg_kb` = tamanho da ROM, comparação byte a byte.
 - **Não existem ainda:** 2x e 4x chips, 1x 8 MB, LoROM/HiROM (P0) e ExLoROM/ExHiROM (P1) do `menuFlash8`. **Nunca rodou em cartucho**: o `DQ7` é conferido contra o dado gravado (o `busyWait` do OSCR espera sempre 0x80), o tempo de 10 ms por byte e a energização (`cartOn` do SNES e depois `setup8`) são pontos de ajuste prováveis.
+
+### D80 — Capacitores da `16_bits` renumerados (pedido do usuário, 2026-11-03)
+- A numeração vinha da `16_and_8_bits` (C2 NES, C4 Famicom, C7/C8/C9 do regulador e do GBA) e deixava buracos: C1, C3, C5, C6. Agora C1 (470 µF), **C2** (SNES, antes C3), **C3** (Mega Drive, antes C5), **C4** (PIC, antes C6). Só rótulos mudaram: posições, nets e footprints são os mesmos.
+- Alterados esquemático, PCB, `fab/bom.csv`, gerbers e zips (refeitos com `tools/export_fab.sh 16_bits v1.0`; SHA-256 novo em `fab/PEDIDO.md`), `docs/bom.md`, `docs/montagem.md`, `README.md`. DRC com as mesmas 8 mensagens de antes; `tools/check_netlist.py` confere. As prévias `previa-cima.png` e `previa-baixo.png` ainda mostram os rótulos antigos. **Nada foi encomendado**, então não há placa física com a numeração antiga.

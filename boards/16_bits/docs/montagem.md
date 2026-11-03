@@ -11,7 +11,7 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistores | R1 (220 Ω), R2 (1 kΩ) |
-| Capacitores cerâmicos 100 nF | C3 (SNES), C5 (Mega Drive), C6 (PIC) |
+| Capacitores cerâmicos 100 nF | C2 (SNES), C3 (Mega Drive), C4 (PIC) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | Soquete DIP-8 e PIC12F629 | U2 |
 | LED 3 mm | D1 |
@@ -31,7 +31,7 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
 1. **Resistores** R1 e R2 (deitados, como no silkscreen).
-2. **Capacitores cerâmicos de 100 nF**: C3, C5, C6.
+2. **Capacitores cerâmicos de 100 nF**: C2, C3, C4.
 3. **Soquete DIP-8 (U2)**, tradicional, com o chanfro alinhado ao silkscreen e **sem o PIC**. O PIC nunca é soldado: fica no soquete para poder ser trocado ou regravado.
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).

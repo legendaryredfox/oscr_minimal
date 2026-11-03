@@ -36,7 +36,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
 | R2 | 1 | 1 kΩ 1/4 W | idem | Pull-up do D7 (IRQ do SNES). |
 | C1 | 1 | 470 µF / 16 V eletrolítico, radial, Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
-| C3, C5, C6 | 3 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C3 SNES, C5 Mega Drive) e um no PIC (C6). |
+| C2, C3, C4 | 3 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C2 SNES, C3 Mega Drive) e um no PIC (C4). |
 
 ## Pinos e mecânica (sem símbolo no esquemático)
 

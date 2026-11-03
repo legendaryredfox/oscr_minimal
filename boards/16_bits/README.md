@@ -10,7 +10,7 @@ Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES**
 |---|---|---|
 | Slots | SNES, NES, Famicom, Mega Drive, GBA | SNES, Mega Drive |
 | Regulador 3,3 V (U3, C7, C8, C9) | sim | não |
-| Capacitores de 100 nF | C2 a C6, C9 | C3 (SNES), C5 (Mega Drive), C6 (PIC) |
+| Capacitores de 100 nF | C2 a C6, C9 | C2 (SNES), C3 (Mega Drive), C4 (PIC) |
 | Placa | 144 × 108 mm | 108 × 86 mm |
 | Furos | 4 M3 de canto, 6 do Mega, 2 M2 do Si5351 | **só os 4 M3 de canto** |
 | Si5351 | header vertical, módulo ao lado | header horizontal, módulo sobre ele, sem furos |
