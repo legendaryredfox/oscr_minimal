@@ -61,6 +61,7 @@
 - **D60** Game Boy: MBC7 (ROM e EEPROM)
 - **D61** Game Boy: MMM01, MBC6 e TAMA5
 - **D62** NES: levantamento dos mappers do OSCR e limites (sem código novo)
+- **D63** Game Boy: limites documentados
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -483,5 +484,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 ### D62 — NES: levantamento dos mappers do OSCR e limites (sem código novo)
 - Li `readPRG` (inteiro) e `readCHR` (até o mapper 19) do `NES.ino` para escolher o próximo lote de mappers. Resultado em `docs/limites-nes.md`: os limites de tamanho dos 22 mappers que já temos; o que falta no `NesBus` (espera em ms para os mappers 34 e 60, pulsos de M2 do 57, escritas próprias do 19 e do 59); o que depende de variante ou submapper (VRC2/4/6, Bandai FCG); os clones de MMC3 com bloco externo e os multicartuchos (cada um uma sequência própria); e a lista dos mappers pequenos que dá para portar sem primitiva nova.
 - **Decisão:** o próximo lote começa pelos mappers da seção 4.5 (13, 180, 97, 93, 94, 73, 68, 72, 92, 140, 86, 152, 184), depois o 34 com `NesBus::wait_ms`. VRC e clones de MMC3 ficam para quando houver cartucho para testar.
+- Nenhuma mudança de firmware nesta entrada.
+
+### D63 — Game Boy: limites documentados
+- `docs/limites-gb.md` reúne o que o GB faz hoje (tabela por mapper), os limites da placa (3,3 V, `Audio-In` sem ligação, reset de 400 ms), os limites de cada mapper (tamanhos, MBC6 só leitura, MMM01 até 1 MB, sem RTC), o que o OSCR faz e não foi portado (gravação em flash repro, GB Memory, GBS, Pelican, Mega Memory, GameShark, M161, MBC4) e o que o simulador não prova.
+- Correção de texto achada no levantamento: `docs/uso.md` dizia que o GB sai sempre `.gb`; o CLI e a GUI já escolhem `.gbc` pela flag `$143` da ROM lida.
 - Nenhuma mudança de firmware nesta entrada.
 

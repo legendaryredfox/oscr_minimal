@@ -124,7 +124,7 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 **C. Mais suporte de cartuchos** (cada um é um ciclo do passo 5): mais mappers do NES, save do MMC5/FME-7, SNES ExHiROM e SA-1, GB/GBC.
 
-**Limites do NES levantados em 2026-11-03:** `docs/limites-nes.md` (o que falta no `NesBus`, mappers por motivo de bloqueio, ordem sugerida do próximo lote).
+**Limites levantados em 2026-11-03:** `docs/limites-nes.md` (NES) e `docs/limites-gb.md` (Game Boy) (o que falta no `NesBus`, mappers por motivo de bloqueio, ordem sugerida do próximo lote; para o GB: limites da placa a 3,3 V, de cada mapper e acessórios não portados).
 
 **Próximo passo sugerido:** ciclo C de novo: gravação da Flash do MBC6 (ver D61), RTC do MBC3 (MBC6, MBC7, MMM01 e TAMA5 já estão em D60 e D61), RTC do MBC3, SNES com os chips raros acima. Hardware do D56: o silk do slot GBA já foi atualizado; opcional: jumper de solda 5V para GB. Mappers do NES feitos em D50 (ver lá o desvio do `$5130` no MMC5); mais mappers: ler `NES.ino`, estender `nes_setup_mapper`/`nes_prg_byte`/`nes_chr_byte`, a lista `known` em `probe` e `SimMapper`.
 
