@@ -105,6 +105,8 @@ Regras do `CLAUDE.md` que continuam valendo: mudanças mínimas e localizadas, n
 
 ## 8. O que falta, em ordem de valor
 
+**Histórico da sessão de 2026-11-02:** `docs/sessao-2026-11-02.md`.
+
 **Revisões (2026-11-02):** `docs/revisao-codigo.md` (C-xx) e `docs/revisao-ux.md` (U-xx) têm os achados abertos por gravidade. Antes do primeiro teste com hardware, recomendo U-01, U-02 e U-03 (perda de dados na GUI, gravação sem confirmação, resultado fora da tela), C-13 (CI) e C-14 (teste do HAL), e conferir o módulo Si5351 (C-15).
 
 **A. Validação com hardware (nada disso foi feito).** Roteiro em `docs/uso.md` seção 7:
