@@ -2,6 +2,8 @@
 
 Escrito em 2026-11-02, ao fim de uma sessão longa. Quem for continuar (pessoa ou Claude Code) deve ler este arquivo, depois `CLAUDE.md` (regras e decisões fixas) e `docs/decisoes.md` (log D1 a D59, com índice no topo).
 
+> **Mudança de rumo (2026-11-03, D65):** o firmware passa a ser um fork do firmware novo do OSCR (`firmware/oscr/`, plano em `docs/fork-oscr.md`). O resto deste documento descreve o firmware próprio (`firmware/oscr_serial`), que continua funcionando até o fork cobrir o mesmo.
+
 ## 1. Onde estamos
 
 | Área | Estado |

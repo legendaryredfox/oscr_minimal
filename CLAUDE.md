@@ -155,7 +155,7 @@ Rode o script ao fim das fases 3 e 5. Uma placa com divergência não segue para
 Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o código de leitura de cartuchos do OSCR.
 
 ### Firmware (`firmware/`)
-- (Desvio decidido em 2026-11-02, ver `docs/decisoes.md` D38) O `Cart_Reader` do upstream **não** foi copiado: o firmware é novo e enxuto (`firmware/oscr_serial`), com as sequências de porta do OSCR no HAL. Tela, SD, RTC e outros consoles não existem.
+- (Decisão do usuário em 2026-11-03, `docs/decisoes.md` D65, que **corrige** o desvio D38) O firmware é o **firmware novo do OSCR** (`vendor/oscr/firmware`), copiado para `firmware/oscr/` e reduzido: só SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, sem SD. Plano e estado: `docs/fork-oscr.md`. O firmware próprio `firmware/oscr_serial` (D38) fica até o fork cobrir o que ele cobre e então é arquivado. `host/` e `gui/` continuam no escopo.
 - Use as opções existentes em `Config.h` para habilitar só SNES, NES/Famicom e Mega Drive. Verifique se o upstream já tem um modo de interface serial antes de escrever um novo.
 - Isole duas camadas, com o mínimo de mudanças no resto:
   - **Interface:** menus do LCD e botões → comandos pela serial.

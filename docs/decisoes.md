@@ -63,6 +63,7 @@
 - **D62** NES: levantamento dos mappers do OSCR e limites (sem código novo)
 - **D63** Game Boy: limites documentados
 - **D64** NES: lote de 14 mappers (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184) e `NesBus::wait_ms`
+- **D65** Firmware: volta ao plano de usar o firmware original do OSCR (decisão do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -510,4 +511,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Limites de tamanho** (acima disso `ERRO 0x0002`): 13 PRG 32; 34 PRG 512, CHR 64; 67 128/128; 68 256/256; 72 128/128; 92 256/128; 73 PRG 128; 86 128/64; 93, 94 e 180 PRG 128; 140 e 152 128/128; 184 32/32. Vêm das observações de tamanho do OSCR e do tamanho do registrador; não vi cartuchos acima disso.
 - **Testes:** modelos novos no `SimMapper` (travas por subida de bit, CHR de 2 KB e 4 KB, NINA contra BxROM, conflito de barramento nos 34/93/94/152/180). 21 configurações novas e 6 recusas de opção; 990 verificações; 14 erros plantados válidos, 12 derrubam entre 1 e 2 verificações; sobrevivem o `$6000` do 93 (o modelo ignora a escrita) e o reset inicial dos 72/92 (só afetaria o banco 0, que é igual ao valor de reset). ASan e UBSan limpos. Arduino compila (41,9 KB, 16%). Host: lista de mappers na CLI, na GUI (4 idiomas) e nas docs (os testes de sincronia pegaram o esquecimento). GUI: regras de validação e nomes novos.
 - **Não validado em hardware.** Tempos do `wait_ms(200)` e a sequência de dois toques dos mappers Jaleco são os pontos mais prováveis de ajuste.
+
+### D65 — Firmware: volta ao plano de usar o firmware original do OSCR (decisão do usuário, 2026-11-03)
+- **Contexto:** em D38 troquei o "fork do Cart_Reader" por um firmware próprio, sem pedir a sua aprovação. O usuário disse que a ideia era usar o firmware original e só remover o que não usamos (cartão SD, N64 e outros consoles). Isso é uma correção de rumo minha, não uma mudança de requisitos.
+- **Decisão:** fork do **firmware novo** (`vendor/oscr/firmware`, não o `legacy/Cart_Reader`), em `firmware/oscr/`. O firmware próprio (`firmware/oscr_serial`) será arquivado quando o fork cobrir o que ele cobre. O programa do computador (`host/`, `gui/`) continua no escopo.
+- **Feito nesta data:** cópia do upstream, `user.ini` desligando N64, SMS e autoteste, compilação para o Mega (124.660 B de flash). Compilação do upstream puro: 141.824 B. Plano e riscos em `docs/fork-oscr.md`.
+- **Não feito:** troca do SD por saída serial, ligação do protocolo aos núcleos, qualquer teste em hardware.
+- O `CLAUDE.md` seção 9 passou a registrar essa decisão. D38 e as decisões seguintes sobre o firmware próprio continuam no histórico, valendo para `firmware/oscr_serial`.
 

@@ -1,0 +1,32 @@
+#
+# Ignore everything inside the urboot directory ...
+/urboot/**
+
+# ... except the patch file
+!/urboot/urboot-oscr.patch
+
+
+#
+# Ignore hex files...
+/**/*.hex
+
+# ... except for ones in hex-files
+!/hex-files/*.hex
+
+
+#
+# Ignore archives and temp files
+*.zip
+*.7z
+*.rar
+*.o
+*.map
+*.bin
+*.tmp
+*.tmp.*
+*.out
+*.srec
+*.sym
+*.lst
+*.elf
+/**/.dep/**

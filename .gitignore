@@ -19,3 +19,4 @@ host/.pytest_cache/
 .pytest_cache/
 *.egg-info/
 hardware/.history/
+firmware/oscr/.pio/

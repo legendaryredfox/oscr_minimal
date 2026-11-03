@@ -1,0 +1,126 @@
+/********************************************************************
+*                   Open Source Cartridge Reader                    *
+********************************************************************/
+
+#include "common/crdb/standard.h"
+#include "apps.h"
+
+namespace OSCR::Databases::Standard
+{
+  crdbRecord * romDetail;
+  StandardRecord * romRecord;
+  CRDatabase * crdb;
+  bool ready = false;
+
+  uint32_t StandardRecord::getCRC32()
+  {
+    return _data.crc32;
+  }
+
+  void StandardRecord::debug()
+  {
+#   if CRDB_DEBUGGING
+    OSCR::Serial::printLineSync(FS(OSCR::Strings::Headings::CRDBDebugROM));
+    OSCR::Serial::printValue(OSCR::Strings::Common::Name, _data.name);
+    OSCR::Serial::printValue(OSCR::Strings::Common::CRCSum, _data.crc32);
+    OSCR::Serial::printValue(OSCR::Strings::Common::Mapper, _data.mapper);
+    OSCR::Serial::printValue(OSCR::Strings::Common::Size, _data.size);
+    OSCR::Serial::printLineSync(FS(OSCR::Strings::Headings::CRDBDebugEnd));
+#   endif /* CRDB_DEBUGGING */
+  }
+
+  void CRDatabase::nextRecord()
+  {
+    clearError();
+    readNum32(currentRecord->data()->crc32);
+    readNum32(&currentRecord->data()->mapper);
+    readNum32(&currentRecord->data()->size);
+    readBytes(&currentRecord->data()->name, 100);
+  }
+
+  void setup(char const * databasePath)
+  {
+    if (ready) delete crdb;
+    crdb = new CRDatabase(databasePath);
+    ready = true;
+  }
+
+  void setup(__FlashStringHelper const * databasePath)
+  {
+    if (ready) delete crdb;
+    crdb = new CRDatabase(databasePath);
+    ready = true;
+  }
+
+  bool _updateRecord()
+  {
+    if (crdb->hasError())
+    {
+      return false;
+    }
+
+    romRecord = crdb->record();
+    romDetail = romRecord->data();
+
+    return true;
+  }
+
+  bool searchDatabase(crc32_t * crc32ptr)
+  {
+    OSCR::UI::print(F("Find "));
+    OSCR::UI::print(*crc32ptr);
+    OSCR::UI::printLineSync(FS(OSCR::Strings::Symbol::Ellipsis));
+
+    if (!crdb->findRecord(*crc32ptr))
+    {
+      OSCR::UI::printLine();
+      OSCR::UI::printLineSync(F("CRC not found in database"));
+
+      return false;
+    }
+
+    return _updateRecord();
+  }
+
+  bool browseDatabase()
+  {
+    OSCR::crdbBrowser(FS(OSCR::Strings::Headings::SelectCRDBEntry), crdb);
+    return _updateRecord();
+  }
+
+  bool matchCRC(crc32_t * crc32ptr, uint8_t offset)
+  {
+    if (!crdb->matchCRC(crc32ptr, offset)) return false;
+
+    if (!_updateRecord())
+    {
+      return false;
+    }
+
+    return crdb->matchCRC(crc32ptr, offset);
+  }
+
+  bool compareCRC(char const * databasePath, crc32_t * crc32ptr, uint8_t offset)
+  {
+    setup(databasePath);
+    return matchCRC(crc32ptr, offset);
+  }
+
+  bool compareCRC(char const * databasePath, crc32_t & crc32, uint8_t offset)
+  {
+    setup(databasePath);
+    return matchCRC(&crc32, offset);
+  }
+
+  bool compareCRC(__FlashStringHelper const * databaseName, crc32_t * crc32ptr, uint8_t offset)
+  {
+    setup(databaseName);
+    return matchCRC(crc32ptr, offset);
+  }
+
+  bool compareCRC(__FlashStringHelper const * databaseName, crc32_t & crc32, uint8_t offset)
+  {
+    setup(databaseName);
+    return matchCRC(&crc32, offset);
+  }
+}

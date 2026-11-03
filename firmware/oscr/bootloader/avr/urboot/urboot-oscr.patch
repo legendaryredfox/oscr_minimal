@@ -1,0 +1,573 @@
+diff --git a/src/hexls b/src/hexls
+index ec649b4..848abd9 100755
+--- a/src/hexls
++++ b/src/hexls
+@@ -242,6 +242,53 @@ use constant {
+   UR_HAS_CE         =>   1, # Bootloader has Chip Erase (u7.7+)
+ };
+ 
++use constant {
++  #
++  # == Modular Hardware ==
++  # - Anything that could be added via an external module.
++  OSCR_CLOCKGEN         => 1 <<  0, # Clock Generator
++  OSCR_VSELECT          => 1 <<  1, # VSelect
++  OSCR_RTC              => 1 <<  2, # RTC
++  # unassigned          => 1 <<  3, # ...
++  # unassigned          => 1 <<  4, # ...
++  # unassigned          => 1 <<  5, # ...
++  # unassigned          => 1 <<  6, # ...
++  OSCR_SSR_LCD          => 1 <<  7, # Using LCD from StarshadeRETRO/BigTreeTech
++
++  # == Integrated Hardware/ICs ==
++  # - Anything that must be integrated into the main PCB to function.
++  OSCR_OBM              => 1 <<  0, # Integrated ATmega2560
++  OSCR_CBUS             => 1 <<  1, # Cartridge Bus
++  OSCR_VOLTMON          => 1 <<  2, # Voltage Monitors
++  OSCR_STAT_LED         => 1 <<  3, # Status LED
++  # unassigned          => 1 <<  4, # ...
++  OSCR_SVN_SLT          => 1 <<  5, # Seven-slot Adapter
++  OSCR_USBC             => 1 <<  6, # Integrated USB C port
++  OSCR_AUX              => 1 <<  7, # AUX Capability
++
++  # == Built-in Slots ==
++  # - Slots which are part of the hardware (not adapters)
++  OSCR_GBX              => 1 <<  0, # GB slot
++  OSCR_NES              => 1 <<  1, # NES slot
++  OSCR_FC               => 1 <<  2, # Famicom slot
++  OSCR_SNES             => 1 <<  3, # SNES/SFC slot
++  OSCR_N64              => 1 <<  4, # N64 slot
++  OSCR_MD               => 1 <<  5, # Mega Drive/Genesis slot
++  OSCR_SMS              => 1 <<  6, # SMS slot
++  OSCR_GG               => 1 <<  7, # Game Gear slot
++
++  # == Builders/Vendors ==
++  # - Builder and vendor IDs.
++  # - This can only have 1 value, so there are 255 IDs available (since 0 = none)
++  BDR_NONE              =>    0x00, # None/self-built/unset
++  BDR_STARSHADERETRO    =>    0x69, # StarshadeRETRO
++};
++
++my %builders = (
++  0x00  => "Unknown",
++  0x69  => "StarshadeRETRO",
++);
++
+ # default to all *.hex files if no argument given
+ @ARGV = <*.hex> if !@ARGV;
+ 
+@@ -256,7 +303,7 @@ foreach my $fname (@ARGV) {
+   undef $rjmpop;
+   # read intel hex file (see https://en.wikipedia.org/wiki/Intel_HEX)
+   open($in, $fname) or die "$progname: cannot open $fname";
+-  my ($startaddr, $endaddr, $flashsize, $offset, $versionlen) = (0, 0, 0, 0, 0);
++  my ($startaddr, $endaddr, $flashsize, $offset, $versionlen, $oscrlen) = (0, 0, 0, 0, 0, 0);
+   my $lastdata;
+   while(<$in>) {
+     # offset address for large devices (up to 1 MB)
+@@ -275,6 +322,65 @@ foreach my $fname (@ARGV) {
+       $disthex = $len == 2? undef: hex(substr($_, 4+2*$len, 1).substr($_, 1+2*$len, 2));
+       # add $len-2 to start of version section to be just after rjmp; 0x9805 is the ret opcode
+       $pgmwriteaddr = $len ==2 || $rjmpop eq '9805'? undef: $offset + hex(substr($_,3,4)) + $len-2 + 2*($disthex-4096);
++    } elsif(/^:0[864]..F00005C120/i) { # either ordinary data record or oscr hardware record at end
++      # print "!> $_\r\n";
++      my $line = $_;
++      $line =~ s/^\s*(.*?)\s*$/$1/;
++
++      my $len = hex(substr($_, 1, 2));
++      my $pos = 8-(2+(2*$len));
++
++      my $hw_data = hex(substr($line, $pos - 2, 2));
++
++      my $hw_ver = ($hw_data & 0xF0) >> 4;  # Hardware Version in upper 4 bits
++      my $hw_rev = ($hw_data & 0x0F);       # Hardware Revision (main PCB) in lower 4 bits
++
++      my $oscr_data = substr($line, $pos, -2);
++
++      my $oscr_builder    = hex(substr($oscr_data, 0, 2));
++      my $oscr_slots      = hex(substr($oscr_data, 2, 2));
++      my $oscr_integrated = hex(substr($oscr_data, 4, 2));
++      my $oscr_hardware   = hex(substr($oscr_data, 6, 2));
++
++      # print "oscr_data = $oscr_data\r\n";
++
++      my $hardware = "";
++      my $integrated = "";
++      my $slots = "";
++
++      $hardware   .= f( $oscr_hardware & OSCR_CLOCKGEN    ? " + Clock Generator\r\n"            : '' );
++      $hardware   .= f( $oscr_hardware & OSCR_VSELECT     ? " + Automatic Voltage Select\r\n"   : '' );
++      $hardware   .= f( $oscr_hardware & OSCR_RTC         ? " + Real-Time Clock\r\n"            : '' );
++      $hardware   .= f( $oscr_hardware & OSCR_SSR_LCD     ? " + StarshadeRETRO LCD\r\n"         : '' );
++
++      $integrated .= f( $oscr_integrated & OSCR_OBM       ? " + Integrated ATmega2560\r\n"      : '' );
++      $integrated .= f( $oscr_integrated & OSCR_CBUS      ? " + Cartridge Bus\r\n"              : '' );
++      $integrated .= f( $oscr_integrated & OSCR_VOLTMON   ? " + Voltage Monitoring\r\n"         : '' );
++      $integrated .= f( $oscr_integrated & OSCR_STAT_LED  ? " + Status LED\r\n"                 : '' );
++      $integrated .= f( $oscr_integrated & OSCR_SVN_SLT   ? " + Seven-Slot Adapter\r\n"         : '' );
++      $integrated .= f( $oscr_integrated & OSCR_USBC      ? " + USB C Port\r\n"                 : '' );
++      $integrated .= f( $oscr_integrated & OSCR_AUX       ? " + AUX Accessory Port\r\n"         : '' );
++
++      $slots      .= f( $oscr_slots & OSCR_GBX            ? " + GB slot\r\n"                    : '' );
++      $slots      .= f( $oscr_slots & OSCR_NES            ? " + NES slot\r\n"                   : '' );
++      $slots      .= f( $oscr_slots & OSCR_FC             ? " + Famicom slot\r\n"               : '' );
++      $slots      .= f( $oscr_slots & OSCR_SNES           ? " + SNES/SFC slot\r\n"              : '' );
++      $slots      .= f( $oscr_slots & OSCR_N64            ? " + N64 slot\r\n"                   : '' );
++      $slots      .= f( $oscr_slots & OSCR_MD             ? " + Mega Drive/Genesis slot\r\n"    : '' );
++      $slots      .= f( $oscr_slots & OSCR_SMS            ? " + SMS slot\r\n"                   : '' );
++      $slots      .= f( $oscr_slots & OSCR_GG             ? " + Game Gear slot\r\n"             : '' );
++
++      print "[ OSCR HW${hw_ver}r${hw_rev} ]\r\n";
++
++      if ($oscr_builder > 0) { print "Builder: $builders{$oscr_builder}\r\n"; }
++
++      print "Features:\r\n";
++      print "$hardware";
++      print "Integrations:\r\n";
++      print "$integrated";
++      print "Built-In Slots:\r\n";
++      print "$slots";
++      print "\r\n";
+     } elsif(/^:......00/i) { # ordinary data record
+       my $len = hex(substr($_, 1, 2));
+       my $addr = hex(substr($_,3,4))+$offset;
+diff --git a/src/Makefile b/src/Makefile
+index 3ffe061..329d32a 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -48,6 +48,31 @@ AUTOBAUD ?= 0
+ VBL ?= 0
+ WDTO = 1S
+ 
++ifndef ENABLE_VSELECT
++ifneq ($(origin ENABLE_VSELECT), undefined)
++$(warning WARNING: Flag ENABLE_VSELECT requires a value of 0 [off], 1 [on, implicit 3V3 mode], 3 [on, explicit 3V3 mode], or 5 [on, explicit 5V mode]; assuming the intended value was 1)
++override ENABLE_VSELECT = 1
++endif
++endif
++
++ifndef ENABLE_ONBOARD_ATMEGA
++ifneq ($(origin ENABLE_ONBOARD_ATMEGA), undefined)
++$(warning WARNING: Flag ENABLE_ONBOARD_ATMEGA requires a value of 0 [off] or 1 [on], but no value was provided; assuming the intended value was 1 [on])
++override ENABLE_ONBOARD_ATMEGA = 1
++endif
++endif
++
++ifndef DISABLE_VSELECT
++ifneq ($(origin DISABLE_VSELECT), undefined)
++$(warning WARNING: Flag DISABLE_VSELECT requires a value of 0 [no change] or 1 [force disabled], but no value was provided; assuming the intended value was 1 [force disabled])
++override DISABLE_VSELECT = 1
++endif
++endif
++
++override ENABLE_ONBOARD_ATMEGA ?= 0
++override ENABLE_VSELECT ?= 0
++override DISABLE_VSELECT ?= 0
++
+ # Toolchain 7.3.0 seems to be a sweet spot for tight code
+ TOOLVER ?= 7.3.0
+ GCCROOT ?= ./avr-toolchain/$(TOOLVER)/bin/
+@@ -69,6 +94,147 @@ AUTOBAUD_CMD = -DAUTOBAUD=$(AUTOBAUD)
+ # vector bootloader (able to program a chip that resets to addr 0)
+ VBL_CMD = -DVBL=$(VBL)
+ 
++#reverse = $(if $(1),$(call reverse,$(wordlist 2,$(words $(1)),$(1)))) $(firstword $(1))
++
++reverse = $(let first rest,$1,$(if $(rest),$(call reverse,$(rest)) )$(first))
++
++define eq =
++$(strip \
++	$(eval $@_EQ_VAR = $($(1)))\
++	$(eval $@_EQ_LHS_COND = $(sort $(2)))\
++	$(eval $@_EQ_RHS_COND = $(call reverse,$($@_EQ_LHS_COND)))\
++	$(eval $@_EQ_LHS = $(findstring $($@_EQ_VAR),$($@_EQ_LHS_COND)))\
++	$(eval $@_EQ_RHS = $(findstring $($@_EQ_VAR),$($@_EQ_RHS_COND)))\
++	$(and $($@_EQ_LHS),$($@_EQ_RHS)) \
++)
++endef
++
++define oneof =
++$(strip \
++	$(eval $@_VAR=$(1))\
++	$(eval $@_VAR_COUNT=$(words $($@_VAR)))\
++	$(eval $@_VALUES1 =$(sort $(2)))\
++	$(eval $@_VALUES2=$(call reverse,$($@_VALUES1)))\
++	$(eval $@_CHK_COUNT=$(call eq,1,($($@_VAR_COUNT))))\
++	$(eval $@_CHK_VAL1=$(findstring $($@_VAR),$($@_VALUES1)))\
++	$(eval $@_CHK_VAL2=$(findstring $($@_VAR),$($@_VALUES2)))\
++	$(and $($@_CHK_COUNT),$($@_CHK_VAL1),$($@_CHK_VAL2),1) \
++)
++endef
++
++whichof = $(if $(call oneof,$(1),$(2)),$(1),)
++
++define conformto =
++	$(eval $@_VAR = $(1))
++	$(eval $@_VAL = $($(1)))
++	$(eval $@_WHICHOF = $(call whichof,$($@_VAL),$(2)))
++	override $(1) :::= $($@_WHICHOF)
++endef
++
++#
++# [OSCR]
++# Sanitize/validate DISABLE_VSELECT
++#
++ifeq ($(call oneof,$(DISABLE_VSELECT),0 1),1)
++  $(eval $(call conformto,DISABLE_VSELECT,0 1))
++else
++  $(error ERROR: Flag DISABLE_VSELECT requires a value of 0 [no change] or 1 [force disabled]; (DISABLE_VSELECT = $(DISABLE_VSELECT)))
++endif
++
++#
++# [OSCR]
++# Sanitize/validate ENABLE_VSELECT
++#
++ifeq ($(call oneof,$(ENABLE_VSELECT),0 1 3 5),1)
++  $(eval $(call conformto,ENABLE_VSELECT,0 1 3 5))
++
++  # Make sure ENABLE_VSELECT and DISABLE_VSELECT aren't both on.
++  ifneq ($(ENABLE_VSELECT),0)
++  ifeq ($(DISABLE_VSELECT),1)
++    $(error ERROR: Flags DISABLE_VSELECT and ENABLE_VSELECT are mutually exclusive -- you can set only one; (DISABLE_VSELECT = $(DISABLE_VSELECT), ENABLE_VSELECT = $(ENABLE_VSELECT)))
++  endif
++  endif
++else
++  $(error ERROR: ENABLE_VSELECT requires a value of 0 [off], 1 [on, implicit 3V3 mode], 3 [on, explicit 3V3 mode], or 5 [on, explicit 5V mode]; (ENABLE_VSELECT = $(ENABLE_VSELECT)))
++endif
++
++#
++# [OSCR]
++# Sanitize/validate ENABLE_ONBOARD_ATMEGA
++#
++ifeq ($(call oneof,$(ENABLE_ONBOARD_ATMEGA),0 1 3 5),1)
++  $(eval $(call conformto,ENABLE_ONBOARD_ATMEGA,0 1 3 5))
++
++  # If a voltage was specified, sanity check it vs other flags
++  ifeq ($(call oneof,$(ENABLE_ONBOARD_ATMEGA),3 5),1)
++    # Make sure DISABLE_VSELECT isn't on.
++    ifeq ($(DISABLE_VSELECT),1)
++      $(error ERROR: Using flag DISABLE_VSELECT when specifying a voltage via ENABLE_ONBOARD_ATMEGA are mutually exclusive -- you can set only one; (DISABLE_VSELECT = $(DISABLE_VSELECT), ENABLE_ONBOARD_ATMEGA = $(ENABLE_ONBOARD_ATMEGA)))
++    endif
++
++    ifeq ($(call oneof,$(ENABLE_VSELECT),0 1 $(ENABLE_ONBOARD_ATMEGA)),1)
++      # Set VSelect to the voltage specified via ENABLE_ONBOARD_ATMEGA
++      override ENABLE_VSELECT :::= $(ENABLE_ONBOARD_ATMEGA)
++      # Set ENABLE_ONBOARD_ATMEGA to be 1 (on) rather than a specific voltage
++      override ENABLE_ONBOARD_ATMEGA = 1
++    else
++      # VSelect voltage specified does not match
++      $(error ERROR: Using flag ENABLE_VSELECT when specifying a voltage via ENABLE_ONBOARD_ATMEGA are mutually exclusive -- you can set only one; (ENABLE_VSELECT = $(ENABLE_VSELECT), ENABLE_ONBOARD_ATMEGA = $(ENABLE_ONBOARD_ATMEGA)))
++    endif
++  endif
++else
++  $(error ERROR: Flag ENABLE_ONBOARD_ATMEGA requires a value of 0 [off], 1 [on, implicit 3V3 mode], 3 [on, explicit 3V3 mode], or 5 [on, explicit 5V mode])
++endif
++
++#
++# [OSCR]
++# Set build flags for the integrated ATmega2560
++#
++ifeq ($(ENABLE_ONBOARD_ATMEGA),1)
++  # When off, turn VSelect on unless specifically requested not to
++  # These can never be non-zero at the same time, so if they are equal they must both be 0
++  ifeq ($(ENABLE_VSELECT),$(DISABLE_VSELECT))
++    override ENABLE_VSELECT = 1
++  endif
++
++  OBMEGA_CMD = -DENABLE_ONBOARD_ATMEGA=1
++else
++  OBMEGA_CMD =
++endif
++
++#
++# [OSCR]
++# Set build flags for VSelect
++#
++ifneq ($(ENABLE_VSELECT),0)
++  # If VSELECT is 1 (on), replace with 3 for normal booting in 3V3 mode
++  ifeq ($(ENABLE_VSELECT),1)
++    override ENABLE_VSELECT = 3
++  endif
++
++  VSELECT_CMD = -DENABLE_VSELECT=$(ENABLE_VSELECT)
++endif
++
++override OSCR_IDENT_LOCATION    ?= 0x3fff0
++
++override OSCR_IDENT_HW_VERSION  ?= 0x00
++override OSCR_IDENT_HW_REVISION ?= 0x00
++override OSCR_IDENT_BUILDER     ?= 0x00
++override OSCR_IDENT_SLOTS       ?= 0x00
++override OSCR_IDENT_INTEGRATED  ?= 0x00
++override OSCR_IDENT_HARDWARE    ?= 0x00
++
++override OSCR_CMD = \
++  -DOSCR_IDENT_HW_VERSION=$(OSCR_IDENT_HW_VERSION) \
++  -DOSCR_IDENT_HW_REVISION=$(OSCR_IDENT_HW_REVISION) \
++  -DOSCR_IDENT_BUILDER=$(OSCR_IDENT_BUILDER) \
++  -DOSCR_IDENT_SLOTS=$(OSCR_IDENT_SLOTS) \
++  -DOSCR_IDENT_INTEGRATED=$(OSCR_IDENT_INTEGRATED) \
++  -DOSCR_IDENT_HARDWARE=$(OSCR_IDENT_HARDWARE) \
++  -Wl,--section-start=.oscr=$(OSCR_IDENT_LOCATION)
++
++override OSCR_LNK = -j .oscr
++
+ # Basic naming convention, eg, atmega328p_16mhz_115200bps_we_wdto1s.hex, overridden by NAME=...
+ WHAT := $(MCU)_$(subst L,hz,$(subst 000L,khz,$(subst 000000L,mhz,$(F_CPU))))
+ 
+@@ -283,6 +449,49 @@ VERSION_CMD = -DVERSION=$(VERSION)
+ WHAT := $(WHAT)_v$(VERSION)
+ endif
+ 
++OSCR =
++
++ifeq ($(ENABLE_ONBOARD_ATMEGA),1)
++  ifeq ($(DISABLE_VSELECT),1)
++    OSCR := _obm
++  else
++    OSCR := _obm$(ENABLE_VSELECT)
++  endif
++else ifneq ($(ENABLE_VSELECT),0)
++  OSCR := _vs$(ENABLE_VSELECT)
++endif
++
++ifneq ($(OSCR_IDENT_HW_VERSION),0)
++  OSCR := $(OSCR)_hw$(OSCR_IDENT_HW_VERSION)
++  ifneq ($(OSCR_IDENT_HW_REVISION),0)
++    OSCR := $(OSCR)r$(OSCR_IDENT_HW_REVISION)
++  endif
++
++  ifeq ($(OSCR_IDENT_BUILDER),0x00)
++    OSCR := $(OSCR)-none
++  else ifeq ($(OSCR_IDENT_BUILDER),0x69)
++    OSCR := $(OSCR)-starshade
++  else
++    OSCR := $(OSCR)-$(OSCR_IDENT_BUILDER)
++  endif
++endif
++
++ifneq ($(OSCR_IDENT_INTEGRATED),0)
++  OSCR := $(OSCR)_i$(OSCR_IDENT_INTEGRATED)
++endif
++
++ifneq ($(OSCR_IDENT_HARDWARE),0)
++  OSCR := $(OSCR)_h$(OSCR_IDENT_HARDWARE)
++endif
++
++ifneq ($(OSCR_IDENT_SLOTS),0)
++  OSCR := $(OSCR)_sl$(OSCR_IDENT_SLOTS)
++endif
++
++ifneq ($(OSCR),)
++WHAT := $(WHAT)$(OSCR)
++endif
++
+ # Prefer NAME= name if given
+ ifdef NAME
+ WHAT := ${NAME}
+@@ -306,7 +515,8 @@ COMMON_OPTIONS = $(WDTO_CMD) $(AUTOBAUD_CMD) $(BAUD_RATE_CMD) $(UART2X_CMD) $(LE
+   $(UPDATE_FL_CMD) $(VBL_CMD) $(VBL_VECT_NUM_CMD) $(CHIP_ERASE_CMD) $(SWIO_CMD) \
+   $(UARTNUM_CMD) $(UARTALT_CMD) $(TX_CMD) $(RX_CMD) $(TESTING_CMD) $(PGMWRITEPAGE_CMD) \
+   $(DEBUG_FREQ_CMD) $(EXACT_DF_CMD) $(DEBUG_CYCLES_CMD) $(FREQ_PIN_CMD) $(FREQ_POLARITY_CMD) \
+-  $(FLASHWRAPS_CMD) $(PROTECTRESET_CMD) $(AUTOFRILLS_CMD)
++  $(FLASHWRAPS_CMD) $(PROTECTRESET_CMD) $(AUTOFRILLS_CMD) $(OBMEGA_CMD) $(VSELECT_CMD) \
++	$(OSCR_CMD)
+ 
+ 
+ bootloader: CFLAGS += $(COMMON_OPTIONS)
+@@ -753,7 +963,7 @@ atmega2560_ad:
+ 
+ %.hex: $(SRC) Makefile
+ 	@$(URBOOTGCC)  $(CFLAGS) $(LDFLAGS) -o $*.elf $(SRC)
+-	$(OBJCOPY) -j .text -j .data -j .version --set-section-flags .version=alloc,load -O ihex $*.elf $@
++	$(OBJCOPY) -j .text -j .data $(OSCR_LNK) -j .version --set-section-flags .version=alloc,load -O ihex $*.elf $@
+ 	$(OBJDUMP) -h -S $*.elf > $*.lst
+ #	@$(SIZE) $*.elf
+ 	@echo -- `./hexls $@`
+diff --git a/src/urboot.c b/src/urboot.c
+index b914409..e6395ef 100644
+--- a/src/urboot.c
++++ b/src/urboot.c
+@@ -1362,7 +1362,7 @@ static void chip_erase() {
+ #define SFM_C_SE4k         0x20 // Sector erase (4k)
+ 
+ // SPI communication
+-static uint8_t spi_transfer(uint8_t data) {
++uint8_t spi_transfer(uint8_t data) {
+   asm volatile(
+    "out_spdr: "
+     out_spdr(%[data])           // SPDR = data;
+@@ -1675,7 +1675,81 @@ unsigned const int __attribute__ ((section(".version"))) urboot_version[] = {
+   (VERSION<<8) + UR_TYPE,
+ };
+ 
++#define OSCR_CLOCKGEN   (1 <<  0) // Clock Generator
++#define OSCR_VSELECT    (1 <<  1) // VSelect
++#define OSCR_RTC        (1 <<  2) // RTC
++#define OSCR_SSR_LCD    (1 <<  7) // Using LCD from StarshadeRETRO/BigTreeTech
+ 
++#define OSCR_OBM        (1 <<  0) // Integrated ATmega2560
++#define OSCR_CBUS       (1 <<  1) // Cartridge Bus
++#define OSCR_VOLTMON    (1 <<  2) // Voltage Monitors
++#define OSCR_STAT_LED   (1 <<  3) // Status LED
++#define OSCR_SVN_SLT    (1 <<  5) // Seven-slot Adapter
++#define OSCR_USBC       (1 <<  6) // Integrated USB C port
++#define OSCR_AUX        (1 <<  7) // AUX Capability
++
++#if !defined(OSCR_IDENT_HW_VERSION)
++# define OSCR_IDENT_HW_VERSION 0
++#endif
++
++#if !defined(OSCR_IDENT_HW_REVISION)
++# define OSCR_IDENT_HW_REVISION 0
++#endif
++
++#if OSCR_IDENT_HW_VERSION > 0xF
++#error OSCR_IDENT_HW_VERSION too large, must be <= 0xF (15)
++#endif
++
++#if OSCR_IDENT_HW_REVISION > 0xF
++#error OSCR_IDENT_HW_REVISION too large, must be <= 0xF (15)
++#endif
++
++#if !defined(OSCR_IDENT_BUILDER)
++# define OSCR_IDENT_BUILDER 0x00
++#endif
++
++#if !defined(OSCR_IDENT_SLOTS)
++# define OSCR_IDENT_SLOTS 0x00
++#endif
++
++#if !defined(OSCR_IDENT_INTEGRATED)
++# define OSCR_IDENT_INTEGRATED 0x00
++#endif
++
++#if !defined(OSCR_IDENT_HARDWARE)
++# define OSCR_IDENT_HARDWARE 0x00
++#endif
++
++// [OSCR] Hardware Identification Data
++__attribute__((section(".oscr"),used))
++uint8_t const oscr_details[] = {
++  // Preamble to verify this is our data
++  0x05, 0xC1, 0x20, // OS C- R0
++
++  // Main PCB info
++  (OSCR_IDENT_HW_VERSION << 4)|(OSCR_IDENT_HW_REVISION), // Hardware (Version << 4)|(Revision)
++
++  // Builder ID
++  OSCR_IDENT_BUILDER, // 0x69
++
++  // Built-in slots
++  OSCR_IDENT_SLOTS,
++
++  // Integrated features
++  OSCR_IDENT_INTEGRATED, // (OSCR_OBM|OSCR_CBUS|OSCR_VOLTMON|OSCR_STAT_LED|OSCR_SVN_SLT|OSCR_USBC|OSCR_AUX),
++
++  // Hardware features
++  OSCR_IDENT_HARDWARE, // (OSCR_CLOCKGEN|OSCR_VSELECT|OSCR_RTC|OSCR_SSR_LCD),
++};
++
++#if !defined(ENABLE_VSELECT)
++# define ENABLE_VSELECT 5
++#elif ENABLE_VSELECT == 1
++# undef ENABLE_VSELECT
++# define ENABLE_VSELECT 3
++#elif ((ENABLE_VSELECT != 0) && (ENABLE_VSELECT != 3) && (ENABLE_VSELECT != 5))
++# error Invalid value for ENABLE_VSELECT; expected 0, 1(=3), 3, or 5
++#endif
+ 
+ // Normal app start: jump to reset vector or dedicated VBL vector and tell compiler mcusr is needed
+ #if FLASHin8k || FLASHWRAPS
+@@ -1739,6 +1813,79 @@ int main(void) {
+ //  UB_MCUSR = 0;
+   watchdogConfig(WATCHDOG_OFF);
+ 
++#if defined(ENABLE_ONBOARD_ATMEGA)
++  /**
++   * Put all GPIO into a known state.
++   *
++   * Per the datasheet, the value should already be at 0, but soft
++   * resets may not do that. So, It is better to just do it here and
++   * know for sure.
++   */
++
++  DDRA = 0;
++  PORTA = 0;
++
++  // Don't turn off B
++
++  DDRC = 0;
++  PORTC = 0;
++
++  // Pins for:
++  // - Encoder (2-3)
++  // - STAT RGB LED (4-6)
++  // - VSELECT EN (7)
++# if ENABLE_VSELECT
++  DDRD = 0b11110000;
++# else /* !ENABLE_VSELECT */
++  DDRD = 0b01110000;
++# endif /* ENABLE_VSELECT */
++
++# if ENABLE_VSELECT
++#   if ENABLE_VSELECT == 5
++  PORTD = 0b01111100; // Boot in 5V mode
++#   else
++  PORTD = 0b11111100; // Boot in 3V3 mode
++#   endif
++# else
++  PORTD = 0b01111100;
++# endif
++
++  // VSELECT STAT (6) + UART (0-1)
++  DDRE = 0b00000001;
++  PORTE = 0b01000000;
++
++  DDRF = 0;
++  PORTF = 0;
++
++  // Pins for:
++  // - Button w/PU (2)
++  // - CIC (1)
++  DDRG = 0b00000000;
++  PORTG = 0b00000100;
++
++  DDRH = 0;
++  PORTH = 0;
++
++  // Pins for:
++  //  - Voltage Monitors (4-6)
++  //  - CBUS (7)
++  DDRJ = 0b10000000;
++  PORTJ = 0b00000000;
++
++  DDRK = 0;
++  PORTK = 0;
++
++  DDRL = 0;
++  PORTL = 0;
++#elif ENABLE_VSELECT
++  DDRD |= (1 << 7);
++# if ENABLE_VSELECT == 5
++  PORTD &= ~(1 << 7); // 5V
++# else
++  PORTD |= (1 << 7);  // 3V3
++# endif
++#endif /* ENABLE_ONBOARD_ATMEGA || ENABLE_VSELECT */
++
+   // Unless there was an external reset jump to application
+ #if !DUAL && !(defined(__AVR_ERRATA_SKIP_JMP_CALL__) && __AVR_ERRATA_SKIP_JMP_CALL__ && \
+   !FLASHin8k && !FLASHWRAPS)
+@@ -2033,6 +2180,11 @@ int main(void) {
+   } while(--rn);
+ #endif
+ 
++#if defined(ENABLE_VSELECT) && ENABLE_VSELECT != 5
++  // Program @ 5V
++  PORTD &= ~(1 << 7);
++#endif
++
+   // Exit loop by causing WDT reset - which will initialise the MCU
+   for(;;) {
+     uint8_t ch = getch();

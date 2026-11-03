@@ -1,0 +1,56 @@
+{
+  "files.associations": {
+    "new": "cpp",
+    "*.def": "cpp",
+    "chrono": "cpp",
+    "**/*oscr-firmware*/include/**.h": "cpp",
+    "**/*oscr-firmware*/databases/data/*.json": "json5",
+  },
+  "platformio-ide.toolbar": [
+    {
+      "text": "$(play-circle)",
+      "tooltip": "Build firmware",
+      "commands": "platformio-ide"
+    },
+    {
+      "text": "$(play) HW3",
+      "tooltip": "Build firmware for Hardware 3",
+      "commands": [
+        {
+          "id": "platformio-ide.runPIOCoreCommand",
+          "args": "pio run --environment HardwareV3"
+        }
+      ]
+    },
+    {
+      "text": "$(play) HW5",
+      "tooltip": "Build firmware for Hardware 5",
+      "commands": [
+        {
+          "id": "platformio-ide.runPIOCoreCommand",
+          "args": "pio run --environment HardwareV5"
+        }
+      ]
+    },
+    {
+      "text": "$(database) CRDB",
+      "tooltip": "Build CRDB",
+      "commands": [
+        {
+          "id": "platformio-ide.runPIOCoreCommand",
+          "args": "pio run --environment Databases"
+        }
+      ]
+    },
+    {
+      "text": "$(plug)",
+      "tooltip": "PlatformIO: Serial Monitor",
+      "commands": "platformio-ide.serialMonitor"
+    }
+  ],
+  "editor.tabSize": 2,
+  "python-envs.workspaceSearchPaths": [
+    "./**/.venv",
+    "~/.platformio/penv"
+  ]
+}
