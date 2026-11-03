@@ -2,16 +2,35 @@
 
 Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware/oscr_serial`, D38), usar o **firmware novo do OSCR** e remover o que não usamos (cartão SD, N64 e outros consoles). O programa do computador (`host/` e `gui/`) continua no escopo e mantém o protocolo serial.
 
-## 1. Estado
+## 1. Estado (2026-11-03)
 
 | Item | Estado |
 |---|---|
 | Cópia do upstream em `firmware/oscr/` | feita (commit `d9cb26a` do upstream) |
-| Núcleos desligados (`user.ini`) | N64, SMS, autoteste. O resto dos consoles já vem desligado em `atmega2560` |
-| Compila para o Mega (`pio run -e SerialASCII`) | sim: 124.660 B de flash (49,1%), 2.676 B de RAM |
-| Troca do SD por saída serial | **não feita** |
-| Comandos do protocolo ligados aos núcleos | **não feito** |
+| Núcleos desligados (`user.ini`) | N64, SMS, autoteste |
+| Compila para o Mega (`pio run -e SerialASCII`) | sim: 113.692 B de flash (44,8%), 3.091 B de RAM (37,7%) |
+| UI de texto silenciada | feita (`ClockedSerial.mute`, `rawWrite` só para o protocolo) |
+| `OSCR::Storage` sem SD | **feito**: `StreamFile` (arquivo virtual) e `StreamSd` (sem sistema de arquivos); o SD sai do build |
+| Modo fluxo no protocolo (`Session`) | **feito e testado no PC**: `stream_read`/`stream_write`, `BEGIN` com tamanho `0xFFFFFFFF`, cliente Python e GUI aceitam |
+| Laço de comandos (`src/dumper/Dumper.cpp`) ligado aos núcleos | **Mega Drive**: `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE` (SRAM e EEPROM). **Compila; nunca rodou** |
+| SNES, NES/Famicom, GBA, GB/GBC | **não ligados** |
+| Erros fatais e esperas por botão | `fatalError` volta ao laço por `longjmp`; `waitButton` não espera |
+| Identificação por banco de dados no PC | **não feita** (seção 3.2) |
 | Validação em hardware | nenhuma |
+
+## 1.1 O que foi feito nesta rodada
+- `firmware/oscr_serial/oscr_session.*`: modo fluxo (`Backend::streams()`, `stream_read`, `stream_write`). Os núcleos do OSCR empurram os bytes durante a leitura, em vez de o protocolo puxar por `offset`; os blocos `DATA` são montados num buffer de `block` bytes e cada um espera o `ACK`. No `WRITE_SAVE`, o `ACK` de cada bloco só sai depois que o núcleo consumiu o bloco, para o PC não encher a UART (64 B) enquanto o cartucho grava.
+- Testes no PC com um backend de fluxo (`sim_stdio stream`) e o cliente Python: ROM de 5.000 B e save de 2.000 B em pedaços de 300 B contra blocos de 64 a 1.020 B; gravação de 1 a 4.096 B lida em pedaços de 77 B; dado errado devolve `ERRO 0x0007`. 71 testes do host.
+- Fork: `include/dumper/StreamFile.h`, `src/dumper/StreamFile.cpp`, `src/dumper/Dumper.cpp` e as cópias do protocolo em `src/dumper/` (um teste confere que são idênticas às de `firmware/oscr_serial`).
+- Patches no upstream (todos pequenos, marcados com `OSCR_DUMPER` ou comentários "fork"): `include/flags.h` (flag), `include/api/Storage.h` (tipo do arquivo e do `sd`), `src/arch/avr/generic/Storage.cpp` (sem SD), `ClockedSerial` (mudo e `rawWrite`), `src/ui/interfaces/serial/ascii.cpp` (`_error`, `_fatalError`, `waitButton`), `src/main.cpp` (laço), `include/cores/MegaDrive.h` (`eepSize`).
+
+## 1.2 Como cada coisa se comporta, e as dúvidas
+- Cada arquivo aberto para escrita pelo núcleo grava no **mesmo** fluxo. Se um núcleo criar dois arquivos num comando, os bytes se concatenam. No Mega Drive isso não acontece em `readROM`/`readSram`; os outros consoles ainda não foram conferidos.
+- Depois do dump, os núcleos releem o arquivo para somar o checksum e comparar com a base de dados: no fluxo serial a releitura devolve 0 bytes (o CRC32 do arquivo inteiro vai no `END`). O que o núcleo imprime sobre isso fica mudo.
+- A verificação do `writeSram` (que relê o arquivo) não funciona no fluxo: o PC precisa **reler o save depois de gravar** e comparar. O `WRITE_SAVE` do firmware próprio já conferia byte a byte; aqui não.
+- O baud é 1.000.000 (`OSCR_DUMPER_BAUD`). O upstream usa 250.000 na placa `mega-embed`; o `setup()` do fork reabre a serial no baud do protocolo.
+- Não conferi o que `OSCR::Power::setVoltage`/`changeVoltagePrompt` fazem sem VSELECT neste shield. Sem `ENABLE_ONBOARD_ATMEGA`, `enableCartridge` não faz nada.
+- Um `longjmp` por cima do código dos núcleos pula destrutores e deixa o hardware como estava: o laço sempre chama `Power::disableCartridge()` depois.
 
 ## 2. O acoplamento com o SD
 
@@ -25,7 +44,7 @@ Pontos que o plano precisa resolver:
 5. **Base de dados (CRDB):** usa o SD também. Sem SD, a identificação do cartucho por base de dados some (o mapper/tamanho do NES voltam a ser informados pelo usuário, como hoje).
 6. **Configurações, logs e atualizador:** também usam o SD; desligar.
 
-## 3. O que falta (levantado em 2026-11-03, antes de começar a troca)
+## 3. O que falta (levantado em 2026-11-03; os itens 3.1.1 a 3.1.6 estão feitos só para o Mega Drive)
 
 ### 3.1 Firmware (`firmware/oscr/`)
 1. **Silenciar a UI de texto.** Hoje a UI do OSCR imprime texto na mesma UART em que vai o protocolo binário; um `print` no meio de um quadro o corrompe. Plano: uma marca de "mudo" em `ClockedSerial` (a UI passa a descartar) e uma escrita crua separada para o protocolo.

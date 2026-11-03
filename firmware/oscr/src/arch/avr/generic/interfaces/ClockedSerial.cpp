@@ -255,3 +255,22 @@ void DynamicClockSerial::clockSkewAtomic(uint32_t sclock)
 # endif
 
 #endif /* OSCR_ARCH_AVR */
+
+
+// Fork oscr_minimal: ver ClockedSerial.h
+size_t DynamicClockSerial::write(uint8_t byte)
+{
+  return mute ? 1 : HardwareSerial::write(byte);
+}
+
+size_t DynamicClockSerial::write(uint8_t const * buffer, size_t size)
+{
+  return mute ? size : rawWrite(buffer, size);
+}
+
+size_t DynamicClockSerial::rawWrite(uint8_t const * buffer, size_t size)
+{
+  size_t written = 0;
+  while (size--) written += HardwareSerial::write(*buffer++);
+  return written;
+}

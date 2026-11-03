@@ -33,7 +33,9 @@ namespace OSCR
 {
   namespace Storage
   {
+# if !OSCR_DUMPER
     SdFs sd;
+# endif
 
     constexpr char const PROGMEM AllowedSymbols[] = "-_ .()";
     constexpr uint8_t const kAllowedSymbolCount = sizeof(AllowedSymbols) - 1;
@@ -92,11 +94,13 @@ namespace OSCR
       SdFile::dateTimeCallback(dateTimeCB);
 # endif
 
+# if !OSCR_DUMPER
       // Init SD card
       if (!sd.begin(SD_CONFIG))
       {
         OSCR::UI::fatalErrorStorage();
       }
+# endif
 
 # if ((OPTION_UNIQUE_DIRECTORY_METHOD == UNQDIR_INCREMENT) || (OPTION_UNIQUE_DIRECTORY_METHOD == UNQDIR_BOTH))
       // Get folder increment

@@ -64,6 +64,7 @@
 - **D63** Game Boy: limites documentados
 - **D64** NES: lote de 14 mappers (13, 34, 67, 68, 72, 73, 86, 92, 93, 94, 140, 152, 180, 184) e `NesBus::wait_ms`
 - **D65** Firmware: volta ao plano de usar o firmware original do OSCR (decisão do usuário, 2026-11-03)
+- **D66** Fork: SD trocado pela serial e protocolo ligado ao Mega Drive; identificação por banco de dados no PC (decisão do usuário, 2026-11-03)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -518,4 +519,12 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Feito nesta data:** cópia do upstream, `user.ini` desligando N64, SMS e autoteste, compilação para o Mega (124.660 B de flash). Compilação do upstream puro: 141.824 B. Plano e riscos em `docs/fork-oscr.md`.
 - **Não feito:** troca do SD por saída serial, ligação do protocolo aos núcleos, qualquer teste em hardware.
 - O `CLAUDE.md` seção 9 passou a registrar essa decisão. D38 e as decisões seguintes sobre o firmware próprio continuam no histórico, valendo para `firmware/oscr_serial`.
+
+### D66 — Fork: SD trocado pela serial e protocolo ligado ao Mega Drive; identificação por banco de dados no PC (decisão do usuário, 2026-11-03)
+- **Armazenamento:** `OSCR::Storage::File` passou a usar `StreamFile`, um arquivo virtual: o que o núcleo grava vai ao PC em quadros `DATA`; o que ele lê (gravação de save) vem do PC. `sd` virou `StreamSd` (sem sistema de arquivos). Os núcleos continuam chamando a mesma API, então o código de leitura dos cartuchos não mudou.
+- **Protocolo:** modo fluxo. O `BEGIN` pode trazer tamanho `0xFFFFFFFF` (desconhecido) e o `END` leva o tamanho e o CRC32 reais; o cliente Python e a GUI aceitam. Documentado em `docs/protocolo.md`.
+- **Mega Drive** é o único console ligado (`DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`). **Compila; nunca rodou** (nem em hardware, nem em simulador de AVR; o código do OSCR não roda no PC).
+- **Banco de dados:** a identificação do jogo (CRDB do OSCR, No-Intro, NES 2.0) fica no **PC**, por CRC32, e o PC também escolhe mapper e tamanhos do NES para mandar como opções do `DUMP_ROM`. Fora do firmware. Ainda não implementado no host nem na GUI (`docs/fork-oscr.md` seção 3.2 e 3.3).
+- **Limites conhecidos:** fluxo sequencial (sem `seek` real); releitura do arquivo gravado devolve 0 bytes; o `WRITE_SAVE` não confere o cartucho byte a byte (o PC precisa reler); um arquivo por comando; baud 1.000.000 contra 250.000 do upstream.
+- **Testes no PC:** 71 do host (10 novos de fluxo e 1 de sincronia das cópias do protocolo), 990 de cartuchos do firmware próprio, Gradle ok.
 

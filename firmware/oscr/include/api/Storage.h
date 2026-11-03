@@ -10,6 +10,9 @@
 # include "common/Types.h"
 # include "common/Util.h"
 # include "ui/interfaces.h"
+# if OSCR_DUMPER
+#   include "dumper/StreamFile.h"
+# endif
 
 namespace OSCR
 {
@@ -41,7 +44,11 @@ namespace OSCR
       Summed,
     };
 
+# if OSCR_DUMPER
+    extern StreamSd sd;   // sem cartão SD: ver include/dumper/StreamFile.h
+# else
     extern SdFs sd;
+# endif
 
     extern void setup();
 
@@ -434,7 +441,11 @@ namespace OSCR
       bool getName(char * name, size_t len);
 
     protected:
+# if OSCR_DUMPER
+      StreamFile file;   // arquivo virtual: grava no fluxo serial do protocolo, lê do arquivo que o PC manda
+# else
       FsFile file;
+# endif
       oflag_t fileOflag;
       bool fatalErrors = true;
       bool opened = false;

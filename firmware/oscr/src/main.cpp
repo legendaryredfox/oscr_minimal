@@ -74,6 +74,7 @@
 #include "common/crdb/ti99.h"
 
 #include "cores/include.h"
+#include "dumper/Dumper.h"
 
 /******************************************
   End of inclusions and forward declarations
@@ -186,6 +187,10 @@ void setup()
   OSCR::Clock::setClockSpeed(OSCR::ClockSpeed::k8MHz);  // Set clock back to low after setup
 #endif /* ENABLE_3V3FIX */
 
+#if OSCR_DUMPER
+  OSCR::Dumper::setup();
+#endif
+
 #if defined(ENABLE_ONBOARD_ATMEGA)
   if (!OSCR::Power::voltagesOk())
   {
@@ -199,6 +204,11 @@ void setup()
 
 void loop()
 {
+# if OSCR_DUMPER
+  // Fork oscr_minimal: o PC comanda pelo protocolo serial; não há menu
+  OSCR::Dumper::loop();
+# else
   // Start menu system
   OSCR::Menus::main();
+# endif
 }

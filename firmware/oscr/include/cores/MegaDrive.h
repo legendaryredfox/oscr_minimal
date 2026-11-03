@@ -13,6 +13,7 @@
  */
 namespace OSCR::Cores::MegaDrive
 {
+  extern uint16_t eepSize;   // fork oscr_minimal: o laço de comandos precisa do tamanho da EEPROM
   void pulse_clock(int n);
   void menu();
   void cartMenu();

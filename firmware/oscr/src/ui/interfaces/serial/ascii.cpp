@@ -5,6 +5,7 @@
 # include "ui/interfaces.h"
 # include "ui/l10n.h"
 # include "ui/interfaces/serial.h"
+# include "dumper/Dumper.h"
 
 namespace OSCR
 {
@@ -490,13 +491,20 @@ namespace OSCR
 
     void _error(void)
     {
+# if OSCR_DUMPER
+      OSCR::Dumper::noteError();
+# else
       waitButton();
+# endif
     }
 
     void _fatalErrorFormat() {}
 
     [[ noreturn ]] void _fatalError(void)
     {
+# if OSCR_DUMPER
+      OSCR::Dumper::fatal();
+# endif
       OSCR::Power::disableCartridge();
 
       waitButton();
@@ -533,6 +541,9 @@ namespace OSCR
 
     void waitButton()
     {
+# if OSCR_DUMPER
+      return;   // sem botão nem teclado: o protocolo não espera o usuário
+# endif
       OSCR::UI::printLineSync(FS(OSCR::Strings::Status::PressButton));
       wait();
     }

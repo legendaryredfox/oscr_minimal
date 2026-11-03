@@ -42,6 +42,12 @@ public:
   void begin(uint32_t baud, uint32_t sclock);
   void begin(uint32_t baud, uint8_t config, uint32_t sclock);
 
+  // Fork oscr_minimal: com `mute` a UI de texto do OSCR não escreve (a serial é do protocolo binário); `rawWrite` ignora o `mute`.
+  bool mute = false;
+  size_t write(uint8_t byte) override;
+  size_t write(uint8_t const * buffer, size_t size) override;
+  size_t rawWrite(uint8_t const * buffer, size_t size);
+
   void clockSkew(uint32_t sclock);
   void clockSkewAtomic(uint32_t sclock);
 
