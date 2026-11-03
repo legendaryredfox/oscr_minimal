@@ -32,7 +32,7 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 1. **Resistores** R1 e R2 (deitados, como no silkscreen).
 2. **Capacitores cerâmicos de 100 nF**: C3, C5, C6.
-3. **Soquete DIP-8 (U2)**, com o chanfro alinhado ao silkscreen e **sem o PIC**.
+3. **Soquete DIP-8 (U2)**, tradicional, com o chanfro alinhado ao silkscreen e **sem o PIC**. O PIC nunca é soldado: fica no soquete para poder ser trocado ou regravado.
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 6. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).
