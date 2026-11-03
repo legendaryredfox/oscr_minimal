@@ -129,7 +129,16 @@ struct SimGb : GbBus {
     }
     size_t n = t == 6 ? 512 : (t == 0x22 ? 256 : (ssz == 1 ? 2048 : (ssz == 2 ? 8192 : (ssz == 3 ? 32768 : (ssz == 4 ? 131072 : (ssz == 5 ? 65536 : 0))))));
     ram.assign(n, 0);
+    if (is_mmm()) mm_hdr();
+    if (t == 0x20) { ram.assign(32768, 0); flash.assign(1 << 20, 0xFF); }
   }
+  // MMM01: ao ligar mostra os últimos 32 KB (menu); depois da sequência de trava ($3A e $7A em $0000-$1FFF) vê o jogo no deslocamento escolhido
+  bool mm_map = false; uint8_t mm_base = 0, mm_bank = 0; int begins = 0;
+  bool is_mmm() const { return type >= 0x0B && type <= 0x0D; }
+  void mm_hdr() { memcpy(&rom[rom.size() - 0x8000 + 0x100], &rom[0x100], 0x50); }   // o cabeçalho do menu fica no fim da ROM
+  // MBC6: bancos de ROM de 8 KB (A em $4000, B em $6000), seleção ROM/Flash em $2800/$3800, SRAM em bancos de 4 KB, Flash atrás da trava $1000/$0C00
+  std::vector<uint8_t> flash; uint8_t sel_a = 0, sel_b = 0, sram_a = 0, sram_b = 0; bool flash_map = false, fw_en = false;
+  uint8_t tama_reg = 0, tama_bank = 1;
   // MBC7: EEPROM 93LC56/66 em $A080 (bit 7 CS, bit 6 CLK, bit 1 DI, bit 0 DO), modelada pelo datasheet e não pelo código do firmware
   bool e_cs = false, e_clk = false, e_wen = false, e_prog = false, e_do = true, e_stuck = false; int e_st = 0, e_n = 0, e_busy = 0, e_op = 0, e_busy_polls = 3, e_cmd = 0; uint16_t e_sh = 0, e_addr = 0, e_rd = 0; int e_rdn = 0, e_words_written = 0;
   size_t e_words() const { return ram.size() / 2; }
@@ -174,6 +183,7 @@ struct SimGb : GbBus {
   bool is2() const { return type == 5 || type == 6; }
   bool is1() const { return (type >= 1 && type <= 3) || mbc1m(); }
   size_t bank_hi() const {                                            // banco mapeado em $4000-$7FFF
+    if (type == 0xFD) return tama_bank;
     if (is5()) return (size_t(r3000 & 1) << 8) | r2000;
     if (mbc1m()) return (size_t(r4000) << 4) | (r2000 & 0x0F);
     if (is1()) { size_t lo = r2000 & 0x1F; if (lo == 0) lo = 1; return (size_t(r4000 & 3) << 5) | lo; }
@@ -181,15 +191,41 @@ struct SimGb : GbBus {
     if (type == 0) return 1;
     size_t b = r2000 & 0x7F; return b ? b : 1;                         // MBC3, câmera, HuC
   }
-  void begin() override {} void end() override {}
+  void begin() override { begins++; if (is_mmm()) { mm_map = false; mm_base = 0; mm_bank = 0; ram_en = false; } }
+  void end() override {}
   uint8_t read(uint16_t a) override {
     if (absent) return 0xFF;
+    if (is_mmm()) {
+      if (a >= 0x8000) return 0xFF;
+      if (!mm_map) return rom[rom.size() - 0x8000 + a];
+      if (a < 0x4000) return rom[(size_t(mm_base) * 16384 + a) % rom.size()];
+      return rom[((size_t(mm_base) + (mm_bank ? mm_bank : 1)) * 16384 + (a - 0x4000)) % rom.size()];
+    }
+    if (type == 0x20) {
+      if (a < 0x4000) return rom[a];
+      if (a >= 0x8000) return 0xFF;
+      bool bwin = a >= 0x6000; uint8_t sel = bwin ? sel_b : sel_a, reg = bwin ? r3000 : r2000; size_t o = a & 0x1FFF;
+      if (sel == 8 && flash_map) return flash[(size_t(reg) & 0x7F) * 8192 + o];
+      return rom[(size_t(reg) * 8192 + o) % rom.size()];
+    }
     if (a < 0x4000) { size_t b = (is1() && !mbc1m() && mode) ? (size_t(r4000 & 3) << 5) : 0; return rom[(b * 16384 + a) % rom.size()]; }
     if (a < 0x8000) return rom[(bank_hi() * 16384 + (a - 0x4000)) % rom.size()];
     if (type == 0x22 && a == 0xA080 && ram_en && r4000 == 0x40) return e_cs ? (e_do ? 1 : 0) : 1;
     return 0xFF;
   }
   void write(uint16_t a, uint8_t v) override {
+    if (is_mmm()) {
+      if (!mm_map) { if (a < 0x2000) { if (v & 0x40) mm_map = true; } else if (a < 0x4000) mm_base = v & 0x3F; return; }
+      if (a < 0x2000) ram_en = (v & 0x0F) == 0x0A; else if (a < 0x4000) mm_bank = v & 0x1F; else if (a < 0x6000) r4000 = v; else if (a < 0x8000) mode = v & 1;
+      return;
+    }
+    if (type == 0x20) {
+      if (a < 0x0400) ram_en = (v & 0x0F) == 0x0A; else if (a < 0x0800) sram_a = v; else if (a < 0x0C00) sram_b = v;
+      else if (a < 0x1000) { if (fw_en) flash_map = v & 1; }
+      else if (a < 0x2000) fw_en = v & 1;
+      else if (a < 0x2800) r2000 = v; else if (a < 0x3000) sel_a = v; else if (a < 0x3800) r3000 = v; else if (a < 0x4000) sel_b = v;
+      return;
+    }
     if (type == 0x22 && a == 0xA080) { if (ram_en && r4000 == 0x40) eep_write(v); return; }
     if (a < 0x2000) { if (!is2() || !(a & 0x100)) ram_en = (v & 0x0F) == 0x0A; }
     else if (a < 0x4000) {
@@ -201,17 +237,23 @@ struct SimGb : GbBus {
     else if (a < 0x8000) mode = v & 1;
   }
   size_t ram_index(uint16_t a) const {
+    if (type == 0x20) return (size_t(sram_a & 7) * 4096 + ((a - 0xA000) & 0xFFF)) % ram.size();
     size_t bank = (type <= 4 ? (mode ? r4000 & 3 : 0) : r4000);
     if (is2()) return (a - 0xA000) & 0x1FF;
     return (bank * 8192 + (a - 0xA000)) % (ram.empty() ? 1 : ram.size());
   }
   uint8_t sram_read(uint16_t a, bool camera) override {
-    if (type == 0xFC) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
+    if (type == 0xFC || type == 0xFD) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
     if (!ram_en || ram.empty() || a < 0xA000) return 0xFF;
     uint8_t v = ram[ram_index(a)]; return is2() ? uint8_t(0xF0 | (v & 0x0F)) : v;
   }
   void sram_write(uint16_t a, uint8_t v, bool camera) override {
-    if (type == 0xFC) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
+    if (type == 0xFC || type == 0xFD) { cam_calls++; if (!camera) cam_wrong++; } else if (camera) cam_wrong++;
+    if (type == 0xFD) {                                                // TAMA5: $A001 escolhe o registrador, $A000 grava o nibble do banco
+      if (a == 0xA001) tama_reg = v & 1;
+      else if (a == 0xA000) tama_bank = tama_reg == 0 ? uint8_t((tama_bank & 0xF0) | (v & 0x0F)) : uint8_t((tama_bank & 0x0F) | ((v & 0x0F) << 4));
+      return;
+    }
     if (!ram_en || ram.empty() || a < 0xA000) return;
     ram[ram_index(a)] = is2() ? uint8_t(v & 0x0F) : v;
   }
@@ -726,7 +768,7 @@ static void test_gb() {
   const Cfg cfgs[] = {
     {0x00, 0, 0, "ROM SO"}, {0x01, 4, 0, "MBC1"}, {0x03, 5, 3, "MBC1 32K"}, {0x03, 6, 2, "MBC1 8K"}, {0x02, 6, 1, "MBC1 2K"},
     {0x06, 3, 0, "MBC2"}, {0x13, 6, 3, "MBC3"}, {0x10, 5, 2, "MBC3 RTC"}, {0x1B, 8, 4, "MBC5 128K"}, {0x1E, 7, 5, "MBC5 64K"},
-    {0x19, 8, 0, "MBC5 4MB"}, {0xFC, 5, 4, "CAMERA"}, {0x103, 5, 2, "MOMOCOL"}, {0x22, 3, 0, "KIRBY TNT"},
+    {0x19, 8, 0, "MBC5 4MB"}, {0xFC, 5, 4, "CAMERA"}, {0x103, 5, 2, "MOMOCOL"}, {0x22, 3, 0, "KIRBY TNT"}, {0x0D, 5, 3, "MMM01 SAVE"}, {0x0B, 5, 0, "MMM01"}, {0xFD, 4, 0, "TAMA5"},
   };
   for (const Cfg& c : cfgs) {
     int hdr_type = c.type & 0xFF;
@@ -773,10 +815,27 @@ static void test_gb() {
     std::vector<uint8_t> sv(256, 0x5A); uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 256, e2)); bool ok = be.write_block(0, sv.data(), 256); CHECK(ok && be.write_commit() && s.ram == sv); }
   { SimGb s(0x22, 3, 0, "KIRBY TNT"); s.e_stuck = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &s);                           // EEPROM que nunca fica pronta: erro, sem travar
     std::vector<uint8_t> sv(256, 0x5A); uint16_t e2 = 0; CHECK(be.write_begin(SYS_GB, 256, e2)); CHECK(!be.write_block(0, sv.data(), 256)); be.write_abort(); CHECK(!s.ram_en && !s.e_cs); }
+  // MMM01 reconhecido só pela tabela de títulos (o cabeçalho do menu diz MBC1)
+  { SimGb s(0x01, 5, 0, "RTYPE 2 SET", 0x32, true); s.type = 0x0B; s.mm_hdr();
+    CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 0 && d.rom_size == s.rom.size());
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_GB, KIND_ROM, out, err); CHECK(out == s.rom); CHECK(s.begins >= 3); }          // um reset por bloco de 512 KB, mais o de ligar
+  { SimGb s(0x0B, 6, 0, "GRANDE"); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }   // MMM01 de 2 MB: recusado
+  // MMM01 já mapeado por uma operação anterior: a próxima operação tem que ler o cabeçalho do menu (o acquire e o probe reiniciam o cartucho)
+  { SimGb s(0x0B, 5, 0, "MMM01"); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_GB, KIND_ROM, out, err);
+    DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 0 && strcmp(d.name, "MMM01") == 0); }
+  // MBC6: ROM em bancos de 8 KB; save = SRAM de 32 KB + Flash de 1 MB (só leitura)
+  { SimGb s(0x20, 5, 3, "NETDEGET"); for (size_t i = 0; i < s.ram.size(); i++) s.ram[i] = pat(uint32_t(i) + 31); for (size_t i = 0; i < s.flash.size(); i++) s.flash[i] = pat(uint32_t(i) + 977);
+    CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 0 && d.rom_size == s.rom.size() && d.save_size == 32768 + (1 << 20));
+    s.sel_a = s.sel_b = 8; s.flash_map = true;                           // estado velho de uma operação anterior: a ROM tem que voltar a aparecer
+    std::vector<uint8_t> out; uint16_t err = 0; dump(be, SYS_GB, KIND_ROM, out, err); CHECK(out == s.rom);
+    s.flash_map = false; s.sel_a = s.sel_b = 0;
+    dump(be, SYS_GB, KIND_SAVE, out, err); std::vector<uint8_t> exp = s.ram; exp.insert(exp.end(), s.flash.begin(), s.flash.end());
+    CHECK(out == exp); CHECK(!s.flash_map && !s.ram_en && !s.fw_en && s.sel_a == 0 && s.sel_b == 0);                  // volta tudo ao normal
+    uint16_t e2 = 0; CHECK(!be.write_begin(SYS_GB, 32768 + (1 << 20), e2) && e2 == E_SISTEMA); CHECK(!s.flash_map && !s.ram_en); }  // gravar a Flash não foi portado
   // sem cartucho, checksum errado, mappers sem suporte
   { SimGb none(0x01, 4, 0); none.absent = true; CartBackend be(nullptr, nullptr, nullptr, nullptr, &none); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 1); }
   { SimGb bad(0x01, 4, 0, "RUIM"); bad.rom[0x14D] ^= 0x55; CartBackend be(nullptr, nullptr, nullptr, nullptr, &bad); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 4); }
-  for (int t : {0x20, 0x0B, 0xFD}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
+  for (int t : {0x15, 0x1F}) { SimGb s(t, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }
   { SimGb s(0x01, 0x52, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); DetectInfo d; be.detect(SYS_GB, d); CHECK(d.status == 2); }   // tamanho fora da tabela
   { SimGb s(0x01, 4, 0); CartBackend be(nullptr, nullptr, nullptr, nullptr, &s); CHECK((be.systems() >> SYS_GB) & 1); }
   { SimSnes s(false, 9, 3); CartBackend be(&s, nullptr, nullptr, nullptr); CHECK(!be.supports(SYS_GB)); }

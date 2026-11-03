@@ -37,6 +37,7 @@ void CartBackend::acquire(uint8_t sys) {
 void CartBackend::release() {
   if (active_ == SYS_GB && gb_ram_on_ && gb_) {                      // desabilita a RAM do cartucho
     if (c_.gb_type == 0x22) gb_->write(0xA080, 0x00);                // MBC7: solta o CS da EEPROM
+    if (c_.gb_type == 0x20 && mbc6_flash_) mbc6_mode(false);         // MBC6: desmapeia a Flash
     gb_->write(0x0000, 0x00);
     if (c_.gb_type == 0x22) gb_->write(0x4000, 0x00);
     gb_ram_on_ = false;
@@ -135,6 +136,8 @@ bool CartBackend::read(uint8_t sys, uint8_t kind, uint32_t off, uint8_t* buf, ui
       if (!md_eep_read(uint16_t(off + i), buf[i])) return false;
     } else if (kind == KIND_SAVE && sys == SYS_MD) {
       buf[i] = md_save_byte(off + i);
+    } else if (kind == KIND_SAVE && sys == SYS_GB && c_.gb_type == 0x20) {
+      buf[i] = mbc6_save_byte(off + i);
     } else if (kind == KIND_SAVE && sys == SYS_GB && c_.gb_type == 0x22) {
       uint16_t w; if (!mbc7_read_word(uint8_t((off + i) >> 1), w)) return false;
       buf[i] = ((off + i) & 1) ? uint8_t(w >> 8) : uint8_t(w & 0xFF);
@@ -160,6 +163,7 @@ bool CartBackend::write_begin(uint8_t sys, uint32_t size, uint16_t& err) {
   Cart c;
   if (!probe(sys, c, true)) { release(); err = (c.status == 2) ? E_SISTEMA : (c.status == 3 ? E_ARGUMENTO : E_SEM_CARTUCHO); return false; }
   if (c_.save == 0) { release(); err = E_SEM_SAVE; return false; }
+  if (sys == SYS_GB && c_.gb_type == 0x20) { release(); err = E_SISTEMA; return false; }   // MBC6: gravar a Flash do save não foi portado (ver D61)
   if (size != c_.save) { release(); err = E_ARGUMENTO; return false; }
   if (sys == SYS_MD && c_.md_save != 4) md_sram(true);
   if (sys == SYS_NES || sys == SYS_FAMICOM) nes_ram(true);

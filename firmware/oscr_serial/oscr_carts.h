@@ -58,6 +58,11 @@ class CartBackend : public Backend {
   uint8_t cx4_orig_ = 0; bool cx4_touched_ = false;   // Cx4: valor original de $7F52
   bool gb_ram_on_ = false;       // Game Boy: RAM habilitada ($0000 = $0A)
   void gb_ram_enable();
+  bool mbc6_flash_ = false; int16_t cur_flash_ = -1;   // MBC6: a Flash do save está mapeada sobre a ROM; banco de 8 KB atual
+  bool mmm_mapped_ = false; int8_t mmm_chunk_ = -1;    // MMM01: o cartucho saiu do menu (precisa de reset para voltar); bloco de 512 KB mapeado
+  void mmm01_map(uint8_t chunk);
+  void mbc6_mode(bool flash);
+  uint8_t mbc6_save_byte(uint32_t off);
   int16_t mbc7_wa_ = -1; uint16_t mbc7_w_ = 0;   // MBC7: última palavra lida da EEPROM
   void mbc7_inst(uint8_t op, uint8_t addr, uint16_t data);
   bool mbc7_read_word(uint8_t a, uint16_t& w);
