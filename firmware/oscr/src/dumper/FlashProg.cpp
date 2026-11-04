@@ -65,6 +65,12 @@ namespace OSCR::Dumper::FlashProg
     return 0;
   }
 
+  uint16_t checkDetect(uint16_t chip, uint16_t prgKb, uint16_t chrKb)
+  {
+    if (chip == kMdCart) return (prgKb == 0 && chrKb == 0) ? 0 : oscr::E_ARGUMENTO;
+    return check(chip, prgKb, chrKb, 0);
+  }
+
   uint8_t detect(uint16_t chip, uint16_t prgKb, uint16_t chrKb, char * text, uint32_t & sizeBytes)
   {
     begin(chip, prgKb);

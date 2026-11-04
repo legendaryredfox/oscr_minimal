@@ -344,9 +344,20 @@ namespace OSCR::Dumper
         {
           // Programador genérico: as opções (chip, tamanho, tipo) vêm no próprio DETECT; o "nome" é o ID lido do chip.
           uint16_t chip = optMapper, prg = optPrgKb, chr = optChrKb;
-          if (FlashProg::check(chip, prg, chr, 0)) { out.status = 2; return; }
+          if (FlashProg::checkDetect(chip, prg, chr)) { out.status = 2; return; }
           uint8_t st = 1; uint32_t size = 0;
           out.name[0] = 0;
+          if (chip == FlashProg::kMdCart)
+          {
+            // Flash do cartucho de Mega Drive: o nome é "CHIP FFDD" (fabricante e dispositivo). Status 0 = chip da tabela; 1 = ID desconhecido
+            // (o nome traz "?" e o ID lido, para o PC mostrar). A sondagem escreve comandos de ID no cartucho (ROM de máscara os ignora).
+            uint16_t rc = oscr::E_FLASH;
+            bool ranMd = runCore([&] { rc = MdFlash::identify(out.name, size); MD::cartOff(); });
+            out.status = (ranMd && rc == 0) ? 0 : 1;
+            out.rom_size = size;
+            out.save_size = 0; out.save_type = 0;
+            return;
+          }
           bool ran = runCore([&] { st = FlashProg::detect(chip, prg, chr, out.name, size); OSCR::Cores::SNES::cartOff(); });
           out.status = ran ? st : 1;
           out.rom_size = size;

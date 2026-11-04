@@ -51,12 +51,20 @@ class FlashJob(val chip: Int, val prgKb: Int, val chrWord: Int, val body: ByteAr
 
 /** Programador de flash genérico (firmware/oscr/include/dumper/FlashProg.h). Igual a flashprog_params e split_flashprog em romimage.py. */
 object FlashProg {
-    val BUS = linkedMapOf("8" to 1, "plcc32" to 2, "16" to 3, "eprom" to 4)
-    val LABEL = mapOf("8" to "8-bit flash (flash adapter)", "plcc32" to "8-bit flash PLCC32 (SNES adapter)", "16" to "16-bit flash", "eprom" to "EPROM 27C322 (4 MB)")
+    val BUS = linkedMapOf("8" to 1, "plcc32" to 2, "16" to 3, "eprom" to 4, "md" to 5)    // "md" só identifica (flash-id)
+    val LABEL = mapOf("8" to "8-bit flash (flash adapter)", "plcc32" to "8-bit flash PLCC32 (SNES adapter)", "16" to "16-bit flash", "eprom" to "EPROM 27C322 (4 MB)",
+        "md" to "Mega Drive cartridge flash")
+    /** Barramentos que só valem em flash-id; ler, apagar e gravar o cartucho de Mega Drive são `dump` e `rom-write`. */
+    val DETECT_ONLY = setOf("md")
     const val EPROM_KB = 4096
 
-    fun params(bus: String, flashKb: Int?, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, needType: Boolean = false): FlashJob {
+    fun params(bus: String, flashKb: Int?, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, needType: Boolean = false, detect: Boolean = false): FlashJob {
         val code = BUS[bus] ?: throw RomImageException(RomImageProblem.FP_BUS)
+        if (bus in DETECT_ONLY) {
+            if (!detect) throw RomImageException(RomImageProblem.FP_DETECT_ONLY)
+            if ((flashKb ?: 0) != 0 || flashType != null || sectorKb != null || buffer != null) throw RomImageException(RomImageProblem.FP_MD_OPTIONS)
+            return FlashJob(code, 0, 0)
+        }
         if (bus == "eprom") return FlashJob(code, EPROM_KB, 0)
         if (flashKb == null || flashKb !in 1..8192) throw RomImageException(RomImageProblem.FP_KB)
         var word = 0
@@ -108,7 +116,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 

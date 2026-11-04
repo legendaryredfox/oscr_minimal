@@ -106,6 +106,47 @@ static void testProbe()
     CHECK(C::prepare(bus, p, 1024) == C::kNoChip);
   }
 
+  // Consulta CFI (reaproveitada do menu "Flash CFI" do OSCR legado): chip fora da tabela que responde "QRY" informa o tamanho, mas continua sem gravar.
+  {
+    Chip chip(UNKNOWN_CHIP);
+    chip.cfi = true;
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(!p.known && p.cfi && p.cfiWords == 0x200000);        // 4 MB = 2^22 bytes = 0x200000 palavras
+    CHECK(p.id[0] == 0xAB && p.id[1] == 0xCD);
+    CHECK(chip.errors == 0 && chip.programs == 0 && chip.sectorErases == 0);
+    CHECK(C::prepare(bus, p, 1024) == C::kNoChip);              // CFI sozinho não habilita apagar nem gravar
+    CHECK(chip.read(0x10) == chip.mem[0x10]);                  // voltou ao modo de leitura da matriz
+  }
+  {
+    Chip chip(UNKNOWN_CHIP);                                    // sem CFI
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(!p.known && !p.cfi && p.cfiWords == 0);
+  }
+  {
+    Chip chip(M29W320EB);                                       // chip da tabela: a consulta CFI nem roda
+    chip.cfi = true;
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(p.known && !p.cfi);
+  }
+  {
+    Chip chip(UNKNOWN_CHIP);                                    // tamanho absurdo no CFI (2^40) é ignorado
+    chip.cfi = true;
+    chip.cfg.words = 0x200000;
+    Bus bus(chip);
+    C::Probe p;
+    C::queryCfi(bus, p);
+    CHECK(p.cfi);
+    struct Bad : Bus { using Bus::Bus; uint16_t r(uint32_t a) { return a == 0x27 ? 40 : Bus::r(a); } } bad(chip);
+    C::queryCfi(bad, p);
+    CHECK(!p.cfi && p.cfiWords == 0);
+  }
+
   // ROM de máscara: as escritas de sondagem são ignoradas e o conteúdo da ROM não é um ID da tabela.
   {
     Chip chip(M29W320EB);

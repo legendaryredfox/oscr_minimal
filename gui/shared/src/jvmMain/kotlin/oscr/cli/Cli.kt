@@ -59,7 +59,7 @@ object Cli {
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
     private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369", "bus", "flash-kb")
-    private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "no-verify", "help", "version")
+    private val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "help", "version")
     private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
         "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
@@ -99,7 +99,9 @@ options (accepted before or after the command):
   -i, --input FILE     save file to write
   --block N            block size (default 512)
   --mapper N --prg KB --chr KB --ram KB     NES/Famicom/GBA options (see 'systems')
-  --db PATH            game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
+  --db PATH            extra game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
+                       (the project's own database, from the OSCR legacy, is always loaded first)
+  --no-builtin-db      do not load the project's own game database
   --game NAME          dump, NES/Famicom: game name in the NES 2.0 XML database; fills --mapper/--prg/--chr left at 0
   --limit N            search: maximum results (default 20)
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
@@ -367,11 +369,12 @@ Full contract: docs/cli.md
 
     private fun loadDb(a: Args, required: Boolean): Database? {
         val paths = a.opts["db"]?.split("\n").orEmpty().ifEmpty { DatabaseLoader.pathsFromEnv() }
-        if (paths.isEmpty()) {
+        val builtin = "no-builtin-db" !in a.flags && DatabaseLoader::class.java.classLoader.getResource("oscr/INDEX.txt") != null
+        if (paths.isEmpty() && !builtin) {
             if (required) throw CliError("no_database", "no database: use --db FILE_OR_FOLDER (No-Intro .dat or NES 2.0 XML) or the OSCR_DB environment variable", EXIT_USAGE)
             return null
         }
-        try { return DatabaseLoader.loadAll(paths) }
+        try { return DatabaseLoader.loadAll(paths, builtin) }
         catch (e: DatabaseError) { throw CliError("database", e.message ?: "database error", EXIT_ERROR, "check the path and that the file is a Logiqx .dat or nes20db.xml") }
     }
 
@@ -458,7 +461,7 @@ Full contract: docs/cli.md
                 RomImageProblem.GB_TOO_BIG -> "the ROM has ${e.a} KB; the Game Boy writer goes up to 4 MB (256 banks)"
                 RomImageProblem.GB_ORANGE -> "the flash without MBC (Orange FM) writes only 32 KB, as in the OSCR"
                 RomImageProblem.GB_NEEDS_CHIP -> "on the Game Boy choose --chip"
-                RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_SIZE, RomImageProblem.FP_NO_FIT, RomImageProblem.FP_PADDED_NO_FIT -> e.problem.name
+                RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_SIZE, RomImageProblem.FP_NO_FIT, RomImageProblem.FP_PADDED_NO_FIT, RomImageProblem.FP_DETECT_ONLY, RomImageProblem.FP_MD_OPTIONS -> e.problem.name
                 RomImageProblem.GBA_BLOCK -> "--block369 goes from 0 to 63"
                 RomImageProblem.GBA_SIZE -> "the GBA ROM size must be a multiple of 1 KB"
                 RomImageProblem.GBA_TOO_BIG -> "the ROM has ${e.a} KB and goes past what fits from block ${e.b}"
@@ -506,8 +509,10 @@ Full contract: docs/cli.md
     }
 
     // ------------------------------------------------------------------ programador de flash genérico (sistema 7; docs/funcoes-oscr.md)
-    private fun fpError(e: RomImageException): CliError = CliError(if (e.problem in setOf(RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE)) "usage" else "bad_rom", when (e.problem) {
+    private fun fpError(e: RomImageException): CliError = CliError(if (e.problem in setOf(RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_DETECT_ONLY, RomImageProblem.FP_MD_OPTIONS)) "usage" else "bad_rom", when (e.problem) {
         RomImageProblem.FP_BUS -> "unknown --bus (use ${FlashProg.BUS.keys.joinToString(", ")})"
+        RomImageProblem.FP_DETECT_ONLY -> "--bus md only identifies the chip (flash-id); to read a Mega Drive cartridge use `dump -s md` and to write it `rom-write -s md`"
+        RomImageProblem.FP_MD_OPTIONS -> "--bus md does not use --flash-kb, --flash-type, --sector-kb or --buffer: the chip is recognised by its ID"
         RomImageProblem.FP_KB -> "give the chip size with --flash-kb (1 to 8192 KB)"
         RomImageProblem.FP_NEEDS_TYPE -> "this command needs --flash-type (${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")}); the OSCR found it in the SD card database, check the chip's datasheet"
         RomImageProblem.FP_SIZE -> "the file size must be a multiple of 512 bytes"
@@ -524,8 +529,8 @@ Full contract: docs/cli.md
     private fun fpBus(a: Args): String = a.opts["bus"] ?: throw CliError("usage", "give --bus (${FlashProg.BUS.keys.joinToString(", ")})", EXIT_USAGE)
     private fun fpSys(a: Args) = if (a.opts["system"] == "mock") CartSystem.MOCK else CartSystem.FLASH      // o simulador só entende o sistema MOCK
 
-    private fun fpJob(a: Args, needType: Boolean = false): FlashJob =
-        try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType) } catch (e: RomImageException) { throw fpError(e) }
+    private fun fpJob(a: Args, needType: Boolean = false, detect: Boolean = false): FlashJob =
+        try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType, detect) } catch (e: RomImageException) { throw fpError(e) }
 
     private fun fpNeed(c: Conn) {
         if (!c.info.flashProg) throw CliError("unsupported_firmware", "this firmware has no generic flash programmer", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
@@ -534,9 +539,18 @@ Full contract: docs/cli.md
     private fun fpRead(io: CliIo, a: Args, c: Conn, job: FlashJob): DumpResult = c.client.dumpRom(fpSys(a), a.int("block"), job.chip, job.prgKb, job.chrWord, progress(io, a, "flash-read"))
 
     private fun cmdFlashId(io: CliIo, a: Args): Int {
-        val job = fpJob(a); val bus = fpBus(a)
+        val job = fpJob(a, detect = true); val bus = fpBus(a)
         val c = connect(io, a)
         val r = try { fpNeed(c); c.client.detect(fpSys(a), job.chip, job.prgKb, job.chrWord) } finally { c.transport.close() }
+        if (bus == "md") {                                    // flash do cartucho de Mega Drive: nome e capacidade pela tabela do firmware
+            val known = r.status == 0
+            val cfi = !known && r.name.startsWith("CFI ")
+            emit(io, a, Json.obj("ok" to known, "known" to known, "ids" to r.name, "chip" to (if (known) r.name.substringBeforeLast(' ') else null), "size" to (if (known || cfi) r.romSize else 0L), "cfi" to cfi, "status" to r.status),
+                listOf(if (known) "${FlashProg.LABEL.getValue(bus)}: ${r.name}  (${r.romSize / 1024} KB)"
+                    else "${FlashProg.LABEL.getValue(bus)}: chip not in the table or no answer (${r.name}): mask ROM (no flash), cartridge not seated, or a chip the firmware does not know yet. " +
+                        (if (cfi) "The chip answered the CFI query and says it has ${r.romSize / 1024} KB, but only chips in the table are written. " else "") + "Nothing was written."))
+            return if (known) EXIT_OK else EXIT_ERROR
+        }
         val ok = r.status == 0
         val legend = if ('=' in r.name) " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 or FFFF = the chip did not answer that routine)" else ""
         emit(io, a, Json.obj("ok" to ok, "ids" to r.name, "size" to r.romSize, "status" to r.status),

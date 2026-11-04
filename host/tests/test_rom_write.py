@@ -413,3 +413,68 @@ def test_flash_erase_recusa_sem_yes(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
     code, out = run(capsys, "--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "16", "--flash-kb", "512")
     assert code == 4 and json.loads(out)["error"]["kind"] == "refused"
+
+
+# ---------------------------------------------------------------- flash-id --bus md (detecção do chip do cartucho de Mega Drive)
+
+def test_flashprog_md_so_identifica():
+    j = RI.flashprog_params("md", None, detect=True)
+    assert (j.chip, j.prg_kb, j.chr_word) == (5, 0, 0)
+    for kw in ({}, {"need_type": True}):
+        with pytest.raises(ValueError, match="rom-write"):
+            RI.flashprog_params("md", None, **kw)
+    with pytest.raises(ValueError, match="não usa"):
+        RI.flashprog_params("md", 4096, detect=True)
+    with pytest.raises(ValueError, match="não usa"):
+        RI.flashprog_params("md", None, "29gl", detect=True)
+    assert RI.flashprog_params("16", 4096).chip == 3                 # os outros barramentos não mudaram
+
+
+class _FakeFlash:
+    def __init__(self, resp):
+        self.resp, self.calls = resp, []
+
+    def detect(self, system, chip=0, prg_kb=0, chr_kb=0):
+        self.calls.append((system, chip, prg_kb, chr_kb))
+        return self.resp
+
+
+class _FakeT:
+    def close(self):
+        pass
+
+
+def _flash_id(monkeypatch, capsys, resp, *argv):
+    from oscr_host import cli
+    fake = _FakeFlash(resp)
+    monkeypatch.setattr(cli, "connect", lambda a: (fake, _FakeT(), {"flash_prog": True}))
+    code = cli.main(["--json", "flash-id", *argv])
+    return code, json.loads(capsys.readouterr().out), fake
+
+
+def test_flash_id_md_chip_conhecido(monkeypatch, capsys):
+    code, o, fake = _flash_id(monkeypatch, capsys, {"system": 7, "status": 0, "rom_size": 8 << 20, "save_size": 0, "save_type": 0, "name": "S29GL064N 017E"},
+                              "--bus", "md")
+    assert code == 0 and o["ok"] and o["known"] and o["chip"] == "S29GL064N" and o["size"] == 8 << 20
+    assert fake.calls == [(7, 5, 0, 0)]
+
+
+def test_flash_id_md_chip_desconhecido(monkeypatch, capsys):
+    code, o, _ = _flash_id(monkeypatch, capsys, {"system": 7, "status": 1, "rom_size": 0, "save_size": 0, "save_type": 0, "name": "? FFFF"}, "--bus", "md")
+    assert code == 1 and not o["ok"] and o["known"] is False and o["ids"] == "? FFFF" and o["chip"] is None
+
+
+def test_flash_id_md_cfi_so_informa(monkeypatch, capsys):
+    code, o, _ = _flash_id(monkeypatch, capsys, {"system": 7, "status": 1, "rom_size": 4 << 20, "save_size": 0, "save_type": 0, "name": "CFI 32Mbit 00AB22CD"},
+                           "--bus", "md")
+    assert code == 1 and not o["ok"] and o["known"] is False and o["cfi"] and o["size"] == 4 << 20 and o["chip"] is None
+
+
+def test_flash_id_md_recusa_tamanho_e_outros_comandos(monkeypatch, capsys):
+    code, o, fake = _flash_id(monkeypatch, capsys, {}, "--bus", "md", "--flash-kb", "4096")
+    assert code == 64 and fake.calls == []
+    from oscr_host import cli
+    code = cli.main(["--json", "flash-read", "--bus", "md"])
+    assert code == 64 and "rom-write" in json.loads(capsys.readouterr().out)["error"]["message"]
+    code = cli.main(["--json", "flash-erase", "--bus", "md", "--yes"])
+    assert code == 64

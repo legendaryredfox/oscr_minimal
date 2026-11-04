@@ -111,6 +111,8 @@ struct Probe
   Chip chip;
   uint8_t id[4] = { 0, 0, 0, 0 };
   uint16_t u1 = 0x555, u2 = 0x2AA;       ///< endereços de desbloqueio AMD
+  bool cfi = false;                      ///< chip fora da tabela que respondeu à consulta CFI ("QRY"): só informação, não grava
+  uint32_t cfiWords = 0;                 ///< capacidade dita pelo CFI, em palavras
   Probe() { memset(&chip, 0, sizeof(chip)); }
 };
 
@@ -146,6 +148,24 @@ template <class B> void autoselectIntel(B & b, uint8_t id[4])
   b.w(0, 0xFF);
 }
 
+/// Consulta CFI (menu "Flash CFI" do `MD.ino` do OSCR legado, `identifyFlashCFIChip_MD`): reset duplo, 98h no endereço 55h, "QRY" nas palavras 10h a 12h
+/// e o tamanho 2^n bytes na palavra 27h. Só informa o tamanho de um chip que não está na tabela; o OSCR legado gravava por aí, aqui não se grava
+/// um chip que nenhum ID confirmou. `p.cfi` e `p.cfiWords` ficam zerados se não houver resposta ou se o tamanho for absurdo (fora de 128 KB a 128 MB).
+template <class B> void queryCfi(B & b, Probe & p)
+{
+  p.cfi = false; p.cfiWords = 0;
+  b.out();
+  b.w(0x555, 0xF0); b.wait_ms(2);
+  b.w(0x555, 0xF0); b.wait_ms(2);
+  b.w(0x55, 0x98);
+  b.in();
+  bool qry = (b.r(0x10) & 0xFF) == 0x51 && (b.r(0x11) & 0xFF) == 0x52 && (b.r(0x12) & 0xFF) == 0x59;
+  uint8_t exp = uint8_t(b.r(0x27) & 0xFF);
+  b.out();
+  b.w(0x555, 0xF0);
+  if (qry && exp >= 17 && exp <= 27) { p.cfi = true; p.cfiWords = (1UL << exp) / 2; }
+}
+
 /// Descobre o conjunto de comandos. Ordem: o desbloqueio 5555h/2AAAh que o OSCR já usa (os chips de 11 bits de decodificação respondem
 /// igual), depois 555h/2AAh exato, depois Intel. O ID do primeiro acerto vale. Chip fora da tabela: `known` = false e `id` = a primeira leitura.
 template <class B> void probe(B & b, Probe & p)
@@ -167,6 +187,7 @@ template <class B> void probe(B & b, Probe & p)
     }
   }
   if (p.known && p.chip.cmd == kAmd5555) { p.u1 = 0x5555; p.u2 = 0x2AAA; }
+  if (!p.known) queryCfi(b, p);
 }
 
 // ---------- apagar ----------

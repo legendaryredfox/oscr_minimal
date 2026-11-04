@@ -90,10 +90,20 @@ namespace OSCR::Dumper::MdFlash
     C::probe(bus, probed);
     finish();
 
-    sizeBytes = probed.known ? probed.chip.words * 2UL : 0;
+    sizeBytes = probed.known ? probed.chip.words * 2UL : (probed.cfi ? probed.cfiWords * 2UL : 0);
     if (!text) return probed.known ? 0 : oscr::E_FLASH;
     static char const hex[] = "0123456789ABCDEF";
     if (probed.known) strlcpy(text, probed.chip.name, 32);
+    else if (probed.cfi)                                       // fora da tabela, mas o CFI disse o tamanho: "CFI 32Mbit" (só informação; não grava)
+    {
+      strlcpy(text, "CFI ", 32);
+      size_t k = 4;
+      uint32_t mbit = probed.cfiWords >> 16;                   // palavras de 16 bits: 2^16 palavras = 1 Mbit
+      char digits[11]; uint8_t nd = 0;
+      do { digits[nd++] = char('0' + mbit % 10); mbit /= 10; } while (mbit && nd < 10);
+      while (nd) text[k++] = digits[--nd];
+      strlcpy(text + k, "Mbit", 32 - k);
+    }
     else strlcpy(text, "?", 32);
     size_t n = strlen(text);
     if (n + 6 < 32)

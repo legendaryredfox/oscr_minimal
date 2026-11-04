@@ -99,7 +99,9 @@ Lê, apaga, identifica e grava flash e EPROM fora de cartucho de console (adapta
 | 2 | flash de 8 bits PLCC32 no adaptador de SNES (`mapping` 3) | idem | idem | idem |
 | 3 | flash de 16 bits | tamanho do chip em KB | 0 | `setup16`, `idFlash16`, `menuFlash16` |
 | 4 | EPROM 27C322 | ignorado (4096) | 0 | `setup_Eprom`, `menuEPROM` |
+| 5 | flash de um cartucho de Mega Drive no slot MD: **só `DETECT`** | 0 | 0 | `MdFlash::identify` (tabela de `MdFlashCore.h`) |
 
+- `DETECT` com `chip` = 5: identifica o flash do cartucho de Mega Drive pela tabela do firmware. `nome` = `NOME FFDD` (fabricante e dispositivo em hexa) e `rom_size` = capacidade do chip; `status` 0 = chip da tabela, 1 = ID desconhecido (`nome` = `? FFDD`, ou `CFI 32Mbit FFDD` se o chip respondeu à consulta CFI: então `rom_size` é o tamanho dito pelo CFI, só informativo, sem gravação). Ler, apagar e gravar com `chip` = 5 dão `E_ARGUMENTO`: use `DUMP_ROM` e `WRITE_ROM` do sistema Mega Drive. A sondagem escreve comandos de ID no cartucho (ROM de máscara os ignora).
 - `DETECT` (com as opções): lê o ID do chip, devolvido como texto em `nome`. No flash de 8 bits sem tipo, devolve `I=XXXX A=XXXX B=XXXX S=XXXX`, os IDs pelas quatro rotinas do `id8` do OSCR (Intel 28F, AMD 29F032, AMD 29F1610, SST 39SF040); `status` 1 se nenhuma respondeu (0000 ou FFFF). O banco CRDB do OSCR, que traduzia o ID em tipo e tamanho, não existe no fork: o usuário informa o tipo.
 - `DUMP_ROM`: lê o chip inteiro (`prg_kb` KB). A verificação de "em branco" é do PC (tudo 0xFF).
 - `ERASE`: apaga. No 8 bits o tipo é obrigatório; a EPROM não se apaga.

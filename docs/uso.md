@@ -72,6 +72,7 @@ Para ler, apagar e gravar flash de 8 ou 16 bits e EPROM 27C322 fora de cartucho,
 
 ```
 dumper flash-id    --bus 8 --flash-kb 512                       # IDs pelas quatro rotinas; depois repita com --flash-type
+dumper flash-id    --bus md                                     # cartucho de Mega Drive no slot: nome e capacidade do chip, sem apagar nada
 dumper flash-read  --bus 16 --flash-kb 4096 -o chip.bin
 dumper flash-blank --bus 8 --flash-kb 512 --flash-type 29f032
 dumper flash-write --bus 8 --flash-kb 512 --flash-type 29f032 -i jogo.bin --yes
@@ -122,8 +123,8 @@ Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código
 
 - Leia cada cartucho **duas ou três vezes** e confira que o CRC32 é o mesmo.
 - Guarde as ROMs com o nome do No-Intro; o CRC32 mostrado é o da ROM completa.
-- **Identificar o jogo pelo CRC32:** em Configurações, "Base de dados de jogos", adicione um `.dat` do No-Intro (ou uma pasta deles) e/ou o `nes20db.xml`. Depois do dump a GUI mostra o nome do jogo (ou "não encontrado": dump novo, variante ou erro de leitura) e usa o nome no arquivo. Na CLI: `dumper dump --db BASE ...`, `dumper identify rom.sfc --db BASE`, `dumper search "mario" --db BASE`. As bases não vêm no repositório: baixe-as das fontes (No-Intro/Redump e o projeto NES 2.0 XML Database).
-- **NES/Famicom:** com o `nes20db.xml` carregado, a GUI ganha o campo "Procurar jogo na base NES 2.0": escolha o jogo e mapper, PRG, CHR e RAM são preenchidos. Na CLI: `dumper dump -s nes --game "Nome do jogo" --db nes20db.xml`.
+- **Identificar o jogo pelo CRC32:** o programa já traz uma base de jogos (a do OSCR: SNES, NES, Mega Drive, GBA, Game Boy e outros; `database/oscr/`) e a usa sozinho. Para somar a sua, em Configurações, "Base de dados de jogos", adicione um `.dat` do No-Intro (ou uma pasta deles) e/ou o `nes20db.xml`. Depois do dump a GUI mostra o nome do jogo (ou "não encontrado": dump novo, variante ou erro de leitura) e usa o nome no arquivo. Na CLI: `dumper dump --db BASE ...`, `dumper identify rom.sfc --db BASE`, `dumper search "mario" --db BASE`. As bases do No-Intro e do NES 2.0 XML não vêm no repositório: baixe-as das fontes (No-Intro/Redump e o projeto NES 2.0 XML Database).
+- **NES/Famicom:** com a base carregada (a do projeto já basta: o cabeçalho iNES dela dá mapper e tamanhos; o `nes20db.xml` acrescenta os jogos que ela não tem), a GUI ganha o campo "Procurar jogo na base NES 2.0": escolha o jogo e mapper, PRG, CHR e RAM são preenchidos. Na CLI: `dumper dump -s nes --game "Nome do jogo" --db nes20db.xml`.
 - Para contribuir com um erro, anexe: sistema, título, saída do **Detectar**, versão do firmware (`dumper.py info`) e a mensagem exata.
 
 ## 6. Limites e segurança

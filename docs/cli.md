@@ -43,7 +43,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | `save-read -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` |
 | `rom-write -i ARQ.sfc -s snes --chip snes-lorom\|snes-hirom --layout 1x\|2x2mb\|2x4mb\|4x2mb\|1x8mb` | flash CFI do SNES com 1, 2 ou 4 chips ou 8 MB (`--layout`; as de 8 MB pedem ROM de 6 a 8 MB; o PC reordena a ROM como o OSCR). `layout` na saída |
 | `rom-write -i ARQ.sfc -s snes --chip snes-lorom-p0\|snes-hirom-p0\|snes-exlorom-p1\|snes-exhirom-p1 --flash-type TIPO --flash-mb N [--sector-kb K --buffer B]` | menus P0 e P1 do OSCR: flash de 8 bits de tipo informado (`29f032`, `29f1610`, `lh28f0xx`, `29f1601`, `29lv640`, `29f800`, `29gl`, `e28fxxxj3a`); tipos `29gl`, `lh28f0xx` e `e28fxxxj3a` exigem setor e buffer (o `e28fxxxj3a` assume 128 KB e 32 bytes) |
-| `flash-id --bus 8\|plcc32\|16\|eprom --flash-kb N [--flash-type T]` | programador de flash genérico (sistema 7): lê o ID do chip. Sem `--flash-type` no 8 bits mostra os IDs das quatro rotinas do OSCR (`ids`) |
+| `flash-id --bus 8\|plcc32\|16\|eprom\|md --flash-kb N [--flash-type T]` | programador de flash genérico (sistema 7): lê o ID do chip. Sem `--flash-type` no 8 bits mostra os IDs das quatro rotinas do OSCR (`ids`) |
 | `flash-read --bus ... --flash-kb N -o ARQ.bin` | lê o chip inteiro |
 | `flash-blank --bus ... --flash-kb N` | lê o chip e confere se é tudo 0xFF (`blank`, `first_non_blank`); saída 1 se não está em branco |
 | `flash-erase --bus ... --flash-kb N --flash-type T --yes` | apaga o chip inteiro (a EPROM não se apaga); espera até `--begin-timeout` s |
@@ -57,7 +57,11 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 
 ## Base de dados de jogos (`--db`)
 
+**O projeto já traz uma base** (`database/oscr/`, do OSCR legado, GPL v3; `ORIGEM.txt` diz de onde): 24 007 jogos de SNES, NES, Mega Drive, 32X, Game Boy/Color, GBA, Game Gear, Master System, SG-1000, PC Engine e Virtual Boy. Ela carrega sozinha em `dump`, `identify` e `search`, antes das bases do usuário; `--no-builtin-db` não a carrega. Por isso `dump` traz `game` (`null` se o CRC32 não está na base) mesmo sem `--db`, e `search`/`identify` só dão `no_database` (64) com `--no-builtin-db` e sem `--db`. No NES, o cabeçalho iNES da base dá mapper e tamanhos para `--game`. Para atualizar a base: `python3 tools/importar_base_oscr.py` (precisa do clone `vendor/oscr/`). O resto desta seção vale para as bases que o usuário soma.
+
 A identificação do jogo é feita **no PC**, pelo CRC32; o firmware não carrega base. `--db` aceita um arquivo ou uma pasta (procura `.dat` e `.xml`), pode repetir, e a variável `OSCR_DB` (caminhos separados por `:`, ou `;` no Windows) vale como padrão. Formatos lidos: **No-Intro / Redump** (Logiqx XML, `.dat`) e **NES 2.0 XML** (`nes20db.xml`, traz mapper e tamanhos). A base binária CRDB do OSCR não é lida. No NES/Famicom a ROM também é procurada sem o cabeçalho iNES de 16 bytes (o "headerless" do No-Intro) e pelos CRC32 da PRG e da CHR (NES 2.0 XML). Erros: `no_database` (saída 64) e `database` (arquivo inexistente ou XML inválido, saída 1).
+
+`flash-id --bus md` (sem `--flash-kb` nem `--flash-type`) identifica o flash do cartucho de Mega Drive pela tabela do firmware: JSON `{ok, known, ids, chip, size, cfi, status}`; saída 0 = chip da tabela, 1 = fora da tabela ou sem resposta (`ids` = `? FFDD`; `cfi: true` e `size` preenchido se o chip respondeu à consulta CFI, só informativo). Só identifica: ler, apagar e gravar o cartucho são `dump -s md` e `rom-write -s md`; os `flash-*` recusam `--bus md` com `usage` (64). A sondagem escreve comandos de ID no cartucho.
 
 ## Fluxo recomendado para um agente
 

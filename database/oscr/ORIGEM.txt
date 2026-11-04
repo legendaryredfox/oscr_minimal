@@ -1,0 +1,22 @@
+Base de jogos do OSCR legado (Cart Reader), usada para identificar o jogo por CRC32 no PC.
+Origem : https://github.com/sanni/cartreader  (pasta sd/)
+Commit : 060d8ae
+Licença: GNU GPL v3 (o mesmo do projeto; veja LICENSE.md na raiz)
+Formato: um bloco por jogo (nome, linha de dados, linha em branco), CRLF. A linha de dados começa pelo CRC32.
+         nes: CRC32 (PRG+CHR sem cabeçalho), CRC32 de 512 bytes, cabeçalho iNES em hexadecimal.
+         snes: CRC32, checksum interno, CRC32 da área do cabeçalho, tamanho em Mbit, bancos.
+         gba: CRC32, id do jogo, tamanho em MB, tipo de save. Os demais: só o CRC32.
+Gerado por tools/importar_base_oscr.py. Não editar à mão; INDEX.txt lista os arquivos (a GUI lê por ele).
+
+snes.txt  3906 jogos
+nes.txt  7381 jogos
+md.txt  2698 jogos
+32x.txt  213 jogos
+gb.txt  3899 jogos
+gba.txt  3685 jogos
+gg.txt  808 jogos
+sms.txt  675 jogos
+sg1000.txt  246 jogos
+pce.txt  463 jogos
+vb.txt  33 jogos
+Total  24007 jogos

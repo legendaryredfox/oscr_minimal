@@ -135,7 +135,6 @@ fun App() {
     // ---- base de dados de jogos (identificação por CRC32 no PC; o firmware não a usa)
     fun loadDatabases(paths: List<String>) {
         dbPaths = paths; Prefs.dbPaths = paths; dbError = null
-        if (paths.isEmpty()) { db = null; return }
         scope.launch {
             dbLoading = true
             try { db = withContext(Dispatchers.IO) { DatabaseLoader.loadAll(paths) } }
@@ -143,7 +142,7 @@ fun App() {
             finally { dbLoading = false }
         }
     }
-    LaunchedEffect(Unit) { if (Prefs.dbPaths.isNotEmpty()) loadDatabases(Prefs.dbPaths) }
+    LaunchedEffect(Unit) { loadDatabases(Prefs.dbPaths) }          // a base do projeto carrega sempre; as do usuário somam
     val dbHasNes = remember(db) { db?.entries?.any { it.nesOptions() != null } == true }
     fun addDatabase() {
         val ch = javax.swing.JFileChooser(Prefs.lastDir.takeIf { File(it).isDirectory }).apply {
@@ -263,6 +262,8 @@ fun App() {
         RomImageProblem.FP_SIZE -> t(S.RIMG_FP_SIZE)
         RomImageProblem.FP_NO_FIT -> f(S.RIMG_FP_NO_FIT, e.a, e.b)
         RomImageProblem.FP_PADDED_NO_FIT -> f(S.RIMG_FP_PADDED, e.a, e.b)
+        RomImageProblem.FP_DETECT_ONLY -> t(S.RIMG_FP_DETECT_ONLY)
+        RomImageProblem.FP_MD_OPTIONS -> t(S.RIMG_FP_MD_OPTIONS)
         RomImageProblem.GB_SIZE -> t(S.RIMG_GB_SIZE)
         RomImageProblem.GB_TOO_BIG -> f(S.RIMG_GB_TOO_BIG, e.a)
         RomImageProblem.GB_ORANGE -> t(S.RIMG_GB_ORANGE)
@@ -286,18 +287,20 @@ fun App() {
     }
 
     // ---- programador de flash genérico (sistema 7)
-    fun fpJob(needType: Boolean = false): FlashJob? = try {
-        FlashProg.params(fpBus, fpKb.toIntOrNull(), flashType.takeIf { fpBus == "8" || fpBus == "plcc32" }, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), needType)
+    fun fpJob(needType: Boolean = false, detect: Boolean = false): FlashJob? = try {
+        if (fpBus == "md") FlashProg.params(fpBus, null, null, null, null, needType, detect)      // o chip do cartucho é reconhecido pelo ID: sem tamanho nem tipo
+        else FlashProg.params(fpBus, fpKb.toIntOrNull(), flashType.takeIf { fpBus == "8" || fpBus == "plcc32" }, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), needType, detect)
     } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)); null }
 
     fun fpNeedFw(): Boolean { if (info?.flashProg != true) { say(t(S.ERR_PREFIX) + ": " + t(S.FP_NO_FW)); return false }; return true }
 
     fun actFpId() {
         val c = client ?: return
-        val job = fpJob() ?: return
+        val job = fpJob(detect = true) ?: return
         if (!fpNeedFw()) return
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system, job.chip, job.prgKb, job.chrWord) }
+            if (fpBus == "md") { say(if (r.status == 0) "${t(S.FP_ID)}: ${r.name}  (${r.romSize / 1024} KB)" else f(S.FP_MD_UNKNOWN, r.name)); return@run }
             say(if (r.status == 0) "${t(S.FP_ID)}: ${r.name}" + (if ('=' in r.name) " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040)" else "") else t(S.FP_ID_NONE))
         }
     }
@@ -537,11 +540,12 @@ fun App() {
             if (stub == null && isFlash) {
                 Callout(t(S.FP_HINT), Tone.INFO)
                 LabeledField(t(S.FP_BUS)) {
-                    ComboBox(value = t(when (fpBus) { "plcc32" -> S.FP_BUS_PLCC32; "16" -> S.FP_BUS_16; "eprom" -> S.FP_BUS_EPROM; else -> S.FP_BUS_8 }), modifier = Modifier.fillMaxWidth()) { close ->
-                        listOf("8" to S.FP_BUS_8, "plcc32" to S.FP_BUS_PLCC32, "16" to S.FP_BUS_16, "eprom" to S.FP_BUS_EPROM).forEach { (k, label) -> DropdownMenuItem(text = { Text(t(label)) }, onClick = { close(); fpBus = k }) }
+                    ComboBox(value = t(when (fpBus) { "plcc32" -> S.FP_BUS_PLCC32; "16" -> S.FP_BUS_16; "eprom" -> S.FP_BUS_EPROM; "md" -> S.FP_BUS_MD; else -> S.FP_BUS_8 }), modifier = Modifier.fillMaxWidth()) { close ->
+                        listOf("8" to S.FP_BUS_8, "plcc32" to S.FP_BUS_PLCC32, "16" to S.FP_BUS_16, "eprom" to S.FP_BUS_EPROM, "md" to S.FP_BUS_MD).forEach { (k, label) -> DropdownMenuItem(text = { Text(t(label)) }, onClick = { close(); fpBus = k }) }
                     }
                 }
-                if (fpBus != "eprom") OutlinedTextField(fpKb, { fpKb = it.filter(Char::isDigit).take(4) }, label = { Text(t(S.FP_KB)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (fpBus == "md") Callout(t(S.FP_MD_ONLY_ID), Tone.INFO)
+                if (fpBus != "eprom" && fpBus != "md") OutlinedTextField(fpKb, { fpKb = it.filter(Char::isDigit).take(4) }, label = { Text(t(S.FP_KB)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 if (fpBus == "8" || fpBus == "plcc32") {
                     LabeledField(t(S.LBL_FLASH_TYPE)) {
                         ComboBox(value = flashType, modifier = Modifier.fillMaxWidth()) { close ->
@@ -600,10 +604,10 @@ fun App() {
     val readCard: @Composable () -> Unit = {
         SectionCard(t(S.READ_SECTION)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = canRun && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
+                Button(enabled = canRun && problem == null && !(isFlash && fpBus == "md"), onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
                 FilledTonalButton(enabled = canRun && ramProblem == null && !isFlash, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
                 OutlinedButton(enabled = canRun, onClick = { actDetect() }) { Text(t(if (isFlash) S.FP_ID else S.DETECT)) }
-                if (isFlash) OutlinedButton(enabled = canRun, onClick = { actFpBlank() }) { Text(t(S.FP_BLANK)) }
+                if (isFlash) OutlinedButton(enabled = canRun && fpBus != "md", onClick = { actFpBlank() }) { Text(t(S.FP_BLANK)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -617,8 +621,8 @@ fun App() {
             val dangerBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             val dangerColors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             if (isFlash) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = canRun && fpBus != "eprom", onClick = { actFpEraseAsk() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_ERASE)) }
-                OutlinedButton(enabled = canRun, onClick = { actFpWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_WRITE)) }
+                OutlinedButton(enabled = canRun && fpBus != "eprom" && fpBus != "md", onClick = { actFpEraseAsk() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_ERASE)) }
+                OutlinedButton(enabled = canRun && fpBus != "md", onClick = { actFpWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_WRITE)) }
             }
             if (!isFlash) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_SAVE)) }

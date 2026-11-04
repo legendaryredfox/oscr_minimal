@@ -262,9 +262,10 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
 
 
 # ---------------------------------------------------------------- programador de flash genérico (sistema 7)
-FLASHPROG_BUS = {"8": 1, "plcc32": 2, "16": 3, "eprom": 4}      # parte baixa do campo chip (firmware/oscr/include/dumper/FlashProg.h)
+FLASHPROG_BUS = {"8": 1, "plcc32": 2, "16": 3, "eprom": 4, "md": 5}      # parte baixa do campo chip (firmware/oscr/include/dumper/FlashProg.h); "md" só identifica
 FLASHPROG_LABEL = {"8": "flash de 8 bits (adaptador de flash)", "plcc32": "flash de 8 bits PLCC32 (adaptador de SNES)",
-                   "16": "flash de 16 bits", "eprom": "EPROM 27C322 (4 MB)"}
+                   "16": "flash de 16 bits", "eprom": "EPROM 27C322 (4 MB)", "md": "flash do cartucho de Mega Drive"}
+DETECT_ONLY_BUS = ("md",)       # barramentos que só valem em flash-id; ler, apagar e gravar o cartucho de Mega Drive são `dump` e `rom-write`
 EPROM_KB = 4096
 
 
@@ -278,11 +279,18 @@ class FlashJob:
 
 
 def flashprog_params(bus: str, flash_kb: Optional[int], flash_type: Optional[str] = None, sector_kb: Optional[int] = None,
-                     buffer: Optional[int] = None, need_type: bool = False) -> FlashJob:
+                     buffer: Optional[int] = None, need_type: bool = False, detect: bool = False) -> FlashJob:
     """Campos do comando para um chip. No flash de 8 bits o tipo é obrigatório para apagar e gravar (`need_type`), opcional para ler e identificar.
+    `detect` = só identificar (flash-id): é o único caso em que o barramento "md" vale, e ele não leva tamanho nem tipo.
     Levanta ValueError (texto para o usuário)."""
     if bus not in FLASHPROG_BUS:
         raise ValueError(f"barramento desconhecido: {bus} (use {', '.join(FLASHPROG_BUS)})")
+    if bus in DETECT_ONLY_BUS:
+        if not detect:
+            raise ValueError("--bus md só identifica o chip (flash-id); para ler o cartucho use `dump -s md` e para gravar `rom-write -s md`")
+        if flash_kb or flash_type or sector_kb or buffer:
+            raise ValueError("--bus md não usa --flash-kb, --flash-type, --sector-kb nem --buffer: o chip é reconhecido pelo ID")
+        return FlashJob(FLASHPROG_BUS[bus], 0, 0)
     if bus == "eprom":
         return FlashJob(FLASHPROG_BUS[bus], EPROM_KB, 0)
     if not flash_kb or not 1 <= flash_kb <= 8192:

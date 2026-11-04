@@ -58,6 +58,7 @@ namespace mdmodel
     Cfg cfg;
     std::vector<uint16_t> mem;
     bool romOnly = false;       // ROM de máscara: leituras devolvem o conteúdo, escritas são ignoradas
+    bool cfi = false;           // o chip responde à consulta CFI (98h no endereço 55h): "QRY" em 10h a 12h e o tamanho em 27h
     bool stuck = false;         // chip travado: apagar e programar nunca terminam
     uint64_t nowNs = 0;
 
@@ -92,7 +93,7 @@ namespace mdmodel
     }
 
   private:
-    enum State { S_READ, S_C1, S_C2, S_AUTO, S_PROG_DATA, S_E1, S_E2, S_E3, S_PROG_BUSY, S_ERASE_BUSY, S_FAIL };
+    enum State { S_READ, S_C1, S_C2, S_AUTO, S_PROG_DATA, S_E1, S_E2, S_E3, S_PROG_BUSY, S_ERASE_BUSY, S_FAIL, S_CFI };
     State state = S_READ;
     uint64_t busyUntil = 0;
     uint32_t progAddr = 0;
@@ -133,12 +134,15 @@ namespace mdmodel
       }
       if (state == S_FAIL) { if (cmd == 0xF0) state = S_READ; return; }
       if (cmd == 0xF0 && state != S_PROG_DATA) { state = S_READ; return; }
+      if (cmd == 0x98 && cfi && addr == 0x55 && (state == S_READ || state == S_AUTO)) { state = S_CFI; return; }
       switch (state)
       {
       case S_READ:
       case S_AUTO:
         if (isU1(addr) && cmd == 0xAA) state = S_C1;
         break;
+      case S_CFI:
+        break;                                              // só o reset (F0) sai do modo CFI
       case S_C1:
         state = (isU2(addr) && cmd == 0x55) ? S_C2 : S_READ;
         break;
@@ -203,6 +207,15 @@ namespace mdmodel
     {
       switch (state)
       {
+      case S_CFI:
+        switch (addr)
+        {
+        case 0x10: return 0x0051;
+        case 0x11: return 0x0052;
+        case 0x12: return 0x0059;
+        case 0x27: { uint32_t bytes = cfg.words * 2, e = 0; while ((1UL << e) < bytes) e++; return uint16_t(e); }
+        default: return 0;
+        }
       case S_AUTO:
         switch (addr & 0xFF)
         {

@@ -268,6 +268,13 @@ class RomWriteTest {
         assertEquals(RomImageProblem.FP_KB, assertFailsWith<RomImageException> { FlashProg.params("8", null) }.problem)
         assertEquals(RomImageProblem.FP_KB, assertFailsWith<RomImageException> { FlashProg.params("8", 9000) }.problem)
         assertEquals(RomImageProblem.FP_BUS, assertFailsWith<RomImageException> { FlashProg.params("usb", 1) }.problem)
+        // Mega Drive: só identifica (flash-id), sem tamanho nem tipo; ler, apagar e gravar são recusados
+        assertEquals(Triple(5, 0, 0), FlashProg.params("md", null, detect = true).let { Triple(it.chip, it.prgKb, it.chrWord) })
+        assertEquals(RomImageProblem.FP_DETECT_ONLY, assertFailsWith<RomImageException> { FlashProg.params("md", null) }.problem)
+        assertEquals(RomImageProblem.FP_DETECT_ONLY, assertFailsWith<RomImageException> { FlashProg.split(ByteArray(512), "md", null) }.problem)
+        assertEquals(RomImageProblem.FP_MD_OPTIONS, assertFailsWith<RomImageException> { FlashProg.params("md", 4096, detect = true) }.problem)
+        assertEquals(RomImageProblem.FP_MD_OPTIONS, assertFailsWith<RomImageException> { FlashProg.params("md", null, "29gl", detect = true) }.problem)
+        assertEquals(3, FlashProg.params("16", 4096).chip)
         assertEquals(RomImageProblem.GEN_NEEDS_SECTOR, assertFailsWith<RomImageException> { FlashProg.params("8", 512, "29gl") }.problem)
         val j = FlashProg.split(ByteArray(1024), "16", 1024)
         assertEquals(Triple(3, 1024, 1024), Triple(j.chip, j.prgKb, j.body.size))

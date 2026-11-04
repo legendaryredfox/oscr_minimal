@@ -168,15 +168,17 @@ def safe_name(title: str, default: str) -> str:
 
 
 def load_db(args, required: bool = False) -> DB.Database | None:
-    """Base de dados do PC (--db, repetível, ou a variável OSCR_DB). None se nenhuma foi pedida."""
+    """Base de dados do PC: a que vem no projeto (database/oscr/) mais as do usuário (--db, repetível, ou a variável OSCR_DB).
+    None se não há nenhuma (--no-builtin-db e sem --db)."""
     paths = list(args.db or []) or DB.paths_from_env()
-    if not paths:
+    builtin = not getattr(args, "no_builtin_db", False) and DB.BUILTIN_DIR.is_dir()
+    if not paths and not builtin:
         if required:
             raise CliError("no_database", "nenhuma base de dados: use --db ARQUIVO_OU_PASTA (No-Intro .dat ou NES 2.0 XML) ou a variável OSCR_DB",
                            EXIT_USAGE)
         return None
     try:
-        return DB.load_databases(paths)
+        return DB.load_databases(paths, builtin=builtin)
     except (ValueError, OSError) as e:
         raise CliError("database", str(e), EXIT_ERROR, "confira o caminho e se o arquivo é um .dat (Logiqx) ou o nes20db.xml") from e
 
@@ -450,9 +452,9 @@ def cmd_rom_write(args) -> int:
 
 
 # ---------------------------------------------------------------- programador de flash genérico (sistema 7; docs/funcoes-oscr.md)
-def _fp_job(args, need_type: bool = False):
+def _fp_job(args, need_type: bool = False, detect: bool = False):
     try:
-        return RI.flashprog_params(args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer, need_type)
+        return RI.flashprog_params(args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer, need_type, detect)
     except ValueError as e:
         raise CliError("usage", str(e), EXIT_USAGE) from e
 
@@ -471,14 +473,27 @@ def _fp_read(args, c, job) -> bytes:
 
 
 def cmd_flash_id(args) -> int:
-    """Lê o ID do chip. Sem --flash-type, no flash de 8 bits mostra o ID pelas quatro rotinas do OSCR (Intel 28F, AMD 29F032, AMD 29F1610, SST 39SF040)."""
-    job = _fp_job(args)
+    """Lê o ID do chip. Sem --flash-type, no flash de 8 bits mostra o ID pelas quatro rotinas do OSCR (Intel 28F, AMD 29F032, AMD 29F1610, SST 39SF040).
+    Com --bus md identifica o flash do cartucho de Mega Drive pela tabela do firmware (nome e capacidade)."""
+    job = _fp_job(args, detect=True)
     c, t, info = connect(args)
     try:
         _fp_need(c, info)
         r = c.detect(_fp_sid(args), job.chip, job.prg_kb, job.chr_word)
     finally:
         t.close()
+    if args.bus == "md":
+        known = r["status"] == 0
+        label = RI.FLASHPROG_LABEL["md"]
+        if known:
+            emit(args, {"ok": True, "known": True, "ids": r["name"], "chip": r["name"].rsplit(" ", 1)[0], "size": r["rom_size"], "status": 0},
+                 [f"{label}: {r['name']}  ({r['rom_size'] // 1024} KB)"])
+            return EXIT_OK
+        cfi = r["name"].startswith("CFI ")
+        emit(args, {"ok": False, "known": False, "ids": r["name"], "chip": None, "size": r["rom_size"] if cfi else 0, "cfi": cfi, "status": r["status"]},
+             [f"{label}: chip fora da tabela ou sem resposta ({r['name']}): sem flash (ROM de máscara), cartucho mal encaixado, ou um chip que o firmware ainda não conhece. "
+              + (f"O chip respondeu à consulta CFI e diz ter {r['rom_size'] // 1024} KB, mas só chips da tabela são gravados. " if cfi else "") + "Nada foi gravado."])
+        return EXIT_ERROR
     legend = " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 ou FFFF = o chip não respondeu a essa rotina)" if "=" in r["name"] else ""
     ok = r["status"] == 0
     emit(args, {"ok": ok, "ids": r["name"], "size": r["rom_size"], "status": r["status"]},
@@ -597,7 +612,9 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
     p.add_argument("-p", "--port", default=d(None), help="porta serial (padrão: primeira ttyUSB/ttyACM/COM)")
     p.add_argument("-b", "--baud", type=int, default=d(None), help="baud (padrão: 1000000, depois 115200)")
     p.add_argument("--db", action="append", default=d(None), metavar="CAMINHO",
-                   help="base de dados para identificar o jogo: arquivo ou pasta de .dat (No-Intro) ou nes20db.xml; pode repetir; também lê a variável OSCR_DB")
+                   help="base de dados extra para identificar o jogo: arquivo ou pasta de .dat (No-Intro) ou nes20db.xml; pode repetir; também lê a variável OSCR_DB. A base do projeto (database/oscr/) já vem carregada")
+    p.add_argument("--no-builtin-db", action="store_true", default=d(False),
+                   help="não carrega a base de jogos que vem no projeto (database/oscr/); fica só o que vier de --db e OSCR_DB")
     p.add_argument("--simulate", action="store_true", default=d(False), help="usa o simulador em memória (sem hardware)")
     p.add_argument("--json", action="store_true", default=d(False),
                    help='saída em JSON (uma linha em stdout, sempre com "ok"; erros: {"ok":false,"error":{kind,message,hint}})')
@@ -675,7 +692,7 @@ def build_parser() -> argparse.ArgumentParser:
     def flash_cmd(name, fn, help_, out=False, inp=False, write=False):
         sp = add(name, fn, help_, system=False, out=out, inp=inp)
         sp.add_argument("-s", "--system", default="flash", choices=["flash", "mock"], help="sistema (padrão: flash; mock só no simulador)")
-        sp.add_argument("--bus", required=True, choices=list(RI.FLASHPROG_BUS), help="chip: 8 (flash de 8 bits no adaptador de flash), plcc32 (8 bits PLCC32 no adaptador de SNES), 16 (flash de 16 bits) ou eprom (27C322)")
+        sp.add_argument("--bus", required=True, choices=list(RI.FLASHPROG_BUS), help="chip: 8 (flash de 8 bits no adaptador de flash), plcc32 (8 bits PLCC32 no adaptador de SNES), 16 (flash de 16 bits), eprom (27C322) ou md (flash de um cartucho de Mega Drive; só em flash-id)")
         sp.add_argument("--flash-kb", type=int, help="tamanho do chip em KB (1 a 8192; a EPROM é sempre 4096)")
         sp.add_argument("--flash-type", choices=list(RI.FLASH_TYPES), help="flash de 8 bits: tipo (nomes do FlashType do OSCR); obrigatório para apagar e gravar")
         sp.add_argument("--sector-kb", type=int, help="tipos 29gl, lh28f0xx e e28fxxxj3a: tamanho do setor em KB (potência de 2)")

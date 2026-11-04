@@ -1,0 +1,11 @@
+snes.txt
+nes.txt
+md.txt
+32x.txt
+gb.txt
+gba.txt
+gg.txt
+sms.txt
+sg1000.txt
+pce.txt
+vb.txt

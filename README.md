@@ -33,6 +33,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `docs/sessao-2026-11-02.md` | Histórico da sessão de 2026-11-02: o que foi feito, defeitos achados, o que falta |
 | `docs/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
 | `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |
+| `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3; carregada sozinha pelo host e pela GUI (D88) |
 | `tools/` | `gen_pinmap.py`, `check_netlist.py`, `build_lib.py`, `plan_layout.py`, `gen_connections.py`, `fill_zones.py`, `sync_net_names.py` |
 
 ## Verificação
