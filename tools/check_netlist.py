@@ -30,8 +30,10 @@ SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
 # Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa
 BOARD_CFG = {
-    "16_and_8_bits": dict(caps=range(2, 7), reg=True),
-    "16_bits": dict(caps=(2, 3, 4), reg=False),      # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico)
+    "16_and_8_bits": dict(caps=range(2, 7), reg=True, tps={}),
+    # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
+    # tps: pontos de teste da v. 1.2 (referência, net)
+    "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
 
@@ -48,6 +50,8 @@ MEGA_GND = ("GND1", "GND2", "GND3", "GND5", "GND6")
 # D0/D1 = serial USB; nunca podem ir a um slot.
 MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50", "D51", "D52",
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
+if BOARD == "16_bits":
+    MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
 
 def read_pinmap():
@@ -106,6 +110,8 @@ def expected_nets(pm_nets):
     exp["+5V"].update({(MEGA, p) for p in MEGA_5V})
     exp["+5V"].update({(SI, "1"), (PIC, "1"), ("D1", "2"), ("R2", "1"), ("C1", "1"), ("FLG1", "1")})
     exp["+5V"].update({(f"C{i}", "1") for i in CFG["caps"]})
+    for tp, net in CFG["tps"].items():
+        exp.setdefault(net, set()).add((tp, "1"))
     if CFG["reg"]:
         exp["+5V"].update({("U3", "2"), ("C7", "1")})
         exp.setdefault("+3V3", set()).update({("U3", "3"), ("C8", "1"), ("C9", "1")})
