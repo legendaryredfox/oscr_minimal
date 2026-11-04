@@ -1,4 +1,4 @@
-# BOM — placa 16_bits (SNES e Mega Drive) v1.0
+# BOM — placa 16_bits (SNES e Mega Drive) v. 1.2
 
 Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bits/fab/bom.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
@@ -10,7 +10,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/16_bits/fab/dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`) |
+| Arquivo | `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`) |
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm (largura acima de 100 mm: faixa de preço maior) |
 | Espessura | 1,6 mm |
@@ -18,7 +18,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | Quantidade | 5 |
 | Cor / máscara | tanto faz (padrão verde) |
 | Cobre | 1 oz |
-| Furos | 325 metalizados (mín. 0,3 mm; 85 deles são vias), 4 não metalizados (3,2 mm, os de canto) |
+| Furos | 343 metalizados (mín. 0,3 mm; 93 deles são vias), 4 não metalizados (3,2 mm, os de canto) |
 | Demais | trilha/espaço mín. 0,2 mm / 0,2 mm; sem borda castelada; sem montagem; sem stencil |
 
 ## Componentes
@@ -36,7 +36,8 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
 | R2 | 1 | 1 kΩ 1/4 W | idem | Pull-up do D7 (IRQ do SNES). |
 | C1 | 1 | 470 µF / 16 V eletrolítico, radial, Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
-| C2, C3, C4 | 3 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C2 SNES, C3 Mega Drive) e um no PIC (C4). |
+| C2, C3, C4, C5, C6 | 5 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C2 SNES, C3 Mega Drive), um no PIC (C4) e, na v. 1.2, dois extras no slot Mega Drive: C5 junto ao pino A31 e C6 junto ao A2 (5V). |
+| TP1 a TP6 | 6 | Pontos de teste: pad de 2 mm, furo de 1 mm (`TestPoint_THTPad_D2.0mm_Drill1.0mm`) | só cobre | Na placa, sem peça: `5V`, `GND`, `/CE`, `/OE`, `/WE`, `/UWR`. Opcional: pino macho de 2,54 mm soldado em cada um. Fora da BOM de compra. |
 
 ## Pinos e mecânica (sem símbolo no esquemático)
 

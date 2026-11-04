@@ -63,8 +63,21 @@ Exemplo (Mega Man 3, MMC3, 256 KB de PRG e 128 KB de CHR): `dumper.py dump -s ne
 - **SNES:** repro com **um chip de flash CFI de 2 ou 4 MB**. Você escolhe a fiação do cartucho: `dumper rom-write -s snes -i jogo.sfc --chip snes-lorom --yes` (ou `snes-hirom`). O cabeçalho de copiadora de 512 bytes é removido sozinho. Na GUI: sistema SNES, "Chip de flash", botão "Gravar ROM". Repro com 2 ou 4 chips ou de 8 MB: `--layout 2x2mb`, `2x4mb`, `4x2mb` ou `1x8mb` (ROM de 6 a 8 MB nas de 8 MB). Cartuchos que o OSCR chama de "LoROM/HiROM (P0)" e "ExLoROM/ExHiROM (P1)": `--chip snes-lorom-p0` (ou `snes-hirom-p0`, `snes-exlorom-p1`, `snes-exhirom-p1`) com `--flash-type` e `--flash-mb`; o tipo está escrito no chip (o OSCR o achava no cartão SD pelo ID). **Tipo errado pode gravar errado.**
 - **Game Boy / Game Boy Color** (pelo adaptador no slot GBA, 3,3 V): repro com flash 29F, 39SF ou CFI. `dumper rom-write -s gb -i jogo.gb --chip gb-diy-mbc5 --yes`; escolha a variante igual ao menu do OSCR (`gb-diy-mbc3`, `gb-diy-mbc5`, `gb-hdr-mbc30`, `gb-cam-first` e `gb-cam-second` para os dois jogos do GB Camera, `gb-orange-fm`, `gb-39sf-mbc5`, `gb-cfi`). Variante errada pode gravar errado. Para gravar também o save ("CFI + save"), rode `save-write` depois.
 - **GBA:** repro com flash Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH ou 369-in-1 (identificado sozinho). `dumper rom-write -s gba -i jogo.gba --yes`. No 369-in-1, `--block369 N` grava a partir do bloco de 4 MB N (0 a 63). A conferência depois de gravar não alcança o bloco N; no bloco 0 do 369-in-1 pode não bater (use `--no-verify`). O apagamento do 369-in-1 é longo: aumente `--begin-timeout`.
-- **Mega Drive:** repro com flash **MX29F1610 (2 MB)** ou **S29GL064N (4 MB)**; o chip é identificado sozinho. `dumper rom-write -s md -i jogo.md --yes`. ROM binária de tamanho par, até 4 MB (sem cabeçalho `.smd`). Se o chip tiver defeito, o firmware pode travar na espera do apagamento: desligue e ligue o USB.
+- **Mega Drive:** repro com flash **MX29F1610 (2 MB)**, **S29GL064N**, M29W320/640, MX29LV320/640, SST39VF320x/640x, **MX29L3211** (cartuchos KY/FlashKit) ou Intel PA28F400; o chip é identificado sozinho pelo ID (tabela em `firmware/oscr/include/dumper/MdFlashCore.h`; só o MX29F1610, S29GL064N e MX29LV640EB têm origem em uso real, os outros IDs vêm de datasheets e **não foram confirmados em chip**). `dumper rom-write -s md -i jogo.md --yes`. ROM binária de tamanho par, até 8 MB e não maior que o chip (sem cabeçalho `.smd`). Apagar ou gravar que não termina agora devolve erro (`E_CARTUCHO_IO`) em vez de travar o firmware (D86).
 - Depois de gravar, o programa **lê a ROM de volta e compara** (desligue com `--no-verify`). Se a gravação falhar no meio, o chip fica apagado ou pela metade: regrave.
+
+### 2.6c Programador de flash genérico (chips soltos)
+
+Para ler, apagar e gravar flash de 8 ou 16 bits e EPROM 27C322 fora de cartucho, nos adaptadores de flash do OSCR (**os adaptadores não foram conferidos com as placas; veja D85 e `docs/funcoes-oscr.md`**):
+
+```
+dumper flash-id    --bus 8 --flash-kb 512                       # IDs pelas quatro rotinas; depois repita com --flash-type
+dumper flash-read  --bus 16 --flash-kb 4096 -o chip.bin
+dumper flash-blank --bus 8 --flash-kb 512 --flash-type 29f032
+dumper flash-write --bus 8 --flash-kb 512 --flash-type 29f032 -i jogo.bin --yes
+```
+
+O tipo do flash de 8 bits você informa (o OSCR achava no cartão SD pelo ID); **tipo errado pode gravar errado**. A EPROM não se apaga e precisa estar em branco para gravar. Na GUI, escolha o sistema "FLASH".
 
 ### 2.7 Usar vários sistemas na mesma sessão
 Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1). SNES, NES e Famicom usam 5 V; GBA 3,3 V. Nunca com dois cartuchos nos slots.

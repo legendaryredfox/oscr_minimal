@@ -77,12 +77,16 @@
 - **D76** Identificação por banco de dados no PC, firmware próprio arquivado, GUI com Configurações e marcadores de lugar (pedido do usuário, 2026-11-03)
 - **D77** Meta de cobrir todas as funções do OSCR e primeira gravação de ROM: `WRITE_ROM` (pedido do usuário, 2026-11-03)
 - **D78** Conferência depois de gravar a ROM e mapper 30 (pedido do usuário, 2026-11-03)
-- **D79** Gravação de ROM em flash CFI do SNES (1 chip de 2 ou 4 MB) com `WRITE_ROM` (2026-11-03)
-- **D80** Capacitores da `16_bits` renumerados para C1 a C4 (pedido do usuário, 2026-11-03)
-- **D81** Gravação de ROM em flash repro do Mega Drive (MX29F1610 e S29GL064N) com `WRITE_ROM` (2026-11-03)
-- **D82** SNES: flash CFI de 2 e 4 chips, 4x 2 MB e 1x 8 MB; menus P0 e P1 com tipo de flash informado pelo PC (2026-11-03)
-- **D83** Gravação de ROM em flash repro do GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) com `WRITE_ROM` (2026-11-03)
-- **D84** Gravação de ROM em flash repro do Game Boy (29F, 39SF, CFI) com `WRITE_ROM` (2026-11-03)
+- **D79** Gravação de ROM em flash CFI do SNES (2026-11-03)
+- **D80** Capacitores da `16_bits` renumerados (pedido do usuário, 2026-11-03)
+- **D81** Gravação de ROM em flash repro do Mega Drive (2026-11-03)
+- **D82** SNES: CFI de 2 e 4 chips, 8 MB e menus P0/P1 (2026-11-03)
+- **D83** Gravação de ROM em flash repro do GBA (2026-11-03)
+- **D84** Gravação de ROM em flash repro do Game Boy (2026-11-03)
+- **D85** Programador de flash genérico (2026-11-03)
+- **D86** Mega Drive: mais chips de flash, núcleo testável no PC e limites de tempo (2026-11-04)
+- **D87** Placa `16_bits` v. 1.2: `/CART`, capacitores extras e pontos de teste (pedido do usuário, 2026-11-04)
+- **D88** Pedidos do usuário ainda não implementados: base de jogos incluída e detecção do chip de flash (2026-11-04)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -674,3 +678,36 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - Bancos vêm do tamanho do arquivo (o OSCR os tirava do byte `$148` do cabeçalho; coincidem em ROM válida). A blank check de depois de apagar (lê todos os bancos) não roda: a leitura de volta do PC cobre. O ID do 29F não é conferido contra uma lista (só recusa 0000 e FFFF); tipo de variante errado (por exemplo MBC3 num cartucho MBC5) pode gravar errado.
 - A conferência depois de gravar usa o `DUMP_ROM` do GB (tamanho pelo cabeçalho); é pulada no 2º jogo do GB Camera (a leitura comum vê o 1º).
 - **Nunca rodou em cartucho.** O GB Smart (Game Menu, Flash Menu, trocar jogo) e os dispositivos Datel/Pelican seguem pendentes.
+
+### D85 — Programador de flash genérico (2026-11-03)
+- Novo **sistema 7** e novo comando **`ERASE` (0x0C)**; `DETECT` ganhou opções no fim do payload (docs/protocolo.md, "Sistema 7"). `INFO_RESP.flags` bit 4. Compatível com o que já existia: sem as opções o `DETECT` é o mesmo.
+- Barramentos: flash de 8 bits no adaptador de flash e PLCC32 para SNES (os `mapping` 0 e 3 do OSCR), flash de 16 bits e EPROM 27C322. **Reaproveitado direto do OSCR (`Flash.cpp`)**: `setup8`, `setup16`, `setup_Eprom`, `idFlash28FXXX/29F032/29F1610/39SF040/idFlash16`, `readFlash`, `readFlash16`, `read_Eprom`, `eraseFlash*`, `writeFlash*`, `writeFlash16*`, `write_Eprom`, `blankcheck_Eprom` e os resets, na ordem dos menus. O 8 bits usa o mesmo caminho do SNES P0/P1 (D82, fiações 5 e 6); o código novo (`src/dumper/FlashProg.cpp`) só liga os barramentos.
+- **Partes do OSCR que ficaram no PC:** o ID→tipo (o banco CRDB do cartão SD, que o fork não tem: o usuário informa `--flash-type`, `--flash-kb`, setor e buffer), o blank check (o PC lê o chip e olha se tudo é 0xFF), a verificação depois de gravar (o PC lê de volta) e o "imprimir os primeiros bytes" (`flash-read`).
+- O `DETECT` sem tipo mostra os IDs das quatro rotinas do `id8`; só uma costuma ser a certa, e a legenda está no texto.
+- **Riscos:** (1) tipo errado pode gravar errado; (2) os laços de apagar e de status do OSCR não têm limite de tempo; (3) a EPROM exige o VPP/OE (PH5) do hardware do adaptador, que **nenhuma das placas do projeto tem**; (4) os adaptadores de flash do OSCR (flash adapter, PLCC32) não foram conferidos contra o `pinmap.md` da `16_bits` nem da `16_and_8_bits`: **PENDENTE** antes de usar em hardware.
+- **Nunca rodou em hardware.**
+
+### D86 — Mega Drive: mais chips de flash, núcleo testável no PC e limites de tempo (2026-11-04)
+- `WRITE_ROM` do Mega Drive deixa de aceitar só MX29F1610 e S29GL064N. Novo `include/dumper/MdFlashCore.h` (sem Arduino, template sobre o barramento): tabela de chips em PROGMEM, **sondagem** do conjunto de comandos (AMD 5555h/2AAAh, AMD 555h/2AAh exato, Intel/Sharp), **apagar por layout** (bottom, top, uniforme; Intel por bloco), programar palavra a palavra com DQ7 e **limite de tempo** (2000 leituras por palavra, 15 s por setor ou bloco). Algoritmos portados do firmware 1.1 do md_rewriter (`MD.c`, `flashid.c`), que já os testava contra um modelo de chip.
+- Chips novos (todos **não confirmados em chip real**; IDs de datasheets e do `flashlist.csv` do MD_Dumper): M29W640DB/DT/G, MX29LV640ET, SST39VF6401B/6402B, M29W320DT/DB/ET/EB, MX29LV320T/B (AMD 555h); MX29L3211 (5555h); PA28F400T/B (Intel); SST39VF3201/3202 (bloco de 32 KWord com `50h`, porque `30h` apaga só 2 KWord). O MX29LV640EB (único confirmado, no md_rewriter) também entra.
+- **Reaproveitamento do OSCR:** o MX29F1610 e o S29GL064N continuam gravados por `MD::write29F1610` e `MD::write29GL`; `MD::eraseFlash` apaga o chip inteiro neles. O núcleo usa só as primitivas `MD::writeFlash`, `MD::readFlash`, `MD::dataOut`, `MD::dataIn`. Não há equivalente no OSCR para os chips novos no barramento do Mega Drive: `Flash.cpp` (`writeFlash16_29LV640`, `writeFlash28FXXX`) usa o barramento do SNES.
+- **Desvios no código do OSCR (`MegaDrive.cpp`, `MegaDrive.h`):** `busyCheck` ganhou limite de tempo (`flashWaitMs`, 120 s) e o status do `write29GL` limite de 1 s por buffer; os dois ligam `MD::flashTimedOut`; `write29F1610` e `write29GL` param na primeira falha. Antes esperavam para sempre. `MdFlash` zera a flag antes e devolve `E_CARTUCHO_IO` se ela ligou.
+- **Mudanças de comportamento a saber:** (1) o ID agora é lido com 4 palavras (0, 1, 0Eh, 0Fh) e a sondagem faz um reset a mais; no MX29F1610 e no S29GL064N a sequência no barramento não é mais idêntica byte a byte à do OSCR. (2) Todo ID 017Eh continua sendo gravado como o OSCR fazia, mas o ciclo 2 (0Ch ou 10h) agora identifica o S29GL064N de 8 MB, e esse chip aceita ROM de até 8 MB; outros 017Eh seguem com 4 MB. (3) O limite do `WRITE_ROM` do Mega Drive subiu de 4 para 8 MB (host, CLI, GUI e firmware); o firmware recusa ROM maior que o chip encontrado (`E_ARGUMENTO`). (4) Palavras FFFFh não são gravadas nos chips do núcleo (o chip está apagado ali).
+- **Riscos:** (a) IDs e mapa de blocos do Intel não conferidos em chip real, e o modelo de teste usa a mesma tabela, então não pega erro de mapa. (b) A sondagem escreve comandos de ID no cartucho; ROM de máscara e mapeadores não foram testados (`A130F1h`..`A130FFh` e `A130E0h` ficam longe de 555h, 5555h, 2AAh e 2AAAh). (c) ROM acima de 4 MB num cartucho de 8 MB depende de o cartucho decodificar `/CE` acima de `400000h`.
+- **Testes:** `make -C firmware/oscr/pc-tests test` roda `test_mdflash` (725 verificações): sondagem de 15 chips, ciclo completo apagar e gravar em 12 chips, layouts (top boot de 4 MB, bottom boot, uniforme, SST `50h`, Intel), chip travado, 0 → 1, ROM de máscara, ID desconhecido, ROM maior que o chip, arquivo curto. Duas mutações (SST com `30h`, sem o ramo top boot) foram pegas. O modelo vem dos datasheets, não de medição. O firmware compila (`pio run -e SerialASCII`: RAM 46,0 %, flash 65,9 %, sem avisos). **Nunca rodou em hardware.**
+- **Fica de fora:** expor o nome do chip no protocolo (`MdFlash::identify` existe, mas o `DETECT` do Mega Drive só lê o cabeçalho da ROM); Sharp LH28F320BJE, MX26L6420 e mapeadores (Open EverDrive, EverDrive-MD, Magistr-16, WaterMelon), que precisam de cartucho e datasheet.
+
+### D87 — Placa `16_bits` v. 1.2: `/CART`, capacitores extras e pontos de teste (pedido do usuário, 2026-11-04)
+- **Silk** `SNES / MEGA DRIVE   v. 1.2   2026-11-04`. Gerbers para pedir: `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` (SHA-256 em `fab/PEDIDO.md`); 343 furos metalizados (93 vias), 4 não metalizados, 108,1 × 86,1 mm.
+- **`/CART` (B32 do MD1) ligado ao D50 do Mega** (PB3). **Pino novo, fora do HW5 do OSCR** (regra de pinagem idêntica do `CLAUDE.md`, seção 3): o usuário mandou aplicar o item sem escolher o pino; escolhi o D50 porque `pinmap.md` o lista como não usado, o fork não tem SD (era o MISO do SPI) e o D39, também livre no `pinmap.md`, é o pino do botão no `main.cpp` do OSCR. **Se o usuário preferir outro pino, trocar na placa e no `pinmap.md`.** Firmware: ainda não lê o pino.
+- **C5 e C6** (100 nF, passo 5 mm), junto aos pinos A31 e A2 (5V) do slot Mega Drive, a 8,4 mm e 5,5 mm. O C3 continua onde estava (10,7 mm do A2, 83 mm do A31). Posições achadas por busca em grade das folgas (0,2 mm de folga, margem de 0,12 mm), conferidas por DRC.
+- **Seis pontos de teste** TP1 a TP6 (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`) numa fileira em y = 56,5 mm, pad de 2 mm. Pedido do usuário: juntos; perto da borda só se não atrapalhar a ideia de juntos. Fora da BOM de compra (`in_bom no`).
+- **Não aplicado:** resistores série e TVS (HW-MD-3, HW-MD-4). Sem espaço no roteamento atual (ver `docs/melhorias-megadrive-hardware.md`); exige refazer o roteamento ou uma placa adaptadora. HW-MD-1 (pull-up de `/VRES`) não foi pedido.
+- **Como foi feito:** esquemático por edição de texto (C5, C6, símbolo `Connector:TestPoint` embutido, rótulos); placa por script do `pcbnew` do venv do KiCad MCP com mapa de obstáculos em grade de 0,1 mm e roteador A* de duas camadas (o KiCad MCP não tem roteador com folga). Zonas preenchidas por `tools/fill_zones.py`. Cópia da placa v1.0 em `fab/dumper-v1.0-*.zip`.
+- **Verificação:** DRC igual ao da v1.0 (3 `starved_thermal` e 5 avisos de biblioteca já justificados em D71), 0 ligações abertas; ERC 0; `tools/check_netlist.py --board 16_bits` (agora com C5, C6, os TPs e `D50 = /CART`) e a `16_and_8_bits` conferem. **Nada foi montado nem testado em cartucho.**
+- **Riscos:** (a) trilhas longas dos pontos de teste (5 a 40 mm) acrescentam capacitância às linhas `/CE`, `/OE`, `/WE`, `/UWR`; pequena (alguns pF), mas nunca medida. (b) A trilha do `/CART` passa perto de linhas de endereço e dados (25 mm, 2 vias). (c) `/CART` em placa antiga fica flutuando: o firmware precisa de `INPUT_PULLUP` e não pode tratar "sem cartucho" como erro sem saber a revisão.
+
+### D88 — Pedidos do usuário ainda não implementados: base de jogos incluída e detecção do chip de flash (2026-11-04)
+- **Base de dados de jogos no projeto.** Hoje (D76) o host e a GUI leem No-Intro `.dat` e NES 2.0 XML que o usuário traz; nenhuma base vem no repositório. O usuário pediu que ela seja incluída. Fonte já disponível e com licença clara: `vendor/oscr/legacy/sd/*.txt` (OSCR legado, `github.com/sanni/cartreader`, commit `060d8ae`, GPL v3; 44 arquivos, 88 mil linhas, 2,2 MB; formato por sistema descrito no `README` desse diretório). Plano em `docs/continuacao.md`. **Nada foi implementado.** Fora do plano: a CRDB binária (sem amostra) e No-Intro e NES 2.0 XML (sem licença de redistribuição clara).
+- **Detecção do chip de flash no escopo** ("se possível"). `MdFlash::identify` existe (D86); falta expor. Plano: novo valor de `chip` do sistema 7 no `DETECT` do programador genérico, sem mudar o protocolo; `flash-id --bus md` no host e na CLI Kotlin; barramento "Mega Drive" no painel de flash da GUI. **Nada foi implementado.** A sondagem escreve comandos de ID no cartucho.
+

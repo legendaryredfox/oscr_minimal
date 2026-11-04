@@ -4,7 +4,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 
 | Pasta | Slots | Estado |
 |---|---|---|
-| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. Gerbers v1.0 gerados. Nada encomendado |
+| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. Gerbers v. 1.2 gerados (D87: `/CART` no D50, C5 e C6, pontos de teste). Nada encomendado |
 | [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.0 gerados. Nada encomendado |
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
 | [`gb_gba/`](gb_gba/) | GB, GBC, GBA | Esqueleto |

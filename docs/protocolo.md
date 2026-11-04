@@ -31,7 +31,7 @@ offset  tamanho  campo
 | Tipo | Nome | Payload |
 |---|---|---|
 | `0x01` | `INFO` | vazio |
-| `0x02` | `DETECT` | `u8 sistema` |
+| `0x02` | `DETECT` | `u8 sistema`; opcional, só no sistema 7: `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (D85) |
 | `0x03` | `DUMP_ROM` | `u8 sistema`, `u16 bloco` (0 = padrão 512); opcional, só NES/Famicom: `u16 mapper`, `u16 prg_kb`, `u16 chr_kb` (0 = automático/NROM) |
 | `0x04` | `READ_SAVE` | `u8 sistema`, `u16 bloco` (0 = padrão 512) |
 | `0x05` | `WRITE_SAVE` | `u8 sistema`, `u32 tamanho`, `u16 bloco` (0 = padrão 512); opcional, NES/Famicom: `u16 mapper`, `u16 0`, `u16 0` |
@@ -40,6 +40,7 @@ offset  tamanho  campo
 | `0x08` | `ABORT` | vazio |
 | `0x09` | `DATA` | `u32 offset` + dados (só em `WRITE_SAVE`, host → dispositivo) |
 | `0x0A` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro (só em `WRITE_SAVE` e `WRITE_ROM`) |
+| `0x0C` | `ERASE` | `u8 sistema`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (as três últimas sempre enviadas). Só o sistema 7 (programador de flash genérico, D85): apaga o chip inteiro e responde `ACK` (offset 0) só no fim, ou `ERRO`. O host espera até 90 s e **nunca reenvia** (reenviar apagaria de novo). `INFO_RESP.flags` bit 4 diz que existe |
 | `0x0B` | `WRITE_ROM` | `u8 sistema`, `u32 tamanho`, `u16 bloco`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (os três últimos são sempre enviados). Grava a **ROM** em cartucho de flash (D77). Só no firmware em modo fluxo (fork do OSCR); `INFO_RESP.flags` bit 3 diz que existe |
 
 ### Dispositivo → host
@@ -58,7 +59,7 @@ offset  tamanho  campo
 `seq` do host é livre (incremente a cada pedido). O dispositivo repete o `seq` do pedido em todas as respostas daquele pedido (`DATA` do mesmo fluxo repete o `seq` do `DUMP_ROM`/`READ_SAVE`).
 
 ### Flags de `INFO_RESP`
-bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); demais: 0.
+bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); bit 3: aceita `WRITE_ROM` (D77); bit 4: tem o programador de flash genérico (sistema 7 e `ERASE`, D85); demais: 0.
 
 ## 4. Sistemas
 
@@ -87,6 +88,23 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 **NES/Famicom:**
 
 O cartucho de NES não tem cabeçalho com o mapper. Para mappers diferentes de 0 o host informa `mapper`, `prg_kb` (múltiplo de 16) e `chr_kb` (múltiplo de 8, 0 se o cartucho usa CHR-RAM). Mappers aceitos: 0, 1 (MMC1, PRG até 256 KB), 2, 3, 4, 5 (MMC5, PRG até 1 MB), 7, 9 (MMC2, PRG até 128 KB), 10 (MMC4, PRG até 256 KB), 11 (PRG e CHR até 128 KB), 66 (PRG até 128 KB, CHR até 32 KB), 69 (PRG até 512 KB), 71, e os de CHR-ROM 33/48 (PRG e CHR até 256 KB), 70 (PRG 256 KB, CHR 128 KB), 75 e 78 (PRG e CHR até 128 KB), 79 (até 64 KB cada), 87 (até 32 KB cada), 118 (PRG 512 KB, CHR 256 KB) e 206 (PRG 128 KB, CHR 64 KB); 30 (UNROM 512 e NES Maker flash; PRG até 512 KB, só CHR-RAM, D78); do lote de D64: 13 (CPROM, PRG 32 KB), 34 (BxROM/NINA-001, PRG 512 KB, CHR 64 KB), 67 (PRG e CHR 128 KB), 68 (256 KB cada), 72 (128 KB cada), 73 (VRC3, PRG 128 KB), 86 (PRG 128 KB, CHR 64 KB), 92 (PRG 256 KB, CHR 128 KB), 93 e 94 (PRG 128 KB), 140 e 152 (128 KB cada), 180 (PRG 128 KB) e 184 (32 KB cada) (mappers 2, 7, 71, 13, 73, 93, 94 e 180 só com CHR 0; 79, 87, 78, 75, 70, 33, 48, 118, 206, 67, 68, 72, 92, 86, 140, 152 e 184 exigem CHR; 34 aceita CHR 0 (BxROM) ou CHR-ROM (NINA-001); 7, 11, 66, 34, 86, 140 e 13 com PRG múltiplo de 32 KB). O mapper 34 espera 200 ms depois de cada troca de banco, então um PRG de 512 KB leva ~3 s a mais. Acima dos limites: `ERRO 0x0002`. `ERRO 0x0002` = mapper não suportado; `ERRO 0x0004` = tamanhos inválidos. O arquivo sai com cabeçalho iNES de 16 bytes (mapper nos nibbles dos bytes 6 e 7; espelhamento e bateria ficam 0). Os valores corretos vêm do banco do No-Intro/NESCartDB ou de uma ROM já conhecida do mesmo jogo.
+
+### Sistema 7: programador de flash genérico (D85)
+
+Lê, apaga, identifica e grava flash e EPROM fora de cartucho de console (adaptadores de flash do OSCR), com as funções de `Flash.cpp`. Campos nos comandos: `chip` (u16; a parte baixa escolhe o barramento) e os dois tamanhos.
+
+| `chip` | Barramento | `prg_kb` | `chr_kb` | Origem no OSCR |
+|---|---|---|---|---|
+| 1 | flash de 8 bits no adaptador de flash (`mapping` 0) | tamanho do chip em KB (1 a 8192) | tipo do flash \| (log2 do setor << 4) \| (log2 do buffer << 9); 0 = não informado | `setup8`, `id8`, `menuFlash8` |
+| 2 | flash de 8 bits PLCC32 no adaptador de SNES (`mapping` 3) | idem | idem | idem |
+| 3 | flash de 16 bits | tamanho do chip em KB | 0 | `setup16`, `idFlash16`, `menuFlash16` |
+| 4 | EPROM 27C322 | ignorado (4096) | 0 | `setup_Eprom`, `menuEPROM` |
+
+- `DETECT` (com as opções): lê o ID do chip, devolvido como texto em `nome`. No flash de 8 bits sem tipo, devolve `I=XXXX A=XXXX B=XXXX S=XXXX`, os IDs pelas quatro rotinas do `id8` do OSCR (Intel 28F, AMD 29F032, AMD 29F1610, SST 39SF040); `status` 1 se nenhuma respondeu (0000 ou FFFF). O banco CRDB do OSCR, que traduzia o ID em tipo e tamanho, não existe no fork: o usuário informa o tipo.
+- `DUMP_ROM`: lê o chip inteiro (`prg_kb` KB). A verificação de "em branco" é do PC (tudo 0xFF).
+- `ERASE`: apaga. No 8 bits o tipo é obrigatório; a EPROM não se apaga.
+- `WRITE_ROM`: apaga e grava (8 e 16 bits); na EPROM confere antes que está em branco (`E_CARTUCHO_IO` se não). Tamanho múltiplo de 512 e que cabe no chip. A conferência é a leitura de volta do PC.
+- Os laços do OSCR (apagar, esperas de status) não têm limite de tempo.
 
 ## 5. `DETECT_RESP`
 
@@ -200,7 +218,7 @@ As disposições 1 a 4 são as regras do `adjustFileSizeOffset` e do `writeCFI` 
 
 Erros: `0x0004` (chip ou tamanhos inválidos, antes de tocar no cartucho), `0x000B` (ID do chip diferente do esperado: nada foi gravado), `0x0007` (um byte não gravou dentro do limite de tempo: o chip pode ter ficado apagado ou pela metade, regrave), `0x0001` (firmware sem `WRITE_ROM`), `0x0006` (CRC32 do arquivo não confere).
 
-**Mega Drive (D81):** `sistema` = 4; `chip` 1 = automático; `prg_kb` = tamanho da ROM em KB arredondado para cima (informativo); `chr_kb` = 0; `tamanho` = bytes da ROM (par, até 4 MB). O `rom_prepare` identifica o chip pelo ID (`0xC2F1` MX29F1610 de 2 MB, `0x017E` S29GL064N de 4 MB; outro ID → `E_FLASH`), confere que a ROM cabe (`E_ARGUMENTO`) e apaga o chip inteiro. O firmware (`src/dumper/MdFlash.cpp`) chama `MD::idFlash`, `eraseFlash`, `resetFlash`, `write29F1610` e `write29GL` do OSCR, que leem o "arquivo" pelo `StreamFile`. Esses laços do OSCR **não têm limite de tempo**: um chip com defeito trava o firmware até o PC desistir.
+**Mega Drive (D81, D86):** `sistema` = 4; `chip` 1 = automático; `prg_kb` = tamanho da ROM em KB arredondado para cima (informativo); `chr_kb` = 0; `tamanho` = bytes da ROM (par, até 8 MB). O `rom_prepare` sonda o chip (ID com desbloqueio 5555h, depois 555h, depois Intel; tabela em `include/dumper/MdFlashCore.h`: MX29F1610, S29GL064N, M29W320/640, MX29LV320/640, MX29L3211, PA28F400, SST39VF320x/640x; outro ID → `E_FLASH`), confere que a ROM cabe **no chip encontrado** (`E_ARGUMENTO`) e apaga: o chip inteiro no MX29F1610 e no S29GL064N, setores ou blocos por layout nos demais. O firmware (`src/dumper/MdFlash.cpp`) chama `MD::eraseFlash`, `resetFlash`, `write29F1610` e `write29GL` do OSCR nos dois chips do OSCR, que leem o "arquivo" pelo `StreamFile`; os outros usam o núcleo `MdFlashCore.h`. Os laços de espera ganharam limite de tempo: apagar ou gravar que não termina devolve `E_CARTUCHO_IO` em vez de travar.
 
 No SNES o firmware (`src/dumper/SnesFlash.cpp`) usa direto `Flash::setup8`, `identifyCFIbyIds`, `sendCFICommand`, `writeByte`, `readByte`, `writeByteCompensated`; o laço de apagar e gravar é novo pelo mesmo motivo (o `writeCFI` do OSCR lê o SD e o `busyWait` espera para sempre), e a conferência do `verifyFlash` (que relê o arquivo) é feita pelo PC com `DUMP_ROM` (`prg_kb` = tamanho da ROM). As opções do OSCR com 2 ou 4 chips e a de 8 MB ainda não existem. O firmware usa direto as funções do OSCR original (`NESmaker_ID`, `NESmaker_SectorErase`, `NESmaker_ByteProgram`, `A29040B_*`); o laço de gravação é novo porque o original lê o arquivo do SD e espera para sempre (`do { } while`) por um byte que talvez nunca confira, enquanto aqui toda espera tem limite de tempo. **Conferência depois da gravação (D78):** é do PC e vem ligada por padrão. Depois do `END`, o host faz um `DUMP_ROM` com o mapper do chip (30 ou 0) e os tamanhos gravados, tira o cabeçalho iNES sintético e compara byte a byte com o que enviou. O mapper 30 passou a ter leitura de ROM no firmware (o `readPRG` do OSCR já tratava o caso 30; só faltava liberá-lo em `nesCheckRom`, PRG até 512 KB e só CHR-RAM). O OSCR original só conferia cada byte logo depois de programá-lo; a leitura completa pega também o que mudou depois.
 

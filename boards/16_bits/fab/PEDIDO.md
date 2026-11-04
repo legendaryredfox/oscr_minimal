@@ -1,10 +1,10 @@
-# Pedido da placa 16_bits v1.0 (JLCPCB)
+# Pedido da placa 16_bits v. 1.2 (JLCPCB)
 
-Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-03 a partir de `../hardware/dumper.kicad_pcb`.
+Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a partir de `../hardware/dumper.kicad_pcb`.
 
 ## Arquivo
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `64a4a3fe620ce581fa328a8e2a98fa7e26d390af752000d4fa276ac81d5cc686`.
+Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `83a38844539bfbb9343066437ea89704fa21ae8ff7ff8dc08a17de7c9bce03ce`. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
@@ -14,10 +14,18 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 |---|---|
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm |
-| Furos metalizados / não metalizados | 325 / 4 (os 4 são M3 de canto, 3,2 mm) |
-| Furo mínimo | 0,3 mm (as 85 vias) |
+| Furos metalizados / não metalizados | 343 / 4 (os 4 são M3 de canto, 3,2 mm) |
+| Furo mínimo | 0,3 mm (as 93 vias) |
 
 Se a pré-visualização mostrar outra coisa, **não pague**: avise.
+
+## O que mudou da v1.0 para a v. 1.2
+
+- Silk com `v. 1.2   2026-11-04`.
+- `/CART` (B32 do slot Mega Drive) ligado ao pino D50 do Mega: detecção de cartucho (o cartucho liga B32 ao GND; no Mega, `INPUT_PULLUP`).
+- Dois capacitores de 100 nF a mais: **C5** junto ao pino A31 (5V) e **C6** junto ao A2 (5V) do slot Mega Drive.
+- Seis pontos de teste (pad de 2 mm, furo de 1 mm) numa fileira acima do cabeçalho do Mega, rotulados no silk: `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`. Podem receber um pino de 2,54 mm soldado para a ponta de prova.
+- **Não** entraram: resistores série e TVS nas linhas do cartucho (não há espaço sem refazer o roteamento) e o pull-up de `/VRES`.
 
 ## Configurações do formulário
 
@@ -57,7 +65,7 @@ Lista completa e observações: `../docs/bom.md`. Resumo:
 | LED 3 mm | 1 |
 | Resistor 220 Ω e 1 kΩ, 1/4 W | 1 + 1 |
 | Capacitor 470 µF/16 V radial Ø8, passo 3,5 mm | 1 |
-| Capacitor cerâmico 100 nF, passo 5 mm | 3 |
+| Capacitor cerâmico 100 nF, passo 5 mm | 5 |
 | Pinos macho 2,54 mm de **cauda longa** | **85 posições** |
 | Espaçador M3 + pé de borracha | 4 |
 | Cabo USB-C | 1 |

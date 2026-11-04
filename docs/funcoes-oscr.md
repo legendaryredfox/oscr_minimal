@@ -57,6 +57,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Sega CD RAM (BRAM): ler e gravar | firmware | ⬜ |
 | Realtec (ler) | firmware | ⬜ |
 | Flash repro: MX29F1610 (2 MB) e S29GL064N (4 MB), apagar e gravar | firmware + PC | ✅ `WRITE_ROM` (D81; nunca rodou); conferência por leitura de volta |
+| Flash repro além do OSCR: M29W320/640, MX29LV320/640, SST39VF320x/640x, MX29L3211 (5555h), Intel PA28F400; ROM até 8 MB; limites de tempo | firmware + PC | ✅ `WRITE_ROM` (D86; nunca rodou em chip; testado no PC contra modelo). Não vem do OSCR: o `Flash.cpp` usa o barramento do SNES |
 
 ## Game Boy Advance
 
@@ -86,8 +87,11 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 
 | Função do OSCR | Onde | Estado |
 |---|---|---|
-| CFI, flash de 8 bits, flash de 16 bits, PLCC32 para SNES, EPROM | firmware + PC | ⬜ |
-| Por chip: ID, blank check, ler, gravar, apagar, imprimir, verificar | firmware (laços) + PC (arquivo, chip, verificação) | ⬜ |
+| Flash de 8 bits (adaptador de flash e PLCC32 para SNES): ID, ler, apagar, gravar | firmware (funções do `menuFlash8`) + PC (tipo do flash) | ✅ sistema 7 (D85; nunca rodou) |
+| Flash de 16 bits: ID, ler, apagar, gravar | firmware (funções do `menuFlash16`) + PC | ✅ sistema 7 (D85; nunca rodou) |
+| EPROM 27C322: ler, gravar, conferir branco | firmware (funções do `menuEPROM`) + PC | ✅ sistema 7 (D85; nunca rodou) |
+| Blank check, verificar, imprimir os primeiros bytes | PC (lê o chip e compara) | ✅ `flash-blank`, conferência do `flash-write`, `flash-read` (D85) |
+| CFI do SNES, GB e flash repro de cada sistema | por sistema | ✅ nas seções de cada sistema (D79 a D84) |
 
 ## Gravação de ROM: o que já existe e o que falta
 

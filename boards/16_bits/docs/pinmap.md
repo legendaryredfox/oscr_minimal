@@ -17,7 +17,7 @@ Convenção: a coluna **Arduino** é o nome da net no HW5 (`A0..A15`, `D2..D53`,
 
 Marcas: `ods`/`sch`/`six`/`fw` = fonte concorda; `-` = fonte não cobre (ver nota); `!` = fonte discorda (ver `docs/decisoes.md`). `fw` é checado só no nível da porta/bit (o firmware não usa nomes de sinal).
 
-Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva ao header mas os adaptadores deixam sem ligação), `D10..D13`, `D18`, `D19`, `D39`, `D50..D53`. `D0`/`D1` nunca podem ir a um slot.
+Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva ao header mas os adaptadores deixam sem ligação), `D10..D13`, `D18`, `D19`, `D39`, `D51..D53` (`D50` passou a `/CART` na v. 1.2; `D39` é o pino do botão no `main.cpp` do OSCR e não deve ser usado). `D0`/`D1` nunca podem ir a um slot.
 
 
 ## SNES (ref. `J3` em `snes_adapter`, 62 pinos)
@@ -154,7 +154,7 @@ Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva
 | B29 | /UWR_B29 | D7 | PH4 | sch ods fw six |
 | B30 | /M3_B30 | NC (sem ligação) | - | sch |
 | B31 | /TIME_B31 | D15 | PJ0 | sch ods fw six |
-| B32 | /CART_B32 | NC (sem ligação) | - | sch |
+| B32 | /CART_B32 | D50 | PB3 | **v. 1.2**: detecção de cartucho (o cartucho liga B32 ao GND; no Mega, `INPUT_PULLUP`; baixo = cartucho presente). D50 não é usado pelo OSCR neste fork (sem SD); fora do HW5 |
 
 ## Placa principal — o que o HW5 liga além dos slots (referência)
 
