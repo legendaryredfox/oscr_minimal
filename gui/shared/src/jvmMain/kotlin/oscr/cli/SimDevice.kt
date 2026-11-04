@@ -21,6 +21,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
     private var writingRom = false
     var writtenRom: ByteArray? = null
     var lastRomOptions: Triple<Int, Int, Int>? = null
+    var lastErase: Triple<Int, Int, Int>? = null
 
     private fun push(type: Int, payload: ByteArray = ByteArray(0)) { out += encodeFrame(type, seq, payload) }
     private fun error(code: Int, text: String = "") = push(Proto.T_ERRO, le16(code) + byteArrayOf(text.length.toByte()) + text.encodeToByteArray())
@@ -32,7 +33,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
 
     private fun handle(f: Frame) {
         when (f.type) {
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, 9) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
@@ -89,6 +90,15 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 if (writingRom) writtenRom = wBuf else save = wBuf
                 writing = false; writingRom = false
                 push(Proto.T_D_ACK, le32(total))
+            }
+            Proto.T_ERASE -> {                      // chip 9 "não é reconhecido"; o simulador só entende o sistema MOCK
+                val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
+                if (f.payload.size < 7) return error(4, "args")
+                if (sys != 0 && sys != 255) return error(2)
+                val chip = f.payload.u16(1)
+                if (chip == 9) return error(11, "id")
+                lastErase = Triple(chip, f.payload.u16(3), f.payload.u16(5))
+                push(Proto.T_D_ACK, le32(0))
             }
             Proto.T_ABORT -> { phase = 0; writing = false; push(Proto.T_D_ACK, le32(0)) }
             else -> error(1, "comando")

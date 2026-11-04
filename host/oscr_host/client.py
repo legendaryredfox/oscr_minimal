@@ -74,10 +74,14 @@ class Client:
         f = self._request(P.T_INFO, b"", self._next_seq(), {P.T_INFO_RESP}, self.timeout)
         return P.parse_info_resp(f.payload)
 
-    def detect(self, system: int) -> dict:
-        f = self._request(P.T_DETECT, P.build_detect(system), self._next_seq(), {P.T_DETECT_RESP},
+    def detect(self, system: int, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> dict:
+        f = self._request(P.T_DETECT, P.build_detect(system, chip, prg_kb, chr_kb), self._next_seq(), {P.T_DETECT_RESP},
                           self.long_timeout)
         return P.parse_detect_resp(f.payload)
+
+    def erase(self, system: int, chip: int, prg_kb: int, chr_kb: int, timeout: float = 90.0) -> None:
+        """ERASE: apaga o chip inteiro e só responde no fim (o comando nunca é reenviado: reenviar apagaria de novo)."""
+        self._request(P.T_ERASE, P.build_erase(system, chip, prg_kb, chr_kb), self._next_seq(), {P.T_D_ACK}, timeout, retries=0)
 
     def abort(self) -> None:
         self._send(P.T_ABORT, b"", self._next_seq())

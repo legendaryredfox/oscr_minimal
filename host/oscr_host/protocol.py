@@ -16,6 +16,7 @@ CRC_LEN = 4
 # host -> dispositivo
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
+T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/protocolo.md)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
@@ -25,7 +26,7 @@ KIND_ROM, KIND_SAVE = 1, 2
 
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),
-    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "mock": (255, ".bin"),
+    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "mock": (255, ".bin"),
 }
 SYSTEM_BY_ID = {v[0]: k for k, v in SYSTEMS.items()}
 
@@ -138,8 +139,16 @@ def build_info() -> bytes:
     return b""
 
 
-def build_detect(system: int) -> bytes:
-    return struct.pack("<B", system)
+def build_detect(system: int, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
+    base = struct.pack("<B", system)
+    if chip or prg_kb or chr_kb:        # programador de flash genérico: as opções vão no próprio DETECT
+        base += struct.pack("<HHH", chip, prg_kb, chr_kb)
+    return base
+
+
+def build_erase(system: int, chip: int, prg_kb: int, chr_kb: int) -> bytes:
+    """ERASE (0x0C): sistema e as três opções do programador de flash genérico (docs/protocolo.md)."""
+    return struct.pack("<BHHH", system, chip, prg_kb, chr_kb)
 
 
 def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
@@ -179,7 +188,7 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8),
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16),
             "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
 
 

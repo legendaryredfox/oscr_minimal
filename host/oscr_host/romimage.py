@@ -10,7 +10,7 @@ from typing import Optional
 
 # Valor do campo "chip" do WRITE_ROM (firmware/oscr/include/dumper/NesFlash.h) e o mapper do cartucho de cada chip.
 # SNES (firmware/oscr/include/dumper/SnesFlash.h): flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR).
-# Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID.
+# Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip pelo ID (MX29F1610, S29GL064N, chips AMD de 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF).
 # No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
          "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1,
@@ -20,7 +20,7 @@ CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "
                "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
-              "md-flash": "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)",
+              "md-flash": "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)",
               "gba-flash": "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)",
               "gb-diy-mbc3": "GB flash 29F, DIY MBC3 (WR)", "gb-diy-mbc5": "GB flash 29F, DIY MBC5 (WR)", "gb-hdr-mbc30": "GB flash 29F, HDR MBC30 (WE no pino de áudio)",
               "gb-cam-first": "GB flash 29F, HDR GameBoy Cam, 1º jogo (apaga)", "gb-cam-second": "GB flash 29F, HDR GameBoy Cam, 2º jogo (sem apagar)",
@@ -36,7 +36,7 @@ SNES_GENERIC = 0x10
 # FlashType do OSCR (Flash.h) e o que cada tipo exige. Tipos com setor/buffer: o OSCR achava no banco CRDB; aqui o usuário informa.
 FLASH_TYPES = {"29f032": 1, "29f1610": 2, "lh28f0xx": 3, "29f1601": 4, "29lv640": 5, "29f800": 6, "29gl": 7, "e28fxxxj3a": 8}
 FLASH_TYPES_NEED_SECTOR = ("29gl", "lh28f0xx", "e28fxxxj3a")
-MD_MAX_BYTES = 4 * 1024 * 1024
+MD_MAX_BYTES = 8 * 1024 * 1024               # o maior chip da tabela do firmware tem 64 Mbit; o firmware recusa ROM maior que o chip encontrado
 GB_CHIPS = ("gb-diy-mbc3", "gb-diy-mbc5", "gb-hdr-mbc30", "gb-cam-first", "gb-cam-second", "gb-orange-fm", "gb-39sf-mbc5", "gb-cfi")
 GB_MAX_BYTES = 4 * 1024 * 1024
 GBA_MAX_BYTES = 32 * 1024 * 1024               # flash de 1 chip; o 369-in-1 vai até 256 MB (bloco 0) ou até o fim da memória (bloco N, de 4 MB)
@@ -140,17 +140,10 @@ def split_snes(data: bytes, capacity_kb: Optional[int] = None, layout: str = "1x
     return RomImage(body, kb, 0, None, capacity_kb, lay, 0, rom)
 
 
-def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: Optional[int] = None, buffer: Optional[int] = None) -> RomImage:
-    """ROM de SNES para os menus "LoROM/HiROM (P0)" e "ExLoROM/ExHiROM (P1)" do OSCR: flash de 8 bits de tipo informado (no OSCR vinha do banco CRDB).
-    Os tipos 29gl, lh28f0xx e e28fxxxj3a precisam de setor (KB) e buffer (bytes), potências de 2; e28fxxxj3a assume 128 KB e 32 bytes se faltarem.
-    No 29gl o arquivo é completado com 0xFF até um múltiplo do setor (o OSCR grava setores inteiros). Levanta ValueError."""
+def _type_word(flash_type: str, sector_kb: Optional[int], buffer: Optional[int]) -> int:
+    """Campo chr_kb do modo genérico de flash de 8 bits: tipo | (log2 do setor em bytes << 4) | (log2 do buffer << 9). Levanta ValueError."""
     if flash_type not in FLASH_TYPES:
         raise ValueError(f"tipo de flash desconhecido: {flash_type} (use {', '.join(FLASH_TYPES)})")
-    if not 1 <= flash_mb <= 8:
-        raise ValueError("tamanho do flash: 1 a 8 (MB)")
-    rom = _snes_strip_header(data)
-    if len(rom) > flash_mb * MB:
-        raise ValueError(f"a ROM tem {len(rom) // 1024} KB e não cabe em um flash de {flash_mb} MB")
     if flash_type == "e28fxxxj3a":
         sector_kb = sector_kb or 128
         buffer = buffer or 32
@@ -163,13 +156,27 @@ def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: O
         if buffer & (buffer - 1) or not 2 <= buffer <= 128:
             raise ValueError("--buffer precisa ser potência de 2 (2 a 128)")
         sec_exp, buf_exp = (sector_kb * 1024).bit_length() - 1, buffer.bit_length() - 1
+    return FLASH_TYPES[flash_type] | (sec_exp << 4) | (buf_exp << 9)
+
+
+def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: Optional[int] = None, buffer: Optional[int] = None) -> RomImage:
+    """ROM de SNES para os menus "LoROM/HiROM (P0)" e "ExLoROM/ExHiROM (P1)" do OSCR: flash de 8 bits de tipo informado (no OSCR vinha do banco CRDB).
+    Os tipos 29gl, lh28f0xx e e28fxxxj3a precisam de setor (KB) e buffer (bytes), potências de 2; e28fxxxj3a assume 128 KB e 32 bytes se faltarem.
+    No 29gl o arquivo é completado com 0xFF até um múltiplo do setor (o OSCR grava setores inteiros). Levanta ValueError."""
+    if flash_type not in FLASH_TYPES:
+        raise ValueError(f"tipo de flash desconhecido: {flash_type} (use {', '.join(FLASH_TYPES)})")
+    if not 1 <= flash_mb <= 8:
+        raise ValueError("tamanho do flash: 1 a 8 (MB)")
+    rom = _snes_strip_header(data)
+    if len(rom) > flash_mb * MB:
+        raise ValueError(f"a ROM tem {len(rom) // 1024} KB e não cabe em um flash de {flash_mb} MB")
+    word = _type_word(flash_type, sector_kb, buffer)
     body = rom
     if flash_type == "29gl":
         sector = sector_kb * 1024
         body = rom + b"\xff" * (-len(rom) % sector)
         if len(body) > flash_mb * MB:
             raise ValueError(f"a ROM completada até um múltiplo do setor ({len(body) // 1024} KB) não cabe em {flash_mb} MB")
-    word = FLASH_TYPES[flash_type] | (sec_exp << 4) | (buf_exp << 9)
     return RomImage(body, len(rom) // 1024, 0, None, flash_mb * 1024, SNES_GENERIC, word, rom)
 
 
@@ -207,12 +214,12 @@ def chip_code(chip: str, img: "RomImage") -> int:
 
 
 def split_md(data: bytes) -> RomImage:
-    """ROM de Mega Drive para o flash repro: arquivo binário (.md/.bin/.gen) de tamanho par, até 4 MB. ROM entrelaçada (.smd) não é aceita.
+    """ROM de Mega Drive para o flash repro: arquivo binário (.md/.bin/.gen) de tamanho par, até 8 MB. ROM entrelaçada (.smd) não é aceita.
     `prg_kb` é o tamanho arredondado para cima (o firmware recebe o tamanho exato em bytes). Levanta ValueError."""
     if len(data) == 0 or len(data) % 2:
         raise ValueError("a ROM de Mega Drive precisa ter tamanho par (arquivo binário .md/.bin/.gen)")
     if len(data) > MD_MAX_BYTES:
-        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o flash repro do Mega Drive tem no máximo 4 MB (MX29F1610 2 MB ou S29GL064N 4 MB)")
+        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o flash repro do Mega Drive tem no máximo 8 MB (o firmware recusa ROM maior que o chip do cartucho)")
     if len(data) % 1024 == 512 and data[0x100:0x104] != b"SEGA" and data[512 + 0x100:512 + 0x104] == b"SEGA":
         raise ValueError("o arquivo parece ter o cabeçalho de copiadora de 512 bytes (.smd); use a ROM binária sem cabeçalho")
     return RomImage(data, (len(data) + 1023) // 1024, 0, None)
@@ -253,3 +260,56 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
         diff = next((i for i in range(min(len(data), len(exp))) if data[i] != exp[i]), min(len(data), len(exp)))
     return VerifyResult(diff is None, zlib.crc32(data), zlib.crc32(exp), diff, len(data))
 
+
+# ---------------------------------------------------------------- programador de flash genérico (sistema 7)
+FLASHPROG_BUS = {"8": 1, "plcc32": 2, "16": 3, "eprom": 4}      # parte baixa do campo chip (firmware/oscr/include/dumper/FlashProg.h)
+FLASHPROG_LABEL = {"8": "flash de 8 bits (adaptador de flash)", "plcc32": "flash de 8 bits PLCC32 (adaptador de SNES)",
+                   "16": "flash de 16 bits", "eprom": "EPROM 27C322 (4 MB)"}
+EPROM_KB = 4096
+
+
+@dataclass
+class FlashJob:
+    chip: int                   # campo chip do comando
+    prg_kb: int                 # tamanho do chip em KB
+    chr_word: int               # campo chr_kb: tipo | setor << 4 | buffer << 9 (só no flash de 8 bits)
+    body: bytes = b""           # o que vai ao chip (no 29gl, completado com 0xFF até um múltiplo do setor)
+    rom: bytes = b""            # o arquivo original, que a conferência compara com a leitura
+
+
+def flashprog_params(bus: str, flash_kb: Optional[int], flash_type: Optional[str] = None, sector_kb: Optional[int] = None,
+                     buffer: Optional[int] = None, need_type: bool = False) -> FlashJob:
+    """Campos do comando para um chip. No flash de 8 bits o tipo é obrigatório para apagar e gravar (`need_type`), opcional para ler e identificar.
+    Levanta ValueError (texto para o usuário)."""
+    if bus not in FLASHPROG_BUS:
+        raise ValueError(f"barramento desconhecido: {bus} (use {', '.join(FLASHPROG_BUS)})")
+    if bus == "eprom":
+        return FlashJob(FLASHPROG_BUS[bus], EPROM_KB, 0)
+    if not flash_kb or not 1 <= flash_kb <= 8192:
+        raise ValueError("informe o tamanho do chip com --flash-kb (1 a 8192 KB)")
+    word = 0
+    if bus in ("8", "plcc32"):
+        if flash_type is None:
+            if need_type:
+                raise ValueError("este comando precisa de --flash-type (" + ", ".join(FLASH_TYPES) + "); o OSCR achava isso no cartão SD, confira a folha de dados do chip")
+        else:
+            word = _type_word(flash_type, sector_kb, buffer)
+    return FlashJob(FLASHPROG_BUS[bus], flash_kb, word)
+
+
+def split_flashprog(data: bytes, bus: str, flash_kb: Optional[int], flash_type: Optional[str] = None, sector_kb: Optional[int] = None,
+                    buffer: Optional[int] = None) -> FlashJob:
+    """Arquivo cru (sem cabeçalho) para gravar no chip. Tamanho múltiplo de 512 e que cabe. No 29gl completa com 0xFF até um múltiplo do setor."""
+    job = flashprog_params(bus, flash_kb, flash_type, sector_kb, buffer, need_type=bus in ("8", "plcc32"))
+    if len(data) == 0 or len(data) % 512:
+        raise ValueError("o arquivo precisa ter tamanho múltiplo de 512 bytes")
+    if len(data) > job.prg_kb * 1024:
+        raise ValueError(f"o arquivo tem {len(data) // 1024} KB e não cabe em {job.prg_kb} KB")
+    body = data
+    if flash_type == "29gl" and bus in ("8", "plcc32"):
+        sector = sector_kb * 1024
+        body = data + b"\xff" * (-len(data) % sector)
+        if len(body) > job.prg_kb * 1024:
+            raise ValueError(f"o arquivo completado até um múltiplo do setor ({len(body) // 1024} KB) não cabe em {job.prg_kb} KB")
+    job.body, job.rom = body, data
+    return job

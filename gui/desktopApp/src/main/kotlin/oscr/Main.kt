@@ -54,6 +54,9 @@ private class Pending(val data: ByteArray, val defaultName: String, val label: S
 /** Gravação à espera da confirmação do usuário. */
 private class WriteRequest(val file: File, val data: ByteArray)
 
+/** Programador de flash genérico à espera da confirmação: [file] null = apagar o chip. */
+private class FlashRequest(val file: File?, val job: FlashJob)
+
 /** Gravação de ROM em flash à espera da confirmação (apaga o chip). */
 private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage)
 
@@ -111,6 +114,9 @@ fun App() {
     var snesCapacity by remember { mutableStateOf("") }                  // "" = a menor em que a ROM cabe (só na disposição 1x)
     var flashType by remember { mutableStateOf("29f032") }               // P0/P1: tipo do flash de 8 bits
     var flashMb by remember { mutableStateOf("4") }
+    var fpBus by remember { mutableStateOf("8") }                        // programador de flash genérico: tipo de chip
+    var fpKb by remember { mutableStateOf("512") }
+    var fpReq by remember { mutableStateOf<FlashRequest?>(null) }
     var block369 by remember { mutableStateOf("0") }                    // GBA 369-in-1: bloco de 4 MB onde a gravação começa
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
@@ -156,6 +162,7 @@ fun App() {
     val isMd = system == CartSystem.MD
     val isGba = system == CartSystem.GBA
     val isGb = system == CartSystem.GB
+    val isFlash = system == CartSystem.FLASH
     val canWriteRom = isNes || isSnes || isMd || isGba || isGb                                    // gravação de ROM: flash do NES e flash CFI do SNES
     val chipChoice: FlashChip? = romChip?.takeIf { it in FlashChip.forSystem(system) }     // a escolha vale só para o sistema atual
     val prgN = prgKb.toIntOrNull() ?: 0; val chrN = chrKb.toIntOrNull() ?: 0; val ramN = ramKb.toIntOrNull() ?: 0; val mapN = mapper.toIntOrNull() ?: 0
@@ -238,8 +245,128 @@ fun App() {
         }
     }
 
+    fun describeRomImage(e: RomImageException): String = when (e.problem) {
+        RomImageProblem.TRUNCATED_HEADER -> t(S.RIMG_TRUNCATED)
+        RomImageProblem.TRAINER -> t(S.RIMG_TRAINER)
+        RomImageProblem.SIZE_MISMATCH -> f(S.RIMG_SIZE, e.a, e.b, e.c)
+        RomImageProblem.NEEDS_HEADER -> t(S.RIMG_NEEDS_HEADER)
+        RomImageProblem.RAW_SIZE -> t(S.RIMG_RAW)
+        RomImageProblem.CHIP_UNKNOWN -> t(S.RIMG_CHIP)
+        RomImageProblem.SNES_SIZE -> t(S.RIMG_SNES_SIZE)
+        RomImageProblem.SNES_TOO_BIG -> f(S.RIMG_SNES_TOO_BIG, e.a)
+        RomImageProblem.SNES_NO_FIT -> f(S.RIMG_SNES_NO_FIT, e.a, e.b)
+        RomImageProblem.SNES_CAPACITY -> t(S.RIMG_SNES_CAPACITY)
+        RomImageProblem.SNES_NEEDS_CHIP -> t(S.RIMG_SNES_NEEDS_CHIP)
+        RomImageProblem.FP_BUS -> t(S.RIMG_FP_BUS)
+        RomImageProblem.FP_KB -> t(S.RIMG_FP_KB)
+        RomImageProblem.FP_NEEDS_TYPE -> t(S.RIMG_FP_NEEDS_TYPE)
+        RomImageProblem.FP_SIZE -> t(S.RIMG_FP_SIZE)
+        RomImageProblem.FP_NO_FIT -> f(S.RIMG_FP_NO_FIT, e.a, e.b)
+        RomImageProblem.FP_PADDED_NO_FIT -> f(S.RIMG_FP_PADDED, e.a, e.b)
+        RomImageProblem.GB_SIZE -> t(S.RIMG_GB_SIZE)
+        RomImageProblem.GB_TOO_BIG -> f(S.RIMG_GB_TOO_BIG, e.a)
+        RomImageProblem.GB_ORANGE -> t(S.RIMG_GB_ORANGE)
+        RomImageProblem.GB_NEEDS_CHIP -> t(S.RIMG_GB_NEEDS_CHIP)
+        RomImageProblem.GBA_BLOCK -> t(S.RIMG_GBA_BLOCK)
+        RomImageProblem.GBA_SIZE -> t(S.RIMG_GBA_SIZE)
+        RomImageProblem.GBA_TOO_BIG -> f(S.RIMG_GBA_TOO_BIG, e.a, e.b)
+        RomImageProblem.MD_SIZE -> t(S.RIMG_MD_SIZE)
+        RomImageProblem.MD_TOO_BIG -> f(S.RIMG_MD_TOO_BIG, e.a)
+        RomImageProblem.MD_SMD -> t(S.RIMG_MD_SMD)
+        RomImageProblem.SNES_LAYOUT -> t(S.RIMG_SNES_LAYOUT)
+        RomImageProblem.SNES_BAD_LAYOUT -> f(S.RIMG_SNES_BAD_LAYOUT, e.a)
+        RomImageProblem.SNES_CAPACITY_FIXED -> t(S.RIMG_SNES_CAPACITY_FIXED)
+        RomImageProblem.GEN_TYPE -> t(S.RIMG_GEN_TYPE)
+        RomImageProblem.GEN_MB -> t(S.RIMG_GEN_MB)
+        RomImageProblem.GEN_NO_FIT -> f(S.RIMG_GEN_NO_FIT, e.a, e.b)
+        RomImageProblem.GEN_NEEDS_SECTOR -> t(S.RIMG_GEN_NEEDS_SECTOR)
+        RomImageProblem.GEN_SECTOR -> t(S.RIMG_GEN_SECTOR)
+        RomImageProblem.GEN_BUFFER -> t(S.RIMG_GEN_BUFFER)
+        RomImageProblem.GEN_PADDED_NO_FIT -> f(S.RIMG_GEN_PADDED, e.a, e.b)
+    }
+
+    // ---- programador de flash genérico (sistema 7)
+    fun fpJob(needType: Boolean = false): FlashJob? = try {
+        FlashProg.params(fpBus, fpKb.toIntOrNull(), flashType.takeIf { fpBus == "8" || fpBus == "plcc32" }, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), needType)
+    } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)); null }
+
+    fun fpNeedFw(): Boolean { if (info?.flashProg != true) { say(t(S.ERR_PREFIX) + ": " + t(S.FP_NO_FW)); return false }; return true }
+
+    fun actFpId() {
+        val c = client ?: return
+        val job = fpJob() ?: return
+        if (!fpNeedFw()) return
+        run(S.STAGE_DETECTING) {
+            val r = withContext(Dispatchers.IO) { c.detect(system, job.chip, job.prgKb, job.chrWord) }
+            say(if (r.status == 0) "${t(S.FP_ID)}: ${r.name}" + (if ('=' in r.name) " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040)" else "") else t(S.FP_ID_NONE))
+        }
+    }
+
+    fun actFpRead() {
+        val c = client ?: return
+        val job = fpJob() ?: return
+        if (!fpNeedFw()) return
+        run(S.STAGE_READING_ROM) {
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, job.chip, job.prgKb, job.chrWord, ticker()) }
+            say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
+            offerSave(Pending(res.data, "flash_${fpBus}_${job.prgKb}kb.bin", "flash", reportText("flash", res.crcHex, res.data.size, emptyList())))
+        }
+    }
+
+    fun actFpBlank() {
+        val c = client ?: return
+        val job = fpJob() ?: return
+        if (!fpNeedFw()) return
+        run(S.STAGE_CHECKING_BLANK) {
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, job.chip, job.prgKb, job.chrWord, ticker()) }
+            val first = res.data.indexOfFirst { it != 0xFF.toByte() }
+            say(if (first < 0) t(S.FP_BLANK_YES) else t(S.ERR_PREFIX) + ": " + f(S.FP_BLANK_NO, first))
+        }
+    }
+
+    fun actFpEraseAsk() {
+        if (fpBus == "eprom") { say(t(S.ERR_PREFIX) + ": " + t(S.FP_EPROM_NO_ERASE)); return }
+        val job = fpJob(needType = true) ?: return
+        if (!fpNeedFw()) return
+        fpReq = FlashRequest(null, job)
+    }
+
+    fun actFpWriteChoose() {
+        val job0 = fpJob(needType = true) ?: return
+        if (!fpNeedFw()) return
+        val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
+        try {
+            val job = FlashProg.split(file.readBytes(), fpBus, job0.prgKb.takeIf { fpBus != "eprom" }, flashType.takeIf { fpBus == "8" || fpBus == "plcc32" }, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull())
+            fpReq = FlashRequest(file, job)
+        } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
+    }
+
+    fun actFpConfirmed(req: FlashRequest) {
+        val c = client ?: return
+        val job = req.job
+        if (req.file == null) {
+            run(S.STAGE_ERASING) {
+                withContext(Dispatchers.IO) { c.erase(system, job.chip, job.prgKb, job.chrWord) }
+                say(t(S.FP_ERASED))
+            }
+            return
+        }
+        run(S.STAGE_WRITING_ROM) {
+            val crc = withContext(Dispatchers.IO) { c.writeRom(system, job.body, job.chip, job.prgKb, job.chrWord, Proto.DEFAULT_BLOCK, ticker()) }
+            say("${t(S.ROM_WRITTEN)}: ${job.rom.size} ${t(S.BYTES)}, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+            if (verifyRom) {
+                stage = S.STAGE_VERIFYING_ROM; progress = 0f
+                val back = withContext(Dispatchers.IO) { c.dumpRom(system, 0, job.chip, job.prgKb, job.chrWord, ticker()).data }
+                val n = job.rom.size
+                val diff = (0 until minOf(back.size, n)).firstOrNull { back[it] != job.rom[it] } ?: (if (back.size >= n) null else back.size)
+                say(if (diff == null) f(S.ROM_VERIFY_OK, back.size, "") else t(S.ERR_PREFIX) + ": " + f(S.ROM_VERIFY_BAD, diff, "", ""))
+            } else say(t(S.ROM_VERIFY_HINT))
+        }
+    }
+
     fun actDetect() {
         if (planned != null) return
+        if (isFlash) { actFpId(); return }
         val c = client ?: return
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system) }
@@ -251,6 +378,7 @@ fun App() {
 
     fun actDumpRom() {
         if (planned != null) return
+        if (isFlash) { actFpRead(); return }
         val c = client ?: return
         if (problem != null) { say(describeProblem(lang, problem)); return }
         run(S.STAGE_READING_ROM) {
@@ -312,40 +440,6 @@ fun App() {
             val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapperArg(), ramArg(), ticker()) }
             say("${t(S.DONE)}: ${req.data.size} ${t(S.BYTES)}, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
         }
-    }
-
-    fun describeRomImage(e: RomImageException): String = when (e.problem) {
-        RomImageProblem.TRUNCATED_HEADER -> t(S.RIMG_TRUNCATED)
-        RomImageProblem.TRAINER -> t(S.RIMG_TRAINER)
-        RomImageProblem.SIZE_MISMATCH -> f(S.RIMG_SIZE, e.a, e.b, e.c)
-        RomImageProblem.NEEDS_HEADER -> t(S.RIMG_NEEDS_HEADER)
-        RomImageProblem.RAW_SIZE -> t(S.RIMG_RAW)
-        RomImageProblem.CHIP_UNKNOWN -> t(S.RIMG_CHIP)
-        RomImageProblem.SNES_SIZE -> t(S.RIMG_SNES_SIZE)
-        RomImageProblem.SNES_TOO_BIG -> f(S.RIMG_SNES_TOO_BIG, e.a)
-        RomImageProblem.SNES_NO_FIT -> f(S.RIMG_SNES_NO_FIT, e.a, e.b)
-        RomImageProblem.SNES_CAPACITY -> t(S.RIMG_SNES_CAPACITY)
-        RomImageProblem.SNES_NEEDS_CHIP -> t(S.RIMG_SNES_NEEDS_CHIP)
-        RomImageProblem.GB_SIZE -> t(S.RIMG_GB_SIZE)
-        RomImageProblem.GB_TOO_BIG -> f(S.RIMG_GB_TOO_BIG, e.a)
-        RomImageProblem.GB_ORANGE -> t(S.RIMG_GB_ORANGE)
-        RomImageProblem.GB_NEEDS_CHIP -> t(S.RIMG_GB_NEEDS_CHIP)
-        RomImageProblem.GBA_BLOCK -> t(S.RIMG_GBA_BLOCK)
-        RomImageProblem.GBA_SIZE -> t(S.RIMG_GBA_SIZE)
-        RomImageProblem.GBA_TOO_BIG -> f(S.RIMG_GBA_TOO_BIG, e.a, e.b)
-        RomImageProblem.MD_SIZE -> t(S.RIMG_MD_SIZE)
-        RomImageProblem.MD_TOO_BIG -> f(S.RIMG_MD_TOO_BIG, e.a)
-        RomImageProblem.MD_SMD -> t(S.RIMG_MD_SMD)
-        RomImageProblem.SNES_LAYOUT -> t(S.RIMG_SNES_LAYOUT)
-        RomImageProblem.SNES_BAD_LAYOUT -> f(S.RIMG_SNES_BAD_LAYOUT, e.a)
-        RomImageProblem.SNES_CAPACITY_FIXED -> t(S.RIMG_SNES_CAPACITY_FIXED)
-        RomImageProblem.GEN_TYPE -> t(S.RIMG_GEN_TYPE)
-        RomImageProblem.GEN_MB -> t(S.RIMG_GEN_MB)
-        RomImageProblem.GEN_NO_FIT -> f(S.RIMG_GEN_NO_FIT, e.a, e.b)
-        RomImageProblem.GEN_NEEDS_SECTOR -> t(S.RIMG_GEN_NEEDS_SECTOR)
-        RomImageProblem.GEN_SECTOR -> t(S.RIMG_GEN_SECTOR)
-        RomImageProblem.GEN_BUFFER -> t(S.RIMG_GEN_BUFFER)
-        RomImageProblem.GEN_PADDED_NO_FIT -> f(S.RIMG_GEN_PADDED, e.a, e.b)
     }
 
     fun actRomWriteChoose() {
@@ -440,6 +534,26 @@ fun App() {
                 )
             }
             if (stub != null) Callout(f(S.STUB_NOTICE, stub.label), Tone.INFO)
+            if (stub == null && isFlash) {
+                Callout(t(S.FP_HINT), Tone.INFO)
+                LabeledField(t(S.FP_BUS)) {
+                    ComboBox(value = t(when (fpBus) { "plcc32" -> S.FP_BUS_PLCC32; "16" -> S.FP_BUS_16; "eprom" -> S.FP_BUS_EPROM; else -> S.FP_BUS_8 }), modifier = Modifier.fillMaxWidth()) { close ->
+                        listOf("8" to S.FP_BUS_8, "plcc32" to S.FP_BUS_PLCC32, "16" to S.FP_BUS_16, "eprom" to S.FP_BUS_EPROM).forEach { (k, label) -> DropdownMenuItem(text = { Text(t(label)) }, onClick = { close(); fpBus = k }) }
+                    }
+                }
+                if (fpBus != "eprom") OutlinedTextField(fpKb, { fpKb = it.filter(Char::isDigit).take(4) }, label = { Text(t(S.FP_KB)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (fpBus == "8" || fpBus == "plcc32") {
+                    LabeledField(t(S.LBL_FLASH_TYPE)) {
+                        ComboBox(value = flashType, modifier = Modifier.fillMaxWidth()) { close ->
+                            SnesLayouts.FLASH_TYPES.keys.forEach { k -> DropdownMenuItem(text = { Text(k) }, onClick = { close(); flashType = k }) }
+                        }
+                    }
+                    if (flashType in SnesLayouts.NEED_SECTOR) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(sectorKb, { sectorKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.LBL_SECTOR_KB)) }, singleLine = true, modifier = Modifier.width(140.dp))
+                        OutlinedTextField(bufferBytes, { bufferBytes = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.LBL_BUFFER)) }, singleLine = true, modifier = Modifier.width(140.dp))
+                    }
+                }
+            }
             if (stub == null && system == CartSystem.GB) Callout(t(S.GB_WARNING), Tone.WARN)
             if (stub == null && system == CartSystem.GBA) {
                 Callout(t(S.GBA_WARNING), Tone.WARN)
@@ -487,8 +601,9 @@ fun App() {
         SectionCard(t(S.READ_SECTION)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(enabled = canRun && problem == null, onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
-                FilledTonalButton(enabled = canRun && ramProblem == null, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
-                OutlinedButton(enabled = canRun, onClick = { actDetect() }) { Text(t(S.DETECT)) }
+                FilledTonalButton(enabled = canRun && ramProblem == null && !isFlash, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
+                OutlinedButton(enabled = canRun, onClick = { actDetect() }) { Text(t(if (isFlash) S.FP_ID else S.DETECT)) }
+                if (isFlash) OutlinedButton(enabled = canRun, onClick = { actFpBlank() }) { Text(t(S.FP_BLANK)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -501,11 +616,15 @@ fun App() {
         SectionCard(t(S.WRITE_SECTION), container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f), titleColor = MaterialTheme.colorScheme.error) {
             val dangerBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             val dangerColors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (isFlash) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(enabled = canRun && fpBus != "eprom", onClick = { actFpEraseAsk() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_ERASE)) }
+                OutlinedButton(enabled = canRun, onClick = { actFpWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_WRITE)) }
+            }
+            if (!isFlash) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_SAVE)) }
                 OutlinedButton(enabled = canRun && canWriteRom && info?.writeRom == true, onClick = { actRomWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_ROM)) }
             }
-            if (stub == null && canWriteRom && !isMd && !isGba) LabeledField(t(S.FLASH_CHIP)) {
+            if (stub == null && canWriteRom && !isMd && !isGba && !isFlash) LabeledField(t(S.FLASH_CHIP)) {
                 ComboBox(value = chipChoice?.label ?: (if (isSnes || isGb) "—" else t(S.FLASH_CHIP_AUTO)), modifier = Modifier.fillMaxWidth()) { close ->
                     if (isNes) DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
                     FlashChip.forSystem(system).forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
@@ -626,6 +745,16 @@ fun App() {
             text = { Text(f(S.CONFIRM_ROM_BODY, req.file.name, "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB", req.chip.label)) },
             confirmButton = { Button(onClick = { romReq = null; actRomWriteConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE_ROM)) } },
             dismissButton = { OutlinedButton(onClick = { romReq = null }) { Text(t(S.CANCEL)) } },
+        )
+    }
+
+    fpReq?.let { req ->
+        AlertDialog(
+            onDismissRequest = { fpReq = null },
+            title = { Text(t(S.CONFIRM_ROM_TITLE)) },
+            text = { Text(if (req.file == null) f(S.FP_CONFIRM_ERASE, req.job.prgKb) else f(S.FP_CONFIRM_WRITE, req.file.name, "${req.job.rom.size / 1024} KB")) },
+            confirmButton = { Button(onClick = { fpReq = null; actFpConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(if (req.file == null) S.FP_ERASE else S.FP_WRITE)) } },
+            dismissButton = { OutlinedButton(onClick = { fpReq = null }) { Text(t(S.CANCEL)) } },
         )
     }
 

@@ -21,3 +21,4 @@ host/.pytest_cache/
 *.egg-info/
 boards/*/hardware/.history/
 firmware/oscr/.pio/
+references

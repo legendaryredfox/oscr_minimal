@@ -5,9 +5,14 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto build/test_snes_plan
+test: build/test_proto build/test_snes_plan build/test_mdflash
 	./build/test_proto
 	./build/test_snes_plan
+	./build/test_mdflash
+
+build/test_mdflash: test_mdflash.cpp md_chip_model.h ../include/dumper/MdFlashCore.h
+	mkdir -p build
+	$(CXX) -std=c++17 -Wall -Wextra -O1 -o $@ test_mdflash.cpp
 
 build/test_snes_plan: test_snes_plan.cpp ../include/dumper/SnesPlan.h
 	mkdir -p build

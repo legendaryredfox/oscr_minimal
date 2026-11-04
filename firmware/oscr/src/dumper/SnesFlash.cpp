@@ -56,8 +56,8 @@ namespace OSCR::Dumper::SnesFlash
     {
       if (generic)
       {
-        static uint8_t const m[] = {0, 1, 2, 124, 224};          // LoRom (P0), HiRom (P0), ExLoRom (P1), ExHiRom (P1)
-        return wiring >= 1 && wiring <= 4 ? m[wiring] : 1;
+        static uint8_t const m[] = {0, 1, 2, 124, 224, 0, 3};    // LoRom (P0), HiRom (P0), ExLoRom (P1), ExHiRom (P1), adaptador de flash, PLCC32
+        return wiring >= 1 && wiring <= 6 ? m[wiring] : 1;
       }
       static uint8_t const lo[] = {1, 122, 124, 142};            // chip 1 a 4, LoROM
       static uint8_t const hi[] = {2, 222, 224, 242};            // chip 1 a 4, HiROM
@@ -79,8 +79,8 @@ namespace OSCR::Dumper::SnesFlash
     {
       uint8_t wiring = uint8_t(chip & 0xFF);
       uint8_t type = chrKb & 0xF, secExp = (chrKb >> 4) & 0x1F, bufExp = (chrKb >> 9) & 0x7;
-      if (wiring < 1 || wiring > 4 || type < 1 || type > 8) return false;
-      if (prgKb == 0 || prgKb % 1024 != 0 || prgKb > 8192) return false;            // 1 a 8 MB, como o `selectFlashSize` do OSCR
+      if (wiring < 1 || wiring > 6 || type < 1 || type > 8) return false;
+      if (prgKb == 0 || prgKb > 8192) return false;                                   // 1 KB a 8 MB (o `selectFlashSize` do OSCR só dava 1 a 8 MB; o banco CRDB tem chips menores, como o 39SF040)
       if (size == 0 || size % 512UL != 0 || size > genericFlashBytes(prgKb)) return false;
       if (static_cast<FlashType>(type) == FlashType::IC_29GL)                       // grava setor inteiro: o PC completa o arquivo com 0xFF
       {

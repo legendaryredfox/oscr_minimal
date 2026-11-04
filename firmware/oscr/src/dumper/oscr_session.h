@@ -62,6 +62,8 @@ class Backend {
   // na UART; `stream_write_rom` consome o arquivo. As opções (set_options) dizem o chip e os tamanhos.
   virtual bool rom_prepare(uint8_t system, uint32_t size, uint16_t& err) { (void)system; (void)size; err = E_COMANDO; return false; }
   virtual bool stream_write_rom(uint8_t system, StreamSource& in, uint16_t& err) { (void)system; (void)in; err = E_COMANDO; return false; }
+  // ERASE (programador de flash genérico): apaga o chip inteiro com as opções (set_options) e responde só no fim. Demora: o host espera até 90 s.
+  virtual bool erase(uint8_t system, uint16_t& err) { (void)system; err = E_COMANDO; return false; }
 };
 
 class MockBackend : public Backend {
@@ -103,6 +105,7 @@ class Session {
   void handle();
   void do_info(uint8_t seq);
   void do_detect(uint8_t seq, uint8_t sys);
+  void do_erase(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);
   void do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block);

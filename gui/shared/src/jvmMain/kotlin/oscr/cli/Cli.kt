@@ -58,11 +58,11 @@ object Cli {
         EXIT_INTERRUPTED to "interrupted (Ctrl+C)",
     )
     private val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369")
+    private val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369", "bus", "flash-kb")
     private val FLAGS = setOf("simulate", "json", "yes", "no-backup", "no-verify", "help", "version")
-    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write")
+    private val COMMANDS = setOf("ports", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write")
     private val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
-        "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "mock" to emptyList())
+        "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
     private val STATUS = mapOf(0 to "cartridge detected", 1 to "no cartridge", 2 to "not supported", 3 to "hardware error",
         4 to "invalid header (data present but the header checksum fails: clean the contacts and reseat)")
 
@@ -80,6 +80,11 @@ commands:
   dump         read the ROM                    (-s SYSTEM [-o FILE])
   save-read    read the save                   (-s SYSTEM [-o FILE])
   save-write   write the save                  (-s SYSTEM -i FILE --yes)
+  flash-id     generic flash programmer: read the chip ID (--bus 8|plcc32|16|eprom --flash-kb N [--flash-type T])
+  flash-read   generic flash programmer: read the whole chip to a file (-o FILE)
+  flash-blank  generic flash programmer: check that the chip is blank (reads the chip and checks on the PC)
+  flash-erase  generic flash programmer: ERASE the whole chip (--flash-type is required on 8-bit flash) --yes
+  flash-write  generic flash programmer: erase and write a file to the chip (-i FILE), then read it back to verify
   rom-write    write the ROM to a flash cartridge, ERASES the chip (-i FILE [--chip nesmaker|a29040b] --yes)
 
 options (accepted before or after the command):
@@ -99,7 +104,9 @@ options (accepted before or after the command):
   --limit N            search: maximum results (default 20)
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
                        SNES: snes-lorom or snes-hirom (required, the wiring of the CFI flash)
-                       Mega Drive: md-flash (the default; the firmware identifies MX29F1610 or S29GL064N by ID)
+                       Mega Drive: md-flash (the default; the firmware identifies the chip by ID: MX29F1610, S29GL064N, 32 and 64 Mbit M29W/MX29LV, MX29L3211, PA28F400, SST39VF)
+  --bus NAME           flash-*: 8 (8-bit flash on the flash adapter), plcc32 (8-bit PLCC32 on the SNES adapter), 16 (16-bit flash) or eprom (27C322)
+  --flash-kb N         flash-*: chip size in KB (1 to 8192; the EPROM is always 4096)
   --capacity KB        rom-write, SNES CFI, layout 1x: flash size, 2048 or 4096 (default: the smallest the ROM fits)
   --layout NAME        rom-write, SNES CFI: chips on the cartridge: 1x (one 2 or 4 MB chip, default), 2x2mb, 2x4mb, 4x2mb, 1x8mb (the last three: ROM of 6 to 8 MB, as in the OSCR)
   --block369 N         rom-write, GBA 369-in-1: 4 MB block (0 to 63) where writing starts ("Write Offset" of the OSCR); 0 = from the start
@@ -169,6 +176,11 @@ Full contract: docs/cli.md
                 "identify" -> cmdIdentify(io, a)
                 "search" -> cmdSearch(io, a)
                 "rom-write" -> cmdRomWrite(io, a)
+                "flash-id" -> cmdFlashId(io, a)
+                "flash-read" -> cmdFlashRead(io, a)
+                "flash-blank" -> cmdFlashBlank(io, a)
+                "flash-erase" -> cmdFlashErase(io, a)
+                "flash-write" -> cmdFlashWrite(io, a)
                 else -> cmdSaveWrite(io, a)
             }
         } catch (e: CliError) {
@@ -408,7 +420,7 @@ Full contract: docs/cli.md
         val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
         val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
         if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.GB && sys != CartSystem.MOCK)
-            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (MX29F1610 and S29GL064N) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) and Game Boy (29F, 39SF, CFI); see docs/funcoes-oscr.md", EXIT_USAGE)
+            throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (flash chips identified by ID: see docs/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) and Game Boy (29F, 39SF, CFI); see docs/funcoes-oscr.md", EXIT_USAGE)
         val chipOpt0 = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
         val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else if (sys == CartSystem.GBA && chipOpt0 == null) FlashChip.GBA_FLASH else chipOpt0
         if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
@@ -446,11 +458,12 @@ Full contract: docs/cli.md
                 RomImageProblem.GB_TOO_BIG -> "the ROM has ${e.a} KB; the Game Boy writer goes up to 4 MB (256 banks)"
                 RomImageProblem.GB_ORANGE -> "the flash without MBC (Orange FM) writes only 32 KB, as in the OSCR"
                 RomImageProblem.GB_NEEDS_CHIP -> "on the Game Boy choose --chip"
+                RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_SIZE, RomImageProblem.FP_NO_FIT, RomImageProblem.FP_PADDED_NO_FIT -> e.problem.name
                 RomImageProblem.GBA_BLOCK -> "--block369 goes from 0 to 63"
                 RomImageProblem.GBA_SIZE -> "the GBA ROM size must be a multiple of 1 KB"
                 RomImageProblem.GBA_TOO_BIG -> "the ROM has ${e.a} KB and goes past what fits from block ${e.b}"
                 RomImageProblem.MD_SIZE -> "the Mega Drive ROM size must be even (binary .md/.bin/.gen file)"
-                RomImageProblem.MD_TOO_BIG -> "the ROM has ${e.a} KB; the Mega Drive flash repro holds at most 4 MB (MX29F1610 2 MB or S29GL064N 4 MB)"
+                RomImageProblem.MD_TOO_BIG -> "the ROM has ${e.a} KB; the Mega Drive flash repro holds at most 8 MB (the firmware refuses a ROM larger than the cartridge's chip)"
                 RomImageProblem.MD_SMD -> "the file seems to have the 512-byte copier header (.smd); use the plain binary ROM without a header"
             }
             throw CliError(if (e.problem in setOf(RomImageProblem.CHIP_UNKNOWN, RomImageProblem.GEN_TYPE, RomImageProblem.GEN_MB)) "usage" else "bad_rom", msg, EXIT_USAGE)
@@ -487,6 +500,114 @@ Full contract: docs/cli.md
             if (!v.ok) throw CliError("verify_failed", "the ROM read back does NOT match what was written (first differing byte at offset ${v.firstDiff}; read ${hex8(v.readCrc)}, expected ${hex8(v.expectedCrc)})",
                 EXIT_ERROR, "clean the contacts, check that the chip is the one chosen and write again; the chip may be erased or half written", mapOf("written" to out, "first_diff" to v.firstDiff))
             lines += "verification after writing: OK (read ${v.readBytes} bytes, CRC32 ${hex8(v.readCrc)})"
+        }
+        emit(io, a, out, lines)
+        return EXIT_OK
+    }
+
+    // ------------------------------------------------------------------ programador de flash genérico (sistema 7; docs/funcoes-oscr.md)
+    private fun fpError(e: RomImageException): CliError = CliError(if (e.problem in setOf(RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE)) "usage" else "bad_rom", when (e.problem) {
+        RomImageProblem.FP_BUS -> "unknown --bus (use ${FlashProg.BUS.keys.joinToString(", ")})"
+        RomImageProblem.FP_KB -> "give the chip size with --flash-kb (1 to 8192 KB)"
+        RomImageProblem.FP_NEEDS_TYPE -> "this command needs --flash-type (${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")}); the OSCR found it in the SD card database, check the chip's datasheet"
+        RomImageProblem.FP_SIZE -> "the file size must be a multiple of 512 bytes"
+        RomImageProblem.FP_NO_FIT -> "the file has ${e.a} KB and does not fit ${e.b} KB"
+        RomImageProblem.FP_PADDED_NO_FIT -> "the file padded to a whole number of sectors (${e.a} KB) does not fit ${e.b} KB"
+        RomImageProblem.GEN_TYPE -> "unknown --flash-type (use ${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")})"
+        RomImageProblem.GEN_NEEDS_SECTOR -> "this flash type needs --sector-kb (sector size) and --buffer (write buffer bytes); see the chip's datasheet"
+        RomImageProblem.GEN_SECTOR -> "--sector-kb must be a power of 2 (1 to 16384)"
+        RomImageProblem.GEN_BUFFER -> "--buffer must be a power of 2 (2 to 128)"
+        else -> e.problem.name
+    }, EXIT_USAGE)
+
+    private fun fpInt(a: Args, k: String): Int? = a.opts[k]?.let { it.toIntOrNull() ?: throw CliError("usage", "--$k needs a number", EXIT_USAGE) }
+    private fun fpBus(a: Args): String = a.opts["bus"] ?: throw CliError("usage", "give --bus (${FlashProg.BUS.keys.joinToString(", ")})", EXIT_USAGE)
+    private fun fpSys(a: Args) = if (a.opts["system"] == "mock") CartSystem.MOCK else CartSystem.FLASH      // o simulador só entende o sistema MOCK
+
+    private fun fpJob(a: Args, needType: Boolean = false): FlashJob =
+        try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType) } catch (e: RomImageException) { throw fpError(e) }
+
+    private fun fpNeed(c: Conn) {
+        if (!c.info.flashProg) throw CliError("unsupported_firmware", "this firmware has no generic flash programmer", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
+    }
+
+    private fun fpRead(io: CliIo, a: Args, c: Conn, job: FlashJob): DumpResult = c.client.dumpRom(fpSys(a), a.int("block"), job.chip, job.prgKb, job.chrWord, progress(io, a, "flash-read"))
+
+    private fun cmdFlashId(io: CliIo, a: Args): Int {
+        val job = fpJob(a); val bus = fpBus(a)
+        val c = connect(io, a)
+        val r = try { fpNeed(c); c.client.detect(fpSys(a), job.chip, job.prgKb, job.chrWord) } finally { c.transport.close() }
+        val ok = r.status == 0
+        val legend = if ('=' in r.name) " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 or FFFF = the chip did not answer that routine)" else ""
+        emit(io, a, Json.obj("ok" to ok, "ids" to r.name, "size" to r.romSize, "status" to r.status),
+            listOf(if (ok) "${FlashProg.LABEL.getValue(bus)}: ${r.name}$legend" else "${FlashProg.LABEL.getValue(bus)}: no chip answered (ID 0000 or FFFF)"))
+        return if (ok) EXIT_OK else EXIT_NO_CART
+    }
+
+    private fun cmdFlashRead(io: CliIo, a: Args): Int {
+        val job = fpJob(a)
+        val c = connect(io, a)
+        val res = try { fpNeed(c); fpRead(io, a, c, job) } finally { c.transport.close() }
+        saveResult(io, a, res, ".bin", "flash.bin")
+        return EXIT_OK
+    }
+
+    private fun cmdFlashBlank(io: CliIo, a: Args): Int {
+        val job = fpJob(a)
+        val c = connect(io, a)
+        val res = try { fpNeed(c); fpRead(io, a, c, job) } finally { c.transport.close() }
+        val first = res.data.indexOfFirst { it != 0xFF.toByte() }
+        emit(io, a, Json.obj("ok" to (first < 0), "blank" to (first < 0), "bytes" to res.data.size, "first_non_blank" to (if (first < 0) null else first)),
+            listOf(if (first < 0) "blank" else "NOT blank (first byte different from FF at offset $first)"))
+        return if (first < 0) EXIT_OK else EXIT_ERROR
+    }
+
+    private fun cmdFlashErase(io: CliIo, a: Args): Int {
+        val bus = fpBus(a)
+        if (bus == "eprom") throw CliError("usage", "an EPROM cannot be erased (the 27C322 needs ultraviolet light); use flash-blank to check that it is blank", EXIT_USAGE)
+        val job = fpJob(a, needType = bus == "8" || bus == "plcc32")
+        if ("yes" !in a.flags) {
+            if (!io.interactive) throw CliError("refused", "refused: erasing the chip LOSES everything in it. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")
+            io.err("Erase ${FlashProg.LABEL.getValue(bus)} of ${job.prgKb} KB? This LOSES its contents. Continue? [y/N] ")
+            if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim")) { io.out("cancelled"); return EXIT_ERROR }
+        }
+        val c = connect(io, a)
+        try { fpNeed(c); c.client.erase(fpSys(a), job.chip, job.prgKb, job.chrWord, ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()) } finally { c.transport.close() }
+        emit(io, a, Json.obj("erased" to true, "bus" to bus, "flash_kb" to job.prgKb), listOf("chip erased"))
+        return EXIT_OK
+    }
+
+    private fun cmdFlashWrite(io: CliIo, a: Args): Int {
+        val input = a.opts["input"] ?: throw CliError("usage", "flash-write needs -i/--input FILE", EXIT_USAGE)
+        val bus = fpBus(a)
+        val job = try { FlashProg.split(File(input).readBytes(), bus, fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer")) } catch (e: RomImageException) { throw fpError(e) }
+        val what = "${FlashProg.LABEL.getValue(bus)}: ${job.rom.size} bytes in a ${job.prgKb} KB chip"
+        if ("yes" !in a.flags) {
+            if (!io.interactive) throw CliError("refused", "refused: writing ERASES the chip. Outside a terminal confirm with --yes.", EXIT_REFUSED, "repeat the command with --yes")
+            io.err("Write $what? This ERASES the chip's current contents. Continue? [y/N] ")
+            if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim")) { io.out("cancelled"); return EXIT_ERROR }
+        }
+        val c = connect(io, a)
+        val crc: Int
+        try {
+            fpNeed(c)
+            crc = c.client.writeRom(fpSys(a), job.body, job.chip, job.prgKb, job.chrWord, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "flash-write"),
+                ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong())
+        } finally { c.transport.close() }
+        val hex = hex8(crc)
+        val out = linkedMapOf<String, Any?>("bus" to bus, "flash_kb" to job.prgKb, "bytes" to job.body.size, "crc32" to hex)
+        val lines = mutableListOf("written: $what  CRC32 $hex")
+        if ("no-verify" in a.flags || a.opts["system"] == "mock") {
+            out["verify"] = "skipped"; lines += "verification after writing: skipped"
+        } else {
+            val c2 = connect(io, a)
+            val back = try { fpRead(io, a, c2, job).data } finally { c2.transport.close() }
+            val n = job.rom.size
+            val diff = (0 until minOf(back.size, n)).firstOrNull { back[it] != job.rom[it] } ?: (if (back.size >= n) null else back.size)
+            out["verify"] = Json.obj("ok" to (diff == null), "read_bytes" to back.size, "first_diff" to diff)
+            if (diff != null) throw CliError("verify_failed", "the chip read back does NOT match the file (first differing byte at offset $diff)", EXIT_ERROR,
+                "check the flash type, clean the contacts and write again; the chip may be erased or half written", mapOf("written" to out, "first_diff" to diff))
+            lines += "verification after writing: OK (read ${back.size} bytes from the chip)"
         }
         emit(io, a, out, lines)
         return EXIT_OK

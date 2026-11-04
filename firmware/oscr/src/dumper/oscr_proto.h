@@ -21,7 +21,7 @@ constexpr uint8_t  MAGIC0 = 0xA5, MAGIC1 = 0x5A;
 
 enum : uint8_t {  // host -> dispositivo
   T_INFO = 0x01, T_DETECT = 0x02, T_DUMP_ROM = 0x03, T_READ_SAVE = 0x04, T_WRITE_SAVE = 0x05,
-  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B,
+  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B, T_ERASE = 0x0C,
   // dispositivo -> host
   T_INFO_RESP = 0x81, T_DETECT_RESP = 0x82, T_BEGIN = 0x83, T_DATA = 0x84, T_END = 0x85,
   T_D_ACK = 0x86, T_ERRO = 0x87, T_PROGRESSO = 0x88,
@@ -34,7 +34,7 @@ enum : uint16_t {  // códigos de ERRO
   E_CRC = 6, E_CARTUCHO_IO = 7, E_OCUPADO = 8, E_ABORTADO = 9, E_SEM_SAVE = 10, E_FLASH = 11,
 };
 
-enum : uint8_t { SYS_SNES = 1, SYS_NES = 2, SYS_FAMICOM = 3, SYS_MD = 4, SYS_GBA = 5, SYS_GB = 6, SYS_MOCK = 255 };
+enum : uint8_t { SYS_SNES = 1, SYS_NES = 2, SYS_FAMICOM = 3, SYS_MD = 4, SYS_GBA = 5, SYS_GB = 6, SYS_FLASH = 7, SYS_MOCK = 255 };
 
 // CRC32 IEEE (igual ao zlib). `start` é o CRC acumulado anterior (0 no começo).
 uint32_t crc32_update(uint32_t start, const uint8_t* data, size_t len);

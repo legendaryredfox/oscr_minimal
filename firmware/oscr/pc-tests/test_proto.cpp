@@ -153,6 +153,50 @@ static void test_session_info_detect() {
   CHECK(frames == 2 && info_ok && det_ok);
 }
 
+// ---- ERASE e opções no DETECT (programador de flash genérico)
+struct EraseBackend : MockBackend {
+  uint16_t o_chip = 0, o_prg = 0, o_chr = 0, erased_with = 0;
+  bool supports(uint8_t s) override { return s == SYS_FLASH; }
+  void set_options(uint16_t m, uint16_t p, uint16_t c) override { o_chip = m; o_prg = p; o_chr = c; }
+  void detect(uint8_t, DetectInfo& o) override { o.status = 0; o.rom_size = uint32_t(o_prg) * 1024; o.save_size = 0; o.save_type = 0; strcpy(o.name, "ID C2F1"); }
+  bool erase(uint8_t, uint16_t& err) override { if (o_chip == 9) { err = E_FLASH; return false; } erased_with = o_chip; return true; }
+};
+
+static void test_erase_e_detect_com_opcoes() {
+  Loop l; EraseBackend be;
+  static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
+  std::vector<uint8_t> out;
+  struct C { Loop* l; std::vector<uint8_t>* o; };
+  C c{&l, &out};
+  Io io{&c, [](void* x, uint32_t t) { return lread(((C*)x)->l, t); },
+        [](void* x, const uint8_t* d, size_t n) { ((C*)x)->o->insert(((C*)x)->o->end(), d, d + n); },
+        [](void* x) { return lnow(((C*)x)->l); }};
+  Session s(io, be, rx, sizeof rx, tx, sizeof tx);
+
+  uint8_t det[7] = {SYS_FLASH, 3, 0, 0x00, 0x08, 5, 0};              // chip 3, prg 2048 KB, chr 5
+  l.cur_seq = 1; l.host_send(T_DETECT, det, 7); s.poll();
+  CHECK(be.o_chip == 0 || be.o_chip == 3);                            // as opções valem para um comando só (zeradas depois)
+  uint8_t er[7] = {SYS_FLASH, 3, 0, 0, 4, 0, 0};
+  l.cur_seq = 2; l.host_send(T_ERASE, er, 7); s.poll();
+  CHECK(be.erased_with == 3);
+  uint8_t bad[7] = {SYS_FLASH, 9, 0, 0, 4, 0, 0};
+  l.cur_seq = 3; l.host_send(T_ERASE, bad, 7); s.poll();
+  uint8_t other[7] = {SYS_SNES, 1, 0, 0, 4, 0, 0};
+  l.cur_seq = 4; l.host_send(T_ERASE, other, 7); s.poll();
+  l.cur_seq = 5; l.host_send(T_ERASE, er, 3); s.poll();               // curto demais
+
+  uint8_t dbuf[128]; Decoder d(dbuf, sizeof dbuf);
+  bool det_ok = false, ack2 = false, err3 = false, err4 = false, err5 = false;
+  for (uint8_t b : out) if (d.push(b)) {
+    if (d.type == T_DETECT_RESP && d.seq == 1 && d.payload()[1] == 0 && get_u32(d.payload() + 2) == 2048u * 1024) det_ok = true;
+    if (d.type == T_D_ACK && d.seq == 2) ack2 = true;
+    if (d.type == T_ERRO && d.seq == 3 && get_u16(d.payload()) == E_FLASH) err3 = true;
+    if (d.type == T_ERRO && d.seq == 4 && get_u16(d.payload()) == E_SISTEMA) err4 = true;
+    if (d.type == T_ERRO && d.seq == 5 && get_u16(d.payload()) == E_ARGUMENTO) err5 = true;
+  }
+  CHECK(det_ok && ack2 && err3 && err4 && err5);
+}
+
 int main() {
   test_crc();
   test_info_frame_bytes();
@@ -160,6 +204,7 @@ int main() {
   test_session_dump(false, false);
   test_session_dump(true, false);    // 1º DATA corrompido: o dispositivo reenvia
   test_session_info_detect();
+  test_erase_e_detect_com_opcoes();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

@@ -21,6 +21,8 @@ namespace OSCR::Cores::MegaDrive
   uint16_t chksum;
   bool is32x = 0;
   bool isSVP = 0;
+  bool flashTimedOut = false;      // fork oscr_minimal: ver MegaDrive.h
+  uint32_t flashWaitMs = 120000UL;
 
   using OSCR::Cores::Flash::flashid;
   using OSCR::Cores::Flash::flashSize;
@@ -2053,6 +2055,7 @@ namespace OSCR::Cores::MegaDrive
       // Check if write is complete
       delayMicroseconds(100);
       busyCheck();
+      if (flashTimedOut) break;       // fork oscr_minimal: o OSCR esperava para sempre
 
       // update progress bar
       OSCR::UI::ProgressBar::advance(64);
@@ -2120,14 +2123,21 @@ namespace OSCR::Cores::MegaDrive
         // Read the status register
         uint16_t statusReg = readFlash((currSdBuffer + currWriteBuffer + 32 - 2) / 2);
 
+        uint32_t waitStart = millis();    // fork oscr_minimal: limite de tempo (o OSCR esperava para sempre)
+
         while ((statusReg | 0xFF7F) != (currWord | 0xFF7F))
         {
           statusReg = readFlash((currSdBuffer + currWriteBuffer + 32 - 2) / 2);
+          if (millis() - waitStart > 1000UL) { flashTimedOut = true; break; }
         }
 
         // Set data pins to output
         dataOut();
+
+        if (flashTimedOut) break;
       }
+
+      if (flashTimedOut) break;
 
       // update progress bar
       OSCR::UI::ProgressBar::advance(512);
@@ -2272,6 +2282,7 @@ namespace OSCR::Cores::MegaDrive
   void busyCheck()
   {
     uint32_t statusReg;
+    uint32_t waitStart = millis();    // fork oscr_minimal: limite de tempo (o OSCR esperava para sempre)
 
     // Set data pins to input
     dataIn();
@@ -2280,6 +2291,7 @@ namespace OSCR::Cores::MegaDrive
     {
       // Read the status register
       statusReg = readFlash(0);
+      if (millis() - waitStart > flashWaitMs) { flashTimedOut = true; break; }
     }
     while ((statusReg | 0xFF7F) != 0xFFFF);
 

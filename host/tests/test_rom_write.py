@@ -255,7 +255,7 @@ def test_split_md():
 
 
 def test_split_md_erros():
-    for bad in (b"", md_rom(1001), md_rom(4 * 1024 * 1024 + 2)):
+    for bad in (b"", md_rom(1001), md_rom(8 * 1024 * 1024 + 2)):
         with pytest.raises(ValueError):
             RI.split_md(bad)
     smd = bytearray(md_rom(512 + 2048))
@@ -358,3 +358,58 @@ def test_rom_write_gb_simulado(tmp_path, capsys):
     assert code == 64 and "gb-cfi" in json.loads(out)["error"]["message"]
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gb", "-i", str(f), "--chip", "md-flash", "--yes")
     assert code == 64
+
+
+# ---------------------------------------------------------------- programador de flash genérico (sistema 7)
+def test_flashprog_params():
+    j = RI.flashprog_params("16", 4096)
+    assert (j.chip, j.prg_kb, j.chr_word) == (3, 4096, 0)
+    assert RI.flashprog_params("eprom", None).prg_kb == 4096 and RI.flashprog_params("eprom", None).chip == 4
+    j = RI.flashprog_params("8", 512, "29f032")
+    assert (j.chip, j.prg_kb, j.chr_word) == (1, 512, 1)
+    assert RI.flashprog_params("plcc32", 512, "29gl", 128, 32).chr_word == 7 | (17 << 4) | (5 << 9)
+    assert RI.flashprog_params("8", 512).chr_word == 0                       # sem tipo: serve para ler e identificar
+    for kw in ({"bus": "8", "flash_kb": 512, "need_type": True}, {"bus": "8", "flash_kb": None}, {"bus": "8", "flash_kb": 9000}, {"bus": "usb", "flash_kb": 1},
+               {"bus": "8", "flash_kb": 512, "flash_type": "29gl"}):
+        with pytest.raises(ValueError):
+            RI.flashprog_params(**kw)
+
+
+def test_split_flashprog():
+    j = RI.split_flashprog(bytes(1024), "16", 1024)
+    assert (j.chip, j.prg_kb, len(j.body)) == (3, 1024, 1024) and j.rom == bytes(1024)
+    g = RI.split_flashprog(bytes(1536), "8", 1024, "29gl", 128, 32)
+    assert len(g.body) == 128 * 1024 and g.body[:1536] == bytes(1536) and set(g.body[1536:]) == {0xFF} and len(g.rom) == 1536
+    for args in ((b"", "16", 1024), (bytes(100), "16", 1024), (bytes(2048), "16", 1), (bytes(512), "8", 1024), (bytes(2 * 1024 * 1024), "eprom", None)[:3] + ()):
+        if args[0] == bytes(2 * 1024 * 1024):
+            continue
+        with pytest.raises(ValueError):
+            RI.split_flashprog(*args)
+    assert RI.split_flashprog(bytes(4096 * 1024), "eprom", None).prg_kb == 4096
+    with pytest.raises(ValueError):
+        RI.split_flashprog(bytes(4096 * 1024 + 512), "eprom", None)
+
+
+def test_flash_comandos_simulados(tmp_path, capsys):
+    f = tmp_path / "chip.bin"
+    f.write_bytes(bytes(1024))
+    code, out = run(capsys, "--simulate", "--json", "flash-write", "-s", "mock", "--bus", "16", "--flash-kb", "1024", "-i", str(f), "--yes")
+    o = json.loads(out)
+    assert code == 0 and o["ok"] and o["bus"] == "16" and o["bytes"] == 1024 and o["verify"] == "skipped"
+    code, out = run(capsys, "--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "8", "--flash-kb", "512", "--flash-type", "29f032", "--yes")
+    assert code == 0 and json.loads(out)["erased"] is True
+    code, out = run(capsys, "--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "8", "--flash-kb", "512", "--yes")
+    assert code == 64 and "--flash-type" in json.loads(out)["error"]["message"]
+    code, out = run(capsys, "--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "eprom", "--yes")
+    assert code == 64
+    code, out = run(capsys, "--simulate", "--json", "flash-blank", "-s", "mock", "--bus", "16", "--flash-kb", "32")
+    assert code == 1 and json.loads(out)["blank"] is False                 # o padrão do simulador não é 0xFF
+    o = tmp_path / "lido.bin"
+    code, out = run(capsys, "--simulate", "--json", "flash-read", "-s", "mock", "--bus", "16", "--flash-kb", "32", "-o", str(o))
+    assert code == 0 and o.exists() and len(o.read_bytes()) == 32768
+
+
+def test_flash_erase_recusa_sem_yes(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+    code, out = run(capsys, "--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "16", "--flash-kb", "512")
+    assert code == 4 and json.loads(out)["error"]["kind"] == "refused"

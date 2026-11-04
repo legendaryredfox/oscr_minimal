@@ -132,7 +132,7 @@ class RomWriteTest {
         assertEquals(1, RomImages.splitMd(mdRom(1000)).prgKb)
         assertEquals(RomImageProblem.MD_SIZE, assertFailsWith<RomImageException> { RomImages.splitMd(mdRom(1001)) }.problem)
         assertEquals(RomImageProblem.MD_SIZE, assertFailsWith<RomImageException> { RomImages.splitMd(ByteArray(0)) }.problem)
-        assertEquals(RomImageProblem.MD_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitMd(mdRom(4 * 1024 * 1024 + 2)) }.problem)
+        assertEquals(RomImageProblem.MD_TOO_BIG, assertFailsWith<RomImageException> { RomImages.splitMd(mdRom(8 * 1024 * 1024 + 2)) }.problem)
         val smd = mdRom(512 + 2048).also { "SEGA".encodeToByteArray().copyInto(it, 512 + 0x100) }
         assertEquals(RomImageProblem.MD_SMD, assertFailsWith<RomImageException> { RomImages.splitMd(smd) }.problem)
         assertEquals(listOf(FlashChip.MD_FLASH), FlashChip.forSystem(CartSystem.MD))
@@ -253,5 +253,47 @@ class RomWriteTest {
         assertEquals(0, r.first, r.second); assertTrue("\"chip\":\"gb-diy-mbc5\"" in r.second); assertTrue("\"bytes\":262144" in r.second)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gb", "-i", f.path, "--yes").first)
         assertEquals(64, run("--simulate", "--json", "rom-write", "-s", "gb", "-i", f.path, "--chip", "md-flash", "--yes").first)
+    }
+
+    // ---------------------------------------------------------------- programador de flash genérico
+    @Test fun flashProgParametrosEDivisao() {
+        val a = FlashProg.params("16", 4096)
+        assertEquals(Triple(3, 4096, 0), Triple(a.chip, a.prgKb, a.chrWord))
+        assertEquals(Pair(4, 4096), FlashProg.params("eprom", null).let { it.chip to it.prgKb })
+        val b = FlashProg.params("8", 512, "29f032")
+        assertEquals(Triple(1, 512, 1), Triple(b.chip, b.prgKb, b.chrWord))
+        assertEquals(7 or (17 shl 4) or (5 shl 9), FlashProg.params("plcc32", 512, "29gl", 128, 32).chrWord)
+        assertEquals(0, FlashProg.params("8", 512).chrWord)
+        assertEquals(RomImageProblem.FP_NEEDS_TYPE, assertFailsWith<RomImageException> { FlashProg.params("8", 512, needType = true) }.problem)
+        assertEquals(RomImageProblem.FP_KB, assertFailsWith<RomImageException> { FlashProg.params("8", null) }.problem)
+        assertEquals(RomImageProblem.FP_KB, assertFailsWith<RomImageException> { FlashProg.params("8", 9000) }.problem)
+        assertEquals(RomImageProblem.FP_BUS, assertFailsWith<RomImageException> { FlashProg.params("usb", 1) }.problem)
+        assertEquals(RomImageProblem.GEN_NEEDS_SECTOR, assertFailsWith<RomImageException> { FlashProg.params("8", 512, "29gl") }.problem)
+        val j = FlashProg.split(ByteArray(1024), "16", 1024)
+        assertEquals(Triple(3, 1024, 1024), Triple(j.chip, j.prgKb, j.body.size))
+        val g = FlashProg.split(ByteArray(1536), "8", 1024, "29gl", 128, 32)
+        assertEquals(128 * 1024, g.body.size); assertEquals(1536, g.rom.size); assertTrue(g.body.drop(1536).all { it == 0xFF.toByte() })
+        assertEquals(RomImageProblem.FP_SIZE, assertFailsWith<RomImageException> { FlashProg.split(ByteArray(100), "16", 1024) }.problem)
+        assertEquals(RomImageProblem.FP_NO_FIT, assertFailsWith<RomImageException> { FlashProg.split(ByteArray(2048), "16", 1) }.problem)
+        assertEquals(4096, FlashProg.split(ByteArray(4096 * 1024), "eprom", null).prgKb)
+    }
+
+    @Test fun flashComandosSimulados() {
+        val d = tmp(); val f = File(d, "chip.bin").also { it.writeBytes(ByteArray(1024)) }
+        val w = run("--simulate", "--json", "flash-write", "-s", "mock", "--bus", "16", "--flash-kb", "1024", "-i", f.path, "--yes")
+        assertEquals(0, w.first, w.second); assertTrue("\"bus\":\"16\"" in w.second); assertTrue("\"verify\":\"skipped\"" in w.second)
+        assertEquals(0, run("--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "8", "--flash-kb", "512", "--flash-type", "29f032", "--yes").first)
+        val e = run("--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "8", "--flash-kb", "512", "--yes")
+        assertEquals(64, e.first); assertTrue("--flash-type" in e.second)
+        assertEquals(64, run("--simulate", "--json", "flash-erase", "-s", "mock", "--bus", "eprom", "--yes").first)
+        val b = run("--simulate", "--json", "flash-blank", "-s", "mock", "--bus", "16", "--flash-kb", "32")
+        assertEquals(1, b.first); assertTrue("\"blank\":false" in b.second)
+        val o = File(d, "lido.bin")
+        assertEquals(0, run("--simulate", "--json", "flash-read", "-s", "mock", "--bus", "16", "--flash-kb", "32", "-o", o.path).first)
+        assertEquals(32768, o.length().toInt())
+        val dev = SimDevice(); val c = OscrClient(dev, 500, 5000)
+        assertTrue(c.info().flashProg)
+        c.erase(CartSystem.MOCK, 3, 1024, 0); assertEquals(Triple(3, 1024, 0), dev.lastErase)
+        assertEquals(11, assertFailsWith<DeviceError> { c.erase(CartSystem.MOCK, 9, 1024, 0) }.code)
     }
 }

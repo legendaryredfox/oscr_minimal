@@ -356,7 +356,7 @@ def _layout_name(img) -> str:
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
     if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "mock"):
-        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (MX29F1610 e S29GL064N) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/funcoes-oscr.md", EXIT_USAGE)
+        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (chips de flash identificados pelo ID: veja docs/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/funcoes-oscr.md", EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
@@ -447,6 +447,134 @@ def cmd_rom_write(args) -> int:
         lines.append(f"conferência depois de gravar: OK (leu {v.read_bytes} bytes, CRC32 {v.read_crc32:08X})")
     emit(args, out, lines)
     return 0
+
+
+# ---------------------------------------------------------------- programador de flash genérico (sistema 7; docs/funcoes-oscr.md)
+def _fp_job(args, need_type: bool = False):
+    try:
+        return RI.flashprog_params(args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer, need_type)
+    except ValueError as e:
+        raise CliError("usage", str(e), EXIT_USAGE) from e
+
+
+def _fp_sid(args) -> int:
+    return 255 if args.system == "mock" else 7              # o simulador só entende o sistema MOCK
+
+
+def _fp_need(c, info: dict) -> None:
+    if not info.get("flash_prog"):
+        raise CliError("unsupported_firmware", "este firmware não tem o programador de flash genérico", EXIT_ERROR, "atualize o firmware (docs/funcoes-oscr.md)")
+
+
+def _fp_read(args, c, job) -> bytes:
+    return c.dump_rom(_fp_sid(args), getattr(args, "block", 0), _progress("flash-read", args.progress), job.chip, job.prg_kb, job.chr_word).data
+
+
+def cmd_flash_id(args) -> int:
+    """Lê o ID do chip. Sem --flash-type, no flash de 8 bits mostra o ID pelas quatro rotinas do OSCR (Intel 28F, AMD 29F032, AMD 29F1610, SST 39SF040)."""
+    job = _fp_job(args)
+    c, t, info = connect(args)
+    try:
+        _fp_need(c, info)
+        r = c.detect(_fp_sid(args), job.chip, job.prg_kb, job.chr_word)
+    finally:
+        t.close()
+    legend = " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 ou FFFF = o chip não respondeu a essa rotina)" if "=" in r["name"] else ""
+    ok = r["status"] == 0
+    emit(args, {"ok": ok, "ids": r["name"], "size": r["rom_size"], "status": r["status"]},
+         [f"{RI.FLASHPROG_LABEL[args.bus]}: {r['name']}{legend}" if ok else f"{RI.FLASHPROG_LABEL[args.bus]}: nenhum chip respondeu (ID 0000 ou FFFF)"])
+    return EXIT_OK if ok else EXIT_NO_CART
+
+
+def cmd_flash_read(args) -> int:
+    job = _fp_job(args)
+    c, t, info = connect(args)
+    try:
+        _fp_need(c, info)
+        data = _fp_read(args, c, job)
+    finally:
+        t.close()
+    return _save_result(args, type("R", (), {"data": data, "crc32": P.crc32(data)})(), ".bin", "flash.bin")
+
+
+def cmd_flash_blank(args) -> int:
+    """Confere se o chip está em branco (tudo 0xFF): lê o chip e olha no PC (o OSCR olhava no próprio aparelho)."""
+    job = _fp_job(args)
+    c, t, info = connect(args)
+    try:
+        _fp_need(c, info)
+        data = _fp_read(args, c, job)
+    finally:
+        t.close()
+    first = next((i for i, b in enumerate(data) if b != 0xFF), None)
+    emit(args, {"ok": first is None, "blank": first is None, "bytes": len(data), "first_non_blank": first},
+         ["em branco" if first is None else f"NÃO está em branco (primeiro byte diferente de FF no offset {first})"])
+    return EXIT_OK if first is None else EXIT_ERROR
+
+
+def cmd_flash_erase(args) -> int:
+    """Apaga o chip inteiro. EPROM não se apaga. Sempre confirma."""
+    if args.bus == "eprom":
+        raise CliError("usage", "EPROM não se apaga (a 27C322 só apaga com luz ultravioleta); use flash-blank para conferir se está em branco", EXIT_USAGE)
+    job = _fp_job(args, need_type=args.bus in ("8", "plcc32"))
+    if not args.yes:
+        if not sys.stdin.isatty():
+            raise CliError("refused", "recusado: apagar o chip PERDE tudo o que ele tem. Em modo não interativo confirme com --yes.", EXIT_REFUSED, "repita o comando com --yes")
+        ans = input(f"Apagar {RI.FLASHPROG_LABEL[args.bus]} de {job.prg_kb} KB? Isso PERDE o conteúdo. Continuar? [s/N] ")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
+            print("cancelado")
+            return 1
+    c, t, info = connect(args)
+    try:
+        _fp_need(c, info)
+        c.erase(_fp_sid(args), job.chip, job.prg_kb, job.chr_word, args.begin_timeout)
+    finally:
+        t.close()
+    emit(args, {"erased": True, "bus": args.bus, "flash_kb": job.prg_kb}, ["chip apagado"])
+    return EXIT_OK
+
+
+def cmd_flash_write(args) -> int:
+    """Apaga e grava o arquivo no chip (flash de 8 e 16 bits) ou grava a EPROM (precisa estar em branco). Confere lendo de volta."""
+    try:
+        job = RI.split_flashprog(Path(args.input).read_bytes(), args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer)
+    except ValueError as e:
+        raise CliError("bad_rom", str(e), EXIT_USAGE) from e
+    what = f"{RI.FLASHPROG_LABEL[args.bus]}: {len(job.rom)} bytes em um chip de {job.prg_kb} KB"
+    if not args.yes:
+        if not sys.stdin.isatty():
+            raise CliError("refused", "recusado: gravar APAGA o chip. Em modo não interativo confirme com --yes.", EXIT_REFUSED, "repita o comando com --yes")
+        ans = input(f"Gravar {what}? Isso APAGA o conteúdo atual do chip. Continuar? [s/N] ")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
+            print("cancelado")
+            return 1
+    c, t, info = connect(args)
+    try:
+        _fp_need(c, info)
+        crc = c.write_rom(_fp_sid(args), job.body, job.chip, job.prg_kb, job.chr_word, args.block or P.DEFAULT_BLOCK,
+                          _progress("flash-write", args.progress), args.begin_timeout)
+    finally:
+        t.close()
+    out = {"bus": args.bus, "flash_kb": job.prg_kb, "bytes": len(job.body), "crc32": f"{crc:08X}"}
+    lines = [f"gravado: {what}  CRC32 {crc:08X}"]
+    if args.no_verify or args.system == "mock":
+        out["verify"] = "skipped"
+        lines.append("conferência depois de gravar: pulada")
+    else:
+        c2, t2, _ = connect(args)
+        try:
+            back = _fp_read(args, c2, job)
+        finally:
+            t2.close()
+        n = len(job.rom)
+        diff = next((i for i in range(min(len(back), n)) if back[i] != job.rom[i]), None if len(back) >= n else len(back))
+        out["verify"] = {"ok": diff is None, "read_bytes": len(back), "first_diff": diff}
+        if diff is not None:
+            raise CliError("verify_failed", f"o chip lido de volta NÃO confere com o arquivo (primeiro byte diferente no offset {diff})", EXIT_ERROR,
+                           "confira o tipo do flash, limpe os contatos e grave de novo; o chip pode estar apagado ou pela metade", written=out, first_diff=diff)
+        lines.append(f"conferência depois de gravar: OK (leu {len(back)} bytes do chip)")
+    emit(args, out, lines)
+    return EXIT_OK
 
 
 class _Parser(argparse.ArgumentParser):
@@ -543,6 +671,27 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
     rp.add_argument("--no-verify", action="store_true", help="não lê a ROM de volta para conferir depois de gravar (padrão: confere)")
     rp.add_argument("--begin-timeout", type=float, default=90.0, help="segundos de espera pelo apagamento antes dos dados (padrão 90)")
+    # programador de flash genérico (sistema 7)
+    def flash_cmd(name, fn, help_, out=False, inp=False, write=False):
+        sp = add(name, fn, help_, system=False, out=out, inp=inp)
+        sp.add_argument("-s", "--system", default="flash", choices=["flash", "mock"], help="sistema (padrão: flash; mock só no simulador)")
+        sp.add_argument("--bus", required=True, choices=list(RI.FLASHPROG_BUS), help="chip: 8 (flash de 8 bits no adaptador de flash), plcc32 (8 bits PLCC32 no adaptador de SNES), 16 (flash de 16 bits) ou eprom (27C322)")
+        sp.add_argument("--flash-kb", type=int, help="tamanho do chip em KB (1 a 8192; a EPROM é sempre 4096)")
+        sp.add_argument("--flash-type", choices=list(RI.FLASH_TYPES), help="flash de 8 bits: tipo (nomes do FlashType do OSCR); obrigatório para apagar e gravar")
+        sp.add_argument("--sector-kb", type=int, help="tipos 29gl, lh28f0xx e e28fxxxj3a: tamanho do setor em KB (potência de 2)")
+        sp.add_argument("--buffer", type=int, help="tipos 29gl, lh28f0xx e e28fxxxj3a: buffer de escrita em bytes (potência de 2, 2 a 128)")
+        if write or fn is cmd_flash_erase:
+            sp.add_argument("--yes", action="store_true", help="não pergunta antes de apagar ou gravar (obrigatório fora de um terminal)")
+            sp.add_argument("--begin-timeout", type=float, default=90.0, help="segundos de espera pelo apagamento (padrão 90)")
+        if write:
+            sp.add_argument("--no-verify", action="store_true", help="não lê o chip de volta para conferir depois de gravar")
+        return sp
+
+    flash_cmd("flash-id", cmd_flash_id, "programador de flash: lê o ID do chip")
+    flash_cmd("flash-read", cmd_flash_read, "programador de flash: lê o chip inteiro para um arquivo", out=True)
+    flash_cmd("flash-blank", cmd_flash_blank, "programador de flash: confere se o chip está em branco (lê o chip e olha no PC)")
+    flash_cmd("flash-erase", cmd_flash_erase, "programador de flash: apaga o chip inteiro")
+    flash_cmd("flash-write", cmd_flash_write, "programador de flash: apaga e grava o arquivo no chip (a EPROM precisa estar em branco)", inp=True, write=True)
     return ap
 
 

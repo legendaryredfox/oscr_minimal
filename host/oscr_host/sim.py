@@ -27,6 +27,7 @@ class MockDevice:
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
         self.written_rom: Optional[bytes] = None
+        self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
         self.drop_next_acks = 0    # quantos ACK do host serão ignorados
@@ -90,7 +91,7 @@ class MockDevice:
     def _handle(self, t: Transport, f: P.Frame) -> None:
         if f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
-            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b1001]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
+            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b11001]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
         elif f.type == P.T_DETECT:
             sysid = f.payload[0] if f.payload else 0
             if sysid in (0, 255):
@@ -118,6 +119,18 @@ class MockDevice:
             self._write_save(t, f)
         elif f.type == P.T_WRITE_ROM:
             self._write_save(t, f, rom=True)
+        elif f.type == P.T_ERASE:                       # chip 9 "não é reconhecido"; o simulador só entende o sistema MOCK
+            sysid = f.payload[0] if f.payload else 0
+            chip = int.from_bytes(f.payload[1:3], "little") if len(f.payload) >= 7 else -1
+            if len(f.payload) < 7:
+                self._error(t, f.seq, 4, "args")
+            elif sysid not in (0, 255):
+                self._error(t, f.seq, 2)
+            elif chip == 9:
+                self._error(t, f.seq, 11, "id")
+            else:
+                self.last_erase = tuple(int.from_bytes(f.payload[1 + 2 * i:3 + 2 * i], "little") for i in range(3))
+                self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
         elif f.type == P.T_ABORT:
             self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
         else:

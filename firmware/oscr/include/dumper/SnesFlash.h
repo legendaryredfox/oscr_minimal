@@ -7,7 +7,7 @@
 
 namespace OSCR::Dumper::SnesFlash
 {
-  /// Campo `chip` do WRITE_ROM: (disposição << 8) | fiação. Fiação: 1 LoROM, 2 HiROM, 3 ExLoROM (só kGeneric), 4 ExHiROM (só kGeneric).
+  /// Campo `chip` do WRITE_ROM: (disposição << 8) | fiação. Fiação: 1 LoROM, 2 HiROM, 3 ExLoROM (só kGeneric), 4 ExHiROM (só kGeneric), 5 adaptador de flash (`mapping` 0, só kGeneric: programador genérico) e 6 PLCC32 para SNES (`mapping` 3, só kGeneric).
   constexpr uint16_t code(uint8_t layout, uint8_t wiring) { return uint16_t((layout << 8) | wiring); }
   inline bool isGeneric(uint16_t chip) { return uint8_t(chip >> 8) == kGeneric; }
 

@@ -63,8 +63,9 @@ class OscrClient(
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
-    fun detect(system: CartSystem): DetectResult {
-        val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()), nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload
+    fun detect(system: CartSystem, chip: Int = 0, prgKb: Int = 0, chrKb: Int = 0): DetectResult {
+        val opts = if (chip != 0 || prgKb != 0 || chrKb != 0) le16(chip) + le16(prgKb) + le16(chrKb) else ByteArray(0)    // programador de flash genérico: as opções vão no DETECT
+        val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()) + opts, nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload
         if (p.size < 12) throw ProtocolError(Fail.SHORT_REPLY, "DETECT_RESP")
         return DetectResult(p.u8(0), p.u8(1), p.u32(2).toLong() and 0xFFFFFFFFL, p.u32(6).toLong() and 0xFFFFFFFFL,
             p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString())
@@ -153,6 +154,11 @@ class OscrClient(
      * Grava [data] (PRG e depois CHR, sem cabeçalho) numa flash (WRITE_ROM). O dispositivo confere o chip e apaga ANTES do primeiro ACK
      * (até ~20 s no A29040B): o comando espera [beginTimeoutMs] e nunca é reenviado, porque reenviar apagaria de novo.
      */
+    /** ERASE: apaga o chip inteiro e só responde no fim; nunca é reenviado (reenviar apagaria de novo). */
+    fun erase(system: CartSystem, chip: Int, prgKb: Int, chrKb: Int, timeoutMs: Long = 90_000) {
+        request(Proto.T_ERASE, byteArrayOf(system.id.toByte()) + le16(chip) + le16(prgKb) + le16(chrKb), nextSeq(), setOf(Proto.T_D_ACK), timeoutMs, resend = 0)
+    }
+
     fun writeRom(system: CartSystem, data: ByteArray, chip: Int, prgKb: Int, chrKb: Int, block: Int = Proto.DEFAULT_BLOCK, progress: Progress? = null, beginTimeoutMs: Long = 90_000): Int {
         val seq = nextSeq()
         request(Proto.T_WRITE_ROM, byteArrayOf(system.id.toByte()) + le32(data.size) + le16(block) + le16(chip) + le16(prgKb) + le16(chrKb), seq, setOf(Proto.T_D_ACK), beginTimeoutMs,

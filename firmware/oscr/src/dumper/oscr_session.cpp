@@ -81,7 +81,12 @@ void Session::handle() {
   uint16_t len = dec_.len;
   switch (dec_.type) {
     case T_INFO: do_info(seq); break;
-    case T_DETECT: do_detect(seq, len >= 1 ? p[0] : 0); break;
+    case T_DETECT:
+      // campos opcionais no fim (programador de flash genérico): u16 chip, u16 prg_kb, u16 chr_kb
+      be_.set_options(len >= 3 ? get_u16(p + 1) : 0, len >= 5 ? get_u16(p + 3) : 0, len >= 7 ? get_u16(p + 5) : 0);
+      do_detect(seq, len >= 1 ? p[0] : 0);
+      break;
+    case T_ERASE: do_erase(seq, p, len); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
       do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
@@ -111,6 +116,16 @@ void Session::do_detect(uint8_t seq, uint8_t sys) {
   p[10] = d.save_type; p[11] = n;
   memcpy(p + 12, d.name, n);
   send(T_DETECT_RESP, seq, p, 12 + n);
+}
+
+void Session::do_erase(uint8_t seq, const uint8_t* p, uint16_t len) {
+  if (len < 7) { send_error(seq, E_ARGUMENTO, "args"); return; }
+  uint8_t sys = p[0];
+  if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
+  be_.set_options(get_u16(p + 1), get_u16(p + 3), get_u16(p + 5));
+  uint16_t err = E_CARTUCHO_IO;
+  if (!be_.erase(sys, err)) { send_error(seq, err); return; }
+  send_offset(T_D_ACK, seq, 0);
 }
 
 int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {

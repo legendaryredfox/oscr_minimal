@@ -24,6 +24,7 @@
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
 # include "dumper/GbFlash.h"
+# include "dumper/FlashProg.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -325,9 +326,9 @@ namespace OSCR::Dumper
     class CoreBackend : public oscr::Backend
     {
     public:
-      uint8_t flags() override { return 8; }     // bit3: o firmware aceita WRITE_ROM (hoje: flash do NES; ver docs/funcoes-oscr.md)
-      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB; }
+      uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -338,6 +339,20 @@ namespace OSCR::Dumper
       void detect(uint8_t system, oscr::DetectInfo & out) override
       {
         if (!supports(system)) { out.status = 2; return; }
+
+        if (system == oscr::SYS_FLASH)
+        {
+          // Programador genérico: as opções (chip, tamanho, tipo) vêm no próprio DETECT; o "nome" é o ID lido do chip.
+          uint16_t chip = optMapper, prg = optPrgKb, chr = optChrKb;
+          if (FlashProg::check(chip, prg, chr, 0)) { out.status = 2; return; }
+          uint8_t st = 1; uint32_t size = 0;
+          out.name[0] = 0;
+          bool ran = runCore([&] { st = FlashProg::detect(chip, prg, chr, out.name, size); OSCR::Cores::SNES::cartOff(); });
+          out.status = ran ? st : 1;
+          out.rom_size = size;
+          out.save_size = 0; out.save_type = 0;
+          return;
+        }
 
         if (system == oscr::SYS_GBA)
         {
@@ -408,6 +423,20 @@ namespace OSCR::Dumper
       bool stream_read(uint8_t system, uint8_t kind, oscr::StreamSink & sink, uint16_t & err) override
       {
         if (!supports(system)) { err = oscr::E_SISTEMA; return false; }
+
+        if (system == oscr::SYS_FLASH)                            // programador genérico: ler o chip inteiro (o conteúdo vai ao PC; "em branco" é conferido lá)
+        {
+          uint16_t chip = optMapper, prg = optPrgKb;
+          if (kind != oscr::KIND_ROM) { err = oscr::E_COMANDO; return false; }
+          if (FlashProg::check(chip, prg, optChrKb, 0)) { err = oscr::E_ARGUMENTO; return false; }
+          countingSink.inner = &sink; countingSink.bytes = 0;
+          activeSink = &countingSink;
+          bool ok = runCore([chip, prg] { FlashProg::read(chip, prg); OSCR::Cores::SNES::cartOff(); });
+          activeSink = nullptr;
+          err = oscr::E_CARTUCHO_IO;
+          return ok && countingSink.bytes > 0;
+        }
+
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -579,6 +608,14 @@ namespace OSCR::Dumper
           ran = runCore([&rc, chip, size] { rc = GbFlash::prepare(chip, size); GB::cartOff(); });
           GB::audioWE = 0;                                              // o pino de áudio como WE só vale durante a gravação
         }
+        else if (system == oscr::SYS_FLASH)
+        {
+          uint16_t code = optMapper;
+          rc = size ? FlashProg::check(code, prg, chr, size) : oscr::E_ARGUMENTO;
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_FLASH;
+          ran = runCore([&rc, code, prg, chr, size] { rc = FlashProg::prepare(code, prg, chr, size); OSCR::Cores::SNES::cartOff(); });
+        }
         else { err = oscr::E_COMANDO; return false; }
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
@@ -634,7 +671,31 @@ namespace OSCR::Dumper
           ran = runCore([&rc, &in, chip, n] { rc = GbFlash::program(chip, n, in); GB::cartOff(); });
           GB::audioWE = 0;
         }
+        else if (system == oscr::SYS_FLASH)
+        {
+          uint16_t code = optMapper; uint32_t n = romWriteSize;
+          countingSource.inner = &in; countingSource.bytes = 0;
+          activeSource = &countingSource;
+          OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+          ran = runCore([&rc, &in, code, prg, chr, n] { rc = FlashProg::program(code, prg, chr, n, in); OSCR::Cores::SNES::cartOff(); });
+          activeSource = nullptr;
+          if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;       // todas as rotinas do OSCR leem o "arquivo"; sem consumir tudo, a gravação ficou incompleta
+        }
         else { err = oscr::E_COMANDO; return false; }
+        if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        return true;
+      }
+
+      // ERASE (programador genérico): apaga o chip inteiro. 8 bits: o tipo é obrigatório (identifica o chip antes e escolhe a rotina de apagar).
+      bool erase(uint8_t system, uint16_t & err) override
+      {
+        if (system != oscr::SYS_FLASH) { err = oscr::E_COMANDO; return false; }
+        uint16_t code = optMapper, prg = optPrgKb, chr = optChrKb;
+        uint16_t rc = FlashProg::check(code, prg, chr, 0);
+        bool needsType = (code & 0xFF) == FlashProg::k8Adapter || (code & 0xFF) == FlashProg::k8Plcc32;
+        if (rc || (needsType && ((chr & 0xF) < 1 || (chr & 0xF) > 8)) || (code & 0xFF) == FlashProg::kEprom) { err = oscr::E_ARGUMENTO; return false; }
+        rc = oscr::E_FLASH;
+        bool ran = runCore([&rc, code, prg, chr] { rc = FlashProg::prepare(code, prg, chr, 0); OSCR::Cores::SNES::cartOff(); });
         if (rc != 0 || !ran) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         return true;
       }

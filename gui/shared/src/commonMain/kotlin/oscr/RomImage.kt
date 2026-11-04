@@ -28,7 +28,7 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
-    MD_FLASH("md-flash", 1, 0, "Mega Drive flash (MX29F1610 2 MB ou S29GL064N 4 MB)", md = true);
+    MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)", md = true);
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -46,6 +46,41 @@ class RomImage(val body: ByteArray, val prgKb: Int, val chrKb: Int, val mapper: 
                val layout: Int = 0, val wireChr: Int = 0, val rom: ByteArray? = null, val block: Int = 0)
 
 /** Disposições do flash CFI do SNES (parte alta do campo chip do WRITE_ROM); igual a SNES_LAYOUTS em romimage.py e a SnesPlan.h no firmware. */
+/** Campos do comando do programador de flash genérico (sistema 7); [body] é o que vai ao chip e [rom] o arquivo original, que a conferência compara com a leitura. */
+class FlashJob(val chip: Int, val prgKb: Int, val chrWord: Int, val body: ByteArray = ByteArray(0), val rom: ByteArray = ByteArray(0))
+
+/** Programador de flash genérico (firmware/oscr/include/dumper/FlashProg.h). Igual a flashprog_params e split_flashprog em romimage.py. */
+object FlashProg {
+    val BUS = linkedMapOf("8" to 1, "plcc32" to 2, "16" to 3, "eprom" to 4)
+    val LABEL = mapOf("8" to "8-bit flash (flash adapter)", "plcc32" to "8-bit flash PLCC32 (SNES adapter)", "16" to "16-bit flash", "eprom" to "EPROM 27C322 (4 MB)")
+    const val EPROM_KB = 4096
+
+    fun params(bus: String, flashKb: Int?, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, needType: Boolean = false): FlashJob {
+        val code = BUS[bus] ?: throw RomImageException(RomImageProblem.FP_BUS)
+        if (bus == "eprom") return FlashJob(code, EPROM_KB, 0)
+        if (flashKb == null || flashKb !in 1..8192) throw RomImageException(RomImageProblem.FP_KB)
+        var word = 0
+        if (bus == "8" || bus == "plcc32") {
+            if (flashType == null) { if (needType) throw RomImageException(RomImageProblem.FP_NEEDS_TYPE) }
+            else word = RomImages.typeWord(flashType, sectorKb, buffer)
+        }
+        return FlashJob(code, flashKb, word)
+    }
+
+    fun split(data: ByteArray, bus: String, flashKb: Int?, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null): FlashJob {
+        val j = params(bus, flashKb, flashType, sectorKb, buffer, needType = bus == "8" || bus == "plcc32")
+        if (data.isEmpty() || data.size % 512 != 0) throw RomImageException(RomImageProblem.FP_SIZE)
+        if (data.size > j.prgKb * 1024) throw RomImageException(RomImageProblem.FP_NO_FIT, data.size / 1024, j.prgKb)
+        var body = data
+        if (flashType == "29gl" && (bus == "8" || bus == "plcc32")) {
+            val sector = sectorKb!! * 1024
+            body = data + ByteArray((sector - data.size % sector) % sector) { 0xFF.toByte() }
+            if (body.size > j.prgKb * 1024) throw RomImageException(RomImageProblem.FP_PADDED_NO_FIT, body.size / 1024, j.prgKb)
+        }
+        return FlashJob(j.chip, j.prgKb, j.chrWord, body, data)
+    }
+}
+
 object SnesLayouts {
     val NAMES = linkedMapOf("1x" to 0, "2x2mb" to 1, "2x4mb" to 2, "4x2mb" to 3, "1x8mb" to 4)
     const val GENERIC = 0x10
@@ -73,7 +108,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -132,11 +167,9 @@ object RomImages {
      * ROM de SNES para os menus "LoROM/HiROM (P0)" e "ExLoROM/ExHiROM (P1)": flash de 8 bits de tipo informado. Igual a split_snes_generic em romimage.py.
      * No 29gl o arquivo é completado com 0xFF até um múltiplo do setor.
      */
-    fun splitSnesGeneric(data: ByteArray, flashMb: Int, flashType: String, sectorKbIn: Int? = null, bufferIn: Int? = null): RomImage {
+    /** Campo chr_kb do modo genérico de flash de 8 bits: tipo | (log2 do setor em bytes << 4) | (log2 do buffer << 9). Igual a _type_word em romimage.py. */
+    fun typeWord(flashType: String, sectorKbIn: Int?, bufferIn: Int?): Int {
         val typeCode = SnesLayouts.FLASH_TYPES[flashType] ?: throw RomImageException(RomImageProblem.GEN_TYPE)
-        if (flashMb !in 1..8) throw RomImageException(RomImageProblem.GEN_MB)
-        val rom = snesStripHeader(data)
-        if (rom.size > flashMb * SnesLayouts.MB) throw RomImageException(RomImageProblem.GEN_NO_FIT, rom.size / 1024, flashMb)
         var sectorKb = sectorKbIn; var buffer = bufferIn
         if (flashType == "e28fxxxj3a") { sectorKb = sectorKb ?: 128; buffer = buffer ?: 32 }
         var secExp = 0; var bufExp = 0
@@ -146,6 +179,16 @@ object RomImages {
             if (buffer and (buffer - 1) != 0 || buffer !in 2..128) throw RomImageException(RomImageProblem.GEN_BUFFER)
             secExp = Integer.numberOfTrailingZeros(sectorKb * 1024); bufExp = Integer.numberOfTrailingZeros(buffer)
         }
+        return typeCode or (secExp shl 4) or (bufExp shl 9)
+    }
+
+    fun splitSnesGeneric(data: ByteArray, flashMb: Int, flashType: String, sectorKbIn: Int? = null, bufferIn: Int? = null): RomImage {
+        val typeCode = SnesLayouts.FLASH_TYPES[flashType] ?: throw RomImageException(RomImageProblem.GEN_TYPE)
+        if (flashMb !in 1..8) throw RomImageException(RomImageProblem.GEN_MB)
+        val rom = snesStripHeader(data)
+        if (rom.size > flashMb * SnesLayouts.MB) throw RomImageException(RomImageProblem.GEN_NO_FIT, rom.size / 1024, flashMb)
+        val typeWordValue = typeWord(flashType, sectorKbIn, bufferIn)
+        val sectorKb = if (flashType == "e28fxxxj3a") (sectorKbIn ?: 128) else sectorKbIn
         var body = rom
         if (flashType == "29gl") {
             val sector = sectorKb!! * 1024
@@ -153,7 +196,7 @@ object RomImages {
             body = rom + ByteArray(pad) { 0xFF.toByte() }
             if (body.size > flashMb * SnesLayouts.MB) throw RomImageException(RomImageProblem.GEN_PADDED_NO_FIT, body.size / 1024, flashMb)
         }
-        return RomImage(body, rom.size / 1024, 0, null, flashMb * 1024, SnesLayouts.GENERIC, typeCode or (secExp shl 4) or (bufExp shl 9), rom)
+        return RomImage(body, rom.size / 1024, 0, null, flashMb * 1024, SnesLayouts.GENERIC, typeWordValue, rom)
     }
 
     const val GB_MAX_BYTES = 4 * 1024 * 1024
@@ -184,7 +227,7 @@ object RomImages {
     /** Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; no GBA: (bloco << 8) | 1; nos demais, o número do chip. */
     fun chipCode(chip: FlashChip, img: RomImage): Int = if (chip.snes) (img.layout shl 8) or chip.code else if (chip.gba) (img.block shl 8) or 1 else chip.code
 
-    const val MD_MAX_BYTES = 4 * 1024 * 1024
+    const val MD_MAX_BYTES = 8 * 1024 * 1024
 
     /**
      * ROM de Mega Drive para o flash repro: arquivo binário de tamanho par, até 4 MB; ROM entrelaçada (.smd) não é aceita.

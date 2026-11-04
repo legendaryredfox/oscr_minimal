@@ -7,7 +7,7 @@ object Proto {
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
-    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ACK = 0x06
+    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A
     const val T_INFO_RESP = 0x81; const val T_DETECT_RESP = 0x82; const val T_BEGIN = 0x83
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
@@ -19,7 +19,7 @@ object Proto {
 
 /** Sistemas e extensão do arquivo de ROM. */
 enum class CartSystem(val id: Int, val ext: String) {
-    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), MOCK(255, ".bin");
+    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), MOCK(255, ".bin");
 }
 
 /** Motivos de falha do lado do programa. O texto para o usuário vem de `describeError` (traduzido); nenhuma mensagem fixa aqui. */
@@ -92,6 +92,7 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     val mock get() = flags and 1 != 0
     val si5351 get() = flags and 2 != 0
     val writeRom get() = flags and 8 != 0
+    val flashProg get() = flags and 16 != 0
 }
 
 data class DetectResult(val system: Int, val status: Int, val romSize: Long, val saveSize: Long, val saveType: Int, val name: String)

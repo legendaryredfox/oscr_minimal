@@ -89,6 +89,12 @@ namespace OSCR::Cores::MegaDrive
   void verifyFlash();
   void busyCheck();
 
+  // Fork oscr_minimal (docs/decisoes.md): os laços de espera do flash têm limite de tempo. `busyCheck` e o status do `write29GL` desistem
+  // depois de `flashWaitMs` e ligam `flashTimedOut`; `write29F1610` e `write29GL` param na primeira falha. Quem chama zera `flashTimedOut`
+  // antes e confere depois.
+  extern bool flashTimedOut;
+  extern uint32_t flashWaitMs;
+
   uint8_t readStatusReg();
 
   void write29F1610();
