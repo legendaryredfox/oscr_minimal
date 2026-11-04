@@ -112,7 +112,7 @@ Lê, apaga, identifica e grava flash e EPROM fora de cartucho de console (adapta
 
 ```
 u8  sistema
-u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware, 4 = cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: contato sujo ou ROM de hack; só SNES e Game Boy)
+u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware, 4 = cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: contato sujo ou ROM de hack; SNES e Game Boy) ou, no Mega Drive, cabeçalho ilegível com o `/CART` (D50, placa v. 1.2) baixo, isto é, há cartucho mas ele não leu
 u32 tamanho_rom     bytes (0 se desconhecido)
 u32 tamanho_save    bytes (0 se não tem)
 u8  tipo_save       0 = nenhum, 1 = SRAM, 2 = FLASH, 3 = EEPROM, 255 = desconhecido

@@ -214,7 +214,7 @@ def cmd_detect(args) -> int:
     c, t, _ = connect(args)
     r = c.detect(system_id(args.system))
     status = {0: "cartucho detectado", 1: "nenhum cartucho", 2: "não suportado",
-              3: "erro de hardware", 4: "cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: limpe os contatos e encaixe de novo)"}
+              3: "erro de hardware", 4: "cabeçalho inválido ou ilegível (há dados, mas o checksum do cabeçalho não confere; ou, no Mega Drive com a placa v. 1.2, o pino /CART indica cartucho mas o cabeçalho não leu: limpe os contatos e encaixe de novo)"}
     lines = [f"{P.SYSTEM_BY_ID.get(r['system'], r['system'])}: {status.get(r['status'], r['status'])}"]
     if r["status"] == 0:
         lines.append(f"  título: {r['name'] or '(desconhecido)'}  ROM: {r['rom_size']} bytes  save: {r['save_size']} bytes")

@@ -64,6 +64,24 @@ namespace OSCR::Dumper
     uint32_t ioNow(void *) { return millis(); }
 
     /**
+     * `/CART` do Mega Drive (B32 -> D50 = PB3, placa 16_bits v. 1.2; D87): o cartucho liga o pino ao GND, então baixo = há cartucho.
+     * Alto não diz nada: placas anteriores deixam o pino solto e o pull-up interno lê alto, e com a v. 1.2 alto também é "slot vazio".
+     * Por isso só o nível baixo é usado (como prova de que há cartucho). Nenhum núcleo do OSCR usa PB3 neste fork; o estado anterior do pino é restaurado.
+     */
+    bool mdCartPinLow()
+    {
+      uint8_t const bit = _BV(PB3);
+      uint8_t const ddr = DDRB & bit, port = PORTB & bit;
+      DDRB &= ~bit;
+      PORTB |= bit;
+      delayMicroseconds(50);                      // o pull-up interno (cerca de 35 kΩ) carrega o fio de 25 mm e os 5 pF do cartucho em poucos microssegundos
+      bool low = (PINB & bit) == 0;
+      PORTB = (PORTB & ~bit) | port;
+      DDRB = (DDRB & ~bit) | ddr;
+      return low;
+    }
+
+    /**
      * Executa uma função de núcleo com a saída ligada ao fluxo. Erros fatais dos núcleos (UI::fatalError) voltam aqui por longjmp.
      * Devolve false se o núcleo falhou.
      */
@@ -422,7 +440,8 @@ namespace OSCR::Dumper
         bool ok = runCore([] { MD::getCartInfo(); MD::cartOff(); });
 
         // O OSCR considera "sem cartucho" um tamanho zero ou absurdo (o maior jogo conhecido tem 10 MB).
-        if (!ok || OSCR::Cores::cartSize == 0 || OSCR::Cores::cartSize > 16777216UL) { out.status = 1; return; }
+        // Sem cabeçalho legível: se o /CART está baixo há cartucho (contato sujo ou mal encaixado): status 4 em vez de 1. Alto: como antes.
+        if (!ok || OSCR::Cores::cartSize == 0 || OSCR::Cores::cartSize > 16777216UL) { out.status = mdCartPinLow() ? 4 : 1; return; }
 
         out.status = 0;
         out.rom_size = OSCR::Cores::cartSize;
