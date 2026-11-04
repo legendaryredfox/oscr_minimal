@@ -31,7 +31,7 @@ PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
 # Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa
 BOARD_CFG = {
     "16_and_8_bits": dict(caps=range(2, 7), reg=True),
-    "16_bits": dict(caps=(3, 5, 6), reg=False),
+    "16_bits": dict(caps=(2, 3, 4), reg=False),      # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico)
 }
 CFG = BOARD_CFG[BOARD]
 
