@@ -62,8 +62,8 @@ Nada disto rodou num RP2040 nem numa placa. Falta, em ordem:
    estimada: o ciclo do PIC a 3,072 MHz dura 1,30 µs (260 ciclos do RP2040 a 200 MHz); o `step()` tem 1 KB
    de código na RAM e cada instrução usa uma fração disso. Estimativa, não medição.
 2. **A base de tempo PIO** (palavras conferidas com o `pioasm`, mas nunca rodadas).
-3. **Níveis:** o CLK2 do módulo Si5351 não pode passar de 3,3 V no GP29; divisores e 74HCT125 nunca foram
-   montados; o sentido de GP0 e GP1 muda durante a autenticação, então o OE dos dois buffers é crítico.
+3. **Níveis:** o CLK2 do CJMCU-5351 deve sair em cerca de 3,3 V (inferido da documentação do módulo e do limite de
+   3,6 V do Si5351; conferir com o multímetro); divisores e 74HCT125 nunca foram montados; o sentido de GP0 e GP1 muda durante a autenticação, então o OE dos dois buffers é crítico.
 4. **Cartucho SA-1 real** com o Mega: o firmware do Mega espera o PIC como está em `SNES.cpp` (PG1 baixo,
    500 ms, depois os clocks a 3,072 MHz); o RP2040 roda o mesmo programa, mas o conjunto nunca foi testado.
 5. O simulador liga o lock a um key **simulado**. Um CIC real pode ter folgas de tempo diferentes; o
@@ -76,7 +76,7 @@ Tire o PIC do soquete U2. Pinos do soquete (do `pinmap.md`): 1 = 5 V, 2 = CLK2, 
 
 | Soquete U2 | Circuito | RP2040 |
 |---|---|---|
-| 2 CLK2 | direto (meça antes: máx. 3,3 V) | GP29 |
+| 2 CLK2 | 1 kΩ em série; o CJMCU-5351 sai em cerca de 3,3 V (LDO de 3,3 V no módulo; o Si5351 não passa de 3,6 V) | GP29 |
 | 4 D40 | divisor 2,0 kΩ série + 3,3 kΩ para GND | GP28 |
 | 6 slot 24 | divisor 2,0 kΩ / 3,3 kΩ (leitura) e saída Y da porta B do 74HCT125 | GP27 (leitura) |
 | 7 slot 55 | divisor 2,0 kΩ / 3,3 kΩ (leitura) e saída Y da porta A do 74HCT125 | GP26 (leitura) |

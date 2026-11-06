@@ -42,7 +42,7 @@ Direção vista do RP2040. Atribuição de GPIO **provisória** (`firmware/cic_r
 
 | PIC | Sinal | Sentido | Circuito | GPIO |
 |---|---|---|---|---|
-| 2 | CLK2 (Si5351; slot 56) | entrada | direto (medir o nível do módulo antes) | GP29 |
+| 2 | CLK2 (Si5351; slot 56) | entrada | 1 kΩ em série (o CJMCU-5351 sai em cerca de 3,3 V, ver abaixo) | GP29 |
 | 4 | D40 (PG1), reset de entrada | entrada | divisor 5 V → 3,3 V | GP28 |
 | 6 | slot 24, dados 1 | **bidirecional** | divisor na leitura + porta B do 74HCT125 na escrita | GP27 (lê), GP14 (escreve), GP1 (/OE) |
 | 7 | slot 55, dados 0 | **bidirecional** | divisor na leitura + porta A do 74HCT125 na escrita | GP26 (lê), GP15 (escreve), GP0 (/OE) |
@@ -60,7 +60,11 @@ Dez GPIO no total. O lado do Mega (D40 = PG1, D41 = PG0) não muda: `boards/16_b
 - **R3 a R8**: divisores de leitura (D40, slot 24, slot 55): 2,0 kΩ série + 3,3 kΩ para o GND, 3,1 V com 5 V.
 - **D2**: 1N5819 (Schottky THT) dos 5 V da placa ao pino 5V do módulo, para a USB do módulo e os 5 V da placa
   não brigarem.
-- O CLK2 entra direto no GP29 se o módulo Si5351 sair em 3,3 V; se sair em 5 V, divisor.
+- **Nível do CLK2 (inferido da documentação, sem medir):** o CJMCU-5351 tem LDO de 3,3 V no Si5351 (VIN de 3 a 5 V) e as
+  fichas dos vendedores dão saída de cerca de 3 V pico a pico. Além disso o próprio Si5351 não passa de 3,6 V de
+  alimentação, então a saída não chega a 5 V em módulo nenhum que funcione. O CLK2 vai ao GP29 por 1 kΩ em série (protege
+  contra sobretensão e toque nos jumpers); sem divisor. Conferir com o multímetro (módulo ligado, CLK2 ativo) continua
+  barato e vale na bancada, mas deixou de ser pré-requisito.
 - Antes de desenhar: conferir com a placa v1.3 o espaço (o módulo ocupa 18 × 23,5 mm mais a USB-C para fora
   da borda) e o rótulo no silk de "USB do módulo: só para gravar".
 
