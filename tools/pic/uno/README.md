@@ -43,13 +43,30 @@ aplica os 13 V no MCLR **antes** de ligar o Vdd, como a especificação de progr
 4. Sem o PIC no soquete, ligue só a fonte e meça o pino 4 com o A1 em reset (deve ficar perto de 0 V) e depois
    solto (13 V).
 
+## Testar o Uno (feito em 2026-11-06 com o Uno do usuário)
+
+Clone com conversor CH340: aparece como **`/dev/ttyUSB0`**, não `ttyACM0` (um Uno original aparece como `ttyACM0`). Use a
+porta que `arduino-cli board list` mostrar e troque nos comandos abaixo. O usuário precisa estar no grupo `dialout` (estava).
+
+```
+# não destrutivo: lê a assinatura pelo bootloader (esperado: 1E 95 0F, ATmega328P, 115200 baud, Optiboot)
+~/.arduino15/packages/arduino/tools/avrdude/*/bin/avrdude -C ~/.arduino15/packages/arduino/tools/avrdude/*/etc/avrdude.conf \
+    -c arduino -p m328p -P /dev/ttyUSB0 -b 115200 -n -v
+
+# fim a fim: compila e grava um sketch de teste (LED pisca, serial "vivo N" por segundo e eco). Troca o sketch do Uno.
+arduino-cli compile -b arduino:avr:uno tools/pic/uno/teste_uno
+arduino-cli upload  -b arduino:avr:uno -p /dev/ttyUSB0 tools/pic/uno/teste_uno
+```
+Resultado no Uno do usuário: assinatura `1E 95 0F` a 115200 baud (a 57600 não responde), compilação e gravação ok, serial a
+115200 baud com "vivo 1, 2, 3..." e eco de `A` e `B`. Nada do circuito do PIC estava ligado.
+
 ## Instalação (uma vez)
 
 ```
 sudo apt install git build-essential        # se ainda não tiver
 tools/pic/uno/instalar_ardpicprog.sh        # baixa (commit fixo), compila o programa do PC, prepara o sketch
 arduino-cli compile -b arduino:avr:uno tools/pic/bin/ProgramPIC
-arduino-cli upload  -b arduino:avr:uno -p /dev/ttyACM0 tools/pic/bin/ProgramPIC
+arduino-cli upload  -b arduino:avr:uno -p /dev/ttyUSB0 tools/pic/bin/ProgramPIC     # ttyACM0 num Uno original
 ```
 > Estado: o instalador e o sketch **não foram compilados** aqui (o ambiente não permitiu rodar código baixado).
 > O sketch é de 2011 (`.pde`) e só inclui `avr/pgmspace.h`; se o compilador novo reclamar, veja a mensagem.
@@ -58,7 +75,7 @@ arduino-cli upload  -b arduino:avr:uno -p /dev/ttyACM0 tools/pic/bin/ProgramPIC
 ## Gravar (sintaxe da documentação do ardpicprog)
 
 ```
-A="tools/pic/bin/ardpicprog -p /dev/ttyACM0"
+A="tools/pic/bin/ardpicprog -p /dev/ttyUSB0"   # o padrão do programa é /dev/ttyACM0; use -p
 
 $A --list-devices                              # teste da comunicação: lista pic12f629 com *
 $A -o backup-virgem.hex --skip-ones            # lê o chip (autodetecta); guarde o arquivo
