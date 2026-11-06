@@ -2,7 +2,7 @@
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e em `boards/megadrive/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez, de Mega Drive/Genesis. A placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho.
+> **Segurança:** só um cartucho por vez, de Mega Drive/Genesis. A placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO".
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão. Se algo da lista de testes (seções 5 e 6) falhar, pare e avise antes de seguir.
 

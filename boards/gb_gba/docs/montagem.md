@@ -2,7 +2,7 @@
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto, com as adaptações do slot GBA (SMD) e do regulador de 3,3 V. Todas as referências (R1, C1...) estão no silkscreen e em `boards/gb_gba/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez. O slot GBA é **3,3 V**: nunca ligue o VCC dele ao 5V. Cartucho de GB e GBC só entra pelo adaptador (D56). Desligue o USB antes de trocar de cartucho.
+> **Segurança:** só um cartucho por vez. O slot GBA é **3,3 V**: nunca ligue o VCC dele ao 5V. Cartucho de GB e GBC só entra pelo adaptador (D56). Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO".
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão; o `/D9` (RD do GBA) foi roteado à parte, pelo roteador A* do projeto. Se algo das seções 5 e 6 falhar, pare e avise antes de seguir.
 

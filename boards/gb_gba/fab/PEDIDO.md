@@ -2,7 +2,7 @@
 
 Placa **GBA (GB e GBC por adaptador)**, 2 camadas, 138,1 × 67,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `ed6aad93420bc8cf18d6468c8f1edbd93cb275d449e66de201d7abef87ca9a3e` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `e03227015ae4af1ba8f7811486f45f83843b03c380cfee7eba65f476f7e01d34` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

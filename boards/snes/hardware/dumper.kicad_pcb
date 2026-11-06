@@ -5730,7 +5730,7 @@
 		)
 	)
 	(gr_text "PIC EM SOQUETE"
-		(at 84 76 0)
+		(at 84 77.8 0)
 		(layer "F.SilkS")
 		(uuid "75fb6e64-1940-40ee-96b3-523eaa624f30")
 		(effects
@@ -5762,14 +5762,25 @@
 			)
 		)
 	)
-	(gr_text "UM CARTUCHO POR VEZ"
-		(at 46 102 0)
+	(gr_text "NÃO COLOQUE NEM RETIRE"
+		(at 46 100.5 0)
 		(layer "F.SilkS")
-		(uuid "a19d755a-0389-4c34-b43a-8a5dfd376126")
+		(uuid "6a54655a-9884-4611-a11b-cc3b66044f6c")
 		(effects
 			(font
-				(size 3 3)
-				(thickness 0.45)
+				(size 2 2)
+				(thickness 0.3)
+			)
+		)
+	)
+	(gr_text "O CARTUCHO COM USB LIGADO"
+		(at 46 103.5 0)
+		(layer "F.SilkS")
+		(uuid "261cc454-65ec-4aaa-a73f-dd7e16360a6d")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.3)
 			)
 		)
 	)
