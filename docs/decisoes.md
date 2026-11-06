@@ -93,6 +93,7 @@
 - **D92** Placa `boards/megadrive/`: só Mega Drive, slot dentro da área do Mega (pedido do usuário, 2026-11-06)
 - **D93** Placa `boards/snes/`: só SNES, com PIC12F629 enquanto o RP2040 não é validado (pedido do usuário, 2026-11-06)
 - **D94** Placa `boards/gb_gba/`: só GBA, GB e GBC por adaptador (pedido do usuário, 2026-11-06)
+- **D95** Placa `boards/nes/`: só NES, com Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -763,3 +764,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Roteamento.** `/D9` (RD) não foi roteado pelo Freerouting em nenhuma das 9 tentativas (nem as vias de saída dos pads); foi feito pelo A* de `tools/pcb_v12` (`tools/gb_gba/route_net.py`). Causa não investigada.
 - **Ferramentas.** `tools/gb_gba/place.py`, `route_net.py`; `tools/megadrive/fix_nets.py` leva um pad por chamada (com vários, só o primeiro pegava).
 
+
+### D95 — Placa `boards/nes/`: só NES, com Si5351 e sem PIC (pedido do usuário, 2026-11-06)
+- **Pedido.** "Agora NES", depois da `megadrive/`, `snes/` e `gb_gba/`. Placa de um slot, só o NES de 72 pinos. O Famicom (`FC1`, 60 pinos) fica de fora: tem slot próprio na `16_and_8_bits` e na `8_bits`. Adaptador 60→72 pinos para Famicom não foi avaliado nem validado.
+- **Escolhas.** Cópia da `16_and_8_bits`; ficam NES1, U1 (Si5351, o CLK0 vai ao pino 37 do slot, como no HW5), C1, C3, R1 e D1. Saem os outros slots, PIC (o NES não usa CIC), R2, regulador de 3,3 V e capacitores dele, C2, C4 a C9 e os furos M2. Slot no meio da área do Mega, 9 mm à esquerda do centro: o slot tem 87,5 mm de pads e o header 2x18 do Mega chega a 116,5 mm. Os 6 furos não metalizados do Mega e os 4 de canto foram mantidos.
+- **Ferramentas.** `tools/nes/place.py`, `sync_unconnected.py` (passa as nets `unconnected-(...)` do esquemático ao PCB de uma vez, lendo a netlist) e `retext.py` (move só os textos de uma placa já roteada); `tools/megadrive/stitch.py` passou a evitar textos e campos do silkscreen; `tools/check_netlist.py --board nes` (flag `nopic`).
+- **Verificação.** ERC 0 violações, DRC sem erros nem ligações abertas, netlist confere (39 nets, 116 ligações). Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.

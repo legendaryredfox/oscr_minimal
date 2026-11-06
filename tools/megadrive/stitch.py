@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Costura GND: vias de 0,6/0,3 numa grade (passo dado, mm) onde há folga de 0,5 mm de qualquer cobre de outra net
-e que caiam dentro do preenchimento de GND das duas camadas. Remove antes as vias de GND soltas que este script pôs
+e que caiam dentro do preenchimento de GND das duas camadas. Evita legendas do silkscreen. Remove antes as vias de GND soltas que este script pôs
 . Antes de rodar, apague as vias de GND da rodada anterior. Uso (Python do venv do KiCad MCP): stitch.py placa.kicad_pcb [passo]"""
 import sys, pcbnew
 mm = pcbnew.FromMM
@@ -19,6 +19,13 @@ def free(pt):
     for f in b.GetFootprints():          # nada de via sob o corpo de peça com furo próximo: só pads contam
         pass
     return True
+silk = []        # nada de via sob textos e campos do silkscreen (aviso silk_over_copper)
+for d in b.GetDrawings():
+    if d.GetClass() == "PCB_TEXT" and d.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS): silk.append(d.GetBoundingBox())
+for f in b.GetFootprints():
+    for fld in f.GetFields():
+        if fld.IsVisible() and fld.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS): silk.append(fld.GetBoundingBox())
+for k in silk: k.Inflate(mm(0.8))
 def in_zone(pt):
     return all(z.HitTestFilledArea(z.GetLayer(), pt, mm(0.31)) for z in zones)
 for t in list(b.GetTracks()):
@@ -30,7 +37,7 @@ while y < y1 - 3:
     x = x0 + 3
     while x < x1 - 3:
         pt = pcbnew.VECTOR2I(mm(x), mm(y))
-        if free(pt) and in_zone(pt):
+        if free(pt) and in_zone(pt) and not any(k.Contains(pt) for k in silk):
             v = pcbnew.PCB_VIA(b); v.SetPosition(pt); v.SetNet(b.FindNet("/GND"))
             v.SetWidth(mm(0.6)); v.SetDrill(mm(0.3)); b.Add(v); n += 1
         x += step

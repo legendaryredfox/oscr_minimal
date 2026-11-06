@@ -38,11 +38,14 @@ BOARD_CFG = {
     "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}),
     # só SNES: C2 do slot e C4 do PIC; Si5351, PIC e R2 ficam; sem /CART
     "snes": dict(caps=(2, 4), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # só NES: Si5351 (só o CLK0 vai ao slot, pino 37) e C3 do slot; sem PIC, R2, regulador, pontos de teste nem /CART
+    "nes": dict(caps=(3,), reg=False, nopic=True, tps={}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
     "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
 MDONLY = CFG.get("mdonly", False)
+NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
 
 SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1"}
 SLOTS = set()      # slots presentes no pinmap da placa
@@ -103,23 +106,27 @@ def expected_nets(pm_nets):
             exp[net].add((MEGA, net))                       # pad do Mega com o mesmo nome
     if not MDONLY:
         for net, pin in SI_CLK.items():
+            if NOPIC and net != "CLK0": continue
             exp.setdefault(net, set()).add((SI, pin))
-        for net, pin in PIC_NET.items():
-            exp.setdefault(net, set()).add((PIC, pin))
-        exp["CLK2"].add((PIC, "2"))
+        if not NOPIC:
+            for net, pin in PIC_NET.items():
+                exp.setdefault(net, set()).add((PIC, pin))
+            exp["CLK2"].add((PIC, "2"))
         # I2C, CIC reset in/out e periféricos
         exp.setdefault("D20", set()).update({(MEGA, "D20"), (SI, "3")})
         exp.setdefault("D21", set()).update({(MEGA, "D21"), (SI, "4")})
-        exp.setdefault("D41", set()).update({(MEGA, "D41"), (PIC, "3")})
-        exp.setdefault("D40", set()).update({(MEGA, "D40"), (PIC, "4")})
+        if not NOPIC:
+            exp.setdefault("D41", set()).update({(MEGA, "D41"), (PIC, "3")})
+            exp.setdefault("D40", set()).update({(MEGA, "D40"), (PIC, "4")})
     exp.setdefault("D38", set()).update({(MEGA, "D38"), ("R1", "2")})
     exp.setdefault("LED_K", set()).update({("R1", "1"), ("D1", "1")})
-    if not MDONLY:
+    if not MDONLY and not NOPIC:
         exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
     exp.setdefault("+5V", set()).update({(MEGA, p) for p in MEGA_5V})
     exp["+5V"].update({("D1", "2"), ("C1", "1"), ("FLG1", "1")})
     if not MDONLY:
-        exp["+5V"].update({(SI, "1"), (PIC, "1"), ("R2", "1")})
+        exp["+5V"].add((SI, "1"))
+        if not NOPIC: exp["+5V"].update({(PIC, "1"), ("R2", "1")})
     exp["+5V"].update({(f"C{i}", "1") for i in CFG["caps"]})
     for tp, net in CFG["tps"].items():
         exp.setdefault(net, set()).add((tp, "1"))
@@ -130,7 +137,8 @@ def expected_nets(pm_nets):
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
     exp["GND"].update({("C1", "2"), ("FLG2", "1")})
     if not MDONLY:
-        exp["GND"].update({(SI, "2"), (PIC, "8")})
+        exp["GND"].add((SI, "2"))
+        if not NOPIC: exp["GND"].add((PIC, "8"))
     exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
     return exp
 
