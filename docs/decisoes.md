@@ -98,6 +98,7 @@
 - **D97** Placa `16_bits`: correções da revisão D96 (pedido do usuário, 2026-11-06)
 - **D98** Placa `boards/famicom/`: só Famicom, sem Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 - **D99** Pontos de teste a 2,54 mm nas placas `megadrive`, `snes` e `16_bits` v. 1.2 (pedido do usuário, 2026-11-06)
+- **D100** Placa `boards/famicom_nes/`: Famicom e NES na mesma placa (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -804,3 +805,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **`megadrive` e `snes`.** Refeitas com a receita completa (`place.py` idempotente, GND como trilha, zonas depois, `tools/megadrive/tp_header.py`, alimentação em 0,8 mm desde o Freerouting). Na `megadrive` isso removeu os 2 pads sólidos de GND da D96; na `snes` houve 1 `starved_thermal` (U2.8), resolvido com `tools/revisao/solid_pad.py`. `tools/megadrive/place.py` agora também guarda a posição dos créditos da face de baixo, que só existia na placa.
 - **`16_bits` v. 1.2.** Placa já roteada à mão: `tools/revisao/move_tps.py` apaga a trilha de cada TP até o primeiro cruzamento, move os TPs (centro em x = 52 mm, a 2,54 mm) e reroteia com o A* de `tools/pcb_v12`; os créditos da face de cima subiram 7 mm (y = 44 a 48,4) para dar lugar aos rótulos verticais. 344 furos metalizados (94 vias). A pasta `hardware-v1.0/` não mudou.
 - **Verificação.** DRC 0 erros e 0 ligações abertas nas três; `check_netlist` OK nas três; ERC 0. Novos SHA-256 nos PEDIDOs; prévias refeitas.
+
+### D100 — Placa `boards/famicom_nes/`: Famicom e NES na mesma placa (pedido do usuário, 2026-11-06)
+- **Pedido.** "Uma placa com Famicom e NES", e "conferir antes de exportar". Depois da conferência: pin header (soquete do Si5351) mais perto da coluna de pinos duplos do Mega e girado 90°; "confere o sentido dos cartuchos com o rótulo".
+- **Escolhas.** Cópia da `16_and_8_bits` só com NES1, FC1, U1 (Si5351), C1, C3 (NES), C4 (Famicom), R1, D1. Os dois slots em paralelo nos mesmos pinos do Mega, um cartucho por vez (silk e `montagem.md`). NES entre as fileiras do Mega (x = 52), Famicom acima do cabeçalho (a placa cresce para cima, 112,1 × 79,1 mm), soquete do Si5351 vertical em x = 111 mm ao lado do header 2x18 (módulo em pé, 3 mm dos pinos do Mega). Sem PIC, R2, regulador nem pontos de teste.
+- **Rótulo.** Conferido na NESdev (`wiki/Cartridge_connector`): NES, pinos 1–36 no lado do rótulo (36 a 1, da esquerda para a direita); Famicom, pinos 1–30 (1 a 30, da esquerda para a direita). Nos footprints do OSCR, a fileira de baixo é a dos pinos baixos e a ordem bate vista de baixo da placa; então o rótulo para baixo (D27) está coerente nos dois slots. A página não fala "borda para baixo"; a leitura é minha. Orientação do corpo do slot continua a confirmar com a peça.
+- **Roteamento.** Freerouting (2 tentativas, 138 s); o pino 16 do Famicom (GND) ficou numa ilha na primeira versão e foi ligado com uma via de `frag_vias.py`; na versão final não houve ilha.
+- **Verificação.** ERC 0; DRC sem erros nem ligações abertas, 4 avisos de biblioteca; `check_netlist --board famicom_nes` (flag `nopic`, caps C3 e C4): 39 nets, 176 ligações, 16 pinos de slot sem ligação; 5V em 0,8 mm. Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.
+- **Ferramentas.** `tools/famicom_nes/place.py`; o resto reaproveitado de D95 a D99.

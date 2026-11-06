@@ -27,3 +27,4 @@ host/.pytest_cache/
 boards/*/hardware/.history/
 firmware/oscr/.pio/
 references
+~*.lck

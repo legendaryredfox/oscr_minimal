@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "dumper")(type "KiCad")(uri "${KIPRJMOD}/../../_lib/dumper.kicad_sym")(options "")(descr "Simbolos do dumper (slots OSCR CC BY 4.0, Mega R3, Si5351)"))
+)
