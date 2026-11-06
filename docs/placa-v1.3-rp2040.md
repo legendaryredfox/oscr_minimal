@@ -1,6 +1,6 @@
 # Placa 16_bits v. 1.3: módulo RP2040-Zero no lugar do PIC12F629
 
-Estado (2026-11-06): **decidido pelo usuário, placa ainda não alterada.** A v1.0 encomendada usa o PIC com um
+Estado (2026-11-06): **decidido pelo usuário, placa ainda não alterada.** O RP2040 só entra na v. 1.3, **se der certo** na bancada; a v. 1.2 fecha com o PIC (estudo final em `boards/16_bits/docs/estudo-final-v1.2.md`). A v1.0 encomendada usa o PIC com um
 programador comprado; a v. 1.3 troca o PIC (U2) por um módulo RP2040-Zero programável por USB. O PIC sai
 de vez (sem footprint de reserva). Decisão e motivos em `docs/decisoes.md` D89; o firmware do RP2040 está em
 `firmware/cic_rp2040/`.

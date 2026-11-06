@@ -104,6 +104,7 @@
 - **D103** Shield do Uno: diodo D1 vira DNP, com ponte JP1 (pedido do usuário, 2026-11-06)
 - **D104** Revisão do silkscreen: referências conferidas e aviso do USB nas placas de um cartucho (pedido do usuário, 2026-11-06)
 - **D105** Shield do Uno: mapa das ligações para leigos e passos da protoboard prontos (pedido do usuário, 2026-11-06)
+- **D106** Estudo final da `16_bits` v. 1.2 antes de fechar o projeto (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -850,4 +851,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Mapa das ligações.** `tools/pic/shield_uno/docs/esquema-simples.svg/.png`, gerado por `scripts/esquema_simples.py`: caixas com nome em português (Arduino Uno, o chip, transistor, LEDs, fonte), um fio colorido por ligação (mesmas cores da protoboard; rosa para o MCLR), GND como um fio preto largo embaixo com ramais curtos, 13 V como fio vermelho em cima, bolinha onde os fios se encontram, "pulinho" onde passam um por cima do outro sem encostar (3 no desenho), X nos pinos 2, 3 e 5 do chip. O chip aparece com o entalhe para baixo (pinos 5 a 8 à esquerda, 4 a 1 à direita) para o GND ficar perto do fio preto e o D4/D7 entrarem em linha reta. O script **verifica** as redes do desenho contra `protoboard.ESPERADO` (a mesma tabela da protoboard e da placa perfurada) e para com erro se um fio ligar o que não deve (testado trocando o pino do D7). A lista fio a fio com caixas para marcar vai para o README (`<!-- mapa -->`).
 - **Protoboard.** O gerador dos passos (`protoboard_desenho.py`) parava no passo 6 porque o `convert` do ImageMagick não lê alguns retângulos arredondados do SVG; os PNG passaram a sair do Chrome sem janela (`svg_para_png`, também usado pelo mapa). 9 passos, montagem completa e pinos do Uno gerados e injetados no README.
 - **Limites.** Nada montado nem gravado; o mapa e a protoboard só foram conferidos no PC contra a tabela de ligações. Não conferi o limite de Vpp do 12F629 (DS41191), como antes.
+
+### D106 — Estudo final da `16_bits` v. 1.2 antes de fechar o projeto (pedido do usuário, 2026-11-06)
+- **Pedido.** O design da v. 1.2 será fechado; fazer um último estudo para avaliar melhorias. Na mesma conversa: o RP2040 só entra na v. 1.3, se der certo.
+- **Resultado.** `boards/16_bits/docs/estudo-final-v1.2.md`. Confere: ERC 0, DRC 0 erros e 0 ligações abertas, netlist (67 nets, 225 ligações), referências esquemático × PCB, furos 344/4. Achados: C4 a 21,7 mm do VDD do PIC (viola "um capacitor junto ao PIC"), aviso do USB ausente no silk desta placa, `_lib` com o Mega de 91 pads contra 85 no PCB. Para a v. 1.3: resistores série e TVS, chave de alimentação dos slots, furos M3 do Mega, reset.
+- **Nada aplicado.** Recomendação: só silk (aviso do USB) e um capacitor extra sob o soquete do PIC na montagem; o resto na v. 1.3. Aguarda a decisão do usuário.
 
