@@ -2,7 +2,7 @@
 
 Versão mínima de uma função: um slot **Mega Drive** (64p, 2,54 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_bits`).
 
-**Estado:** v1.0, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros de roteamento (2 `starved_thermal` justificados, ver `fab/PEDIDO.md`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar** (trilhas não foram conferidas à mão). Nada encomendado nem montado. `docs/montagem.md` ainda não existe (adaptar o da `16_bits` sem SNES, Si5351 e PIC).
+**Estado:** v1.0, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros de roteamento (2 `starved_thermal` justificados, ver `fab/PEDIDO.md`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar** (trilhas não foram conferidas à mão). Nada encomendado nem montado. Montagem: `docs/montagem.md`.
 
 ## Diferenças em relação à `16_bits`
 
