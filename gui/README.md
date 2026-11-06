@@ -1,6 +1,6 @@
 # gui/ — interface gráfica (Kotlin Multiplatform)
 
-Linux, macOS e Windows. Idiomas: **português (pt-BR) e inglês** (`shared/.../I18n.kt`; inglês é o reserva; novos idiomas: acrescente em `Lang` e uma tabela).
+Linux, macOS e Windows. Idiomas: **português (pt-BR), inglês, russo e chinês** (`shared/.../I18n.kt`; inglês é o reserva; novos idiomas: acrescente em `Lang` e uma tabela).
 
 | Módulo | Conteúdo |
 |---|---|
