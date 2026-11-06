@@ -70,7 +70,7 @@ tem o valor. O comparador avisa se a palavra `0x3FF` lida não for um `RETLW` (`
 
 - **ID não lido / chip não encontrado:** troque o PIC de posição no ZIF, confira a ligação acima, confira com um
   multímetro se o pino 4 (MCLR) chega a cerca de 12 V durante a gravação. Sem os 12 V, o clone não serve para este
-  chip; plano B: Arduino Uno com o ardpicprog (`docs/continuacao.md` e a conversa de 2026-11-06), ou comprar o PIC
-  já gravado.
+  chip; plano B: Arduino Uno com o ardpicprog (https://rweather.github.io/ardpicprog/, lista o 12F629; precisa de 13 V no
+  MCLR e de um transistor como no circuito dele), ou comprar o PIC já gravado.
 - **`PICkit 2 not found`:** regra de USB não instalada (acima) ou cabo; teste uma vez com `sudo`.
 - **Verificação falha:** grave de novo; se repetir, veja a alimentação do alvo e o cabo.
