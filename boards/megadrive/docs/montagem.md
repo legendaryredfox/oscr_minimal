@@ -18,7 +18,7 @@ Quantidades e valores: `boards/megadrive/docs/bom.md`. Resumo:
 | LED 3 mm | D1 |
 | Slot Mega Drive 64 pinos | MD1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
-| Pontos de teste (opcional: pino macho) | TP1 a TP6 |
+| Pontos de teste (opcional: tira de pinos macho 1x6, 2,54 mm) | TP1 a TP6 |
 | Mecânica | 4 espaçadores M3 + pés de borracha (cantos) |
 
 Não existem nesta placa: Si5351, PIC, soquete DIP-8, R2, C2 e C4. Se a lista de compras vier da `16_bits`, ignore essas peças.
@@ -37,7 +37,7 @@ Não existem nesta placa: Si5351, PIC, soquete DIP-8, R2, C2 e C4. Se a lista de
 2. **Capacitores cerâmicos de 100 nF**: C3, C5 e C6. Eles ficam na faixa entre o slot e a fileira de cima do Mega; C6 e C5 ficam perto das pontas do slot (pinos A2 e A31).
 3. **LED D1**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 4. **Capacitor eletrolítico C1 (470 µF)**, respeitando a polaridade (o `+` está no silkscreen), no canto superior esquerdo.
-5. **Pontos de teste TP1 a TP6** (fileira junto à borda de baixo, `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`): só cobre. Se quiser, solde um pino macho em cada um para ligar um analisador lógico. **Opcional.**
+5. **Pontos de teste TP1 a TP6** (fileira junto à borda de baixo, `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`): a 2,54 mm um do outro, com o rótulo na vertical acima de cada furo. Solde uma tira de pinos macho 1x6 padrão (ou 6 pinos soltos) para ligar um analisador lógico ou uma ponta de prova. **Opcional.**
 6. **Slot MD1.** Solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo. Nenhum componente alto fica na frente do slot.
 7. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).

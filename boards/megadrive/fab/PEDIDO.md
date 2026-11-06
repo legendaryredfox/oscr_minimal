@@ -2,7 +2,7 @@
 
 Placa **só Mega Drive**, 2 camadas, 107,1 × 65,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `452c86044a5bb8c53c2ac80a7c12dfcef63c0cd6c5e7f3ca3d9b32887202ef08` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `ad171cea5f8cae2083367691efc56175a08d8c4781e1c0b7b364369b284ab964` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

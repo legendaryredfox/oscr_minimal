@@ -29,7 +29,7 @@ Montagem **manual**. Lista gerada de `boards/snes/fab/bom.csv` mais as peças se
 | R2 | 1 | 1 kΩ 1/4 W | idem | Pull-up do D7 (`/IRQ` do SNES). |
 | C1 | 1 | 470 µF / 16 V, radial Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
 | C2, C4 | 2 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | C2 no slot (pino 27), C4 no PIC. |
-| TP1, TP2, TP4, TP5, TP6 | 5 | Pontos de teste, pad de 2 mm, furo 1 mm | só cobre | `5V`, `GND`, `/RD`, `/WR`, `/IRQ`. Opcional: pino macho. |
+| TP1, TP2, TP4, TP5, TP6 | 5 | Pontos de teste, pad de 2 mm, furo 1 mm | só cobre | `5V`, `GND`, `/RD`, `/WR`, `/IRQ`. Opcional: tira de pinos macho 1x5 de 2,54 mm (furos a 2,54 mm um do outro). |
 
 ## Pinos e mecânica
 

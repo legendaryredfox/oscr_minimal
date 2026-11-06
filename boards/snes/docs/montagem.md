@@ -22,7 +22,7 @@ Ver `boards/snes/docs/bom.md` (quantidades e referências). Resumo:
 | Header fêmea 1x7 (Si5351) e módulo | U1 |
 | Slot SNES 62 pinos | SNES1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
-| Pontos de teste (opcional: pino macho) | TP1 (5V), TP2 (GND), TP4 (`/RD`), TP5 (`/WR`), TP6 (`/IRQ`) |
+| Pontos de teste (opcional: tira de pinos macho 1x5, 2,54 mm) | TP1 (5V), TP2 (GND), TP4 (`/RD`), TP5 (`/WR`), TP6 (`/IRQ`) |
 | Mecânica | 4 espaçadores M3 + pés de borracha (cantos). Sem espaçadores nos furos do Mega (a placa não tem esses furos) |
 
 ## 2. Ferramentas
@@ -41,7 +41,7 @@ Ver `boards/snes/docs/bom.md` (quantidades e referências). Resumo:
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 6. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).
-7. **Pontos de teste TP1, TP2, TP4, TP5, TP6** (fileira junto à borda de baixo): só cobre; se quiser, solde um pino macho em cada. **Opcional.**
+7. **Pontos de teste TP1, TP2, TP4, TP5, TP6** (fileira junto à borda de baixo, a 2,54 mm um do outro, rótulo na vertical acima de cada furo): solde, se quiser, uma tira de pinos macho 1x5 padrão. **Opcional.**
 8. **Slot SNES1.** Solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo.
 9. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).

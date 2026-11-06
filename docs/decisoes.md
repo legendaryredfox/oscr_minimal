@@ -97,6 +97,7 @@
 - **D96** Revisão das placas `megadrive`, `snes`, `gb_gba` e `nes` (pedido do usuário, 2026-11-06)
 - **D97** Placa `16_bits`: correções da revisão D96 (pedido do usuário, 2026-11-06)
 - **D98** Placa `boards/famicom/`: só Famicom, sem Si5351 e sem PIC (pedido do usuário, 2026-11-06)
+- **D99** Pontos de teste a 2,54 mm nas placas `megadrive`, `snes` e `16_bits` v. 1.2 (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -708,7 +709,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Fica de fora:** expor o nome do chip no protocolo (`MdFlash::identify` existe, mas o `DETECT` do Mega Drive só lê o cabeçalho da ROM); Sharp LH28F320BJE, MX26L6420 e mapeadores (Open EverDrive, EverDrive-MD, Magistr-16, WaterMelon), que precisam de cartucho e datasheet.
 
 ### D87 — Placa `16_bits` v. 1.2: `/CART`, capacitores extras e pontos de teste (pedido do usuário, 2026-11-04)
-- **Silk** `SNES / MEGA DRIVE   v. 1.2   2026-11-04`. Gerbers para pedir: `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` (SHA-256 em `fab/PEDIDO.md`); 343 furos metalizados (93 vias), 4 não metalizados, 108,1 × 86,1 mm.
+- **Silk** `SNES / MEGA DRIVE   v. 1.2   2026-11-04`. Gerbers para pedir: `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` (SHA-256 em `fab/PEDIDO.md`); 343 furos metalizados (93 vias; 344 e 94 depois da D99), 4 não metalizados, 108,1 × 86,1 mm.
 - **`/CART` (B32 do MD1) ligado ao D50 do Mega** (PB3). **Pino novo, fora do HW5 do OSCR** (regra de pinagem idêntica do `CLAUDE.md`, seção 3): o usuário mandou aplicar o item sem escolher o pino; escolhi o D50 porque `pinmap.md` o lista como não usado, o fork não tem SD (era o MISO do SPI) e o D39, também livre no `pinmap.md`, é o pino do botão no `main.cpp` do OSCR. **Se o usuário preferir outro pino, trocar na placa e no `pinmap.md`.** Firmware: lê o pino só no `DETECT` do Mega Drive (ver D88).
 - **C5 e C6** (100 nF, passo 5 mm), junto aos pinos A31 e A2 (5V) do slot Mega Drive, a 8,4 mm e 5,5 mm. O C3 continua onde estava (10,7 mm do A2, 83 mm do A31). Posições achadas por busca em grade das folgas (0,2 mm de folga, margem de 0,12 mm), conferidas por DRC.
 - **Seis pontos de teste** TP1 a TP6 (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`) numa fileira em y = 56,5 mm, pad de 2 mm. Pedido do usuário: juntos; perto da borda só se não atrapalhar a ideia de juntos. Fora da BOM de compra (`in_bom no`).
@@ -796,3 +797,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Revisão aplicada desde o início (D96).** Padrões `/+5V` e `/+3V3` na net class `Power` (o 5V saiu do Freerouting com 0,8 mm, 23 segmentos; `widen_power.py` não precisou mudar nada); `stitch.py` evitando as legendas; textos fora de pads e de peças (DRC sem `silk_overlap` nem `silk_over_copper`); BOM, PEDIDO e montagem com os 10 furos não metalizados e os 6 espaçadores do Mega.
 - **Verificação.** ERC 0 violações; DRC sem erros nem ligações abertas, só 4 avisos de biblioteca; `check_netlist --board famicom` (flag `mdonly`, caps = C4) confere: 36 nets, 109 ligações, 2 pinos de slot sem ligação. Roteada por autoroteador, não revisada à mão no KiCad; nada encomendado nem montado.
 - **Ferramentas.** `tools/famicom/place.py`; `strip_sch.py`, `tools/nes/sync_unconnected.py`, `add_zones.py`, `stitch.py` e `fill_zones.py` reaproveitados.
+
+### D99 — Pontos de teste a 2,54 mm nas placas `megadrive`, `snes` e `16_bits` v. 1.2 (pedido do usuário, 2026-11-06)
+- **Pedido.** "Deixar os pontos de debug mais próximos, para usar um pin header padrão ali", depois "mesma correção nas outras placas". A v1.0 da `16_bits` não tem pontos de teste.
+- **Mudança.** TP1 a TP6 (`snes`: TP1, TP2, TP4, TP5, TP6) passam de 5,5 mm para 2,54 mm de distância: os furos de 1 mm recebem uma tira de pinos macho 1x6 (1x5 na `snes`) padrão. Os rótulos ficaram na vertical, acima de cada furo. A área de proteção (courtyard) do footprint `TestPoint_THTPad_D2.0mm_Drill1.0mm`, maior que 2,54 mm, foi tirada dos TPs na placa (aviso `lib_footprint_mismatch` a mais por TP, sem efeito na fabricação); os pads ficam a 0,54 mm um do outro (regra de projeto: 0,2 mm).
+- **`megadrive` e `snes`.** Refeitas com a receita completa (`place.py` idempotente, GND como trilha, zonas depois, `tools/megadrive/tp_header.py`, alimentação em 0,8 mm desde o Freerouting). Na `megadrive` isso removeu os 2 pads sólidos de GND da D96; na `snes` houve 1 `starved_thermal` (U2.8), resolvido com `tools/revisao/solid_pad.py`. `tools/megadrive/place.py` agora também guarda a posição dos créditos da face de baixo, que só existia na placa.
+- **`16_bits` v. 1.2.** Placa já roteada à mão: `tools/revisao/move_tps.py` apaga a trilha de cada TP até o primeiro cruzamento, move os TPs (centro em x = 52 mm, a 2,54 mm) e reroteia com o A* de `tools/pcb_v12`; os créditos da face de cima subiram 7 mm (y = 44 a 48,4) para dar lugar aos rótulos verticais. 344 furos metalizados (94 vias). A pasta `hardware-v1.0/` não mudou.
+- **Verificação.** DRC 0 erros e 0 ligações abertas nas três; `check_netlist` OK nas três; ERC 0. Novos SHA-256 nos PEDIDOs; prévias refeitas.

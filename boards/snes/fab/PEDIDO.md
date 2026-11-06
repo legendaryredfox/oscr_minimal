@@ -2,7 +2,7 @@
 
 Placa **só SNES**, 2 camadas, 107,1 × 65,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `d07a99a8317766c10d46191e4cfa068435bd6cd22740cfef3f4a275233f53a4d` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `ceefbf83051a4f515d8fcfa27324229486d1882ac391173bb70c4d1a2cce112d` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

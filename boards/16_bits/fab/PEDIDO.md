@@ -4,7 +4,7 @@ Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a 
 
 ## Arquivo
 
-Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `ad498acdf8ffa6f4a77d21e6dc84ac32961eb8053ded3ce21e74c138d3c57d94`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
+Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `88da53f520be3c2fc2114e557bc426da1c77f56b82697d78478367bd988481e9`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
@@ -14,8 +14,8 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 |---|---|
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm |
-| Furos metalizados / não metalizados | 343 / 4 (os 4 são M3 de canto, 3,2 mm) |
-| Furo mínimo | 0,3 mm (as 93 vias) |
+| Furos metalizados / não metalizados | 344 / 4 (os 4 são M3 de canto, 3,2 mm) |
+| Furo mínimo | 0,3 mm (as 94 vias) |
 
 Se a pré-visualização mostrar outra coisa, **não pague**: avise.
 
@@ -24,7 +24,7 @@ Se a pré-visualização mostrar outra coisa, **não pague**: avise.
 - Silk com `v. 1.2   2026-11-04`.
 - `/CART` (B32 do slot Mega Drive) ligado ao pino D50 do Mega: detecção de cartucho (o cartucho liga B32 ao GND; no Mega, `INPUT_PULLUP`).
 - Dois capacitores de 100 nF a mais: **C5** junto ao pino A31 (5V) e **C6** junto ao A2 (5V) do slot Mega Drive.
-- Seis pontos de teste (pad de 2 mm, furo de 1 mm) numa fileira acima do cabeçalho do Mega, rotulados no silk: `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`. Podem receber um pino de 2,54 mm soldado para a ponta de prova.
+- Seis pontos de teste (pad de 2 mm, furo de 1 mm) numa fileira acima do cabeçalho do Mega, a 2,54 mm um do outro (revisão D99: antes eram 5,5 mm), rotulados na vertical: `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`. Recebem uma tira de pinos macho 1x6 padrão para a ponta de prova.
 - **Não** entraram: resistores série e TVS nas linhas do cartucho (não há espaço sem refazer o roteamento) e o pull-up de `/VRES`.
 
 ## Configurações do formulário
@@ -79,6 +79,6 @@ Lista completa e observações: `../docs/bom.md`. Resumo:
 
 ## v1.0 revisada (`dumper-v1.0-rev2`) — para quem já encomendou ou vai encomendar a v1.0
 
-O `dumper-v1.0-jlcpcb.zip` original (o que foi encomendado) tem todas as trilhas de alimentação com 0,3 mm. A `dumper-v1.0-rev2-jlcpcb.zip` (cópia: `-gerbers-`) é a **mesma v1.0, sem `/CART`, sem C5 e C6 e sem pontos de teste**, com duas correções (D97): trilhas do `+5V` alargadas até 0,8 mm onde cabe (22 segmentos em 0,8 mm, 9 em 0,6, 1 em 0,5, 2 em 0,4; 14 ficam em 0,3 mm entre pads) e conexão sólida nos 3 pads de GND que davam `starved_thermal`. Silk, furos (343 metalizados, 4 não metalizados), contorno e netlist iguais à v1.0. SHA-256: `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62`. Fontes em `../hardware-v1.0/`, gerbers em `gerbers-v1.0-rev2/`.
+O `dumper-v1.0-jlcpcb.zip` original (o que foi encomendado) tem todas as trilhas de alimentação com 0,3 mm. A `dumper-v1.0-rev2-jlcpcb.zip` (cópia: `-gerbers-`) é a **mesma v1.0, sem `/CART`, sem C5 e C6 e sem pontos de teste**, com duas correções (D97): trilhas do `+5V` alargadas até 0,8 mm onde cabe (22 segmentos em 0,8 mm, 9 em 0,6, 1 em 0,5, 2 em 0,4; 14 ficam em 0,3 mm entre pads) e conexão sólida nos 3 pads de GND que davam `starved_thermal`. Silk, furos (325 metalizados, 4 não metalizados), contorno e netlist iguais à v1.0. SHA-256: `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62`. Fontes em `../hardware-v1.0/`, gerbers em `gerbers-v1.0-rev2/`.
 
 DRC: 0 erros, 0 ligações abertas, 5 avisos de biblioteca. `check_netlist --board 16_bits` só reclama dos itens da v. 1.2 (`/CART`, C5, C6, TP1 a TP6), que a v1.0 não tem. Exportar de novo: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0-rev2 tools/export_fab.sh 16_bits v1.0-rev2`.
