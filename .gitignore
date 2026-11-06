@@ -34,3 +34,8 @@ docs/sessao-*.md
 claude_leia_aqui.md
 .claude/
 AGENTS.md
+
+# Shield do Uno para gravar o PIC12F629 (D102)
+tools/pic/shield_uno/hardware/*.kicad_prl
+tools/pic/shield_uno/hardware/*-backups/
+tools/pic/shield_uno/hardware/fp-info-cache

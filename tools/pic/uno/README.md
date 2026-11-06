@@ -1,6 +1,6 @@
 # Gravar o PIC12F629 com Arduino Uno (ardpicprog)
 
-Plano B, sem comprar programador. Baseado no ardpicprog de Rhys Weatherley (GPL v3; circuitos e documentação
+Plano B, sem comprar programador. O circuito também existe como shield de PCB, em protoboard e em placa perfurada, em [`../shield_uno/README.md`](../shield_uno/README.md) (D102). Baseado no ardpicprog de Rhys Weatherley (GPL v3; circuitos e documentação
 CC BY-SA 2.5), https://rweather.github.io/ardpicprog/. O 12F629 está na lista dele, com autodetecção.
 Hex a gravar: `firmware/cic_rp2040/third_party/snescic-lock-resync.hex`.
 
