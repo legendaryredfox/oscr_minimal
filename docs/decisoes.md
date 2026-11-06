@@ -89,6 +89,7 @@
 - **D88** Base de jogos incluída e detecção do chip de flash (pedidos do usuário, 2026-11-04; implementado no mesmo dia)
 - **D89** CIC do SNES: PIC12F629 sai na placa v. 1.3; RP2040-Zero roda o mesmo programa num interpretador (pedido do usuário, 2026-11-06)
 - **D90** Gravação do PIC com PICkit 2 e pk2cmd (não redistribuído por licença); 74HCT125N conferido (pedido do usuário, 2026-11-06)
+- **D91** Plano B de gravação do PIC: Arduino Uno com ardpicprog (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -734,4 +735,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Software: baixado, mas não commitado.** O `pk2cmd` (Microchip v1.20 com patches do v1.21 RC1, repositório `psmay/pk2cmd`, commit `3007bdc`) tem licença "não livre" ("não copie, faça branch ou fork"); o mantenedor mais ativo (`jaka-fi/pk2cmd`) tirou o device file e os binários em 2026-09-27 por reclamação de copyright. Por isso o repositório só traz `tools/pic/instalar_pk2cmd.sh` (baixa do upstream na máquina do usuário, commit fixo, compila fora do git), `tools/pic/60-pickit.rules` (USB sem root), `tools/pic/comparar_hex.py` (confere o `.hex` lido contra o gravado, código próprio testado) e `tools/pic/README.md`. Fontes e binário ficam em `vendor/pk2cmd/` e `tools/pic/bin/`, no `.gitignore`.
 - **Não validado:** o instalador nunca rodou (o ambiente não permitiu compilar código baixado); as opções do `pk2cmd` no guia são as do v1.20 e devem ser conferidas com `pk2cmd -?`. O `PK2DeviceFile.dat` baixado contém "PIC12F629".
 - **SN74HCT125N (anúncio do AliExpress de 10 peças, opção "SN74HCT125N").** Serve para o 74HCT125 do circuito da v1.3 e da bancada: datasheet TI SCLS069G conferido (pinagem DIP-14 com /OE ativo em baixo, VCC 4,5 a 5,5 V, VIH mín. 2 V, VOH mín. 3,84 V a 6 mA, tpd máx. 25 ns, ΔICC de até 2,9 mA por entrada em nível TTL). Atenção: o anúncio mistura outros integrados (HCT00, 02, 04, 164, 74); escolher a opção SN74HCT125N. Um 74HC125 (sem o T) NÃO serve: o 3,3 V do RP2040 não alcança o VIH do HC com 5 V.
+
+### D91 — Plano B de gravação do PIC: Arduino Uno com ardpicprog (pedido do usuário, 2026-11-06)
+- **Contexto.** O usuário tem um Arduino Uno, uma fonte de 13 V, resistores e capacitores, e está decidindo entre comprar um PICkit 2 ou 3 (clones) ou montar o programador. O ardpicprog (Rhys Weatherley, GPL v3; circuitos CC BY-SA 2.5) lista o PIC12F629 com autodetecção e foi escrito para Uno.
+- **Conferido nos fontes e na documentação (não rodado):** sketch `ProgramPIC.pde` com A1 = MCLR (baixo = 13 V, alto = reset), D2 = Vdd, D4 = clock, D7 = dados, A5 = LED de atividade; entrada do 12F629 na tabela (ID 0x0F80, 1024 palavras, configuração 0x2000, EEPROM 0x2100). O programa do PC **preserva a calibração OSCCAL por padrão** (`--force-calibration` a sobrescreve) e lê `.hex` IHX8M, 16 ou 32 (o do sd2snes é IHX32). A ligação direta do DIP-8 (pino 6 = clock, 7 = dados) bate com o mapa do ZIF do esquema original.
+- **Só o transistor NPN precisa ser comprado, se não houver na bancada.** A fonte de 13 V substitui o 7812 do circuito original (que exige 16 a 20 V na entrada) e deve ser medida sem carga antes de ligar o chip (Vpp máximo a confirmar no DS41191).
+- **Não validado:** o instalador `tools/pic/uno/instalar_ardpicprog.sh` e o sketch nunca foram compilados (o ambiente não permitiu rodar código baixado); nenhuma gravação foi feita. Fontes em `vendor/ardpicprog/` (ignorado pelo git), commit `2f8b540`.
 
