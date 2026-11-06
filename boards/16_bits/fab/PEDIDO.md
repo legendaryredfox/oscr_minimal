@@ -4,7 +4,7 @@ Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a 
 
 ## Arquivo
 
-Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `84b2866a73c273dd547fffbe28db6aff1bcabff8df97335fd009bf3406414e27`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
+Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `836f8884f0dbde0ef5f3fbc7e90324d6d8780a3123b5150250b54288b0e6ca15`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
@@ -14,14 +14,15 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 |---|---|
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm |
-| Furos metalizados / não metalizados | 344 / 4 (os 4 são M3 de canto, 3,2 mm) |
-| Furo mínimo | 0,3 mm (as 94 vias) |
+| Furos metalizados / não metalizados | 346 / 4 (os 4 são M3 de canto, 3,2 mm) |
+| Furo mínimo | 0,3 mm (as 96 vias) |
 
 Se a pré-visualização mostrar outra coisa, **não pague**: avise.
 
 ## O que mudou da v1.0 para a v. 1.2
 
-- Silk com `v. 1.2   2026-11-04`.
+- Silk com `v. 1.2   2026-11-06` e, a partir da revisão final de 2026-11-06 (D107), o aviso "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO" junto a "UM CARTUCHO POR VEZ".
+- **C4 (100 nF do PIC) movido para junto do PIC** (D107): estava a 21,7 mm do VDD e 20 mm do GND; agora a 2,5 mm e 3,6 mm, acima do soquete (rente à borda de cima, a 0,7 mm). O pad antigo era também a passagem do 5V e do GND entre camadas; no lugar entraram duas vias.
 - `/CART` (B32 do slot Mega Drive) ligado ao pino D50 do Mega: detecção de cartucho (o cartucho liga B32 ao GND; no Mega, `INPUT_PULLUP`).
 - Dois capacitores de 100 nF a mais: **C5** junto ao pino A31 (5V) e **C6** junto ao A2 (5V) do slot Mega Drive.
 - Seis pontos de teste (pad de 2 mm, furo de 1 mm) numa fileira acima do cabeçalho do Mega, a 2,54 mm um do outro (revisão D99: antes eram 5,5 mm), rotulados na vertical: `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`. Recebem uma tira de pinos macho 1x6 padrão para a ponta de prova.

@@ -57,6 +57,13 @@ Como a v. 1.3 refaz o roteamento de qualquer jeito, é a hora de pagar o que nã
 
 Medidas reais dos slots e do módulo Si5351 (D17, D23), lado da etiqueta (D27, D28), altura dos espaçadores (o USB-C e o jack do Mega têm que passar por baixo), e o footprint do Mega contra uma placa real (as cotas vêm do desenho oficial da Arduino, D14 em `decisoes.md`, mas ninguém mediu um Mega físico).
 
-## 5. Recomendação
+## 5. Aplicado na v. 1.2 (2026-11-06, D107, a pedido do usuário: "aplique todos os fixes relevantes", "pode aplicar também melhorias no cobre")
 
-Fechar a v. 1.2 com **duas mudanças baratas**: (1) o aviso do USB no silk (2.2) e (2) a linha de montagem do capacitor extra sob o soquete do PIC (2.1, mitigação). Tudo o que mexe em cobre (2.1 opção 2, itens 3.1 a 3.5) fica para a v. 1.3. Nada disso foi aplicado ainda: aguardo a decisão do usuário.
+| Achado | O que foi feito | Verificação |
+|---|---|---|
+| 2.1 C4 longe do PIC | C4 movido para (92; 43,5)–(97; 43,5), acima do soquete: **2,5 mm do VDD e 3,6 mm do GND** (antes 21,7 e 20 mm). 5V pelo pino 1 por uma trilha de 0,5 mm; GND pela zona de cobre que passa junto ao pino 8. O pad antigo era também a passagem do 5V e do GND entre camadas: duas vias (0,6/0,3 mm) no lugar. Rótulo do U2 movido para a direita; silk e pátio do C4 só acima do soquete (o corpo de 2,5 mm toca a borda do soquete por 0,2 mm; aviso na `montagem.md`). `tools/revisao/v12_c4.py` | DRC 0 erros, 0 abertos; `check_netlist` 67 nets e 225 ligações; ERC 0 |
+| 2.2 aviso do USB | duas linhas "NÃO COLOQUE NEM RETIRE / O CARTUCHO COM USB LIGADO" junto a "UM CARTUCHO POR VEZ" (menor), data do silk 2026-11-06. `tools/revisao/v12_silk.py` | DRC de silk limpo; prévia refeita |
+| 2.3 `_lib` | variante `Mega2560_R3_Shield_4MH` (85 pads) em `boards/_lib/`, para a v. 1.3; as placas atuais continuam com o `Mega2560_R3_Shield` (o aviso `lib_footprint_mismatch` do A1 é esperado) | só arquivo e README |
+| Fabricação | gerbers, zip, prévias e SHA-256 refeitos; 346 furos metalizados (344 + 2 vias novas), 4 não metalizados, 96 vias | `tools/export_fab.sh 16_bits v1.2` |
+
+**Não aplicado:** resistores série e TVS, chave de alimentação, furos M3 do Mega, reset e pull-up de `/VRES` (seção 3): exigem refazer o roteamento ou pino novo aprovado; ficam para a v. 1.3. O C4 a 2,5 mm do VDD dispensa o capacitor extra sob o soquete.

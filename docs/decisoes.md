@@ -105,6 +105,7 @@
 - **D104** Revisão do silkscreen: referências conferidas e aviso do USB nas placas de um cartucho (pedido do usuário, 2026-11-06)
 - **D105** Shield do Uno: mapa das ligações para leigos e passos da protoboard prontos (pedido do usuário, 2026-11-06)
 - **D106** Estudo final da `16_bits` v. 1.2 antes de fechar o projeto (pedido do usuário, 2026-11-06)
+- **D107** `16_bits` v. 1.2: fixes finais antes de fechar (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -856,4 +857,12 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Pedido.** O design da v. 1.2 será fechado; fazer um último estudo para avaliar melhorias. Na mesma conversa: o RP2040 só entra na v. 1.3, se der certo.
 - **Resultado.** `boards/16_bits/docs/estudo-final-v1.2.md`. Confere: ERC 0, DRC 0 erros e 0 ligações abertas, netlist (67 nets, 225 ligações), referências esquemático × PCB, furos 344/4. Achados: C4 a 21,7 mm do VDD do PIC (viola "um capacitor junto ao PIC"), aviso do USB ausente no silk desta placa, `_lib` com o Mega de 91 pads contra 85 no PCB. Para a v. 1.3: resistores série e TVS, chave de alimentação dos slots, furos M3 do Mega, reset.
 - **Nada aplicado.** Recomendação: só silk (aviso do USB) e um capacitor extra sob o soquete do PIC na montagem; o resto na v. 1.3. Aguarda a decisão do usuário.
+
+### D107 — `16_bits` v. 1.2: fixes finais antes de fechar (pedido do usuário, 2026-11-06)
+- **Pedido.** "Aplique todos os fixes que achar relevantes na v 1.2" e, depois, "pode aplicar também melhorias no cobre". O projeto fecha com isto.
+- **Cobre.** C4 (100 nF do PIC) movido de 21,7 mm para 2,5 mm do VDD (3,6 mm do GND), acima do soquete; duas vias no lugar do pad antigo, que levava o 5V e o GND de uma camada à outra. O pátio do C4 sobrepõe o do soquete por 0,2 mm (o corpo do capacitor encosta no soquete): desenhei o silk e o pátio só acima do soquete e avisei na `montagem.md`. A borda da placa a 0,7 mm do pad do C4 (regra do projeto: 0,5 mm).
+- **Silk.** Aviso do USB (como D104), "UM CARTUCHO POR VEZ" menor, data 2026-11-06, rótulo do U2 movido.
+- **Biblioteca.** `Mega2560_R3_Shield_4MH` (85 pads) em `boards/_lib/`; as placas existentes não foram trocadas.
+- **Verificação.** DRC (todas as severidades, com paridade) 0 erros e 0 ligações abertas, só `lib_footprint_mismatch`; ERC 0; `check_netlist` OK; gerbers refeitos (346/4 furos, 96 vias). Scripts `tools/revisao/v12_c4.py` e `v12_silk.py` (rode nessa ordem sobre a v. 1.2 anterior; o `v12_c4.py` não roda duas vezes).
+- **Não aplicado (v. 1.3).** Resistores série e TVS, chave de alimentação, furos M3 do Mega, reset, pull-up de `/VRES`. A v. 1.0 encomendada (e a `rev2`) não foram tocadas.
 
