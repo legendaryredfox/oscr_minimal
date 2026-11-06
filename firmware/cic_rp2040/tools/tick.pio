@@ -1,0 +1,12 @@
+; Base de tempo do emulador do CIC: um push a cada 4 bordas de subida do pino de entrada (CLK2).
+; As palavras estão copiadas em cic_rp2040/cic_rp2040.ino (startTickCounter). Para conferir:
+;   pioasm -o hex tools/tick.pio /tmp/tick.hex   ->  e023 2020 20a0 0041 8000
+.program tick
+.wrap_target
+    set x, 3
+again:
+    wait 0 pin 0
+    wait 1 pin 0
+    jmp x-- again
+    push noblock
+.wrap

@@ -13,6 +13,7 @@ __pycache__/
 firmware/arquivo/platformio/.pio/
 firmware/arquivo/oscr_serial/build/
 firmware/oscr/pc-tests/build/
+firmware/cic_rp2040/test/build/
 gui/.gradle/
 gui/**/build/
 gui/.kotlin/
