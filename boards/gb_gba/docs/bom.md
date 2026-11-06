@@ -13,7 +13,7 @@ Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom.csv` mais as peças 
 | Dimensões | 138,1 × 67,1 mm (acima de 100 mm de largura: faixa de preço maior) |
 | Espessura / acabamento | 1,6 mm, HASL |
 | Quantidade | 5 |
-| Furos | metalizados (inclui as vias de costura do GND) e 4 não metalizados de 3,2 mm; os 2 furos-guia do slot GBA são não metalizados de 2,2 mm |
+| Furos | metalizados (inclui as vias de costura do GND) e 10 não metalizados de 3,2 mm (4 do lado do Mega e 6 do Mega); os 2 furos-guia do slot GBA são não metalizados de 2,2 mm |
 | Demais | trilha/espaço mín. 0,2 mm; sem montagem; sem stencil |
 
 ## Componentes
@@ -37,4 +37,5 @@ Sem Si5351, PIC, R2 e pontos de teste.
 |---|---|---|
 | Pinos macho 2,54 mm, **cauda longa** (≥ 10 mm abaixo, ≥ 5 mm acima) | **85 posições** | Todos os pads do shield, inclusive os sem sinal (2 tiras 1x40 e 1 tira 2x20, corte em 2x18). |
 | Espaçador M3 + pé de borracha | 4 | Furos do lado do Mega; só apoio. |
+| Espaçador M3 | 6 | Furos do Mega; seguram o shield no Mega, como na `16_and_8_bits`. |
 | Cabo USB-C | 1 | Interface com o PC. |

@@ -94,6 +94,7 @@
 - **D93** Placa `boards/snes/`: só SNES, com PIC12F629 enquanto o RP2040 não é validado (pedido do usuário, 2026-11-06)
 - **D94** Placa `boards/gb_gba/`: só GBA, GB e GBC por adaptador (pedido do usuário, 2026-11-06)
 - **D95** Placa `boards/nes/`: só NES, com Si5351 e sem PIC (pedido do usuário, 2026-11-06)
+- **D96** Revisão das placas `megadrive`, `snes`, `gb_gba` e `nes` (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -770,3 +771,13 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Escolhas.** Cópia da `16_and_8_bits`; ficam NES1, U1 (Si5351, o CLK0 vai ao pino 37 do slot, como no HW5), C1, C3, R1 e D1. Saem os outros slots, PIC (o NES não usa CIC), R2, regulador de 3,3 V e capacitores dele, C2, C4 a C9 e os furos M2. Slot no meio da área do Mega, 9 mm à esquerda do centro: o slot tem 87,5 mm de pads e o header 2x18 do Mega chega a 116,5 mm. Os 6 furos não metalizados do Mega e os 4 de canto foram mantidos.
 - **Ferramentas.** `tools/nes/place.py`, `sync_unconnected.py` (passa as nets `unconnected-(...)` do esquemático ao PCB de uma vez, lendo a netlist) e `retext.py` (move só os textos de uma placa já roteada); `tools/megadrive/stitch.py` passou a evitar textos e campos do silkscreen; `tools/check_netlist.py --board nes` (flag `nopic`).
 - **Verificação.** ERC 0 violações, DRC sem erros nem ligações abertas, netlist confere (39 nets, 116 ligações). Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.
+
+### D96 — Revisão das placas `megadrive`, `snes`, `gb_gba` e `nes` (pedido do usuário, 2026-11-06)
+- **Pedido.** "Depois revise as placas criadas. Aplique correções encontradas."
+- **Achado 1: alimentação com 0,3 mm.** O padrão de net class `Power` dos projetos dizia `+5V` e `+3V3`, mas as nets se chamam `/+5V` e `/+3V3`; o Freerouting roteou tudo com 0,3 mm, contra os 0,8 a 1,0 mm da seção 5 do `CLAUDE.md`. Corrigido: padrões `/+5V` e `/+3V3` nos quatro `.kicad_pro` e `tools/revisao/widen_power.py`, que alarga cada segmento até 0,8 mm onde mantém 0,2 mm de folga (tenta 0,8, 0,6, 0,5 e 0,4). Sobraram poucos segmentos curtos com 0,3 a 0,6 mm, espremidos entre pads (o maior, de 20 mm, na `nes`, alimenta o pino 36 do slot, corrente de poucos mA). A `16_bits` (v. 1.2) tem o mesmo defeito e não foi alterada.
+- **Achado 2: 2 `starved_thermal` na `megadrive`.** Pads GND3 do Mega e A18 do slot: conexão sólida (sem alívio térmico) com o plano da B.Cu. DRC sem avisos além dos de biblioteca.
+- **Achado 3: documentação dos furos.** A `gb_gba` tem 10 furos não metalizados de 3,2 mm (4 do lado do Mega e 6 do Mega) e 2 de 2,2 mm; BOM, PEDIDO e montagem diziam 4. Corrigidos, com os 6 espaçadores M3 nos furos do Mega.
+- **Achado 4: `place.py` da `gb_gba` desatualizado.** O MH4 tinha sido movido à mão para (115; 114,5); o script agora faz o mesmo.
+- **Achado 5: referências C5 e C6 da `megadrive` ocultas no silkscreen.** Agora visíveis.
+- **Verificado sem problema.** Netlist das quatro placas contra o `pinmap.md`; tabelas de continuidade das montagens contra o `pinmap.md`; SHA-256 dos PEDIDOs contra os zips (atualizados após a nova exportação); `stitch.py` agora evita textos do silkscreen.
+- **Segue em aberto.** As placas continuam roteadas por autoroteador e não revisadas à mão no KiCad; as de 0,23 mm da `gb_gba` (50 segmentos entre pads de 1,5 mm, aceitos como na `16_and_8_bits`); nada encomendado nem montado.

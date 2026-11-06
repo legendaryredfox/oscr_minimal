@@ -21,7 +21,7 @@ for a, c in (((X0, Y0), (X1, Y0)), ((X1, Y0), (X1, Y1)), ((X1, Y1), (X0, Y1)), (
 def mv(ref, x, y, rot=None):
     f = b.FindFootprintByReference(ref); f.SetPosition(V(x, y))
     if rot is not None: f.SetOrientationDegrees(rot)
-mv("MH1", 19, 53); mv("MH2", 118.5, 53); mv("MH3", 19, 114); mv("MH4", 118.5, 114)
+mv("MH1", 19, 53); mv("MH2", 118.5, 53); mv("MH3", 19, 114); mv("MH4", 115, 114.5)  # MH4: afastado da trilha do A9 e da via de GND (feito à mão na placa, D94)
 mv("GBA1", 134, 84.3, 0)
 # NPTH do Mega em (86, 75,4) e (86, 103,4): nada por perto
 mv("C1", 26, 64); mv("C7", 50, 80); mv("U3", 64, 80); mv("C8", 76, 80); mv("C9", 100, 80)
