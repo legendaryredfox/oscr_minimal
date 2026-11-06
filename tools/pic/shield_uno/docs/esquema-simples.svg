@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1290" viewBox="0 0 1560 1290" font-family="DejaVu Sans, sans-serif">
+<rect width="1560" height="1290" fill="#fbf7ec"/>
+<text x="40" y="50" font-size="30" font-weight="bold" fill="#222" text-anchor="start">MAPA DAS LIGAÇÕES: siga os fios pela cor</text>
+<text x="40" y="80" font-size="17" font-weight="normal" fill="#444" text-anchor="start">Cada fio colorido liga uma peça a outra. Fio da mesma cor = mesmo caminho. Monte tudo com a fonte DESLIGADA.</text>
+<rect x="40" y="250" width="210" height="690" rx="14" fill="#dff0f7" stroke="#0b5d7a" stroke-width="3"/><text x="145.0" y="280" font-size="20" font-weight="bold" fill="#222" text-anchor="middle">ARDUINO UNO</text>
+<rect x="100" y="283" width="150" height="34" rx="8" fill="#fff" stroke="#2a9d48" stroke-width="5"/>
+<text x="175" y="306" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D4</text>
+<rect x="100" y="333" width="150" height="34" rx="8" fill="#fff" stroke="#1d4ed8" stroke-width="5"/>
+<text x="175" y="356" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D7</text>
+<rect x="100" y="443" width="150" height="34" rx="8" fill="#fff" stroke="#f77f00" stroke-width="5"/>
+<text x="175" y="466" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D2</text>
+<rect x="100" y="523" width="150" height="34" rx="8" fill="#fff" stroke="#9333ea" stroke-width="5"/>
+<text x="175" y="546" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">A1</text>
+<rect x="100" y="683" width="150" height="34" rx="8" fill="#fff" stroke="#eab308" stroke-width="5"/>
+<text x="175" y="706" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">A5</text>
+<rect x="100" y="883" width="150" height="34" rx="8" fill="#fff" stroke="#111111" stroke-width="5"/>
+<text x="175" y="906" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">GND</text>
+<text x="145" y="965" font-size="13" font-weight="normal" fill="#555" text-anchor="middle">(os furos do Uno</text>
+<text x="145" y="983" font-size="13" font-weight="normal" fill="#555" text-anchor="middle">onde os fios entram)</text>
+<path d="M890,520 L890,900" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M890,520 L890,900" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1020,440 L1020,900" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M1020,440 L1020,900" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1230,360 L1230,900" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M1230,360 L1230,900" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M410,815 L410,900" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M410,815 L410,900" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1230,130 L1230,170" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M1230,130 L1230,170" fill="none" stroke="#d62828" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1230,230 L1230,290" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M1230,230 L1230,290" fill="none" stroke="#d62828" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,460 L460,460 A10,10 0 0 1 480,460 L840,460 L840,400" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,460 L460,460 A10,10 0 0 1 480,460 L840,460 L840,400" fill="none" stroke="#f77f00" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M780,400 L890,400 L890,430" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M780,400 L890,400 L890,430" fill="none" stroke="#f77f00" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,300 L500,300" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,300 L500,300" fill="none" stroke="#2a9d48" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,350 L500,350" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,350 L500,350" fill="none" stroke="#1d4ed8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M500,400 L470,400 L470,900" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M500,400 L470,400 L470,900" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,900 L1420,900 L1420,540" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,900 L1420,900 L1420,540" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M780,250 L840,250 L840,230" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M780,250 L840,250 L840,230" fill="none" stroke="#db2777" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M840,250 L1020,250 L1020,330" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M840,250 L1020,250 L1020,330" fill="none" stroke="#db2777" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1420,420 L1420,130 L840,130 L840,170" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M1420,420 L1420,130 L840,130 L840,170" fill="none" stroke="#d62828" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,540 L460,540 A10,10 0 0 1 480,540 L560,540" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,540 L460,540 A10,10 0 0 1 480,540 L560,540" fill="none" stroke="#9333ea" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M680,540 L880,540 A10,10 0 0 1 900,540 L940,540 L940,385 L970,385" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M680,540 L880,540 A10,10 0 0 1 900,540 L940,540 L940,385 L970,385" fill="none" stroke="#9333ea" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250,700 L290,700" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M250,700 L290,700" fill="none" stroke="#eab308" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M370,700 L410,700 L410,745" fill="none" stroke="#1f1f1f" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M370,700 L410,700 L410,745" fill="none" stroke="#eab308" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="520" y="215" width="240" height="240" rx="10" fill="#3a3a3a" stroke="#111" stroke-width="3"/>
+<path d="M610.0,455 A30,30 0 0 1 670.0,455 Z" fill="#fbf7ec"/>
+<line x1="500" y1="250" x2="520" y2="250" stroke="#bbb" stroke-width="5"/>
+<line x1="500" y1="300" x2="520" y2="300" stroke="#bbb" stroke-width="5"/>
+<line x1="500" y1="350" x2="520" y2="350" stroke="#bbb" stroke-width="5"/>
+<line x1="500" y1="400" x2="520" y2="400" stroke="#bbb" stroke-width="5"/>
+<line x1="760" y1="250" x2="780" y2="250" stroke="#bbb" stroke-width="5"/>
+<line x1="760" y1="300" x2="780" y2="300" stroke="#bbb" stroke-width="5"/>
+<line x1="760" y1="350" x2="780" y2="350" stroke="#bbb" stroke-width="5"/>
+<line x1="760" y1="400" x2="780" y2="400" stroke="#bbb" stroke-width="5"/>
+<circle cx="548" cy="250" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="548" y="256" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">5</text><text x="572" y="256" font-size="16" font-weight="bold" fill="#fff" text-anchor="start">livre</text>
+<circle cx="548" cy="300" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="548" y="306" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">6</text><text x="572" y="306" font-size="16" font-weight="bold" fill="#fff" text-anchor="start">relógio</text>
+<circle cx="548" cy="350" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="548" y="356" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">7</text><text x="572" y="356" font-size="16" font-weight="bold" fill="#fff" text-anchor="start">dados</text>
+<circle cx="548" cy="400" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="548" y="406" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">8</text><text x="572" y="406" font-size="16" font-weight="bold" fill="#fff" text-anchor="start">GND</text>
+<circle cx="732" cy="250" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="732" y="256" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">4</text><text x="708" y="256" font-size="16" font-weight="bold" fill="#fff" text-anchor="end">MCLR</text>
+<circle cx="732" cy="300" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="732" y="306" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">3</text><text x="708" y="306" font-size="16" font-weight="bold" fill="#fff" text-anchor="end">livre</text>
+<circle cx="732" cy="350" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="732" y="356" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">2</text><text x="708" y="356" font-size="16" font-weight="bold" fill="#fff" text-anchor="end">livre</text>
+<circle cx="732" cy="400" r="15" fill="#fff" stroke="#111" stroke-width="2"/><text x="732" y="406" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">1</text><text x="708" y="406" font-size="16" font-weight="bold" fill="#fff" text-anchor="end">energia</text>
+<text x="640.0" y="202" font-size="18" font-weight="bold" fill="#111" text-anchor="middle">PIC12F629 (o chip)</text>
+<text x="640.0" y="478" font-size="14" font-weight="bold" fill="#555" text-anchor="middle">entalhe</text>
+<text x="784" y="432" font-size="14" font-weight="bold" fill="#111" text-anchor="start">pino 1</text>
+<path d="M479,243 L493,257 M479,257 L493,243" stroke="#888" stroke-width="4"/>
+<path d="M787,293 L801,307 M787,307 L801,293" stroke="#888" stroke-width="4"/>
+<path d="M787,343 L801,357 M787,357 L801,343" stroke="#888" stroke-width="4"/>
+<text x="814" y="304" font-size="13" font-weight="normal" fill="#777" text-anchor="start">sem fio</text>
+<text x="814" y="354" font-size="13" font-weight="normal" fill="#777" text-anchor="start">sem fio</text>
+<text x="470" y="258" font-size="13" font-weight="normal" fill="#777" text-anchor="end">sem fio</text>
+<line x1="840" y1="230" x2="840" y2="170" stroke="#888" stroke-width="4"/><rect x="826.0" y="166.0" width="28" height="68" rx="10" fill="#e8c98f" stroke="#7a5a1e" stroke-width="2"/><rect x="826.0" y="178.0" width="28" height="7" fill="#7b4a1e"/><rect x="826.0" y="193.0" width="28" height="7" fill="#111"/><rect x="826.0" y="208.0" width="28" height="7" fill="#f77f00"/><text x="866.0" y="198.0" font-size="15" font-weight="bold" fill="#222" text-anchor="start">R1</text><text x="866.0" y="216.0" font-size="15" font-weight="normal" fill="#222" text-anchor="start">10 kΩ</text>
+<line x1="1230" y1="170" x2="1230" y2="230" stroke="#888" stroke-width="4"/><rect x="1216.0" y="166.0" width="28" height="68" rx="10" fill="#e8c98f" stroke="#7a5a1e" stroke-width="2"/><rect x="1216.0" y="178.0" width="28" height="7" fill="#7b4a1e"/><rect x="1216.0" y="193.0" width="28" height="7" fill="#111"/><rect x="1216.0" y="208.0" width="28" height="7" fill="#d62828"/><text x="1256.0" y="198.0" font-size="15" font-weight="bold" fill="#222" text-anchor="start">R4</text><text x="1256.0" y="216.0" font-size="15" font-weight="normal" fill="#222" text-anchor="start">1 kΩ</text>
+<line x1="560" y1="540" x2="680" y2="540" stroke="#888" stroke-width="4"/><rect x="582.0" y="526.0" width="76" height="28" rx="10" fill="#e8c98f" stroke="#7a5a1e" stroke-width="2"/><rect x="596.0" y="526.0" width="8" height="28" fill="#eab308"/><rect x="614.0" y="526.0" width="8" height="28" fill="#7c3aed"/><rect x="632.0" y="526.0" width="8" height="28" fill="#d62828"/><text x="620.0" y="516.0" font-size="15" font-weight="bold" fill="#222" text-anchor="middle">R2  4,7 kΩ</text>
+<line x1="290" y1="700" x2="370" y2="700" stroke="#888" stroke-width="4"/><rect x="292.0" y="686.0" width="76" height="28" rx="10" fill="#e8c98f" stroke="#7a5a1e" stroke-width="2"/><rect x="306.0" y="686.0" width="8" height="28" fill="#d62828"/><rect x="324.0" y="686.0" width="8" height="28" fill="#d62828"/><rect x="342.0" y="686.0" width="8" height="28" fill="#7b4a1e"/><text x="330.0" y="676.0" font-size="15" font-weight="bold" fill="#222" text-anchor="middle">R3  220 Ω</text>
+<line x1="1230" y1="290" x2="1230" y2="360" stroke="#888" stroke-width="4"/><circle cx="1230" cy="325.0" r="24" fill="#ef4444" stroke="#333" stroke-width="3"/><circle cx="1222" cy="317.0" r="6" fill="#fff" opacity="0.6"/><text x="1230" y="304" font-size="18" font-weight="bold" fill="#111" text-anchor="middle">+</text><text x="1266" y="321.0" font-size="15" font-weight="bold" fill="#222" text-anchor="start">LED vermelho</text><text x="1266" y="339.0" font-size="14" font-weight="normal" fill="#222" text-anchor="start">acende = há 13 V</text>
+<line x1="410" y1="745" x2="410" y2="815" stroke="#888" stroke-width="4"/><circle cx="410" cy="780.0" r="24" fill="#facc15" stroke="#333" stroke-width="3"/><circle cx="402" cy="772.0" r="6" fill="#fff" opacity="0.6"/><text x="410" y="759" font-size="18" font-weight="bold" fill="#111" text-anchor="middle">+</text><text x="374" y="776.0" font-size="15" font-weight="bold" fill="#222" text-anchor="end">LED amarelo</text><text x="374" y="794.0" font-size="14" font-weight="normal" fill="#222" text-anchor="end">pisca = ativo</text>
+<line x1="890" y1="430" x2="890" y2="520" stroke="#888" stroke-width="4"/>
+<rect x="856" y="445" width="68" height="60" rx="14" fill="#f4a261" stroke="#7a3e0c" stroke-width="2"/>
+<text x="890" y="470" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">C1</text>
+<text x="890" y="490" font-size="14" font-weight="normal" fill="#111" text-anchor="middle">100 nF</text>
+<rect x="970" y="330" width="100" height="110" rx="12" fill="#444" stroke="#111" stroke-width="3"/>
+<text x="1020" y="372" font-size="17" font-weight="bold" fill="#fff" text-anchor="middle">BC547</text>
+<text x="1020" y="392" font-size="13" font-weight="normal" fill="#ddd" text-anchor="middle">(transistor)</text>
+<text x="1020" y="424" font-size="12" font-weight="normal" fill="#ddd" text-anchor="middle">chato p/ você</text>
+<circle cx="1020" cy="330" r="13" fill="#fff" stroke="#111" stroke-width="2"/><text x="1020" y="336" font-size="16" font-weight="bold" fill="#111" text-anchor="middle">C</text>
+<circle cx="970" cy="385" r="13" fill="#fff" stroke="#111" stroke-width="2"/><text x="970" y="391" font-size="16" font-weight="bold" fill="#111" text-anchor="middle">B</text>
+<circle cx="1020" cy="440" r="13" fill="#fff" stroke="#111" stroke-width="2"/><text x="1020" y="446" font-size="16" font-weight="bold" fill="#111" text-anchor="middle">E</text>
+<text x="1082" y="336" font-size="13" font-weight="normal" fill="#555" text-anchor="start">C: recebe o rosa</text>
+<text x="1082" y="391" font-size="13" font-weight="normal" fill="#555" text-anchor="start">B: recebe o roxo</text>
+<text x="1082" y="446" font-size="13" font-weight="normal" fill="#555" text-anchor="start">E: vai ao GND</text>
+<rect x="1340" y="420" width="160" height="120" rx="14" fill="#fff3d6" stroke="#8a5a00" stroke-width="3"/><text x="1420.0" y="450" font-size="20" font-weight="bold" fill="#222" text-anchor="middle">FONTE 13 V</text>
+<circle cx="1420" cy="420" r="15" fill="#d62828" stroke="#111" stroke-width="2"/><text x="1420" y="427" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">+</text>
+<circle cx="1420" cy="540" r="15" fill="#111" stroke="#111" stroke-width="2"/><text x="1420" y="547" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">−</text>
+<text x="1420" y="470" font-size="14" font-weight="normal" fill="#444" text-anchor="middle">liga POR ÚLTIMO</text>
+<text x="1420" y="490" font-size="14" font-weight="normal" fill="#444" text-anchor="middle">confira o + e o −</text>
+<text x="1420" y="510" font-size="14" font-weight="normal" fill="#444" text-anchor="middle">com o multímetro</text>
+<text x="1010" y="112" font-size="17" font-weight="bold" fill="#d62828" text-anchor="middle">13 V (fio vermelho)</text>
+<text x="640" y="936" font-size="17" font-weight="bold" fill="#111" text-anchor="middle">GND = terra (fio preto, o caminho de volta)</text>
+<circle cx="840" cy="400" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="840" cy="400" r="4" fill="#111"/>
+<circle cx="470" cy="900" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="470" cy="900" r="4" fill="#111"/>
+<circle cx="890" cy="900" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="890" cy="900" r="4" fill="#111"/>
+<circle cx="1020" cy="900" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="1020" cy="900" r="4" fill="#111"/>
+<circle cx="1230" cy="900" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="1230" cy="900" r="4" fill="#111"/>
+<circle cx="410" cy="900" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="410" cy="900" r="4" fill="#111"/>
+<circle cx="840" cy="250" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="840" cy="250" r="4" fill="#111"/>
+<circle cx="1230" cy="130" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="1230" cy="130" r="4" fill="#111"/>
+<text x="360" y="288" font-size="14" font-weight="normal" fill="#1f7a38" text-anchor="middle">relógio: marca o ritmo</text>
+<text x="360" y="338" font-size="14" font-weight="normal" fill="#1d4ed8" text-anchor="middle">dados: o que vai gravar</text>
+<text x="360" y="448" font-size="14" font-weight="normal" fill="#b85c00" text-anchor="middle">energia do chip</text>
+<text x="360" y="528" font-size="14" font-weight="normal" fill="#9333ea" text-anchor="middle">comanda o transistor</text>
+<text x="864" y="234" font-size="14" font-weight="bold" fill="#db2777" text-anchor="start">MCLR: 13 V para gravar</text>
+<rect x="40" y="1000" width="1480" height="250" rx="14" fill="#fff" stroke="#999" stroke-width="2"/>
+<text x="60" y="1030" font-size="22" font-weight="bold" fill="#222" text-anchor="start">COMO LER</text>
+<circle cx="80" cy="1064" r="9" fill="#fff" stroke="#111" stroke-width="3"/><circle cx="80" cy="1064" r="4" fill="#111"/>
+<text x="100" y="1070" font-size="17" font-weight="normal" fill="#222" text-anchor="start">bolinha: os fios SE ENCONTRAM aqui (estão ligados).</text>
+<path d="M62,1108 L72,1108 A10,10 0 0 1 92,1108 L102,1108" fill="none" stroke="#111" stroke-width="5"/>
+<text x="112" y="1114" font-size="17" font-weight="normal" fill="#222" text-anchor="start">pulinho: um fio passa POR CIMA do outro, sem encostar.</text>
+<path d="M66,1142 L90,1166 M66,1166 L90,1142" stroke="#888" stroke-width="5"/>
+<text x="112" y="1160" font-size="17" font-weight="normal" fill="#222" text-anchor="start">X: pino do chip que não leva fio. Não ligue nada nele.</text>
+<rect x="800" y="1036" width="46" height="18" rx="9" fill="#f77f00" stroke="#111" stroke-width="2"/>
+<text x="858" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">energia do chip (D2)</text>
+<rect x="1180" y="1036" width="46" height="18" rx="9" fill="#2a9d48" stroke="#111" stroke-width="2"/>
+<text x="1238" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">relógio (D4)</text>
+<rect x="800" y="1076" width="46" height="18" rx="9" fill="#1d4ed8" stroke="#111" stroke-width="2"/>
+<text x="858" y="1092" font-size="16" font-weight="normal" fill="#222" text-anchor="start">dados (D7)</text>
+<rect x="1180" y="1076" width="46" height="18" rx="9" fill="#9333ea" stroke="#111" stroke-width="2"/>
+<text x="1238" y="1092" font-size="16" font-weight="normal" fill="#222" text-anchor="start">comanda o transistor (A1)</text>
+<rect x="800" y="1116" width="46" height="18" rx="9" fill="#eab308" stroke="#111" stroke-width="2"/>
+<text x="858" y="1132" font-size="16" font-weight="normal" fill="#222" text-anchor="start">luz amarela (A5)</text>
+<rect x="1180" y="1116" width="46" height="18" rx="9" fill="#db2777" stroke="#111" stroke-width="2"/>
+<text x="1238" y="1132" font-size="16" font-weight="normal" fill="#222" text-anchor="start">MCLR, o pino dos 13 V</text>
+<rect x="800" y="1156" width="46" height="18" rx="9" fill="#d62828" stroke="#111" stroke-width="2"/>
+<text x="858" y="1172" font-size="16" font-weight="normal" fill="#222" text-anchor="start">13 V da fonte</text>
+<rect x="1180" y="1156" width="46" height="18" rx="9" fill="#111111" stroke="#111" stroke-width="2"/>
+<text x="1238" y="1172" font-size="16" font-weight="normal" fill="#222" text-anchor="start">GND: o fio de volta</text>
+<text x="60" y="1206" font-size="16" font-weight="normal" fill="#333" text-anchor="start">Dica: o GND de TODAS as peças é o mesmo. Por isso há um fio preto largo embaixo e vários fios pretos curtos chegando nele.</text>
+<text x="60" y="1232" font-size="16" font-weight="normal" fill="#333" text-anchor="start">Confira com a lista fio a fio do README: faça um traço em cada fio que montar.</text>
+</svg>

@@ -35,7 +35,34 @@ do seu plugue é conhecida e marcada, dispensá-lo é razoável. Se o Vpp medido
 
 ![Frente da placa](docs/placa-frente.png)
 
-Esquemático: [`docs/esquematico.pdf`](docs/esquematico.pdf).
+Esquemático (para quem sabe ler): [`docs/esquematico.pdf`](docs/esquematico.pdf). Para todo mundo, o **mapa das ligações** logo abaixo.
+
+## Mapa das ligações (para qualquer pessoa seguir)
+
+<!-- mapa -->
+![Mapa das ligações](docs/esquema-simples.png)
+
+Lista **fio a fio** (faça um traço em cada fio que montar). Os fios pretos vão todos ao **GND**; o resto liga duas peças:
+
+| Feito | Cor do fio | De | Para |
+|:-:|---|---|---|
+| ☐ | **preto** | GND do Uno | trilho preto de GND |
+| ☐ | **preto** | pino 8 do chip | trilho preto de GND |
+| ☐ | **preto** | capacitor C1 (perna de baixo) | trilho preto de GND |
+| ☐ | **preto** | emissor (E) do transistor | trilho preto de GND |
+| ☐ | **preto** | LED vermelho (perna curta) | trilho preto de GND |
+| ☐ | **preto** | LED amarelo (perna curta) | trilho preto de GND |
+| ☐ | **preto** | negativo (−) da fonte | trilho preto de GND |
+| ☐ | **laranja** | D2 do Uno | pino 1 do chip e perna de cima do capacitor C1 |
+| ☐ | **verde** | D4 do Uno | pino 6 do chip |
+| ☐ | **azul** | D7 do Uno | pino 7 do chip |
+| ☐ | **rosa** | pino 4 do chip (MCLR) | resistor R1 (10 kΩ) e coletor (C) do transistor |
+| ☐ | **roxo** | A1 do Uno | resistor R2 (4,7 kΩ), e dele à base (B) do transistor |
+| ☐ | **amarelo** | A5 do Uno | resistor R3 (220 Ω), e dele à perna longa (+) do LED amarelo |
+| ☐ | **vermelho** | positivo (+) da fonte | resistor R1 (o outro lado dele) e resistor R4 (1 kΩ), e dele à perna longa (+) do LED vermelho |
+
+Os pinos 2, 3 e 5 do chip **não levam fio**. O desenho (`docs/esquema-simples.svg` e `.png`) sai de `scripts/esquema_simples.py`, que confere cada fio contra a tabela de ligações do verificador (`protoboard.py`) e para com erro se algum fio ligar o que não deve.
+<!-- /mapa -->
 
 ## Como funciona
 
@@ -123,65 +150,165 @@ do Uno) fica livre de propósito.
 
 ## B. Protoboard (830 pontos)
 
-Os 13 V e o GND vêm dos trilhos; o Uno liga por 6 fios. Convenção: colunas **a–e** são uma tira por linha e **f–j** a
-outra (o vão central separa as duas metades). O trilho **"+" é o de 13 V (a fonte entra direto: D1 é DNP)** e o **"−" é o GND**.
+Montagem **passo a passo, com um desenho para cada passo**, feita para quem nunca montou um circuito: em cada figura o que
+**acabou de entrar** aparece com um brilho amarelo e etiquetas com o nome do furo. Os fios saem do Uno por seis pinos; as
+cores dos fios ajudam a não errar.
 
-```
-                 vão central
-          a b c d e │ f g h i j
-linha 10  ● ● ● ● ● │ ● ● ● ● ●     pino 1 (e10) ................ pino 8 (f10)
-linha 11            │              pino 2 (e11) ................ pino 7 (f11)
-linha 12            │              pino 3 (e12) ................ pino 6 (f12)
-linha 13            │              pino 4 (e13) ................ pino 5 (f13)
-                       entalhe do PIC para cima (lado da linha 9)
-```
+Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_desenho.py` a partir de `scripts/protoboard.py`, que
+**confere** que cada fio e cada peça ligam exatamente os pontos certos (sem curtos). Para refazê-los: `python3 scripts/protoboard_desenho.py` (precisa do `google-chrome` ou `chromium` para os PNG).
 
-Passo a passo (sempre com tudo desligado):
+<!-- protoboard -->
+### O que você precisa (confira antes de começar)
 
-1. **Trilhos.** Jumper do **GND do Uno** ao trilho "−"; fio do **negativo da fonte** ao mesmo trilho.
-2. **PIC.** Soquete (ou o próprio PIC, se for só testar) a cavaleiro do vão, **pino 1 em e10**, pino 4 em e13, pino 8
-   em f10, pino 5 em f13.
-3. **Alimentação do chip.** Jumper a10 → **Uno D2**. Capacitor de 100 nF entre b10 e o trilho "−". Jumper j10 → trilho
-   "−" (pino 8).
-4. **Dados e clock.** Jumper j11 → **Uno D7**; jumper j12 → **Uno D4**.
-5. **Transistor Q1** na coluna a: **coletor em a13, base em a14, emissor em a15**. Quem manda é a perna, não o lado do
-   corpo: BC547 e BC548 olhando o lado chato são C, B, E; 2N3904 e 2N2222 são E, B, C (confira na pinagem acima).
-   Jumper b15 → trilho "−" (emissor a GND).
-6. **MCLR.** A tira da linha 13 (a13 coletor, e13 pino 4) é o nó MCLR. **R1 10 kΩ** de c13 até c17; jumper d17 → trilho
-   "+".
-7. **Base.** **R2 4,7 kΩ** de b14 até b18; jumper a18 → **Uno A1**.
-8. **Entrada de 13 V (sem diodo, o padrão).** Jumper do **positivo da fonte** direto ao trilho "+". **Confira a polaridade
-   antes.** (Com D1, veja "Com o diodo" abaixo.)
-9. **LED de 13 V.** **R4 1 kΩ** de a17 até a21; **LED vermelho** com o anodo (perna longa) em b21 e o catodo (curta) em b22;
-   jumper c22 → trilho "−".
-10. **LED de atividade.** **R3 220 Ω** de g18 até g22; **LED amarelo** com o anodo em h22 e o catodo em h23; jumper i23 →
-    trilho "−"; jumper j18 → **Uno A5**.
-11. Confira com o multímetro (continuidade, tudo desligado): trilho "+" × trilho "−" **sem** continuidade; pino 8 do PIC
-    com o GND do Uno; a tira da linha 13 com o pino 4.
-12. Siga "Antes de ligar" (medir o MCLR com o chip fora) e depois "Gravar".
-
-| Jumper / peça | De | Para |
+| Peça | Quantas | Como reconhecer |
 |---|---|---|
-| Uno D2 | a10 (pino 1, Vdd) | |
-| Uno D7 | j11 (pino 7, dados) | |
-| Uno D4 | j12 (pino 6, clock) | |
-| Uno A1 | a18 (R2) | |
-| Uno A5 | j18 (R3) | |
-| Uno GND | trilho "−" | |
-| GND do chip | j10 | trilho "−" |
-| Emissor | b15 | trilho "−" |
-| Retorno do LED vermelho | c22 | trilho "−" |
-| Retorno do LED amarelo | i23 | trilho "−" |
-| 13 V (a fonte entra direto) | d17 | trilho "+" |
-| Positivo da fonte | trilho "+" | |
-| Negativo da fonte | trilho "−" | |
+| Protoboard de 830 pontos (a de 400 também serve) | 1 | com 2 trilhos no alto: um `+` (vermelho) e um `−` (azul) |
+| PIC12F629 em soquete DIP-8 | 1 | chip preto de 8 pernas, com uma marca (ponto ou entalhe) no pino 1 |
+| Transistor BC547 | 1 | 3 pernas; tem um lado chato |
+| Resistor 10 k | 1 | faixas: **marrom, preto, laranja**, dourado |
+| Resistor 4,7 k | 1 | faixas: **amarelo, violeta, vermelho**, dourado |
+| Resistor 1 k | 1 | faixas: **marrom, preto, vermelho**, dourado |
+| Resistor 220 Ω | 1 | faixas: **vermelho, vermelho, marrom**, dourado |
+| Capacitor 100 nF | 1 | disquinho pequeno marcado **104** |
+| LED vermelho e LED amarelo | 1 de cada | a perna **longa** é o `+` |
+| Fios (jumpers) macho-macho | 11 | cores: preto 6, vermelho 2, laranja, azul, verde, roxo, amarelo (1 de cada; as cores ajudam, não são obrigatórias) |
+| Fios macho-fêmea para o Uno | 6 | um para cada pino do Uno: GND, D2, D4, D7, A1, A5 |
+| Fonte de 13 V e multímetro | 1 | para a medição antes de ligar |
 
-**Com o diodo (opcional, D1).** Tire o fio do positivo da fonte ao trilho "+". Ponha o **D1** com o anodo em a25 e o
-catodo (faixa) em a29; jumper do **positivo da fonte** a b25 e jumper b29 → trilho "+". Assim o trilho "+" fica com 13 V
-menos a queda do diodo.
+### Os 6 pinos do Uno
 
-`scripts/protoboard.py` confere essa tabela contra as ligações do circuito. Protoboard tem contato fraco e capacitância
-alta; para gravar um PIC serve, mas se der erro de verificação, mexa nos jumpers antes de suspeitar do chip.
+![Pinos do Uno usados](docs/protoboard/uno-pinos.png)
+
+| Pino do Uno | Cor do fio | Vai para | Para que serve |
+|---|---|---|---|
+| **D2** | laranja | furo c10 (pino 1 do PIC) | dá energia ao PIC (5 V) |
+| **D4** | verde | furo j12 (pino 6 do PIC) | clock da gravação |
+| **D7** | azul | furo j11 (pino 7 do PIC) | dados da gravação |
+| **A1** | roxo | furo d18 (resistor de 4,7 k) | liga e desliga os 13 V no MCLR |
+| **A5** | amarelo | furo j24 (resistor de 220) | acende o LED amarelo enquanto grava |
+| **GND** | preto | trilho − | terra comum |
+
+**Como ler os furos:** cada furo tem uma **letra** (linha, a a j) e um **número** (coluna 7 a 30). Exemplo: **c10** é a linha `c` na coluna `10`. As letras `a b c d e` ficam na metade de baixo e `f g h i j` na de cima; furos com o mesmo número **e na mesma metade** estão ligados entre si por dentro da protoboard.
+
+**Regra de ouro:** nada ligado na tomada nem no USB enquanto você monta. A fonte só vai no passo 9.
+
+#### Passo 1: Fio de GND do Uno
+
+![Passo 1](docs/protoboard/passo-1.png)
+
+| O que | Onde |
+|---|---|
+| fio **preto** (GND do Uno) | do **Uno GND** ao trilho - |
+
+> Todo o circuito precisa do mesmo GND do Uno.
+
+#### Passo 2: O chip PIC12F629
+
+![Passo 2](docs/protoboard/passo-2.png)
+
+| O que | Onde |
+|---|---|
+| **PIC12F629 no soquete DIP-8** | pino 1 em **e10**; pinos 1 a 4 em e10 a e13, pinos 8 a 5 em f10 a f13 |
+| fio **preto** (pino 8 do PIC ao GND) | do furo **j10** ao trilho **-** |
+
+> O PIC fica a cavaleiro do vao do meio, com o pino 1 em e10 (o entalhe do chip aponta para a esquerda).
+
+#### Passo 3: Energia do chip
+
+![Passo 3](docs/protoboard/passo-3.png)
+
+| O que | Onde |
+|---|---|
+| **Capacitor 100 nF (marcado 104)** | 1 em **b10**, 2 em **b8** |
+| fio **laranja** (D2 do Uno: alimenta o PIC) | do **Uno D2** ao furo **c10** |
+| fio **preto** (capacitor ao GND) | do furo **e8** ao trilho **-** |
+
+> O capacitor fica junto do pino 1, perto do chip.
+
+#### Passo 4: Dados e clock
+
+![Passo 4](docs/protoboard/passo-4.png)
+
+| O que | Onde |
+|---|---|
+| fio **azul** (D7 do Uno: dados) | do **Uno D7** ao furo **j11** |
+| fio **verde** (D4 do Uno: clock) | do **Uno D4** ao furo **j12** |
+
+#### Passo 5: Transistor e resistor de 10 k
+
+![Passo 5](docs/protoboard/passo-5.png)
+
+| O que | Onde |
+|---|---|
+| **Transistor BC547** | C em **a13**, B em **a14**, E em **a15** |
+| **Resistor 10 k** (faixas marrom, preto, laranja, dourado) | 1 em **c13**, 2 em **c17** |
+| fio **preto** (emissor do transistor ao GND) | do furo **e15** ao trilho **-** |
+| fio **vermelho** (13 V para o resistor de 10 k e para o LED) | do furo **e17** ao trilho **+** |
+
+> O transistor BC547 entra com o lado CHATO virado para voce (para a borda de baixo da figura): C, B, E da esquerda para a direita.
+
+#### Passo 6: Comando do transistor
+
+![Passo 6](docs/protoboard/passo-6.png)
+
+| O que | Onde |
+|---|---|
+| **Resistor 4,7 k** (faixas amarelo, violeta, vermelho, dourado) | 1 em **e18**, 2 em **e14** |
+| fio **roxo** (A1 do Uno: comanda o transistor) | do **Uno A1** ao furo **d18** |
+
+#### Passo 7: LED vermelho (tem 13 V)
+
+![Passo 7](docs/protoboard/passo-7.png)
+
+| O que | Onde |
+|---|---|
+| **Resistor 1 k** (faixas marrom, preto, vermelho, dourado) | 1 em **a17**, 2 em **a21** |
+| **LED vermelho** | A em **b21**, K em **b22** |
+| fio **preto** (LED vermelho ao GND) | do furo **e22** ao trilho **-** |
+
+> A perna LONGA do LED e o +; ela vai no furo de numero menor.
+
+#### Passo 8: LED amarelo (atividade)
+
+![Passo 8](docs/protoboard/passo-8.png)
+
+| O que | Onde |
+|---|---|
+| **Resistor 220** (faixas vermelho, vermelho, marrom, dourado) | 1 em **g24**, 2 em **g28** |
+| **LED amarelo** | A em **h28**, K em **h29** |
+| fio **amarelo** (A5 do Uno: luz de atividade) | do **Uno A5** ao furo **j24** |
+| fio **preto** (LED amarelo ao GND) | do furo **i29** ao trilho **-** |
+
+> A perna LONGA do LED e o +; ela vai no furo de numero menor.
+
+#### Passo 9: Fonte de 13 V (por ultimo!)
+
+![Passo 9](docs/protoboard/passo-9.png)
+
+| O que | Onde |
+|---|---|
+| fio **vermelho** (positivo da fonte de 13 V) | do **fonte +** ao trilho + |
+| fio **preto** (negativo da fonte de 13 V) | do **fonte -** ao trilho - |
+
+> Fonte DESLIGADA e polaridade conferida com o multimetro.
+
+#### Pronto: confira
+
+![Montagem completa](docs/protoboard/montagem-completa.png)
+
+Com o multímetro em **continuidade (bip)** e **tudo desligado**:
+
+| Meça entre | Deve dar |
+|---|---|
+| trilho `+` e trilho `−` | **sem** bip (senão há um curto) |
+| trilho `−` e o pino 8 do PIC (furo f10) | bip |
+| furo e13 (pino 4 do PIC) e furo a13 (transistor) | bip |
+| furo c10 (D2) e furo e10 (pino 1 do PIC) | bip |
+
+**Depois:** siga "Antes de ligar" (medir o MCLR com o chip fora) e "Gravar".
+
+**Com o diodo (opcional, D1).** Tire o fio vermelho que vai do positivo da fonte ao trilho `+`. Ponha o diodo 1N5819 na fileira `c`: o lado **sem faixa** (anodo) em **c29** e o lado **com faixa** (catodo) em **c25**. Depois: um fio vermelho do **positivo da fonte** ao furo **c29**, e outro fio vermelho do furo **c25** ao trilho `+`. (O desenho acima não mostra isso.)
+<!-- /protoboard -->
 
 ## C. Placa perfurada
 
@@ -241,12 +368,13 @@ python3 -I tools/pic/comparar_hex.py firmware/cic_rp2040/third_party/snescic-loc
 |---|---|
 | `hardware/` | projeto KiCad (`shield_uno.kicad_pro/_sch/_pcb`), símbolo e footprint do Uno (`uno_shield.*`) |
 | `fab/` | gerbers, furos, `bom.csv` (sem o D1, que é DNP) e o zip da JLCPCB |
-| `docs/` | esquemático em PDF, imagem da placa, desenho e tabelas da placa perfurada |
+| `docs/` | esquemático em PDF, mapa das ligações, imagem da placa, passos da protoboard, desenho e tabelas da placa perfurada |
 | `scripts/gerar_sch.py` | gera o esquemático e o símbolo do Uno |
 | `scripts/gerar_pcb.py`, `scripts/rotear.py` | geram a PCB (footprints, nets, contorno) e roteiam com o Freerouting, depois zonas de GND |
 | `scripts/check_netlist.py` | confere a PCB contra a tabela do ardpicprog (usa `pcbnew`) |
 | `scripts/exportar_fab.sh` | gerbers, furos, BOM e zip |
-| `scripts/perfboard.py`, `scripts/protoboard.py` | desenho e verificação das montagens B e C |
+| `scripts/perfboard.py`, `scripts/protoboard.py`, `scripts/protoboard_desenho.py` | desenho e verificação das montagens B e C (a protoboard sai em passos, com PNG feitos pelo Chrome sem janela) |
+| `scripts/esquema_simples.py` | o mapa das ligações (`docs/esquema-simples.svg/.png`) e a lista fio a fio do README; confere cada fio contra `protoboard.ESPERADO` |
 
 Para refazer: `python3 scripts/gerar_sch.py`, depois, com o Python do venv do KiCad MCP (tem `pcbnew`),
 `gerar_pcb.py`, `rotear.py` (precisa de `java` e `~/.kicad-mcp/freerouting.jar`) e `check_netlist.py`;
