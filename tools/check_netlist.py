@@ -33,7 +33,9 @@ BOARD_CFG = {
     "16_and_8_bits": dict(caps=range(2, 7), reg=True, tps={}),
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
-    "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # v. 1.2 final (D108): resistores serie R3..R14 e TVS D3..D14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES,
+    # chave de 5V dos slots (Q1, R16..R18, D2; comando no D19), reset (SW1)
+    "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}, v12b=True),
     # só GBA (GB e GBC por adaptador): regulador de 3,3 V, sem Si5351, PIC e R2, sem capacitores de slot além do C9
     "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}),
     # só SNES: C2 do slot e C4 do PIC; Si5351, PIC e R2 ficam; sem /CART
@@ -48,6 +50,8 @@ BOARD_CFG = {
     "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
+V12B = CFG.get("v12b", False)
+CTRL = ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D14", "D15", "D16", "D17"]      # v12b: ordem de R3..R14 e D3..D14
 MDONLY = CFG.get("mdonly", False)
 NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
 
@@ -64,6 +68,8 @@ MEGA_GND = ("GND1", "GND2", "GND3", "GND5", "GND6")
 # D0/D1 = serial USB; nunca podem ir a um slot.
 MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50", "D51", "D52",
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
+if V12B:
+    MEGA_NC_OK -= {"D19", "RST1"}      # D19 = comando da chave de 5V, RST1 = reset
 if BOARD in ("16_bits", "megadrive"):
     MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
@@ -144,7 +150,31 @@ def expected_nets(pm_nets):
         exp["GND"].add((SI, "2"))
         if not NOPIC: exp["GND"].add((PIC, "8"))
     exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
+    if V12B:
+        v12b_ajusta(exp)
     return exp
+
+
+def v12b_ajusta(exp):
+    """Resistores serie, TVS, pull-up, chave de 5V e reset (so a 16_bits v. 1.2 final)."""
+    for k, n in enumerate(CTRL):
+        r, d = f"R{3 + k}", f"D{3 + k}"
+        exp[n].discard((MEGA, n))
+        exp[n].update({(r, "2"), (d, "1")})
+        exp[n + "_M"] = {(MEGA, n), (r, "1")}
+        exp["GND"].add((d, "2"))
+    exp["D17"].add(("R15", "2"))
+    # 5V: Mega -> Q1 (fonte) -> +5V_CART (slots, Si5351, PIC, capacitores, pull-ups)
+    cart = {(r, p) for r, p in exp["+5V"] if r in ("SNES1", "MD1", "U1", "U2", "R2") or (r.startswith("C") and r not in ("C1",))}
+    exp["+5V"] -= cart
+    exp["+5V"].update({("Q1", "3"), ("R16", "1")})
+    exp["+5V_CART"] = cart | {("Q1", "2"), ("R15", "1"), ("R18", "1"), ("FLG3", "1")}
+    exp["PWR_G"] = {("Q1", "1"), ("R16", "2"), ("R17", "1")}
+    exp["PWR_EN"] = {(MEGA, "D19"), ("R17", "2")}
+    exp["LED_CART"] = {("R18", "2"), ("D2", "2")}
+    exp["GND"].add(("D2", "1"))
+    exp["RESET"] = {(MEGA, "RST1"), ("SW1", "1")}
+    exp["GND"].add(("SW1", "2"))
 
 
 def actual_nets():
@@ -198,7 +228,10 @@ def main():
             continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
-            if net is None or (MEGA, "5V1") not in act[net]:
+            if V12B:
+                if net is None or ("Q1", "2") not in act[net] or (MEGA, "5V1") in act[net]:
+                    errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
+            elif net is None or (MEGA, "5V1") not in act[net]:
                 errors.append(f"{ref}.{pin} (VCC) não está na net do 5V do Mega")
     for pin in ("1",) if "GBA1" in SLOTS else ():
         net = next((k for k, v in act.items() if ("GBA1", pin) in v), None)

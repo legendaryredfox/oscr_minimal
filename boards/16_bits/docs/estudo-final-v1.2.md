@@ -67,3 +67,7 @@ Medidas reais dos slots e do módulo Si5351 (D17, D23), lado da etiqueta (D27, D
 | Fabricação | gerbers, zip, prévias e SHA-256 refeitos; 346 furos metalizados (344 + 2 vias novas), 4 não metalizados, 96 vias | `tools/export_fab.sh 16_bits v1.2` |
 
 **Não aplicado:** resistores série e TVS, chave de alimentação, furos M3 do Mega, reset e pull-up de `/VRES` (seção 3): exigem refazer o roteamento ou pino novo aprovado; ficam para a v. 1.3. O C4 a 2,5 mm do VDD dispensa o capacitor extra sob o soquete.
+
+## 6. Atualização (2026-11-06, D108): o que era da v. 1.3 passou para a v. 1.2
+
+O usuário pediu para jogar para a v. 1.2 tudo o que estava na seção 3, **menos o RP2040**. Aplicado: resistores série (só nas 12 linhas de controle; as 44 de endereço e dados não couberam) e TVS (DNP), chave de 5V dos slots (pino novo D19, aprovado nessa instrução), furos M3 do Mega (3 dos 6), botão de reset e pull-up de `/VRES` (DNP). A placa foi roteada de novo. Ver `docs/v12-final.md`.

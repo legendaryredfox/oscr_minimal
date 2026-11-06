@@ -806,8 +806,21 @@ namespace OSCR::Dumper
     for (;;) {}
   }
 
+  /**
+   * Chave de 5V dos slots (placa 16_bits v. 1.2 final, D108): D19 = PD2, nível baixo liga o P-MOSFET Q1. Com o pino solto (Mega em reset) o R16
+   * mantém a chave desligada. Em placas sem a chave o pino fica sem ligação e isto não tem efeito.
+   */
+  void cartPower(bool on)
+  {
+    DDRD |= _BV(PD2);
+    if (on) PORTD &= ~_BV(PD2);
+    else PORTD |= _BV(PD2);
+  }
+
   void setup()
   {
+    cartPower(true);                          // sem isso o cartucho fica sem 5V; o OSCR original não tinha chave
+    delay(50);                                // o 5V dos slots, o Si5351 e o PIC sobem antes do primeiro comando
     ClockedSerial.begin(OSCR_DUMPER_BAUD);
     ClockedSerial.mute = true;                // a UI de texto do OSCR não pode escrever no meio dos quadros
 

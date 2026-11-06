@@ -106,6 +106,7 @@
 - **D105** Shield do Uno: mapa das ligações para leigos e passos da protoboard prontos (pedido do usuário, 2026-11-06)
 - **D106** Estudo final da `16_bits` v. 1.2 antes de fechar o projeto (pedido do usuário, 2026-11-06)
 - **D107** `16_bits` v. 1.2: fixes finais antes de fechar (pedido do usuário, 2026-11-06)
+- **D108** `16_bits` v. 1.2 final: tudo o que era da v. 1.3, menos o RP2040 (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -865,4 +866,13 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Biblioteca.** `Mega2560_R3_Shield_4MH` (85 pads) em `boards/_lib/`; as placas existentes não foram trocadas.
 - **Verificação.** DRC (todas as severidades, com paridade) 0 erros e 0 ligações abertas, só `lib_footprint_mismatch`; ERC 0; `check_netlist` OK; gerbers refeitos (346/4 furos, 96 vias). Scripts `tools/revisao/v12_c4.py` e `v12_silk.py` (rode nessa ordem sobre a v. 1.2 anterior; o `v12_c4.py` não roda duas vezes).
 - **Não aplicado (v. 1.3).** Resistores série e TVS, chave de alimentação, furos M3 do Mega, reset, pull-up de `/VRES`. A v. 1.0 encomendada (e a `rev2`) não foram tocadas.
+
+### D108 — `16_bits` v. 1.2 final: tudo o que era da v. 1.3, menos o RP2040 (pedido do usuário, 2026-11-06)
+- **Pedido.** "Pode jogar tudo da v 1.3 atual pra v 1.2. Na 1.3 vai entrar apenas o RP2040 (se for viável)." Isso reabre o cobre da v. 1.2 (já autorizado em D107) e aprova o **pino novo D19** para a chave de 5V.
+- **Mudanças.** (1) Resistores série R3 a R14 (0 Ω de fábrica, axial 0204 em pé) e TVS/zener D3 a D14 (DNP) nas 12 linhas de controle `D2` a `D9` e `D14` a `D17` (o pino do Mega fica na rede `Dn_M`); (2) pull-up R15 de `/VRES` (DNP); (3) botão de reset SW1 em RST1; (4) chave de alta do 5V dos slots: Q1 P-MOSFET TO-220 (fonte no 5V do Mega, dreno em `+5V_CART`), R16 100 kΩ (mantém desligado), R17 100 Ω, R18 1 kΩ e LED verde D2; o `+5V_CART` alimenta SNES, Mega Drive, Si5351, PIC, C2 a C6 e R2; (5) furos M3 MH5 a MH7 alinhados com três dos seis furos do Mega que ficam livres.
+- **D19.** PD2 (TX1/RX1 do Mega): nenhum núcleo do OSCR escreve em PD2/PD3; D10 a D12 (PB4 a PB6) são o LED RGB do OSCR e D13 é o LED do Mega, por isso não foram usados. Nível baixo liga; o firmware liga no `setup()` (`cartPower(true)` em `Dumper.cpp`, compila: 168.402 B de flash, 66,3 %). **Falta o comando `POWER` no protocolo** (CLI Python e Kotlin, GUI); sem ele a chave não serve para trocar o cartucho com o USB ligado. Com a chave desligada o firmware ainda teria que deixar todos os pinos de sinal em alta impedância.
+- **O que não coube.** Resistores série nas ~44 linhas de endereço e dados (precisariam de uma placa bem maior); só as linhas de controle estão protegidas. Os outros três furos do Mega caem no meio das linhas dos slots.
+- **Como foi feito.** `tools/revisao/schlib.py` e `v12b_sch.py` (esquemático, com o símbolo `dumper:Q_PMOS_GDS` novo em `boards/_lib/dumper.kicad_sym` e em `tools/build_lib.py`), `v12b_pcb.py` (nets, peças novas, posições; PIC, C4, C6 e pontos de teste mudam de lugar; apaga trilhas), `v12b_route.py` (Freerouting, 40 passes: 0 não roteadas, 0 violações; zonas de GND) e `v12b_finish.py` (rótulos, pads de GND sólidos onde o DRC reclamava). Rode nessa ordem sobre a v. 1.2 anterior (commit `3f650d8`); a classe de rede `Power` ganhou `+5V_CART` (0,8 mm). Os pontos de costura do `stitch.py` não foram usados: ele removia vias de GND do Freerouting e as duas camadas ficavam sem ligação. `tools/check_netlist.py` ganhou a configuração `v12b` para a `16_bits` (84 nets, 291 ligações).
+- **Verificação.** ERC 0; DRC (todas as severidades, com paridade) 0 erros e 0 ligações abertas, só avisos de biblioteca, de campos e das peças só do PCB; netlist OK; gerbers refeitos (404 furos metalizados, 7 não metalizados, 89 vias, 108,1 × 86,1 mm). 5V e 5V chaveado a 0,8 mm.
+- **Não conferido.** Queda do IRF9540N com Vgs = −5 V (não está no datasheet); tempos do OSCR com 47 a 100 Ω; encaixe dos furos M3 com o Mega real; altura de Q1 e dos espaçadores; nada montado. A v. 1.0 encomendada e a `rev2` não foram tocadas.
 

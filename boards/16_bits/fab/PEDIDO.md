@@ -4,7 +4,7 @@ Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a 
 
 ## Arquivo
 
-Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `836f8884f0dbde0ef5f3fbc7e90324d6d8780a3123b5150250b54288b0e6ca15`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
+Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `c0f727bc7f581cdb0d2421fb7b12f2e716be21858f302b2fffed869699734343`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
@@ -14,10 +14,19 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 |---|---|
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm |
-| Furos metalizados / não metalizados | 346 / 4 (os 4 são M3 de canto, 3,2 mm) |
-| Furo mínimo | 0,3 mm (as 96 vias) |
+| Furos metalizados / não metalizados | 404 / 7 (os 7 são M3 de 3,2 mm: 4 de canto e 3 alinhados com o Mega) |
+| Furo mínimo | 0,3 mm (as 87 vias de 0,6/0,3 mm; mais 2 de 0,8/0,4 mm) |
 
 Se a pré-visualização mostrar outra coisa, **não pague**: avise.
+
+## Revisão final da v. 1.2 (2026-11-06, D108): o que antes era da v1.3
+
+O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos o RP2040. Detalhes e testes de bancada: `docs/v12-final.md`. **A placa foi roteada de novo** (Freerouting, 0 não roteadas; DRC 0 erros, `check_netlist` OK): as trilhas não são as da versão anterior desta pasta.
+
+- 12 resistores série (R3 a R14, 0 Ω) e 12 TVS (D3 a D14, **DNP**) nas linhas de controle; pull-up de `/VRES` (R15, DNP).
+- Chave de 5V dos slots (Q1 P-MOSFET, R16 a R18, LED verde D2), comando no D19 (nível baixo liga; o firmware liga no `setup()`).
+- Botão de reset (SW1) e três furos M3 alinhados com o Mega (MH5 a MH7). PIC, C4, C6 e pontos de teste mudaram de lugar.
+- Compras a mais: 12 resistores 0 Ω (ou 47 a 100 Ω), 3 resistores, 1 P-MOSFET TO-220, 1 LED verde, 1 botão tátil 6 mm, 3 espaçadores M3 com parafusos. Os TVS e o R15 só se for usar.
 
 ## O que mudou da v1.0 para a v. 1.2
 

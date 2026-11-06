@@ -150,6 +150,24 @@ def si5351_symbol():
     return "\n".join(s)
 
 
+def q_pmos_symbol():
+    """P-MOSFET com os pinos numerados 1, 2, 3 (G, D, S) como no TO-220 (o Device:Q_PMOS do KiCad usa D, G, S como numero)."""
+    t = Path("/usr/share/kicad/symbols/Device.kicad_sym").read_text()
+    i = t.index('(symbol "Q_PMOS"')
+    d = 0
+    for j in range(i, len(t)):
+        d += (t[j] == "(") - (t[j] == ")")
+        if d == 0:
+            break
+    b = t[i:j + 1]
+    b = b.replace('(symbol "Q_PMOS"', '(symbol "Q_PMOS_GDS"', 1).replace('(symbol "Q_PMOS_', '(symbol "Q_PMOS_GDS_')
+    b = b.replace('(symbol "Q_PMOS_GDS_GDS"', '(symbol "Q_PMOS_GDS"')
+    for a, c in (("G", "1"), ("D", "2"), ("S", "3")):
+        b = b.replace('(number "%s"' % a, '(number "%s"' % c)
+    b = re.sub(r'(\(property "Footprint" ")[^"]*"', r'\g<1>Package_TO_SOT_THT:TO-220-3_Vertical"', b, count=1)
+    return "  " + b
+
+
 def build_symbols():
     oscr = (SRC / "symbols/!OSCR.kicad_sym").read_text()
     syms = top_level_symbols(oscr)
@@ -161,6 +179,7 @@ def build_symbols():
     out.append(mega_symbol())
     out.append(gba_symbol())
     out.append(si5351_symbol())
+    out.append(q_pmos_symbol())
     out.append(")")
     (LIB / f"{LIBNAME}.kicad_sym").write_text("\n".join(out) + "\n")
 

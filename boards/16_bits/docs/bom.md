@@ -18,7 +18,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | Quantidade | 5 |
 | Cor / máscara | tanto faz (padrão verde) |
 | Cobre | 1 oz |
-| Furos | 343 metalizados (mín. 0,3 mm; 93 deles são vias), 4 não metalizados (3,2 mm, os de canto) |
+| Furos | 404 metalizados (mín. 0,3 mm; 89 deles são vias), 7 não metalizados (3,2 mm: 4 de canto e 3 alinhados com o Mega) |
 | Demais | trilha/espaço mín. 0,2 mm / 0,2 mm; sem borda castelada; sem montagem; sem stencil |
 
 ## Componentes
@@ -37,6 +37,13 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | R2 | 1 | 1 kΩ 1/4 W | idem | Pull-up do D7 (IRQ do SNES). |
 | C1 | 1 | 470 µF / 16 V eletrolítico, radial, Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
 | C2, C3, C4, C5, C6 | 5 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C2 SNES, C3 Mega Drive), um no PIC (C4) e, na v. 1.2, dois extras no slot Mega Drive: C5 junto ao pino A31 e C6 junto ao A2 (5V). |
+| R3 a R14 | 12 | 0 Ω (fio) de fábrica; 47 a 100 Ω depois dos testes | `R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | Série das linhas de controle (D2 a D9, D14 a D17), em pé. `docs/v12-final.md`. |
+| D3 a D14 | 12 (DNP) | TVS 5 V ou zener 5,1 V, DO-35 | `D_DO-35_SOD27_P2.54mm_Vertical_CathodeUp` | **Não montar** por padrão. |
+| R15 | 1 (DNP) | 10 kΩ | idem R3 | Pull-up de `/VRES` (Open EverDrive). **Não montar.** |
+| R16, R17, R18 | 3 | 100 kΩ, 100 Ω, 1 kΩ | idem R3 | Chave de 5V: pull-up da porta, série do comando D19, limitador do LED verde. |
+| Q1 | 1 | P-MOSFET TO-220 (IRF9540N ou equivalente) | `TO-220-3_Vertical` | Chave de alta do 5V dos slots (G, D, S). Medir a queda com carga. |
+| D2 | 1 | LED verde 3 mm | `LED_D3.0mm` | Acende com o 5V dos slots ligado. |
+| SW1 | 1 | Botão tátil 6 × 6 mm, 4 pinos | `SW_PUSH_6mm` | Reset do Mega. |
 | TP1 a TP6 | 6 | Pontos de teste: pad de 2 mm, furo de 1 mm (`TestPoint_THTPad_D2.0mm_Drill1.0mm`) | só cobre | Na placa, sem peça: `5V`, `GND`, `/CE`, `/OE`, `/WE`, `/UWR`. Opcional: tira de pinos macho 1x6 de 2,54 mm (os furos ficam a 2,54 mm um do outro). Fora da BOM de compra. |
 
 ## Pinos e mecânica (sem símbolo no esquemático)
@@ -44,7 +51,8 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | Item | Qtd | Observação |
 |---|---|---|
 | Pinos macho 2,54 mm, **cauda longa** (≥ 10 mm abaixo do plástico, ≥ 5 mm acima) | **85 posições** | Todos os pads do shield, inclusive os sem sinal. Sugestão: 2 tiras 1x40 e 1 tira 2x20 (corte em 2x18). |
-| Espaçador M3 + pé de borracha | 4 | Furos de canto da placa; só apoio, não prendem o Mega. Comprimento a definir (o Mega fica sob o shield). |
+| Espaçador M3 + pé de borracha | 4 | Furos de canto da placa; só apoio. Comprimento a definir (o Mega fica sob o shield). |
+| Espaçador M3 fêmea-fêmea + 2 parafusos M3 | 3 | Entre o shield e o Mega, nos furos MH5, MH6 e MH7 (alinhados com furos do Mega). Altura = a do encaixe dos pinos; definir com o Mega na mão. |
 | Cabo USB-C para USB-C (ou USB-A) | 1 | Interface com o PC (D30). |
 
 ## Ferramentas e consumíveis

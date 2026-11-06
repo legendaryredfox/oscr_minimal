@@ -4,6 +4,10 @@ Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES**
 
 **Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers v. 1.2 em `fab/`. A v1.0 (`dumper-v1.0-jlcpcb.zip`) foi encomendada pelo usuário em 2026-11-06 (informado no chat); nenhuma versão foi montada nem testada com cartucho.
 
+## v. 1.2 final: proteção, chave de 5V, reset e furos do Mega (2026-11-06, D108)
+
+O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040** (esse fica sozinho na v. 1.3, se der certo). Resistores série e TVS (DNP) nas 12 linhas de controle, pull-up de `/VRES` (DNP), botão de reset, chave de 5V dos slots comandada pelo D19, três furos M3 alinhados com o Mega. A placa foi roteada de novo. Detalhes, lista de peças e testes de bancada: `docs/v12-final.md`. **Nada foi montado nem medido.**
+
 ## Revisão final v. 1.2 (2026-11-06, D107)
 
 Estudo final em `docs/estudo-final-v1.2.md`. Aplicado: **C4 junto do PIC** (de 21,7 mm para 2,5 mm do VDD, e 3,6 mm do GND; duas vias no lugar do pad antigo), **aviso do USB no silk** ("NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO"), data do silk 2026-11-06 e rótulos C5, C6 e U2 visíveis. DRC 0 erros e 0 ligações abertas, netlist confere. Projeto fechado; o que sobra vai para a v. 1.3.
@@ -20,12 +24,12 @@ Além do silk `v. 1.2`: `/CART` (B32 do slot Mega Drive) ligado ao D50 do Mega p
 | Regulador 3,3 V (U3, C7, C8, C9) | sim | não |
 | Capacitores de 100 nF | C2 a C6, C9 | C2 (SNES), C3 (Mega Drive), C4 (PIC), C5 e C6 (extras do slot Mega Drive, v. 1.2) |
 | Placa | 144 × 108 mm | 108 × 86 mm |
-| Furos | 4 M3 de canto, 6 do Mega, 2 M2 do Si5351 | **só os 4 M3 de canto** |
+| Furos | 4 M3 de canto, 6 do Mega, 2 M2 do Si5351 | 4 M3 de canto + 3 alinhados com o Mega (v. 1.2 final) |
 | Si5351 | header vertical, módulo ao lado | header horizontal, módulo sobre ele, sem furos |
 
 Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um recorte do dela.
 
-**Mecânica:** o shield fica preso ao Mega só pelos pinos macho longos. Os 4 furos de canto servem para espaçadores M3 e pés de borracha, não prendem o Mega.
+**Mecânica:** os pinos macho longos mantêm o encaixe; os 4 furos de canto servem para espaçadores M3 e pés de borracha, e na v. 1.2 final três furos (MH5 a MH7) alinham com furos do Mega para prender o shield com espaçadores M3.
 
 | Pasta | Conteúdo |
 |---|---|

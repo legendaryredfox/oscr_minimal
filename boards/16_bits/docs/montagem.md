@@ -2,7 +2,7 @@
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho.
+> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". A chave de 5V (Q1) existe, mas o protocolo ainda não tem o comando para desligá-la (`docs/v12-final.md`).
 
 ## 1. Lista de peças
 
@@ -10,15 +10,17 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 | Grupo | Referências |
 |---|---|
-| Resistores | R1 (220 Ω), R2 (1 kΩ) |
+| Resistores | R1 (220 Ω), R2 (1 kΩ); **R3 a R14** (série das linhas de controle, 0 Ω de fábrica); R16 (100 kΩ), R17 (100 Ω), R18 (1 kΩ) da chave de 5V; R15 (10 kΩ, **não montar**) |
+| Diodos | D3 a D14 (TVS ou zener 5,1 V, **não montar**) |
+| Chave de 5V e reset | Q1 (P-MOSFET TO-220), D2 (LED verde 3 mm), SW1 (botão tátil 6 mm) |
 | Capacitores cerâmicos 100 nF | C2 (SNES), C3 (Mega Drive), C4 (PIC, acima do soquete), C5 e C6 (extras do slot Mega Drive, junto aos pinos A31 e A2) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | Soquete DIP-8 e PIC12F629 | U2 |
-| LED 3 mm | D1 |
+| LED 3 mm | D1 (status), D2 (verde, 5V dos slots) |
 | Header fêmea 1x7 (Si5351) e módulo | U1 |
 | Slots | SNES1, MD1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
-| Mecânica | 4 espaçadores M3 + pés de borracha (cantos). Sem espaçadores nos furos do Mega (a placa não tem esses furos) |
+| Mecânica | 4 espaçadores M3 + pés de borracha (cantos) e **3 espaçadores M3 com parafusos** nos furos MH5, MH6 e MH7, alinhados com furos do Mega (v. 1.2 final, D108) |
 
 ## 2. Ferramentas
 
@@ -30,17 +32,18 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
-1. **Resistores** R1 e R2 (deitados, como no silkscreen).
+1. **Resistores** R1 e R2 (deitados, como no silkscreen) e os de 2,54 mm (em pé, como no desenho): **R3 a R14 como 0 Ω** (um fio ou resistor de 0 Ω; troque por 47 a 100 Ω só depois dos testes da v12-final), R16, R17 e R18. **Não monte R15 nem D3 a D14** (DNP).
 2. **Capacitores cerâmicos de 100 nF**: C2, C3, C4, C5, C6. O **C4** fica logo acima do soquete do PIC (D107): o corpo toca de leve a borda do soquete, então solde-o com as pernas dobradas rente e o corpo um pouco inclinado para cima, sem forçar o soquete.
 3. **Soquete DIP-8 (U2)**, tradicional, com o chanfro alinhado ao silkscreen e **sem o PIC**. O PIC nunca é soldado: fica no soquete para poder ser trocado ou regravado.
-4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
+4. **LEDs (D1 e D2)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
+4b. **Q1** (TO-220, em pé, lado do metal para a borda direita da placa; pinos G, D, S de cima para baixo) e o **botão SW1**.
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 6. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).
 7. **Slots SNES1 e MD1.** Para cada um: solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo.
 8. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).
     - Encaixe o shield sobre o Mega com os pinos nos furos do Mega, solde 2 pinos das pontas de cada tira, confira se tudo ficou reto e solde o resto.
-    - Depois fixe os 4 espaçadores M3 dos cantos. Eles só dão altura e apoio nos pés de borracha: **não prendem o shield ao Mega**, que fica preso só pelos pinos.
+    - Depois fixe os 4 espaçadores M3 dos cantos (altura e apoio nos pés de borracha) e, **com o shield já encaixado**, os 3 espaçadores M3 entre o shield e o Mega nos furos MH5, MH6 e MH7 (parafuso por baixo do Mega e outro por cima do shield; só aperte depois de conferir que os pinos estão assentados). Assim o shield não levanta ao puxar um cartucho.
 
 ## 4. Inspeção visual
 
