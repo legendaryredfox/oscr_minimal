@@ -24,11 +24,17 @@ de vez (sem footprint de reserva). Decisão e motivos em `docs/decisoes.md` D89;
 - O usuário diz que o módulo tem só os furos, sem headers soldados (a Waveshare descreve furos castelados); os pinos macho entram nesses furos.
 - Borda esquerda, de cima para baixo (9): `5V, GND, 3V3, GP29, GP28, GP27, GP26, GP15, GP14`.
   Borda direita (9): `GP0 ... GP8`. Extremidade inferior (5): `GP13, GP12, GP11, GP10, GP9`.
-- **A confirmar com paquímetro ou com o STEP da Waveshare** (`files.waveshare.com/upload/f/f7/RP2040_Zero_stp.zip`):
-  a distância centro a centro entre as duas fileiras (o desenho dá 1,59 mm da borda ao primeiro furo, o que
-  sugere cerca de 14,8 mm) e a posição exata do primeiro furo em relação à ponta da USB-C. Há clones com
-  medidas um pouco diferentes: medir o módulo do usuário.
-- Montagem na placa: dois headers fêmea 1×9, 2,54 mm (THT), com a USB-C para fora da borda da placa.
+- **Geometria dos furos (medida no STEP oficial da Waveshare**, `files.waveshare.com/upload/f/f7/RP2040_Zero_stp.zip`;
+  coordenadas do módulo em mm, origem no canto do modelo; o arquivo não está no repo):
+  - Duas colunas em x = 1,33 e x = 16,57: **15,24 mm centro a centro (0,6 pol)**, 1,38 mm da borda lateral.
+  - 9 furos por coluna, passo 2,54 mm, em y = 22,01; 19,47; 16,93; 14,39; 11,85; 9,31; 6,77; 4,23; 1,69.
+    O primeiro (y = 22,01) é o 5V à esquerda e o GP0 à direita; o último (y = 1,69) é o GP14 e o GP8.
+  - Linha inferior, y = 1,69: cinco furos (GP13 a GP9) em x = 3,87; 6,41; 8,95; 11,49; 14,03.
+  - Furo de 0,9 mm de diâmetro (raio 0,45 no modelo): cabe o pino macho de 0,64 mm.
+  - A USB-C fica centrada (cerca de 4,4 mm de folga de um lado e 4,67 mm do outro, pelo desenho).
+  - A foto do paquímetro do usuário (2026-11-06) não deu para ler com precisão (os dois verniers discordam por
+    paralaxe), mas o espaçamento estimado nela (cerca de 15,4 mm) concorda com os 15,24 mm do STEP.
+- Montagem na placa: dois headers fêmea 1×9, 2,54 mm (THT), 15,24 mm entre eles, com a USB-C para fora da borda da placa.
 
 ## Sinais (a tabela do PIC12F629 → RP2040)
 
@@ -60,7 +66,7 @@ Dez GPIO no total. O lado do Mega (D40 = PG1, D41 = PG0) não muda: `boards/16_b
 
 ## Plano
 
-1. ~~Medidas do módulo~~ (acima; falta confirmar a distância entre fileiras).
+1. ~~Medidas do módulo~~ (acima, do STEP da Waveshare).
 2. ~~Porte do CIC~~ feito em `firmware/cic_rp2040/` (testado só no PC).
 3. **Bancada na v1.0** com o soquete do U2, o RP2040 e o 74HCT125 numa protoboard; cartucho SA-1 real.
 4. Esquemático, posicionamento (⏸ revisão visual), roteamento, DRC, `tools/check_netlist.py --board 16_bits`
