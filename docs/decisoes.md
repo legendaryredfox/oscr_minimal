@@ -90,6 +90,7 @@
 - **D89** CIC do SNES: PIC12F629 sai na placa v. 1.3; RP2040-Zero roda o mesmo programa num interpretador (pedido do usuário, 2026-11-06)
 - **D90** Gravação do PIC com PICkit 2 e pk2cmd (não redistribuído por licença); 74HCT125N conferido (pedido do usuário, 2026-11-06)
 - **D91** Plano B de gravação do PIC: Arduino Uno com ardpicprog (pedido do usuário, 2026-11-06)
+- **D92** Placa `boards/megadrive/`: só Mega Drive, slot dentro da área do Mega (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -741,4 +742,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Conferido nos fontes e na documentação (não rodado):** sketch `ProgramPIC.pde` com A1 = MCLR (baixo = 13 V, alto = reset), D2 = Vdd, D4 = clock, D7 = dados, A5 = LED de atividade; entrada do 12F629 na tabela (ID 0x0F80, 1024 palavras, configuração 0x2000, EEPROM 0x2100). O programa do PC **preserva a calibração OSCCAL por padrão** (`--force-calibration` a sobrescreve) e lê `.hex` IHX8M, 16 ou 32 (o do sd2snes é IHX32). A ligação direta do DIP-8 (pino 6 = clock, 7 = dados) bate com o mapa do ZIF do esquema original.
 - **Só o transistor NPN precisa ser comprado, se não houver na bancada.** A fonte de 13 V substitui o 7812 do circuito original (que exige 16 a 20 V na entrada) e deve ser medida sem carga antes de ligar o chip (Vpp máximo a confirmar no DS41191).
 - **Não validado:** o instalador `tools/pic/uno/instalar_ardpicprog.sh` e o sketch nunca foram compilados (o ambiente não permitiu rodar código baixado); nenhuma gravação foi feita. Fontes em `vendor/ardpicprog/` (ignorado pelo git), commit `2f8b540`.
+
+### D92 — Placa `boards/megadrive/`: só Mega Drive, slot dentro da área do Mega (pedido do usuário, 2026-11-06)
+- **Pedido.** Nova placa só para o Mega Drive, em pasta nova, usando o KiCad MCP e Node 24.
+- **Escolhas.** Sem SNES, Si5351, PIC e R2 (o `MegaDrive.cpp` não usa clock nem CIC; `D20`, `D21`, `D40`, `D41` ficam sem ligação). Mantidos `/CART` em D50, os seis pontos de teste, o LED em D38, C1 e C3, C5, C6. Pinagem do slot idêntica à da `16_bits` (regra de ouro, seção 3 do CLAUDE.md); `docs/pinmap.md` é recorte dela.
+- **Layout.** O slot MD foi para o centro, entre as fileiras de pinos do Mega (onde ficava o SNES); contorno de 107 × 65 mm no lugar de 108 × 86. Trilhas refeitas do zero (Freerouting pelo MCP).
+- **Ferramentas.** `tools/megadrive/strip_sch.py` e `place.py`; `tools/check_netlist.py --board megadrive`. O MCP não foi usado para apagar nada: a remoção das peças foi feita por script sobre a cópia da `16_bits`, que não foi alterada.
 

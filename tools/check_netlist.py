@@ -34,8 +34,11 @@ BOARD_CFG = {
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
+    "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
+MDONLY = CFG.get("mdonly", False)
 
 SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1"}
 SLOTS = set()      # slots presentes no pinmap da placa
@@ -50,7 +53,7 @@ MEGA_GND = ("GND1", "GND2", "GND3", "GND5", "GND6")
 # D0/D1 = serial USB; nunca podem ir a um slot.
 MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50", "D51", "D52",
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
-if BOARD == "16_bits":
+if BOARD in ("16_bits", "megadrive"):
     MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
 
@@ -94,21 +97,25 @@ def expected_nets(pm_nets):
     for net in list(exp):
         if re.fullmatch(r"[AD]\d+", net):
             exp[net].add((MEGA, net))                       # pad do Mega com o mesmo nome
-    for net, pin in SI_CLK.items():
-        exp.setdefault(net, set()).add((SI, pin))
-    for net, pin in PIC_NET.items():
-        exp.setdefault(net, set()).add((PIC, pin))
-    exp["CLK2"].add((PIC, "2"))
-    # I2C, CIC reset in/out e periféricos
-    exp.setdefault("D20", set()).update({(MEGA, "D20"), (SI, "3")})
-    exp.setdefault("D21", set()).update({(MEGA, "D21"), (SI, "4")})
-    exp.setdefault("D41", set()).update({(MEGA, "D41"), (PIC, "3")})
-    exp.setdefault("D40", set()).update({(MEGA, "D40"), (PIC, "4")})
+    if not MDONLY:
+        for net, pin in SI_CLK.items():
+            exp.setdefault(net, set()).add((SI, pin))
+        for net, pin in PIC_NET.items():
+            exp.setdefault(net, set()).add((PIC, pin))
+        exp["CLK2"].add((PIC, "2"))
+        # I2C, CIC reset in/out e periféricos
+        exp.setdefault("D20", set()).update({(MEGA, "D20"), (SI, "3")})
+        exp.setdefault("D21", set()).update({(MEGA, "D21"), (SI, "4")})
+        exp.setdefault("D41", set()).update({(MEGA, "D41"), (PIC, "3")})
+        exp.setdefault("D40", set()).update({(MEGA, "D40"), (PIC, "4")})
     exp.setdefault("D38", set()).update({(MEGA, "D38"), ("R1", "2")})
     exp.setdefault("LED_K", set()).update({("R1", "1"), ("D1", "1")})
-    exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
+    if not MDONLY:
+        exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
     exp["+5V"].update({(MEGA, p) for p in MEGA_5V})
-    exp["+5V"].update({(SI, "1"), (PIC, "1"), ("D1", "2"), ("R2", "1"), ("C1", "1"), ("FLG1", "1")})
+    exp["+5V"].update({("D1", "2"), ("C1", "1"), ("FLG1", "1")})
+    if not MDONLY:
+        exp["+5V"].update({(SI, "1"), (PIC, "1"), ("R2", "1")})
     exp["+5V"].update({(f"C{i}", "1") for i in CFG["caps"]})
     for tp, net in CFG["tps"].items():
         exp.setdefault(net, set()).add((tp, "1"))
@@ -117,7 +124,9 @@ def expected_nets(pm_nets):
         exp.setdefault("+3V3", set()).update({("U3", "3"), ("C8", "1"), ("C9", "1")})
         exp["GND"].update({("U3", "1"), ("C7", "2"), ("C8", "2"), ("C9", "2")})
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
-    exp["GND"].update({(SI, "2"), (PIC, "8"), ("C1", "2"), ("FLG2", "1")})
+    exp["GND"].update({("C1", "2"), ("FLG2", "1")})
+    if not MDONLY:
+        exp["GND"].update({(SI, "2"), (PIC, "8")})
     exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
     return exp
 
