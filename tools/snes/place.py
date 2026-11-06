@@ -24,12 +24,12 @@ def mv(ref, x, y, rot=None):
     if rot is not None: f.SetOrientationDegrees(rot)
 mv("MH1", 19, 55); mv("MH2", 120, 55); mv("MH3", 19, 114); mv("MH4", 120, 114)
 mv("C1", 26, 61); mv("R1", 24, 68); mv("R2", 24, 73); mv("D1", 42, 66)
-mv("U1", 50, 74); mv("U2", 84, 64); mv("C4", 97, 68); mv("C2", 92.5, 98)
+mv("U1", 55, 74); mv("U2", 84, 64); mv("C4", 97, 68); mv("C2", 92.5, 98)
 tps = sorted([b.FindFootprintByReference("TP%d" % i) for i in (1, 2, 4, 5, 6)], key=lambda f: f.GetPosition().x)
 for k, f in enumerate(tps): f.SetPosition(V(24.0 + 2.54 * k, 113))   # 2,54 mm: tira de pinos 1x5 padrão; rótulos e áreas de proteção em tools/megadrive/tp_header.py
 keep = {"SNES: v v ETIQUETA v v": (73.0, 97.0), "UM CARTUCHO POR VEZ": (46.0, 102.0),
         "SNES / MEGA DRIVE   v. 1.2   2026-11-04": (42.0, 106.0), "SNES   v1.0   2026-11-06": (42.0, 106.0),
-        "Si5351  pino 1 = VIN": (60.0, 77.5), "PIC EM SOQUETE": (84.0, 76.0)}
+        "Si5351  pino 1 = VIN": (65.0, 77.5), "PIC EM SOQUETE": (84.0, 76.0)}
 back = {"Adaptado por": 96, "Baseado no": 99, "Projeto original": 102}
 for d in list(b.GetDrawings()):
     if d.GetClass() != "PCB_TEXT": continue

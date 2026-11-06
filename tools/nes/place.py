@@ -26,10 +26,10 @@ mv("NES1", 55.0, 84.3)
 mv("MH1", 19, 55); mv("MH2", 120, 55); mv("MH3", 19, 114); mv("MH4", 120, 114)
 mv("C1", 26, 61); mv("R1", 24, 69, 0); mv("D1", 42, 69, 0)
 mv("C3", 21.0, 96.5)
-mv("U1", 48, 69, 90)
+mv("U1", 53, 69, 90)
 keep = {"NES: v v ETIQUETA v v": (55.0, 94.5), "UM CARTUCHO POR VEZ": (60.0, 99.0),
         "SNES / NES / FAMICOM / MEGA DRIVE   v1.0   2026-11-02": (52.0, 104.5),
-        "Si5351  pino 1 = VIN": (66.0, 65.5),
+        "Si5351  pino 1 = VIN": (71.0, 65.5),
         "Projeto original: github.com/sanni/cartreader": (52.0, 73.0),
         "Adaptado por: github.com/legendaryredfox/oscr_minimal": (52.0, 75.0),
         "Baseado no Open Source Cartridge Reader de sanni — CC BY 4.0": (52.0, 77.0)}
@@ -40,5 +40,5 @@ for d in list(b.GetDrawings()):
         if t.startswith("SNES /"): d.SetText("NES   v1.0   2026-11-06")
         d.SetPosition(V(*keep[t]))
     else: b.RemoveNative(d)
-b.FindFootprintByReference("U1").Reference().SetPosition(V(51.8, 66.6))
+b.FindFootprintByReference("U1").Reference().SetPosition(V(56.8, 66.6))
 b.Save(path); print("ok")

@@ -99,6 +99,7 @@
 - **D98** Placa `boards/famicom/`: só Famicom, sem Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 - **D99** Pontos de teste a 2,54 mm nas placas `megadrive`, `snes` e `16_bits` v. 1.2 (pedido do usuário, 2026-11-06)
 - **D100** Placa `boards/famicom_nes/`: Famicom e NES na mesma placa (pedido do usuário, 2026-11-06)
+- **D101** Soquete do Si5351 5 mm mais à direita nas placas `nes` e `snes` (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -813,3 +814,8 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Roteamento.** Freerouting (2 tentativas, 138 s); o pino 16 do Famicom (GND) ficou numa ilha na primeira versão e foi ligado com uma via de `frag_vias.py`; na versão final não houve ilha.
 - **Verificação.** ERC 0; DRC sem erros nem ligações abertas, 4 avisos de biblioteca; `check_netlist --board famicom_nes` (flag `nopic`, caps C3 e C4): 39 nets, 176 ligações, 16 pinos de slot sem ligação; 5V em 0,8 mm. Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.
 - **Ferramentas.** `tools/famicom_nes/place.py`; o resto reaproveitado de D95 a D99.
+
+### D101 — Soquete do Si5351 5 mm mais à direita nas placas `nes` e `snes` (pedido do usuário, 2026-11-06)
+- **Pedido.** "Na placa do NES e do SNES só move o pin header um pouco para a direita." Na `nes` o soquete estava a 3,5 mm do LED, com o módulo encostando nele.
+- **Mudança.** U1 de (48; 69) para (53; 69) na `nes` e de (50; 74) para (55; 74) na `snes`, mesma orientação; rótulo `Si5351` e campo de referência acompanham. As duas placas foram roteadas de novo (Freerouting, GND como trilha); na `snes` o pad U1.2 (GND) ganhou conexão sólida para resolver 1 `starved_thermal`.
+- **Verificação.** DRC 0 erros e 0 ligações abertas nas duas (só avisos de biblioteca); ERC 0; `check_netlist` OK (`nes`: 39 nets, 116 ligações; `snes`: 64 nets, 157 ligações). Novos SHA-256 nos PEDIDOs, prévias refeitas. `16_bits` não foi alterada (o pedido citou só `nes` e `snes`).

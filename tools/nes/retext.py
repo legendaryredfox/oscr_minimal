@@ -11,5 +11,5 @@ for d in b.GetDrawings():
     if d.GetClass() == "PCB_TEXT" and (d.GetText() in keep or d.GetText().startswith("NES   v1.0")):
         k = d.GetText() if d.GetText() in keep else "SNES / NES / FAMICOM / MEGA DRIVE   v1.0   2026-11-02"
         d.SetPosition(pcbnew.VECTOR2I(mm(keep[k][0]), mm(keep[k][1])))
-b.FindFootprintByReference("U1").Reference().SetPosition(pcbnew.VECTOR2I(mm(51.8), mm(66.6)))
+b.FindFootprintByReference("U1").Reference().SetPosition(pcbnew.VECTOR2I(mm(56.8), mm(66.6)))
 pcbnew.SaveBoard(sys.argv[1], b)
