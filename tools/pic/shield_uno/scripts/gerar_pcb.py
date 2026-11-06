@@ -62,6 +62,7 @@ POS = {
     "A1": None,
     "J1": (19.5, 9.0, 0),
     "D1": (20.0, 21.0, 0),
+    "JP1": (34.5, 24.0, 0),
     "R1": (20.0, 27.0, 0),
     "R4": (20.0, 33.0, 0),
     "D2": (34.5, 33.0, 0),
@@ -150,6 +151,8 @@ def main():
             xu, yu, rot = POS[ref]
             fp.SetPosition(vec(xu, yu))
             fp.SetOrientationDegrees(rot)
+        if ref == "D1":
+            fp.SetDNP(True)
         b.Add(fp)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(mm(1.0), mm(1.0)))
         fp.Reference().SetTextThickness(mm(0.15))
@@ -178,6 +181,8 @@ def main():
     texto(b, "+13V", 18.6, 16.5, 0.9)
     texto(b, "GND", 23.8, 16.5, 0.9)
     texto(b, "BC547 (CBE)", 26.2, 18.4, 0.8)
+    texto(b, "JP1: sem D1", 36.6, 24.4, 0.8)
+    texto(b, "D1 opcional", 36.6, 22.8, 0.8)
     texto(b, "LED 13V", 30.4, 30.4, 0.8)
     texto(b, "ATIVO", 56.0, 14.4, 0.8)
     texto(b, "ICSP", 59.2, 20.6, 0.8)

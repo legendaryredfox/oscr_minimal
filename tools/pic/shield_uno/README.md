@@ -14,6 +14,25 @@ de comodidade: **A.** PCB do shield (este projeto KiCad), **B.** protoboard, **C
 > `scripts/perfboard.py`). A pinagem do Uno é a do footprint do Mega no projeto, cotas oficiais do Arduino; não foi
 > medida num Uno real. O limite máximo de Vpp do 12F629 (DS41191) **não foi conferido**: meça o MCLR antes de pôr o chip.
 
+## Sem diodo por padrão (D1 é DNP)
+
+**O padrão é montar SEM o diodo D1.** O circuito original do ardpicprog não tem diodo, e assim não se perdem 0,2 a
+0,3 V de Vpp. Em cada montagem:
+
+| Montagem | Padrão (sem D1) | Se quiser o diodo |
+|---|---|---|
+| **A. PCB** | D1 **não montado** (DNP) e **JP1 fechado**: jumper (shunt), fio ou gota de solda entre os dois pinos de JP1 | montar D1 (faixa = K para o lado do circuito) e **abrir** JP1 |
+| **B. Protoboard** | o positivo da fonte vai direto ao trilho "+" | ver "Com o diodo" na seção B |
+| **C. Placa perfurada** | fio de ponte de E2 a I2, no lugar do diodo | tirar a ponte e soldar o diodo em E2 (anodo) e I2 (catodo) |
+
+**Risco de ficar sem ele:** não há proteção contra a fonte ligada ao contrário (plugue com polaridade trocada,
+adaptador de centro negativo). Os caminhos passam por R1 (10 kΩ), R2 (4,7 kΩ) e R4 (1 kΩ), então as correntes ficam
+em miliampères e nada deve pegar fogo, mas pode queimar o LED vermelho (tensão reversa de ~5 V), o transistor ou o
+PIC (o MCLR conduz ~1 mA pelo diodo interno do pino; não conferi o limite no datasheet). **Antes de ligar, confira a
+polaridade da fonte com o multímetro.** O bloqueio de D1 é a única proteção que a placa tem para isso; se a polaridade
+do seu plugue é conhecida e marcada, dispensá-lo é razoável. Se o Vpp medido no MCLR ficar **perto do limite baixo**
+(não conferi o DS41191), o certo é ficar sem o diodo.
+
 ![Frente da placa](docs/placa-frente.png)
 
 Esquemático: [`docs/esquematico.pdf`](docs/esquematico.pdf).
@@ -21,9 +40,9 @@ Esquemático: [`docs/esquematico.pdf`](docs/esquematico.pdf).
 ## Como funciona
 
 ```
-13 V (+) ──► D1 1N5819 ──┬── R1 10 kΩ ──┬── PIC pino 4 (MCLR)
-                         │              └── coletor do Q1 (BC547)
-                         └── R4 1 kΩ ── LED vermelho ── GND      (acende = há 13 V)
+13 V (+) ──► [D1 1N5819: DNP, ponte] ─┬── R1 10 kΩ ──┬── PIC pino 4 (MCLR)
+                                        │              └── coletor do Q1 (BC547)
+                                        └── R4 1 kΩ ── LED vermelho ── GND  (acende = há 13 V)
 Uno A1 ── R2 4,7 kΩ ── base do Q1        emissor do Q1 ── GND
 Uno D2 ── PIC pino 1 (Vdd)               100 nF entre o pino 1 e o GND, junto ao chip
 Uno D4 ── PIC pino 6 (clock)
@@ -38,8 +57,8 @@ PIC pinos 2, 3 e 5: sem ligação
   do ardpicprog (`PIN_MCLR A1`, `PIN_VDD 2`, `PIN_CLOCK 4`, `PIN_DATA 7`, `PIN_ACTIVITY A5`), então o sketch roda sem
   alteração.
 - Os 13 V nunca vão a um pino do Uno. O PIC é alimentado pelo pino D2 do Uno (consumo de poucos mA).
-- **D1 é um acréscimo** deste projeto (o circuito original não tem): protege contra fonte ligada ao contrário e
-  derruba uns 0,3 V. Se a sua fonte já está no limite baixo de Vpp, troque D1 por um fio.
+- **D1 (1N5819) é opcional e vem desmontado (DNP)**; veja "Sem diodo por padrão" acima. Ele é um acréscimo deste
+  projeto, o circuito original não tem. Na PCB, JP1 fica em paralelo com ele: fechado = sem diodo.
 - A placa também tem um cabeçalho ICSP (J2, ordem do PICkit: 1 MCLR, 2 Vdd, 3 GND, 4 dados, 5 clock) e três pontos de
   teste (MCLR, VDD, GND) para o multímetro.
 
@@ -52,7 +71,8 @@ PIC pinos 2, 3 e 5: sem ligação
 | 1 | PIC12F629-I/P (DIP-8) virgem ou a regravar | U2 | em soquete DIP-8 |
 | 1 | Soquete DIP-8 | U2 | de contato torneado, para trocar de chip muitas vezes |
 | 1 | Transistor NPN pequeno: BC547 ou BC548 (ou 2N3904, 2N2222) | Q1 | pinagem abaixo |
-| 1 | Diodo 1N5819 | D1 | |
+| 0 (1 se quiser) | Diodo 1N5819 | D1 | **opcional, DNP**: só se for usar a proteção contra fonte invertida |
+| 1 | Barra de 2 pinos 2,54 mm + jumper (shunt) | JP1 | só na PCB; fechado = sem D1. Pode ser um fio ou solda |
 | 1 | Resistor 10 kΩ | R1 | 1/4 W |
 | 1 | Resistor 4,7 kΩ | R2 | |
 | 1 | Resistor 220 Ω | R3 | |
@@ -74,7 +94,8 @@ lado oposto ao do desenho) e assim as pernas caem certas. Na dúvida, modo diodo
 
 1. **Meça a fonte de 13 V com o multímetro, sem carga.** Adaptadores "13 V" sem regulagem passam de 15 V em vazio.
    Alvo: cerca de 13 V no MCLR com o chip fora. Confira o Vpp máximo do 12F629 no DS41191 antes de pôr o chip.
-2. Confirme a polaridade do plugue (+ no centro ou na lateral).
+2. **Confirme a polaridade da fonte com o multímetro** (+ no centro ou na lateral). Sem o diodo D1 (o padrão) nada
+   protege contra polaridade invertida.
 3. Sem o PIC no soquete, ligue só a fonte: o LED vermelho acende. Meça o **MCLR** (TP1 na PCB; pino 4 do soquete):
    com o Uno em reset (A1 alto) fica perto de 0 V; com A1 solto, ~13 V.
 4. Só então ponha o PIC (entalhe/pino 1 conforme o desenho) com tudo **desligado**; ligue a fonte por último e
@@ -89,7 +110,8 @@ do Uno) fica livre de propósito.
 - Projeto: `hardware/shield_uno.kicad_pro` (KiCad 9 ou 10). Fabricação: `fab/shield_uno-v1.0-jlcpcb.zip` (gerbers e
   furos, 2 camadas, 1,6 mm, HASL) e `fab/bom.csv`. **Nada foi encomendado.**
 - Montagem, do mais baixo ao mais alto:
-  1. resistores (R1 a R4), diodo D1 (faixa para o lado do K), capacitor C1;
+  1. resistores (R1 a R4) e capacitor C1; **D1 não se monta** (DNP). Feche o **JP1** com um jumper, fio ou solda
+     (se quiser o diodo: monte D1, com a faixa para o lado do K, e deixe o JP1 aberto);
   2. soquete DIP-8 (entalhe para o lado do pino 1, desenhado na serigrafia);
   3. LEDs (perna curta = K, lado do quadrado) e transistor;
   4. cabeçalho ICSP, pontos de teste e borne;
@@ -102,7 +124,7 @@ do Uno) fica livre de propósito.
 ## B. Protoboard (830 pontos)
 
 Os 13 V e o GND vêm dos trilhos; o Uno liga por 6 fios. Convenção: colunas **a–e** são uma tira por linha e **f–j** a
-outra (o vão central separa as duas metades). O trilho **"+" é o de 13 V já depois do diodo D1** e o **"−" é o GND**.
+outra (o vão central separa as duas metades). O trilho **"+" é o de 13 V (a fonte entra direto: D1 é DNP)** e o **"−" é o GND**.
 
 ```
                  vão central
@@ -128,8 +150,8 @@ Passo a passo (sempre com tudo desligado):
 6. **MCLR.** A tira da linha 13 (a13 coletor, e13 pino 4) é o nó MCLR. **R1 10 kΩ** de c13 até c17; jumper d17 → trilho
    "+".
 7. **Base.** **R2 4,7 kΩ** de b14 até b18; jumper a18 → **Uno A1**.
-8. **Diodo e entrada de 13 V.** **D1** com o anodo em a25 e o catodo (faixa) em a29; jumper b25 → **positivo da
-   fonte**; jumper b29 → trilho "+". (A linha 25 é a entrada da fonte; o trilho "+" fica com 13 V menos a queda do diodo.)
+8. **Entrada de 13 V (sem diodo, o padrão).** Jumper do **positivo da fonte** direto ao trilho "+". **Confira a polaridade
+   antes.** (Com D1, veja "Com o diodo" abaixo.)
 9. **LED de 13 V.** **R4 1 kΩ** de a17 até a21; **LED vermelho** com o anodo (perna longa) em b21 e o catodo (curta) em b22;
    jumper c22 → trilho "−".
 10. **LED de atividade.** **R3 220 Ω** de g18 até g22; **LED amarelo** com o anodo em h22 e o catodo em h23; jumper i23 →
@@ -150,9 +172,13 @@ Passo a passo (sempre com tudo desligado):
 | Emissor | b15 | trilho "−" |
 | Retorno do LED vermelho | c22 | trilho "−" |
 | Retorno do LED amarelo | i23 | trilho "−" |
-| 13 V depois do diodo | d17 e b29 | trilho "+" |
-| Positivo da fonte | b25 | |
+| 13 V (a fonte entra direto) | d17 | trilho "+" |
+| Positivo da fonte | trilho "+" | |
 | Negativo da fonte | trilho "−" | |
+
+**Com o diodo (opcional, D1).** Tire o fio do positivo da fonte ao trilho "+". Ponha o **D1** com o anodo em a25 e o
+catodo (faixa) em a29; jumper do **positivo da fonte** a b25 e jumper b29 → trilho "+". Assim o trilho "+" fica com 13 V
+menos a queda do diodo.
 
 `scripts/protoboard.py` confere essa tabela contra as ligações do circuito. Protoboard tem contato fraco e capacitância
 alta; para gravar um PIC serve, mas se der erro de verificação, mexa nos jumpers antes de suspeitar do chip.
@@ -172,15 +198,18 @@ ser fio nu. Os furos têm nome: letra da linha (A a N) e número da coluna (1 a 
 Ordem de montagem:
 
 1. Soldar o **soquete DIP-8** (colunas 13 e 16, linhas D a G; entalhe para cima = pino 1 em D13), os resistores, o
-   diodo, o capacitor, os LEDs, o transistor, o borne J1 e a barra J3 (A5 a A10, de cima: GND, D2, D4, D7, A1, A5),
+   capacitor, os LEDs, o transistor, o borne J1 e a barra J3 (A5 a A10, de cima: GND, D2, D4, D7, A1, A5),
    nos furos da tabela [`docs/perfboard.md`](docs/perfboard.md).
 2. Passar os fios **na ordem da tabela de fios**, um a um, soldando as pontas e riscando na tabela. Os fios podem
    passar por cima de furos ocupados desde que sejam isolados; o trilho de GND (N5 a N21) é um fio nu soldado nos pontos
    marcados.
 3. Conferir com o multímetro, tudo desligado: GND (J3 GND) com o pino 8 do soquete, o emissor do transistor e os dois
-   catodos; 13 V (depois do diodo) **sem** continuidade com o GND.
+   catodos; 13 V **sem** continuidade com o GND.
 4. Ligar o cabo Dupont: J3 GND, D2, D4, D7, A1, A5 aos mesmos pinos do Uno (nesta ordem na barra, da esquerda para a
    direita). Siga "Antes de ligar" e "Gravar".
+
+**D1 não é montado (DNP):** no lugar dele há um fio de ponte de **E2 a I2** (coluna 2). Para usar o diodo, tire esse fio
+e solde o D1 com o anodo em E2 e o catodo (faixa) em I2; o fio de C2 a E2 continua.
 
 Os pontos de teste e o ICSP ficam de fora nesta versão (o MCLR se mede no pino 4 do soquete).
 
@@ -200,7 +229,7 @@ python3 -I tools/pic/comparar_hex.py firmware/cic_rp2040/third_party/snescic-loc
 
 ## Problemas
 
-- **LED vermelho apagado:** fonte desligada, invertida (D1 bloqueia), ou R4/LED ao contrário.
+- **LED vermelho apagado:** fonte desligada, ou R4/LED ao contrário. Se a fonte puder estar invertida e não há D1, **desligue já** e meça a polaridade.
 - **Não detecta o chip:** confira o pino 1 do PIC, o GND comum entre fonte e Uno e se há ~13 V no pino 4 com A1 solto.
 - **13 V não chegam ao MCLR:** transistor com a pinagem errada (veja "Pinagem do transistor") ou R1 solto.
 - **Erro de verificação:** grave de novo; se repetir, queda da fonte sob carga ou mau contato (na protoboard).
@@ -211,7 +240,7 @@ python3 -I tools/pic/comparar_hex.py firmware/cic_rp2040/third_party/snescic-loc
 | Caminho | O que é |
 |---|---|
 | `hardware/` | projeto KiCad (`shield_uno.kicad_pro/_sch/_pcb`), símbolo e footprint do Uno (`uno_shield.*`) |
-| `fab/` | gerbers, furos, `bom.csv` e o zip da JLCPCB |
+| `fab/` | gerbers, furos, `bom.csv` (sem o D1, que é DNP) e o zip da JLCPCB |
 | `docs/` | esquemático em PDF, imagem da placa, desenho e tabelas da placa perfurada |
 | `scripts/gerar_sch.py` | gera o esquemático e o símbolo do Uno |
 | `scripts/gerar_pcb.py`, `scripts/rotear.py` | geram a PCB (footprints, nets, contorno) e roteiam com o Freerouting, depois zonas de GND |

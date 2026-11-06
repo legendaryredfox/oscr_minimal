@@ -349,8 +349,6 @@
 <rect x="410" y="315.0" width="100" height="10" rx="3" fill="#e9d8a6" stroke="#6b5b2a"/>
 <rect x="595.0" y="102" width="10" height="100" rx="3" fill="#e9d8a6" stroke="#6b5b2a"/>
 <rect x="186" y="315.0" width="100" height="10" rx="3" fill="#e9d8a6" stroke="#6b5b2a"/>
-<rect x="62.0" y="158" width="12" height="100" rx="3" fill="#e9d8a6" stroke="#6b5b2a"/>
-<rect x="62" y="242" width="12" height="4" fill="#222"/>
 <rect x="313.0" y="130" width="14" height="44" rx="3" fill="#f4a261" stroke="#6b5b2a"/>
 <circle cx="362.0" cy="320.0" r="15" fill="#e63946" fill-opacity="0.55" stroke="#333"/>
 <text x="376" y="324" font-size="9" text-anchor="middle" fill="#000">K</text>
@@ -377,6 +375,7 @@
 <polyline points="376,208 376,264" fill="none" stroke="#e76f51" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 <polyline points="292,264 376,264" fill="none" stroke="#e76f51" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 <polyline points="68,96 68,152" fill="none" stroke="#c2410c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+<polyline points="68,152 68,264" fill="none" stroke="#c2410c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 <polyline points="68,264 180,264 180,320" fill="none" stroke="#c2410c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 <polyline points="292,320 348,320" fill="none" stroke="#c2410c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 <polyline points="292,40 600,40 600,96" fill="none" stroke="#ca8a04" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
@@ -389,8 +388,6 @@
 <circle cx="292" cy="40" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
 <circle cx="68" cy="96" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
 <circle cx="124" cy="96" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
-<circle cx="68" cy="152" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
-<circle cx="68" cy="264" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
 <circle cx="376" cy="124" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
 <circle cx="376" cy="152" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
 <circle cx="376" cy="180" r="5" fill="#c0c0c0" stroke="#222" stroke-width="1.2"/>
@@ -425,7 +422,8 @@
 <text x="292" y="54" font-size="8" font-weight="bold" text-anchor="middle" fill="#fff">A5</text>
 <text x="68" y="120" font-size="9" font-weight="bold" text-anchor="middle" fill="#111">J1 +</text>
 <text x="124" y="120" font-size="9" font-weight="bold" text-anchor="middle" fill="#111">J1 GND</text>
-<text x="54" y="208" font-size="11" font-weight="bold" text-anchor="end" fill="#111">D1</text>
+<text x="80" y="208" font-size="9" font-weight="bold" text-anchor="start" fill="#c2410c">ponte no lugar do D1</text>
+<text x="80" y="220" font-size="9" font-weight="bold" text-anchor="start" fill="#c2410c">(D1 opcional: E2 a I2)</text>
 <text x="418.0" y="238" font-size="11" font-weight="bold" text-anchor="middle" fill="#111">U2 DIP-8</text>
 <text x="362" y="128" font-size="9" font-weight="bold" text-anchor="middle" fill="#333">1</text>
 <text x="362" y="156" font-size="9" font-weight="bold" text-anchor="middle" fill="#333">2</text>
@@ -462,11 +460,9 @@
 <line x1="610" y1="500" x2="636" y2="500" stroke="#c2410c" stroke-width="4"/>
 <text x="642" y="504" font-size="11" fill="#111">V13</text>
 <line x1="40" y1="520" x2="66" y2="520" stroke="#c2410c" stroke-width="4"/>
-<text x="72" y="524" font-size="11" fill="#111">V13_ENT</text>
-<line x1="230" y1="520" x2="256" y2="520" stroke="#c2410c" stroke-width="4"/>
-<text x="262" y="524" font-size="11" fill="#111">LED13_A</text>
+<text x="72" y="524" font-size="11" fill="#111">LED13_A</text>
+<line x1="230" y1="520" x2="256" y2="520" stroke="#ca8a04" stroke-width="4"/>
+<text x="262" y="524" font-size="11" fill="#111">LED_ATIVO</text>
 <line x1="420" y1="520" x2="446" y2="520" stroke="#ca8a04" stroke-width="4"/>
-<text x="452" y="524" font-size="11" fill="#111">LED_ATIVO</text>
-<line x1="610" y1="520" x2="636" y2="520" stroke="#ca8a04" stroke-width="4"/>
-<text x="642" y="524" font-size="11" fill="#111">LEDA_A</text>
+<text x="452" y="524" font-size="11" fill="#111">LEDA_A</text>
 </svg>

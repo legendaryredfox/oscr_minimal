@@ -8,7 +8,6 @@ Furo = letra da linha + numero da coluna (ver o desenho `perfboard.png`). Vale p
 |---|---|---|
 | J3 | Barra de 6 pinos macho (vai ao Uno por cabos Dupont) | GND: A5, D2: A6, D4: A7, D7: A8, A1: A9, A5: A10 |
 | J1 | Borne de parafuso 5,08 mm (entrada de 13 V) | 1: C2, 2: C4 |
-| D1 | 1N5819 (faixa = catodo = pino K) | A: E2, K: I2 |
 | U2 | Soquete DIP-8 (entalhe para cima = pino 1 em cima a esquerda) | 1: D13, 2: E13, 3: F13, 4: G13, 8: D16, 7: E16, 6: F16, 5: G16 |
 | C1 | 100 nF | 1: D11, 2: F11 |
 | R1 | 10 k | 1: I6, 2: I10 |
@@ -38,7 +37,8 @@ Furo = letra da linha + numero da coluna (ver o desenho `perfboard.png`). Vale p
 | BASE | I14 > K14 |
 | MCLR | G13 > I13 |
 | MCLR | I10 > I13 |
-| V13_ENT | C2 > E2 |
+| V13 | C2 > E2 |
+| V13 | E2 > I2 |
 | V13 | I2 > I6 > K6 |
 | LED13_A | K10 > K12 |
 | LED_ATIVO | A10 > A21 > C21 |

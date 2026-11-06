@@ -147,7 +147,7 @@ def prop(k, v, x, y, oculto=False, just=""):
             + f'\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n{just}\t\t\t)\n\t\t)\n')
 
 
-def comp(chave, ref, valor, fp, x, y, rot, ligacoes, descr="", nao_usados=(), energia=False, sem_bom=False, off=None):
+def comp(chave, ref, valor, fp, x, y, rot, ligacoes, descr="", nao_usados=(), energia=False, sem_bom=False, off=None, dnp=False):
     """ligacoes: {numero do pino: nome da net}. Pinos fora de ligacoes e de nao_usados dao erro."""
     x, y = round(x / 2.54) * 2.54, round(y / 2.54) * 2.54
     for num, (px, py, a, nome, tipo) in PINOS[chave].items():
@@ -169,7 +169,7 @@ def comp(chave, ref, valor, fp, x, y, rot, ligacoes, descr="", nao_usados=(), en
     INST.append(
         f'\t(symbol\n\t\t(lib_id "{chave}")\n\t\t(at {f(x)} {f(y)} {rot})\n\t\t(unit 1)\n\t\t(body_style 1)\n'
         f'\t\t(exclude_from_sim no)\n\t\t(in_bom {"no" if energia or sem_bom else "yes"})\n\t\t(on_board {"no" if energia else "yes"})\n'
-        f'\t\t(in_pos_files {"no" if energia else "yes"})\n\t\t(dnp no)\n\t\t(uuid "{uid()}")\n'
+        f'\t\t(in_pos_files {"no" if energia else "yes"})\n\t\t(dnp {"yes" if dnp else "no"})\n\t\t(uuid "{uid()}")\n'
         + prop("Reference", ref, x + ox, y + oy, just="\t\t\t\t(justify left)\n")
         + prop("Value", valor, x + ox, y + oy + voff, just="\t\t\t\t(justify left)\n")
         + prop("Footprint", fp, x, y, True)
@@ -195,6 +195,7 @@ def main():
     R, C, LED, D, Q = lib("Device", "R"), lib("Device", "C"), lib("Device", "LED"), lib("Device", "D_Schottky"), lib("Transistor_BJT", "Q_NPN_CBE")
     PIC, TB, CONN, TP, FLG, = (lib("MCU_Microchip_PIC12", "PIC12F629-xP"), lib("Connector", "Screw_Terminal_01x02"),
                                lib("Connector", "Conn_01x06_Pin"), lib("Connector", "TestPoint"), lib("power", "PWR_FLAG"))
+    CONN2 = lib("Connector_Generic", "Conn_01x02")
     for k in list(LIBS):
         if k != "uno_shield:Uno_R3_Shield":
             PINOS[k] = pinos(LIBS[k])
@@ -215,9 +216,13 @@ def main():
     texto("1) ENTRADA DE 13 V", 160, 30, 1.5, True)
     comp(TB, "J1", "13V", "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",
          190, 45, 0, {"1": "VIN13", "2": "GND"}, "Entrada da fonte de 13 V (1 = +, 2 = GND)")
-    comp(D, "D1", "1N5819", "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal", 245, 45, 180, {"1": "V13", "2": "VIN13"},
-         "Protecao contra polaridade invertida (queda de uns 0,3 V)")
-    texto("D1 protege contra fonte invertida (queda de ~0,3 V). Medir o Vpp no TP1.", 160, 62)
+    comp(D, "D1", "1N5819 (DNP)", "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal", 245, 45, 180, {"1": "V13", "2": "VIN13"},
+         "Opcional: protecao contra polaridade invertida", dnp=True)
+    comp(CONN2, "JP1", "Ponte (padrao: fechada)", "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical", 300, 45, 0,
+         {"1": "VIN13", "2": "V13"}, "Liga a entrada de 13 V ao resto sem o diodo D1")
+    texto("D1 NAO e montado (DNP): a placa sai sem diodo. JP1 fechado (fio, jumper ou solda) liga a entrada ao circuito.", 160, 58)
+    texto("Para proteger contra fonte invertida: montar D1 (faixa = K para o lado do circuito) e ABRIR o JP1.", 160, 62)
+    texto("Sem D1 a fonte tem que estar na polaridade certa. Medir o Vpp no TP1.", 160, 66)
 
     # ---- MCLR
     texto("2) MCLR: 13 V (transistor cortado) ou GND (transistor ligado)", 160, 80, 1.5, True)

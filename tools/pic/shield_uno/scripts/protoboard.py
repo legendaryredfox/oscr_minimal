@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: CC-BY-SA-2.5
 """Verifica a montagem na protoboard descrita no README (furos por tira: a-e e f-j de cada linha; trilhos + e -).
-O "+" e o trilho de 13 V (depois do diodo D1); o "-" e o GND. Uso: python3 protoboard.py -> codigo 1 se algo diverge."""
+O "+" e o trilho de 13 V (a fonte entra direto: D1 e DNP); o "-" e o GND. Uso: python3 protoboard.py -> codigo 1 se algo diverge."""
 import sys
 
 def tira(h):
@@ -22,16 +22,15 @@ PECAS = {
     "D2": {"A": "b21", "K": "b22"},
     "R3": {"1": "g18", "2": "g22"},
     "D3": {"A": "h22", "K": "h23"},
-    "D1": {"A": "a25", "K": "a29"},
 }
 JUMPERS = [("a10", "UNO.D2"), ("j11", "UNO.D7"), ("j12", "UNO.D4"), ("j10", "rail-"), ("b15", "rail-"),
            ("a18", "UNO.A1"), ("d17", "rail+"), ("c22", "rail-"), ("j18", "UNO.A5"), ("i23", "rail-"),
-           ("b25", "FONTE.+"), ("b29", "rail+"), ("UNO.GND", "rail-"), ("FONTE.-", "rail-")]
+           ("FONTE.+", "rail+"), ("UNO.GND", "rail-"), ("FONTE.-", "rail-")]
 ESPERADO = [
     {"UNO.D2", "U2.1", "C1.1"}, {"UNO.D4", "U2.6"}, {"UNO.D7", "U2.7"},
     {"U2.4", "Q1.C", "R1.1"}, {"UNO.A1", "R2.1"}, {"R2.2", "Q1.B"},
     {"UNO.GND", "FONTE.-", "U2.8", "Q1.E", "C1.2", "D2.K", "D3.K"},
-    {"R1.2", "R4.1", "D1.K"}, {"FONTE.+", "D1.A"}, {"R4.2", "D2.A"}, {"UNO.A5", "R3.1"}, {"R3.2", "D3.A"},
+    {"R1.2", "R4.1", "FONTE.+"}, {"R4.2", "D2.A"}, {"UNO.A5", "R3.1"}, {"R3.2", "D3.A"},
 ]
 
 def main():

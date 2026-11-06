@@ -101,6 +101,7 @@
 - **D100** Placa `boards/famicom_nes/`: Famicom e NES na mesma placa (pedido do usuário, 2026-11-06)
 - **D101** Soquete do Si5351 5 mm mais à direita nas placas `nes` e `snes` (pedido do usuário, 2026-11-06)
 - **D102** Shield de Arduino Uno para gravar o PIC12F629, com guias de protoboard e placa perfurada (pedido do usuário, 2026-11-06)
+- **D103** Shield do Uno: diodo D1 vira DNP, com ponte JP1 (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -828,3 +829,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificação (só no PC).** ERC 0 mensagens; DRC com `--schematic-parity` 0 violações, 0 pontos soltos, 0 erros de footprint; `scripts/check_netlist.py` confere 12 grupos de ligação contra a tabela do ardpicprog; `scripts/protoboard.py` e `scripts/perfboard.py` conferem as montagens B e C (o `perfboard.py` foi testado com um fio removido, um curto e um fio desviado: os três foram pegos). **Nada foi montado nem gravado em PIC; nada foi encomendado.** O limite máximo de Vpp do DS41191 continua sem conferir.
 - **Licença.** O circuito vem do ardpicprog (CC BY-SA 2.5), então o shield também fica em CC BY-SA 2.5 (cabeçalhos SPDX e README da pasta). Isso difere do resto do repositório (GPL v3, CC BY 4.0 nas peças do OSCR).
 - **Observações de processo.** (1) O `ImportSpecctraSES` produziu 0 trilhas uma vez, com um `.ses` vazio de uma execução anterior encerrada; o `rotear.py` agora apaga o `.ses` antes e tenta de novo. (2) O `rotear.py` recusa uma placa que já tem trilhas (o `Remove` do `pcbnew` falha); a receita é `gerar_pcb.py` e depois `rotear.py`. (3) A biblioteca de símbolos do KiCad 10.0.8 só abre com `(version 20251024)`; o `.kicad_sch` aceita `20260101`.
+
+### D103 — Shield do Uno: diodo D1 vira DNP, com ponte JP1 (pedido do usuário, 2026-11-06)
+- **Pedido.** "Pode ser feito sem o diodo? Qual o risco?" e depois "pode usar um DNP; retira ele na protoboard e na placa perfurada" e "deixa isso explícito no README". O circuito original do ardpicprog não tem diodo.
+- **Mudança.** `tools/pic/shield_uno/`: D1 (1N5819) marcado DNP no esquemático e na PCB, e um JP1 (2 pinos, 2,54 mm) em paralelo com ele: **fechado = sem diodo** (jumper, fio ou solda), padrão; para usar o diodo, monta-se D1 e abre-se o JP1. Na protoboard o positivo da fonte vai direto ao trilho "+" (D1 só em "Com o diodo"); na placa perfurada há uma ponte de E2 a I2 no lugar do diodo. O BOM sai com `--exclude-dnp` (sem o D1). O README ganhou a seção "Sem diodo por padrão" com a tabela por montagem e o risco.
+- **Risco de ficar sem ele (explícito no README).** Sem proteção contra fonte invertida: as correntes ficam em miliampères por R1, R2 e R4, mas podem queimar o LED vermelho (reverso de ~5 V), o transistor ou o PIC (o limite de corrente do diodo interno do MCLR não foi conferido). Ganha-se 0,2 a 0,3 V de Vpp.
+- **Verificação.** PCB refeita e roteada: DRC com paridade 0 violações, 0 pontos soltos; ERC 0; `check_netlist.py` 12 grupos ok (D1 e JP1 nos grupos de 13 V); `perfboard.py` e `protoboard.py` ok (11 nets, sem D1). Ainda nada montado nem gravado.
