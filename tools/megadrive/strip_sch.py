@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tira do esquemático da 16_bits o que a placa só-Mega-Drive não usa.
 Remove os símbolos (REMOVE), os rótulos e no_connects que estavam nos pinos deles
-e as definições de símbolo sem uso. Uso: strip_sch.py entrada.kicad_sch saida.kicad_sch"""
+e as definições de símbolo sem uso. Uso: strip_sch.py entrada.kicad_sch saida.kicad_sch [REF,REF,...]  (padrão: o que a placa megadrive não usa)"""
 import math, re, sys
 
-REMOVE = {"SNES1", "U1", "U2", "R2", "C2", "C4"}
+REMOVE = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else {"SNES1", "U1", "U2", "R2", "C2", "C4"}
 
 def parse(s):
     i, n = 0, len(s)

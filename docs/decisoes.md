@@ -91,6 +91,7 @@
 - **D90** Gravação do PIC com PICkit 2 e pk2cmd (não redistribuído por licença); 74HCT125N conferido (pedido do usuário, 2026-11-06)
 - **D91** Plano B de gravação do PIC: Arduino Uno com ardpicprog (pedido do usuário, 2026-11-06)
 - **D92** Placa `boards/megadrive/`: só Mega Drive, slot dentro da área do Mega (pedido do usuário, 2026-11-06)
+- **D93** Placa `boards/snes/`: só SNES, com PIC12F629 enquanto o RP2040 não é validado (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -748,4 +749,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Escolhas.** Sem SNES, Si5351, PIC e R2 (o `MegaDrive.cpp` não usa clock nem CIC; `D20`, `D21`, `D40`, `D41` ficam sem ligação). Mantidos `/CART` em D50, os seis pontos de teste, o LED em D38, C1 e C3, C5, C6. Pinagem do slot idêntica à da `16_bits` (regra de ouro, seção 3 do CLAUDE.md); `docs/pinmap.md` é recorte dela.
 - **Layout.** O slot MD foi para o centro, entre as fileiras de pinos do Mega (onde ficava o SNES); contorno de 107 × 65 mm no lugar de 108 × 86. Trilhas refeitas do zero (Freerouting pelo MCP).
 - **Ferramentas.** `tools/megadrive/strip_sch.py` e `place.py`; `tools/check_netlist.py --board megadrive`. O MCP não foi usado para apagar nada: a remoção das peças foi feita por script sobre a cópia da `16_bits`, que não foi alterada.
+
+### D93 — Placa `boards/snes/`: só SNES, com PIC12F629 enquanto o RP2040 não é validado (pedido do usuário, 2026-11-06)
+- **Pedido.** Depois da `megadrive/`, uma placa só para o SNES. O usuário pediu para considerar o PIC enquanto o RP2040 (D89) não for validado. A primeira leitura do pedido foi "NES"; perguntei e o usuário confirmou SNES.
+- **Escolhas.** Mesma receita da D92: cópia da `16_bits`, sem MD1, C3, C5, C6 e TP3; Si5351, PIC, R2, C2 e C4 ficam. Pontos de teste relegendados (`/IRQ`, `/RD`, `/WR`). Slot SNES no mesmo lugar; contorno de 107 × 65 mm.
+- **Roteamento.** Rotear o GND como plano deixou GND2 e GND3 do Mega num grupo de cobre isolado (cercado pelo leque de trilhas). Roteando o GND junto com os sinais no Freerouting (zonas fora, depois recriadas por `tools/megadrive/add_zones.py`), o problema sumiu. Vale também para a `megadrive/`, onde o mesmo grupo existe e foi resolvido com vias; se a `megadrive/` for refeita, usar este método.
+- **Ferramentas.** `tools/snes/place.py`; `tools/megadrive/{strip_sch,fix_nets,stitch,frag_vias,add_zones}.py` genéricos; `tools/check_netlist.py --board snes`.
 

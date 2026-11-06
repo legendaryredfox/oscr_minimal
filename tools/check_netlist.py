@@ -34,6 +34,8 @@ BOARD_CFG = {
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # só SNES: C2 do slot e C4 do PIC; Si5351, PIC e R2 ficam; sem /CART
+    "snes": dict(caps=(2, 4), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
     "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
