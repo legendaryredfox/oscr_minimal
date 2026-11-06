@@ -1,5 +1,8 @@
 # Clones do upstream (referência, somente leitura). Ver README.md para recriar.
 vendor/oscr/
+# pk2cmd (Microchip, licença não livre): baixado por tools/pic/instalar_pk2cmd.sh, nunca commitar
+vendor/pk2cmd/
+tools/pic/bin/
 # Gerados pelo KiCad / MCP
 boards/*/hardware/.mcp-backups/
 boards/*/hardware/*_drc_violations.json

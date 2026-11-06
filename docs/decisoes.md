@@ -88,6 +88,7 @@
 - **D87** Placa `16_bits` v. 1.2: `/CART`, capacitores extras e pontos de teste (pedido do usuário, 2026-11-04)
 - **D88** Base de jogos incluída e detecção do chip de flash (pedidos do usuário, 2026-11-04; implementado no mesmo dia)
 - **D89** CIC do SNES: PIC12F629 sai na placa v. 1.3; RP2040-Zero roda o mesmo programa num interpretador (pedido do usuário, 2026-11-06)
+- **D90** Gravação do PIC com PICkit 2 e pk2cmd (não redistribuído por licença); 74HCT125N conferido (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -727,3 +728,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Bug pego na conferência:** a palavra do `wait` do PIO estava com a origem "GPIO absoluto" em vez de "pino"; corrigida com o `pioasm` (e023 2020 20a0 0041 8000; fonte em `tools/tick.pio`).
 - **Licença.** Os arquivos do sd2snes são GPL v2 *only*, incompatível com misturar no firmware GPL v3 do OSCR. `firmware/cic_rp2040/` fica separado e sob GPL v2; o RP2040 é outro chip e outro programa.
 - **Pendências** (ver `firmware/cic_rp2040/README.md`): medir `atrasos` no RP2040 a 1 e a 3,072 MHz, nível do CLK2 do Si5351 (esperado cerca de 3,3 V: LDO de 3,3 V do CJMCU-5351 e Si5351 limitado a 3,6 V; conferir na bancada), bancada na v1.0 com SA-1 real, só então esquemático e PCB da v1.3.
+
+### D90 — Gravação do PIC com PICkit 2 e pk2cmd (não redistribuído por licença); 74HCT125N conferido (pedido do usuário, 2026-11-06)
+- **Programador.** O usuário tem um kit PICkit 2 (clone) com adaptador ZIF. O 12F629 só grava com Vpp de cerca de 12 V no MCLR; o PICkit 2 original gera, e alguns clones não (a primeira coisa a testar é ler o ID do chip). Plano B: Uno com ardpicprog, ou PIC já gravado.
+- **Software: baixado, mas não commitado.** O `pk2cmd` (Microchip v1.20 com patches do v1.21 RC1, repositório `psmay/pk2cmd`, commit `3007bdc`) tem licença "não livre" ("não copie, faça branch ou fork"); o mantenedor mais ativo (`jaka-fi/pk2cmd`) tirou o device file e os binários em 2026-09-27 por reclamação de copyright. Por isso o repositório só traz `tools/pic/instalar_pk2cmd.sh` (baixa do upstream na máquina do usuário, commit fixo, compila fora do git), `tools/pic/60-pickit.rules` (USB sem root), `tools/pic/comparar_hex.py` (confere o `.hex` lido contra o gravado, código próprio testado) e `tools/pic/README.md`. Fontes e binário ficam em `vendor/pk2cmd/` e `tools/pic/bin/`, no `.gitignore`.
+- **Não validado:** o instalador nunca rodou (o ambiente não permitiu compilar código baixado); as opções do `pk2cmd` no guia são as do v1.20 e devem ser conferidas com `pk2cmd -?`. O `PK2DeviceFile.dat` baixado contém "PIC12F629".
+- **SN74HCT125N (anúncio do AliExpress de 10 peças, opção "SN74HCT125N").** Serve para o 74HCT125 do circuito da v1.3 e da bancada: datasheet TI SCLS069G conferido (pinagem DIP-14 com /OE ativo em baixo, VCC 4,5 a 5,5 V, VIH mín. 2 V, VOH mín. 3,84 V a 6 mA, tpd máx. 25 ns, ΔICC de até 2,9 mA por entrada em nível TTL). Atenção: o anúncio mistura outros integrados (HCT00, 02, 04, 164, 74); escolher a opção SN74HCT125N. Um 74HC125 (sem o T) NÃO serve: o 3,3 V do RP2040 não alcança o VIH do HC com 5 V.
+

@@ -83,7 +83,8 @@ Tire o PIC do soquete U2. Pinos do soquete (do `pinmap.md`): 1 = 5 V, 2 = CLK2, 
 | 5 slot 25 | saída Y da porta C | |
 | 3 D41 | saída Y da porta D | |
 
-74HCT125 (DIP-14; pino 14 = VCC, ligado aos 5 V do pino 1 do soquete; pino 7 = GND):
+74HCT125 (DIP-14; pino 14 = VCC, ligado aos 5 V do pino 1 do soquete; pino 7 = GND). Pinagem, /OE ativo em baixo e limites
+conferidos no datasheet TI SN74HCT125 (SCLS069G): VCC 4,5 a 5,5 V, VIH mín. 2 V, VOH mín. 3,84 V a 6 mA, IOL 6 mA, tpd máx. 25 ns:
 
 | Porta | /OE | A (entrada) | Y (saída) |
 |---|---|---|---|

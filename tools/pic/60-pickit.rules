@@ -1,0 +1,6 @@
+# Acesso do usuário logado ao PICkit 2 (e ao PICkit 3) sem root. Copie para /etc/udev/rules.d/.
+# IDs USB da Microchip: PICkit 2 04d8:0033 (modo bootloader 04d8:0032), PICkit 3 04d8:900a.
+# Confira o seu com `lsusb` (procure 04d8); se o ID for outro, acrescente uma linha.
+SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", ATTR{idProduct}=="0033", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", ATTR{idProduct}=="0032", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", ATTR{idProduct}=="900a", MODE="0660", GROUP="plugdev", TAG+="uaccess"
