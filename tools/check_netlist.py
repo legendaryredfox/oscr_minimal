@@ -40,6 +40,8 @@ BOARD_CFG = {
     "snes": dict(caps=(2, 4), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
     # só NES: Si5351 (só o CLK0 vai ao slot, pino 37) e C3 do slot; sem PIC, R2, regulador, pontos de teste nem /CART
     "nes": dict(caps=(3,), reg=False, nopic=True, tps={}),
+    # só Famicom: sem Si5351 (o slot não usa clock), PIC, R2 nem regulador; C4 do slot
+    "famicom": dict(caps=(4,), reg=False, mdonly=True, tps={}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
     "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }

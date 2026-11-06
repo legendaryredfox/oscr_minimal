@@ -1,0 +1,39 @@
+# BOM — placa famicom (só Famicom) v1.0
+
+Montagem **manual**. Lista gerada de `boards/famicom/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+
+> **Pendências antes de comprar:** medidas reais do slot Famicom (D17, D23); direção da etiqueta (D27).
+
+## Placa (JLCPCB)
+
+| Item | Valor |
+|---|---|
+| Arquivo | `boards/famicom/fab/dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`) |
+| Camadas | 2 |
+| Dimensões | 107,1 × 65,1 mm (acima de 100 mm de largura: faixa de preço maior) |
+| Espessura / acabamento | 1,6 mm, HASL |
+| Quantidade | 5 |
+| Furos | metalizados (inclui as vias de costura do GND) e 10 não metalizados de 3,2 mm (4 de canto e 6 do Mega) |
+| Demais | trilha/espaço mín. 0,2 mm; sem montagem; sem stencil |
+
+## Componentes
+
+| Ref. | Qtd | Valor | Footprint | Observação |
+|---|---|---|---|---|
+| A1 | 1 | Arduino Mega 2560 R3 (do usuário, USB-C) | `Mega2560_R3_Shield` | Não vai na compra da placa. |
+| FC1 | 1 | Slot de cartucho Famicom 60 pinos, passo 2,54 mm | `FC_Slot` | Igual ao do OSCR. |
+| D1 | 1 | LED 3 mm | `LED_D3.0mm` | Ativo em nível baixo (cátodo em D38). |
+| R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
+| C1 | 1 | 470 µF / 16 V, radial Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
+| C4 | 1 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | No slot Famicom (pinos 30 e 31, VCC). |
+
+Sem Si5351, PIC, R2, regulador nem pontos de teste.
+
+## Pinos e mecânica
+
+| Item | Qtd | Observação |
+|---|---|---|
+| Pinos macho 2,54 mm, **cauda longa** (≥ 10 mm abaixo, ≥ 5 mm acima) | **85 posições** | Todos os pads do shield, inclusive os sem sinal (2 tiras 1x40 e 1 tira 2x20, corte em 2x18). |
+| Espaçador M3 + pé de borracha | 4 (cantos) | Só apoio. |
+| Espaçador M3 | 6 (furos do Mega) | Seguram o shield no Mega, como na `16_and_8_bits`. |
+| Cabo USB-C | 1 | Interface com o PC. |

@@ -2,7 +2,7 @@
 
 Versão mínima de uma função: um slot **NES** (72p, 2,5 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`).
 
-**Famicom:** não está nesta placa. O Famicom tem slot próprio de 60 pinos (`FC1`, só na `16_and_8_bits` e na `8_bits`). Cartucho Famicom aqui só com adaptador 60→72 pinos, e isso **não foi validado** (D95).
+**Famicom:** não está nesta placa. O Famicom tem slot próprio de 60 pinos: use `boards/famicom/` (D98). Cartucho Famicom aqui só com adaptador 60→72 pinos, e isso **não foi validado** (D95).
 
 **Estado:** v1.0, 110,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, os mesmos das outras placas); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP), com GND roteado junto e costurado com vias: **revisar o layout no KiCad antes de encomendar**. Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
 

@@ -96,6 +96,7 @@
 - **D95** Placa `boards/nes/`: só NES, com Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 - **D96** Revisão das placas `megadrive`, `snes`, `gb_gba` e `nes` (pedido do usuário, 2026-11-06)
 - **D97** Placa `16_bits`: correções da revisão D96 (pedido do usuário, 2026-11-06)
+- **D98** Placa `boards/famicom/`: só Famicom, sem Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -787,3 +788,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Pedido.** "Pode aplicar os fixes na placa de 16 bits." O usuário encomendou a v1.0 (`dumper-v1.0-*.zip`, que não foi alterada); a v. 1.2 não tinha sido encomendada e foi regenerada.
 - **Mudanças.** Padrões de net class `/+5V` e `/+3V3` no `.kicad_pro`; `tools/revisao/widen_power.py` (0,8 mm em 28 segmentos, 0,6 mm em 9, 0,5 em 2, 0,4 em 2; 14 ficaram em 0,3 mm entre pads); pads SNES1.36, C4.2 e U1.2 (GND) com conexão sólida, o que eliminou os 3 `starved_thermal`. Silk, furos, vias e netlist iguais.
 - **Verificação.** DRC 0 erros, 0 ligações abertas, só 5 avisos de biblioteca; ERC 0; `check_netlist --board 16_bits` OK (67 nets, 225 ligações). Novo SHA-256 em `fab/PEDIDO.md`; prévias refeitas. Continua sem revisão à mão no KiCad e nunca montada.
+
+### D98 — Placa `boards/famicom/`: só Famicom, sem Si5351 e sem PIC (pedido do usuário, 2026-11-06)
+- **Pedido.** "Depois quero uma placa para o Famicom. Revisada." Placa de um slot, o Famicom de 60 pinos (`FC1`), que a `nes/` deixou de fora (D95).
+- **Escolhas.** Cópia da `16_and_8_bits`; ficam FC1, C1, C4 (VCC do slot, pinos 30 e 31), R1 e D1. Saem os outros slots, Si5351 (o `pinmap.md` não liga nenhum pino de clock ao slot Famicom), PIC, R2, regulador de 3,3 V e capacitores dele, e os furos M2. Slot no centro da área do Mega, no mesmo lugar do Mega Drive da `megadrive/`; contorno 107,1 × 65,1 mm; 6 furos do Mega e 4 de canto mantidos. Créditos do OSCR na face de baixo, como nas outras placas.
+- **Revisão aplicada desde o início (D96).** Padrões `/+5V` e `/+3V3` na net class `Power` (o 5V saiu do Freerouting com 0,8 mm, 23 segmentos; `widen_power.py` não precisou mudar nada); `stitch.py` evitando as legendas; textos fora de pads e de peças (DRC sem `silk_overlap` nem `silk_over_copper`); BOM, PEDIDO e montagem com os 10 furos não metalizados e os 6 espaçadores do Mega.
+- **Verificação.** ERC 0 violações; DRC sem erros nem ligações abertas, só 4 avisos de biblioteca; `check_netlist --board famicom` (flag `mdonly`, caps = C4) confere: 36 nets, 109 ligações, 2 pinos de slot sem ligação. Roteada por autoroteador, não revisada à mão no KiCad; nada encomendado nem montado.
+- **Ferramentas.** `tools/famicom/place.py`; `strip_sch.py`, `tools/nes/sync_unconnected.py`, `add_zones.py`, `stitch.py` e `fill_zones.py` reaproveitados.

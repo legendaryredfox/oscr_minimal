@@ -10,7 +10,7 @@ Scripts de apoio ao hardware. Todos rodam a partir da raiz do repositório. Hoje
 | `gen_connections.py`, `sync_net_names.py` | Geram e sincronizam as ligações e nomes de net do esquemático. | Python 3.11 |
 | `plan_layout.py` | Calcula as posições dos slots e peças (D23). | Python 3.11 |
 | `pcb_v12/` | Registro dos scripts que alteraram a `16_bits` para a v. 1.2 (D87): mapa de folgas em grade, roteador A*, C5, C6, `/CART` e pontos de teste. Referência, não ferramenta pronta (`pcb_v12/README.md`). | Python do venv do KiCad MCP (`pcbnew`, `numpy`, `scipy`) |
-| `megadrive/`, `snes/`, `nes/`, `gb_gba/` | Scripts das placas de um sistema só (D92 a D95): `place.py` de cada placa, `strip_sch.py`, `fix_nets.py`, `add_zones.py`, `stitch.py`, `frag_vias.py` (genéricos, em `megadrive/`), `nes/sync_unconnected.py` e `retext.py`, `gb_gba/route_net.py`. Ver o README de cada placa em `boards/`. | Python do venv do KiCad MCP |
+| `megadrive/`, `snes/`, `nes/`, `famicom/`, `gb_gba/` | Scripts das placas de um sistema só (D92 a D95, D98): `place.py` de cada placa, `strip_sch.py`, `fix_nets.py`, `add_zones.py`, `stitch.py`, `frag_vias.py` (genéricos, em `megadrive/`), `nes/sync_unconnected.py` e `retext.py`, `revisao/widen_power.py` (D96), `gb_gba/route_net.py`. Ver o README de cada placa em `boards/`. | Python do venv do KiCad MCP |
 | `importar_base_oscr.py` | Copia para `database/oscr/` as bases de jogos do OSCR legado (`vendor/oscr/legacy/sd`) dos sistemas que o projeto lê, com `ORIGEM.txt` e `INDEX.txt` (D88). Rode de novo ao atualizar o clone. | Python 3.11, clone `vendor/oscr/` |
 | `fill_zones.py` | Preenche as zonas de cobre pelo `pcbnew`. | Python do venv do KiCad MCP (`~/development/llms/KiCAD-MCP-Server`), KiCad 10 |
 

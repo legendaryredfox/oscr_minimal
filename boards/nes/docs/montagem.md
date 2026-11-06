@@ -6,7 +6,7 @@ Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais a
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão. Se algo dos testes das seções 5 e 6 falhar, pare e avise antes de seguir.
 >
-> **Famicom:** esta placa não tem o slot Famicom (60 pinos). Não force um cartucho Famicom no slot NES. Adaptador 60→72 pinos não foi validado (D95).
+> **Famicom:** esta placa não tem o slot Famicom (60 pinos). Não force um cartucho Famicom no slot NES; ele tem placa própria, `boards/famicom/`. Adaptador 60→72 pinos não foi validado (D95).
 
 ## 1. Lista de peças
 
