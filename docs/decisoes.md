@@ -95,6 +95,7 @@
 - **D94** Placa `boards/gb_gba/`: só GBA, GB e GBC por adaptador (pedido do usuário, 2026-11-06)
 - **D95** Placa `boards/nes/`: só NES, com Si5351 e sem PIC (pedido do usuário, 2026-11-06)
 - **D96** Revisão das placas `megadrive`, `snes`, `gb_gba` e `nes` (pedido do usuário, 2026-11-06)
+- **D97** Placa `16_bits`: correções da revisão D96 (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -781,3 +782,8 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Achado 5: referências C5 e C6 da `megadrive` ocultas no silkscreen.** Agora visíveis.
 - **Verificado sem problema.** Netlist das quatro placas contra o `pinmap.md`; tabelas de continuidade das montagens contra o `pinmap.md`; SHA-256 dos PEDIDOs contra os zips (atualizados após a nova exportação); `stitch.py` agora evita textos do silkscreen.
 - **Segue em aberto.** As placas continuam roteadas por autoroteador e não revisadas à mão no KiCad; as de 0,23 mm da `gb_gba` (50 segmentos entre pads de 1,5 mm, aceitos como na `16_and_8_bits`); nada encomendado nem montado.
+
+### D97 — Placa `16_bits`: correções da revisão D96 (pedido do usuário, 2026-11-06)
+- **Pedido.** "Pode aplicar os fixes na placa de 16 bits." O usuário encomendou a v1.0 (`dumper-v1.0-*.zip`, que não foi alterada); a v. 1.2 não tinha sido encomendada e foi regenerada.
+- **Mudanças.** Padrões de net class `/+5V` e `/+3V3` no `.kicad_pro`; `tools/revisao/widen_power.py` (0,8 mm em 28 segmentos, 0,6 mm em 9, 0,5 em 2, 0,4 em 2; 14 ficaram em 0,3 mm entre pads); pads SNES1.36, C4.2 e U1.2 (GND) com conexão sólida, o que eliminou os 3 `starved_thermal`. Silk, furos, vias e netlist iguais.
+- **Verificação.** DRC 0 erros, 0 ligações abertas, só 5 avisos de biblioteca; ERC 0; `check_netlist --board 16_bits` OK (67 nets, 225 ligações). Novo SHA-256 em `fab/PEDIDO.md`; prévias refeitas. Continua sem revisão à mão no KiCad e nunca montada.
