@@ -33,7 +33,8 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10), v. 1.2 |
+| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): pasta de trabalho, hoje igual à `hardware-v1.2/` (a v. 1.3 começa daqui) |
+| `hardware-v1.2/` | **a v. 1.2 final congelada** (2026-11-06, D108): esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (conferido: DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist` OK, mesmos gerbers). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-rev2-jlcpcb.zip` |
 | `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/`, `bom.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
