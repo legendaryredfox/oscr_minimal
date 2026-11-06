@@ -590,7 +590,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Mantidos na raiz e comuns a todas as placas:** `firmware/`, `host/`, `gui/`, `tools/`, `docs/` (uso, protocolo, decisões, continuação, fork). Firmware não foi alterado.
 - `fp-lib-table` e `sym-lib-table` da `16_bits` apontam para `${KIPRJMOD}/../../_lib/`. Os scripts de `tools/` têm o caminho `boards/16_and_8_bits/` fixo no código, a generalizar quando existir a segunda placa com KiCad.
 - Verificado depois da mudança: `tools/check_netlist.py` OK (67 nets, 375 ligações); DRC `kicad-cli` 4 avisos, 0 ligações abertas (igual a antes).
-- Os textos antigos deste log e de `sessao-2026-11-02.md` mantêm os caminhos da época (`hardware/...`, `docs/pinmap.md`).
+- Os textos antigos deste log mantêm os caminhos da época (`hardware/...`, `docs/pinmap.md`).
 - **Em aberto:** conflito de nome. (Resolvido na D71.) A pasta `16_bits/` guardava a placa de 5 slots (incluindo NES/Famicom e GBA), enquanto `8_bits/` e `gb_gba/` repetem sistemas que ela já cobre. Resolver quando as variantes ganharem projeto.
 
 ### D71 — Placa `16_bits` (SNES e Mega Drive) e renomeação da placa de 5 slots (decisão do usuário, 2026-11-03)

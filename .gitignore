@@ -28,3 +28,9 @@ boards/*/hardware/.history/
 firmware/oscr/.pio/
 references
 ~*.lck
+# Documentos de trabalho para assistentes de código (ficam só na máquina; CLAUDE.md é a exceção e fica no git)
+docs/continuacao.md
+docs/sessao-*.md
+claude_leia_aqui.md
+.claude/
+AGENTS.md
