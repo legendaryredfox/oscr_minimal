@@ -92,6 +92,7 @@
 - **D91** Plano B de gravação do PIC: Arduino Uno com ardpicprog (pedido do usuário, 2026-11-06)
 - **D92** Placa `boards/megadrive/`: só Mega Drive, slot dentro da área do Mega (pedido do usuário, 2026-11-06)
 - **D93** Placa `boards/snes/`: só SNES, com PIC12F629 enquanto o RP2040 não é validado (pedido do usuário, 2026-11-06)
+- **D94** Placa `boards/gb_gba/`: só GBA, GB e GBC por adaptador (pedido do usuário, 2026-11-06)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -755,4 +756,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Escolhas.** Mesma receita da D92: cópia da `16_bits`, sem MD1, C3, C5, C6 e TP3; Si5351, PIC, R2, C2 e C4 ficam. Pontos de teste relegendados (`/IRQ`, `/RD`, `/WR`). Slot SNES no mesmo lugar; contorno de 107 × 65 mm.
 - **Roteamento.** Rotear o GND como plano deixou GND2 e GND3 do Mega num grupo de cobre isolado (cercado pelo leque de trilhas). Roteando o GND junto com os sinais no Freerouting (zonas fora, depois recriadas por `tools/megadrive/add_zones.py`), o problema sumiu. Vale também para a `megadrive/`, onde o mesmo grupo existe e foi resolvido com vias; se a `megadrive/` for refeita, usar este método.
 - **Ferramentas.** `tools/snes/place.py`; `tools/megadrive/{strip_sch,fix_nets,stitch,frag_vias,add_zones}.py` genéricos; `tools/check_netlist.py --board snes`.
+
+### D94 — Placa `boards/gb_gba/`: só GBA, GB e GBC por adaptador (pedido do usuário, 2026-11-06)
+- **Pedido.** "O próximo é GB". Pela D56, GB e GBC só entram pelo slot GBA com adaptador; a placa é o esqueleto `gb_gba/`. Se a intenção era uma placa com slot dedicado de GB clássico, é mudança da seção 4 do `CLAUDE.md` e precisa de decisão.
+- **Escolhas.** Cópia da `16_and_8_bits`; ficam GBA1, U3, C7, C8, C9, C1, R1, D1; saem os outros slots, Si5351, PIC, R2, C2 a C6 e os furos M2. Slot na mesma orientação (D28: boca para a direita), com 12 mm entre a coluna do Mega e os pads. Peças soltas no meio da área do Mega, longe dos furos não metalizados do Mega (86; 75,4) e (86; 103,4).
+- **Roteamento.** `/D9` (RD) não foi roteado pelo Freerouting em nenhuma das 9 tentativas (nem as vias de saída dos pads); foi feito pelo A* de `tools/pcb_v12` (`tools/gb_gba/route_net.py`). Causa não investigada.
+- **Ferramentas.** `tools/gb_gba/place.py`, `route_net.py`; `tools/megadrive/fix_nets.py` leva um pad por chamada (com vários, só o primeiro pegava).
 

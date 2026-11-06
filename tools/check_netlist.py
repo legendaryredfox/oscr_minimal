@@ -34,6 +34,8 @@ BOARD_CFG = {
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # só GBA (GB e GBC por adaptador): regulador de 3,3 V, sem Si5351, PIC e R2, sem capacitores de slot além do C9
+    "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}),
     # só SNES: C2 do slot e C4 do PIC; Si5351, PIC e R2 ficam; sem /CART
     "snes": dict(caps=(2, 4), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
@@ -114,7 +116,7 @@ def expected_nets(pm_nets):
     exp.setdefault("LED_K", set()).update({("R1", "1"), ("D1", "1")})
     if not MDONLY:
         exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
-    exp["+5V"].update({(MEGA, p) for p in MEGA_5V})
+    exp.setdefault("+5V", set()).update({(MEGA, p) for p in MEGA_5V})
     exp["+5V"].update({("D1", "2"), ("C1", "1"), ("FLG1", "1")})
     if not MDONLY:
         exp["+5V"].update({(SI, "1"), (PIC, "1"), ("R2", "1")})
