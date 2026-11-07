@@ -78,7 +78,7 @@ object Rules {
         else -> Problem(S.V_RAM_VALUES)
     }
 
-    /** Campo "Tamanho da ROM" do SNES (só vale para ExHiROM) e do Mega Drive. */
+    /** Campo "Tamanho da ROM" do SNES (vale para todos os tipos; troca o tamanho lido do cabeçalho) e do Mega Drive. */
     fun romSize(system: CartSystem, kb: Int): Problem? = when (system) {
         CartSystem.SNES -> if (kb == 0 || (kb % 64 == 0 && kb <= 8064)) null else Problem(S.V_SNES_SIZE)
         CartSystem.MD -> if (kb == 0 || kb in 32..8192) null else Problem(S.V_MD_SIZE)

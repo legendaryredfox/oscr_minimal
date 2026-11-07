@@ -100,7 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp_.add_argument("--limit", type=int, default=20, help="máximo de resultados (padrão 20)")
     dp = add("dump", cmd_dump, "lê a ROM", out=True)
     dp.add_argument("--mapper", type=int, default=0, help="NES/Famicom: número do mapper (0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206)")
-    dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive e SNES ExHiROM: tamanho da ROM em KB (0 = pelo cabeçalho)")
+    dp.add_argument("--prg", type=int, default=0, help="NES/Famicom: tamanho da PRG em KB (múltiplo de 16); Mega Drive e SNES (todos os tipos): tamanho da ROM em KB (0 = pelo cabeçalho)")
     dp.add_argument("--chr", type=int, default=0, help="NES/Famicom: tamanho da CHR em KB (múltiplo de 8; 0 = CHR-RAM)")
     dp.add_argument("--raw", action="store_true", help="NES/Famicom: grava PRG e CHR em arquivos separados (.prg e .chr), sem cabeçalho iNES (leitura raw do OSCR)")
     dp.add_argument("--twice", action="store_true", help="lê a ROM duas vezes e compara; se diferirem, grava as duas leituras (NOME.leitura1 e NOME.leitura2) e sai com erro (kind mismatch)")
