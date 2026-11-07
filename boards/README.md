@@ -13,6 +13,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.0 gerados. Nada encomendado |
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
 | [`gb_gba/`](gb_gba/) | GBA; GB e GBC por adaptador | Projeto KiCad criado de `16_and_8_bits` (D94), 138 × 67 mm, gerbers v1.0 gerados. Nada encomendado |
+| [`n64/`](n64/) | N64 | Esqueleto. Pinagem ainda não levantada |
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
 | [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por todas as placas com projeto KiCad |
 
