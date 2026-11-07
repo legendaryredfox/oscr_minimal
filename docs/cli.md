@@ -8,6 +8,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 - **`--json`**: uma linha de JSON em stdout, sempre com `"ok"`. Vale antes ou depois do subcomando.
 - **Erros com `--json`**: também em stdout, uma linha: `{"ok":false,"error":{"kind":"...","message":"...","hint":"..."}}`. Sem `--json`, texto em stderr (`erro: ...`).
 - **Progresso**: `--progress jsonl` escreve em **stderr** uma linha por 1 %: `{"event":"progress","label":"rom","done":N,"total":N,"percent":P}`. `label` é `rom`, `save`, `backup` ou `write`. `--progress none` desliga; `auto` (padrão) mostra barra só se stderr for terminal.
+- **Cores e arte ASCII** (`--color auto|always|never`): num terminal a CLI mostra barra de progresso com degradê, velocidade e tempo restante, ícones (✔ ⚠ ✘), CRC32 e `OK` realçados, o logo OSCR na ajuda e no `info` e, no `detect`, o desenho do cartucho do sistema ao lado dos dados. `auto` (padrão) só enfeita se a saída for um terminal e respeita `NO_COLOR`; `always` força (útil em testes); `never` desliga. **Com `--json` nunca há enfeite**, e saída redirecionada ou em pipe continua texto puro: o contrato para agentes não muda.
 - **Sem hardware**: `--simulate` usa o simulador em memória (sistemas `mock`, `snes`, etc. respondem com cartuchos simulados).
 - **Arquivos**: `-o` sobrescreve se existir. A extensão certa é acrescentada quando `-o` não tem uma. Sem `-o`, o nome vem do título do cartucho.
 - **Descoberta sem porta**: `systems` e `errors` não abrem a porta serial.
@@ -41,6 +42,9 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | `identify ARQ... --db BASE` | `entries_in_database`, `results`: `[{file, bytes, crc32, game}]`; não abre a porta; saída 1 se algum não for achado. `-s` escolhe o sistema (padrão: pela extensão) |
 | `search TEXTO --db BASE [--limit N]` | `entries_in_database`, `results`: entradas da base cujo nome tem todas as palavras; não abre a porta; saída 1 se nada |
 | `save-read -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` |
+| `save-write -s SISTEMA -i ARQ.sav --yes [--no-backup] [--no-verify]` | grava o save; antes faz backup do atual (`backup`); depois **lê o save de volta e compara** (`verify`: `{ok, read_crc32, expected_crc32, first_diff, read_bytes}`; `"skipped"` com `--no-verify`); se não confere, erro `verify_failed` (saída 1) com `first_diff` e `written` |
+| `detect -s md --flash-id` | acrescenta `flash_chip`: `{known, ids, chip, size}` ou `null` (firmware sem programador de flash). **A sondagem escreve comandos de ID no cartucho** (ROM de máscara os ignora); por isso só roda com a flag. `rom-write -s md` também mostra o chip antes de apagar (`flash_chip` no JSON) |
+| `dump -s nes\|famicom --raw [-o BASE]` | grava `BASE.prg` e `BASE.chr` (sem cabeçalho iNES; sem `.chr` se o cartucho usa CHR-RAM) em vez do `.nes`; JSON: `files`, `prg_bytes`, `prg_crc32`, `chr_bytes`, `chr_crc32`, `crc32` (do iNES completo) |
 | `rom-write -i ARQ.sfc -s snes --chip snes-lorom\|snes-hirom --layout 1x\|2x2mb\|2x4mb\|4x2mb\|1x8mb` | flash CFI do SNES com 1, 2 ou 4 chips ou 8 MB (`--layout`; as de 8 MB pedem ROM de 6 a 8 MB; o PC reordena a ROM como o OSCR). `layout` na saída |
 | `rom-write -i ARQ.sfc -s snes --chip snes-lorom-p0\|snes-hirom-p0\|snes-exlorom-p1\|snes-exhirom-p1 --flash-type TIPO --flash-mb N [--sector-kb K --buffer B]` | menus P0 e P1 do OSCR: flash de 8 bits de tipo informado (`29f032`, `29f1610`, `lh28f0xx`, `29f1601`, `29lv640`, `29f800`, `29gl`, `e28fxxxj3a`); tipos `29gl`, `lh28f0xx` e `e28fxxxj3a` exigem setor e buffer (o `e28fxxxj3a` assume 128 KB e 32 bytes) |
 | `flash-id --bus 8\|plcc32\|16\|eprom\|md --flash-kb N [--flash-type T]` | programador de flash genérico (sistema 7): lê o ID do chip. Sem `--flash-type` no 8 bits mostra os IDs das quatro rotinas do OSCR (`ids`) |
@@ -77,6 +81,23 @@ dumper --json save-write -s snes -i jogo.sav --yes
 
 Dois `dump` seguidos com o mesmo `crc32` é a prova de leitura estável. Gravar save sobrescreve a memória do cartucho: o agente só deve usar `--yes` com autorização do usuário.
 
+## Organização do código
+
+As duas CLIs são divididas em módulos pequenos, um assunto por arquivo, para reaproveitar e testar:
+
+| Python (`host/oscr_host/cli/`) | Kotlin (`gui/shared/src/jvmMain/kotlin/oscr/cli/`) | Assunto |
+|---|---|---|
+| `errors.py` | `Exit.kt`, `CliIo.kt` | códigos de saída, `CliError`, o que a CLI usa do mundo exterior |
+| `common.py` | `Connection.kt`, `DbSupport.kt` | conexão (porta ou simulador), sistema, base de dados |
+| `output.py` | `Output.kt` | JSON ou texto, progresso, nome e gravação do arquivo |
+| `ui.py` | `Ui.kt` | cores, barra, logo e arte ASCII |
+| `md_chip.py` | `CmdDetect.kt` | chip de flash do Mega Drive |
+| `cmd_info.py`, `cmd_detect.py`, `cmd_dump.py`, `cmd_db.py`, `cmd_save.py`, `cmd_rom.py`, `cmd_flash.py` | `CmdInfo.kt`, `CmdDetect.kt`, `CmdDump.kt`, `CmdDb.kt`, `CmdSave.kt`, `CmdRom.kt`, `CmdFlash.kt` | um arquivo por grupo de comandos |
+| `parser.py` | `Args.kt`, `Usage.kt` | argumentos e ajuda |
+| `app.py` | `Cli.kt` | ponto de entrada (`main` / `Cli.run`) |
+
+Nos testes da Python, `connect` e `list_ports` são trocados em `oscr_host.cli.common` (os comandos chamam `common.connect(...)`, não uma cópia local).
+
 ## CLI em Kotlin (`gui/cliApp`)
 
 Mesmo contrato (comandos, opções, JSON, códigos de saída), usando o protocolo do módulo `shared` da GUI. Build: `cd gui && ./gradlew :cliApp:installDist`; binário em `gui/cliApp/build/install/dumper/bin/dumper`. Precisa de JVM 17+.
@@ -88,5 +109,6 @@ Diferenças em relação à Python:
 - `errors` lista só `code` e `text` (a dica vem dentro do texto).
 - `--simulate` só entende o sistema `mock`; os outros respondem "sem cartucho" (igual à Python).
 - Os dois simuladores e as duas CLIs produzem o mesmo CRC32 para o mesmo dado (conferido: `mock` = `D1DF4327`).
+- As opções novas valem nas duas: `--color`, `--raw`, `--flash-id`, `--no-verify` em `save-write`. Na Kotlin os textos livres seguem em inglês.
 - `error.kind` extra: `open_port` (saída 3) quando a porta existe mas não abre (as duas CLIs); `internal` (saída 1) só na Kotlin, para exceção inesperada.
 

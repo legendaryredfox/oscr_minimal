@@ -37,7 +37,7 @@ def test_systems_e_errors_nao_abrem_a_porta(capsys):
 
 
 def test_sem_porta_da_saida_3_com_json(capsys, monkeypatch):
-    monkeypatch.setattr("oscr_host.cli.list_ports", lambda: [])
+    monkeypatch.setattr("oscr_host.cli.common.list_ports", lambda: [])
     code, out, _ = run(capsys, "--json", "detect")
     o = json.loads(out)
     assert code == 3 and o["ok"] is False and o["error"]["kind"] == "no_port" and o["error"]["hint"]

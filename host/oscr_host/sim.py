@@ -211,6 +211,7 @@ class MockDevice:
                     self.written_rom = bytes(buf)
                 else:
                     self.written_save = bytes(buf)
+                    self.save = bytes(buf)          # a leitura seguinte devolve o que foi gravado (conferência do save-write)
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(total))
                 return
         self._error(t, f.seq, 5, "timeout")

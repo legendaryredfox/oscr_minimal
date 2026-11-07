@@ -268,7 +268,48 @@ object RomImages {
     }
 }
 
+/**
+ * Leitura "raw" do NES: separa o iNES que o firmware devolve em PRG e CHR (sem o cabeçalho de 16 bytes, sem trainer). Igual a _save_nes_raw em cli.py.
+ * Devolve null se não houver cabeçalho iNES ou se ele for maior que os dados. CHR vazio = cartucho com CHR-RAM.
+ */
+class NesRaw(val prg: ByteArray, val chr: ByteArray)
+
+fun splitInesRaw(d: ByteArray): NesRaw? {
+    if (d.size < 16 || d[0] != 'N'.code.toByte() || d[1] != 'E'.code.toByte() || d[2] != 'S'.code.toByte() || d[3] != 0x1A.toByte()) return null
+    val prgN = (d[4].toInt() and 0xFF) * 16384; val chrN = (d[5].toInt() and 0xFF) * 8192
+    if (d.size < 16 + prgN + chrN) return null
+    return NesRaw(d.copyOfRange(16, 16 + prgN), d.copyOfRange(16 + prgN, 16 + prgN + chrN))
+}
+
+/** Chip de flash de um cartucho de Mega Drive, como o firmware o identifica (DETECT do sistema 7, chip 5). Igual a _md_flash_chip em cli.py. */
+class MdFlashChip(val known: Boolean, val ids: String, val chip: String?, val sizeBytes: Long)
+
+/**
+ * Identifica o chip de flash do cartucho de Mega Drive; null se o firmware não tem o programador de flash.
+ * A sondagem escreve comandos de ID no cartucho (ROM de máscara os ignora): só use quando o usuário pede ou antes de gravar.
+ */
+fun identifyMdFlash(client: OscrClient, info: DeviceInfo): MdFlashChip? {
+    if (!info.flashProg) return null
+    val r = client.detect(CartSystem.FLASH, FlashProg.BUS.getValue("md"), 0, 0)
+    val known = r.status == 0
+    return MdFlashChip(known, r.name, if (known) r.name.substringBeforeLast(' ') else null, if (known || r.name.startsWith("CFI ")) r.romSize else 0L)
+}
+
 class VerifyResult(val ok: Boolean, val readCrc: Int, val expectedCrc: Int, val firstDiff: Int?, val readBytes: Int)
+
+/**
+ * Confere a gravação do save: lê o save de volta (READ_SAVE com as mesmas opções) e compara com o que foi enviado. Igual a verify_save_written em romimage.py.
+ * O WRITE_SAVE do fork não relê (o OSCR relia o arquivo do cartão SD), então a conferência fica no PC. Tamanho diferente conta como diferença.
+ */
+fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): VerifyResult {
+    val read = client.readSave(system, 0, mapper, ramKb, progress).data
+    var diff: Int? = null
+    if (!read.contentEquals(data)) {
+        val n = minOf(read.size, data.size)
+        diff = (0 until n).firstOrNull { read[it] != data[it] } ?: n
+    }
+    return VerifyResult(diff == null, crc32(read), crc32(data), diff, read.size)
+}
 
 /**
  * Confere a gravação: lê o cartucho de volta (DUMP_ROM com o mapper do chip e os tamanhos gravados) e compara com o que foi enviado.

@@ -49,7 +49,7 @@ private fun pickFile(title: String, save: Boolean, name: String = ""): File? {
 }
 
 /** Leitura pronta na memória, à espera de um arquivo. Cancelar o "Salvar como" não a perde. */
-private class Pending(val data: ByteArray, val defaultName: String, val label: String, val report: String)
+private class Pending(val data: ByteArray, val defaultName: String, val label: String, val report: String, val raw: NesRaw? = null)
 
 /** Gravação à espera da confirmação do usuário. */
 private class WriteRequest(val file: File, val data: ByteArray)
@@ -121,6 +121,8 @@ fun App() {
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
     var backupFirst by remember { mutableStateOf(true) }
+    var verifySave by remember { mutableStateOf(true) }
+    var nesRaw by remember { mutableStateOf(false) }
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
     val log = remember { mutableStateListOf<String>() }
@@ -207,6 +209,16 @@ fun App() {
 
     fun savePending(file: File) {
         val p = pending ?: return
+        val raw = p.raw
+        if (raw != null) {                                       // leitura raw do NES: PRG e CHR em arquivos separados, sem o cabeçalho iNES
+            val base = file.path.substringBeforeLast('.', file.path)
+            File("$base.prg").writeBytes(raw.prg)
+            if (raw.chr.isNotEmpty()) File("$base.chr").writeBytes(raw.chr)
+            if (saveReport) File("$base.prg.txt").writeText(p.report)
+            say("${t(S.SAVED_TO)} $base.prg" + (if (raw.chr.isNotEmpty()) ", $base.chr" else ""))
+            pending = null
+            return
+        }
         file.writeBytes(p.data)
         if (saveReport) File(file.path + ".txt").writeText(p.report)
         say("${t(S.SAVED_TO)} $file")
@@ -404,7 +416,9 @@ fun App() {
             val title = game?.entry?.name ?: detectedNames[system].orEmpty()
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             val report = reportText(title, res.crcHex, res.data.size, extra)
-            offerSave(Pending(res.data, safeName(title, "rom_${system.name.lowercase()}") + ext, "ROM", report))
+            val raw = if (nesRaw && (system == CartSystem.NES || system == CartSystem.FAMICOM)) splitInesRaw(res.data) else null
+            if (nesRaw && raw == null && (system == CartSystem.NES || system == CartSystem.FAMICOM)) say(t(S.ERR_PREFIX) + ": " + t(S.NES_RAW_FAIL))
+            offerSave(Pending(res.data, safeName(title, "rom_${system.name.lowercase()}") + (if (raw != null) ".prg" else ext), if (raw != null) "PRG + CHR" else "ROM", report, raw))
         }
     }
 
@@ -442,6 +456,12 @@ fun App() {
             }
             val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapperArg(), ramArg(), ticker()) }
             say("${t(S.DONE)}: ${req.data.size} ${t(S.BYTES)}, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+            if (verifySave) {                                    // o WRITE_SAVE não relê: lê o save de volta e compara
+                stage = S.STAGE_VERIFYING_SAVE; progress = 0f
+                val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, req.data, mapperArg(), ramArg(), ticker()) }
+                fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
+                say(if (v.ok) f(S.SAVE_VERIFY_OK, v.readBytes, hex(v.readCrc)) else t(S.ERR_PREFIX) + ": " + f(S.SAVE_VERIFY_BAD, v.firstDiff ?: 0, hex(v.readCrc), hex(v.expectedCrc)))
+            }
         }
     }
 
@@ -461,6 +481,14 @@ fun App() {
         val c = client ?: return
         if (info?.writeRom != true) { say(t(S.ERR_PREFIX) + ": " + t(S.ROM_NO_FW)); return }
         run(S.STAGE_WRITING_ROM) {
+            if (system == CartSystem.MD) {                       // mostra o chip que vai ser gravado antes de apagar
+                val chip = withContext(Dispatchers.IO) { identifyMdFlash(c, info ?: return@withContext null) }
+                say(when {
+                    chip == null -> t(S.MD_CHIP_NONE)
+                    chip.known -> f(S.MD_CHIP_KNOWN, chip.chip ?: "", chip.sizeBytes / 1024)
+                    else -> f(S.MD_CHIP_UNKNOWN, chip.ids)
+                })
+            }
             val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, if (req.image.flashKb > 0) req.image.flashKb else req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker()) }
             say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, " + (if (req.chip.md || req.chip.gba || req.chip.gb) "${req.image.body.size} bytes" else if (req.image.flashKb > 0) "ROM ${req.image.prgKb} KB / flash ${req.image.flashKb} KB" else "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB") + ", CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
             val gbaSkip = (req.chip.gba && (req.image.block != 0 || req.image.body.size > RomImages.GBA_VERIFY_MAX_BYTES)) || req.chip == FlashChip.GB_CAM_SECOND
@@ -596,6 +624,7 @@ fun App() {
                 }
                 (problem ?: ramProblem)?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
                 Text(t(S.NES_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(nesRaw, { nesRaw = it }); Text(t(S.NES_RAW), style = MaterialTheme.typography.bodyMedium) }
             }
         }
     }
@@ -725,6 +754,7 @@ fun App() {
                 }
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                 if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
+                if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING)) Callout(t(S.FLASH_ABORT_WARN), Tone.WARN)      // abortar no meio deixa o chip apagado ou pela metade
                 if (lastMessage.isNotEmpty()) Text(lastMessage, style = MaterialTheme.typography.bodyLarge,
                     color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -770,6 +800,7 @@ fun App() {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(f(S.CONFIRM_WRITE_BODY, req.file.name, req.data.size, system.name))
                     Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(backupFirst, { backupFirst = it }); Text(t(S.BACKUP_FIRST), style = MaterialTheme.typography.bodyMedium) }
+                    Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(verifySave, { verifySave = it }); Text(t(S.VERIFY_SAVE_AFTER), style = MaterialTheme.typography.bodyMedium) }
                 }
             },
             confirmButton = { Button(onClick = { writeReq = null; actWriteConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE)) } },

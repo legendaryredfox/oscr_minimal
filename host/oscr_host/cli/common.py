@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Coisas que todo comando usa: conexão (porta ou simulador), sistema, base de dados."""
+from __future__ import annotations
+
+from .. import database as DB
+from .. import protocol as P
+from ..client import Client, TimeoutError_
+from ..transport import SerialTransport, Transport
+from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_USAGE
+
+
+BAUDS = (1_000_000, 115_200)
+
+
+def list_ports() -> list[str]:
+    from serial.tools import list_ports as lp
+
+    return [p.device for p in lp.comports()]
+
+
+def auto_port() -> str:
+    ports = [p for p in list_ports() if any(k in p for k in ("ttyUSB", "ttyACM", "cu.usb", "COM"))]
+    if not ports:
+        raise CliError("no_port", "nenhuma porta serial encontrada", EXIT_NO_DEVICE,
+                       "conecte o dispositivo, use --port, ou --simulate sem hardware (no Linux: grupo dialout)")
+    return ports[0]
+
+
+def connect(args) -> tuple[Client, Transport, dict]:
+    """Abre a porta (ou o simulador) e faz INFO, com fallback de baud."""
+    if args.simulate:
+        from .. import sim
+
+        t, _dev, _stop, _th = sim.start()
+        c = Client(t, timeout=0.5, long_timeout=5.0)
+        return c, t, c.info()
+    port = args.port or auto_port()
+    bauds = (args.baud,) if args.baud else BAUDS
+    last: Exception | None = None
+    for b in bauds:
+        try:
+            t = SerialTransport(port, b)
+        except OSError as e:                              # porta ocupada, sem permissão (grupo dialout), cabo solto
+            raise CliError("open_port", f"não foi possível abrir {port}: {e}", EXIT_NO_DEVICE,
+                           "feche outros programas que usam a porta; no Linux o usuário precisa estar no grupo dialout") from e
+        c = Client(t, timeout=0.5)
+        try:
+            return c, t, c.info()
+        except TimeoutError_ as e:
+            last = e
+            t.close()
+    raise CliError("no_response", f"sem resposta do dispositivo em {port} ({', '.join(map(str, bauds))} baud): {last}", EXIT_NO_DEVICE,
+                   "confira se o firmware está gravado, a porta e o baud (--baud 115200)")
+
+
+def system_id(name: str) -> int:
+    if name not in P.SYSTEMS:
+        raise CliError("usage", f"sistema desconhecido: {name}. Use: {', '.join(P.SYSTEMS)}", EXIT_USAGE)
+    return P.SYSTEMS[name][0]
+
+
+
+def load_db(args, required: bool = False) -> DB.Database | None:
+    """Base de dados do PC: a que vem no projeto (database/oscr/) mais as do usuário (--db, repetível, ou a variável OSCR_DB).
+    None se não há nenhuma (--no-builtin-db e sem --db)."""
+    paths = list(args.db or []) or DB.paths_from_env()
+    builtin = not getattr(args, "no_builtin_db", False) and DB.BUILTIN_DIR.is_dir()
+    if not paths and not builtin:
+        if required:
+            raise CliError("no_database", "nenhuma base de dados: use --db ARQUIVO_OU_PASTA (No-Intro .dat ou NES 2.0 XML) ou a variável OSCR_DB",
+                           EXIT_USAGE)
+        return None
+    try:
+        return DB.load_databases(paths, builtin=builtin)
+    except (ValueError, OSError) as e:
+        raise CliError("database", str(e), EXIT_ERROR, "confira o caminho e se o arquivo é um .dat (Logiqx) ou o nes20db.xml") from e
+
+
+def game_options(db: DB.Database, query: str) -> DB.Entry:
+    """Escolhe a entrada do NES 2.0 XML pelo nome (para preencher mapper, PRG e CHR)."""
+    found = [e for e in db.search(query, 200) if e.nes_options()]
+    exact = [e for e in found if e.name.lower() == query.lower()]
+    found = exact or found
+    uniq = {(e.mapper, e.prg_kb, e.chr_kb, e.ram_kb): e for e in found}
+    if not uniq:
+        raise CliError("game_not_found", f"nenhum jogo com mapper e tamanhos na base para: {query}", EXIT_USAGE,
+                       "a base precisa ser o NES 2.0 XML (nes20db.xml); o No-Intro não traz o mapper. Use `dumper search` para procurar")
+    if len(uniq) > 1:
+        raise CliError("game_ambiguous", f"{len(found)} jogos combinam com '{query}' e têm configurações diferentes", EXIT_USAGE,
+                       "seja mais específico. Exemplos: " + "; ".join(f"{e.name} (mapper {e.mapper}, PRG {e.prg_kb} KB, CHR {e.chr_kb} KB)" for e in list(uniq.values())[:5]))
+    return next(iter(uniq.values()))
+

@@ -245,6 +245,21 @@ class VerifyResult:
                 "first_diff": self.first_diff, "read_bytes": self.read_bytes}
 
 
+def verify_save_written(client, system: int, data: bytes, progress=None, mapper: int = 0, ram_kb: int = 0) -> VerifyResult:
+    """Confere a gravação do save: lê o save de volta (READ_SAVE com as mesmas opções) e compara byte a byte com o que foi enviado.
+
+    O OSCR original relia o arquivo do cartão SD; o WRITE_SAVE do fork não relê, então a conferência fica no PC.
+    Tamanho diferente conta como diferença (o primeiro byte além do menor)."""
+    import zlib
+
+    res = client.read_save(system, 0, progress, mapper, ram_kb)
+    got = res.data
+    diff = None
+    if got != data:
+        diff = next((i for i in range(min(len(got), len(data))) if got[i] != data[i]), min(len(got), len(data)))
+    return VerifyResult(diff is None, zlib.crc32(got), zlib.crc32(data), diff, len(got))
+
+
 def verify_written(client, system: int, chip: str, img: RomImage, progress=None) -> VerifyResult:
     """Confere a gravação: lê o cartucho de volta (DUMP_ROM com o mapper do chip e os tamanhos gravados) e compara com o que foi enviado.
 

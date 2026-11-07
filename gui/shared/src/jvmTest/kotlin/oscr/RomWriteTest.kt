@@ -79,6 +79,28 @@ class RomWriteTest {
         assertFalse(short.ok); assertEquals(mockData().size, short.firstDiff)
     }
 
+    @Test fun conferenciaDoSaveDepoisDeGravar() {
+        val dev = SimDevice(); val c = OscrClient(dev, 500, 5000)
+        val data = ByteArray(200) { it.toByte() }
+        c.writeSave(CartSystem.MOCK, data)
+        val ok = verifySaveWritten(c, CartSystem.MOCK, data)
+        assertTrue(ok.ok); assertNull(ok.firstDiff); assertEquals(200, ok.readBytes)
+        val bad = data.copyOf().also { it[77] = (it[77].toInt() xor 0xFF).toByte() }
+        val v = verifySaveWritten(c, CartSystem.MOCK, bad)
+        assertFalse(v.ok); assertEquals(77, v.firstDiff)
+        val longer = verifySaveWritten(c, CartSystem.MOCK, data.copyOf(210))
+        assertFalse(longer.ok); assertEquals(200, longer.firstDiff)
+    }
+
+    @Test fun leituraRawSeparaPrgEChr() {
+        val raw = splitInesRaw(ines(32, 8, 1))!!
+        assertEquals(32 * 1024, raw.prg.size); assertEquals(8 * 1024, raw.chr.size)
+        assertContentEquals(ByteArray(32 * 1024) { ((it * 7) and 0xFF).toByte() }, raw.prg)
+        assertEquals(0, splitInesRaw(ines(16, 0, 0))!!.chr.size)
+        assertNull(splitInesRaw(ByteArray(40)))                     // sem cabeçalho iNES
+        assertNull(splitInesRaw(ines(32, 8, 1).copyOf(1000)))       // cabeçalho maior que os dados
+    }
+
     @Test fun simuladorPulaAConferencia() {
         val d = tmp(); val f = File(d, "jogo.nes").also { it.writeBytes(ines(32, 8, 0)) }
         val r = run("--simulate", "--json", "rom-write", "-s", "mock", "-i", f.path, "--yes")

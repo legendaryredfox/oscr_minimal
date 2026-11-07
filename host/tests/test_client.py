@@ -213,3 +213,30 @@ def test_build_write_save_opcional():
     assert len(P.build_write_save(2, 8192, 512)) == 7
     assert len(P.build_write_save(2, 8192, 512, 4)) == 13
     assert P.build_write_save(2, 32768, 512, 1, 32)[7:] == bytes([1, 0, 32, 0, 0, 0])
+
+
+def test_cli_save_write_confere_e_acusa_diferenca(tmp_path, capsys, monkeypatch):
+    import json
+
+    from oscr_host import romimage as RI
+    from oscr_host.cli import main
+
+    src = tmp_path / "in.sav"
+    src.write_bytes(bytes(range(200)))
+    args = ["--simulate", "--json", "save-write", "-s", "mock", "-i", str(src), "--yes", "--no-backup"]
+    capsys.readouterr()
+    assert main(args) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["verify"]["ok"] is True and out["verify"]["read_bytes"] == 200
+    assert main(args + ["--no-verify"]) == 0
+    assert json.loads(capsys.readouterr().out)["verify"] == "skipped"
+
+    from oscr_host import romimage as RI
+
+    def ruim(client, system, data, progress=None, mapper=0, ram_kb=0):      # simula um cartucho que não guardou o save
+        return RI.VerifyResult(False, 1, 2, 7, len(data))
+
+    monkeypatch.setattr(RI, "verify_save_written", ruim)
+    assert main(args) == 1
+    err = json.loads(capsys.readouterr().out)
+    assert err["error"]["kind"] == "verify_failed" or err.get("kind") == "verify_failed" or "verify_failed" in json.dumps(err)

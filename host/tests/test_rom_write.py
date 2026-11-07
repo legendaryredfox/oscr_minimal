@@ -447,7 +447,7 @@ class _FakeT:
 def _flash_id(monkeypatch, capsys, resp, *argv):
     from oscr_host import cli
     fake = _FakeFlash(resp)
-    monkeypatch.setattr(cli, "connect", lambda a: (fake, _FakeT(), {"flash_prog": True}))
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), {"flash_prog": True}))
     code = cli.main(["--json", "flash-id", *argv])
     return code, json.loads(capsys.readouterr().out), fake
 
@@ -478,3 +478,90 @@ def test_flash_id_md_recusa_tamanho_e_outros_comandos(monkeypatch, capsys):
     assert code == 64 and "rom-write" in json.loads(capsys.readouterr().out)["error"]["message"]
     code = cli.main(["--json", "flash-erase", "--bus", "md", "--yes"])
     assert code == 64
+
+
+# ---------------------------------------------------------------- nome do chip no detect -s md --flash-id e no rom-write -s md
+class _FakeMd(_FakeFlash):
+    def __init__(self, resp):
+        super().__init__(resp)
+        self.writes = []
+
+    def detect(self, system, chip=0, prg_kb=0, chr_kb=0):
+        if system == 7:
+            return super().detect(system, chip, prg_kb, chr_kb)
+        return {"system": 3, "status": 0, "rom_size": 524288, "save_size": 0, "save_type": 0, "name": "SONIC"}
+
+    def write_rom(self, *a, **k):
+        self.writes.append(a)
+        return 0x1234
+
+    def dump_rom(self, *a, **k):
+        raise AssertionError("conferência deve ser pulada")
+
+
+def _md(monkeypatch, capsys, info, *argv):
+    from oscr_host import cli
+    fake = _FakeMd({"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "MX29F1610 C2F1"})
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), info))
+    code = cli.main(["--json", *argv])
+    return code, json.loads(capsys.readouterr().out), fake
+
+
+def test_detect_md_com_flash_id(monkeypatch, capsys):
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True}, "detect", "-s", "md", "--flash-id")
+    assert code == 0 and o["flash_chip"]["chip"] == "MX29F1610" and o["flash_chip"]["size"] == 2 << 20
+    assert fake.calls == [(7, 5, 0, 0)]
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True}, "detect", "-s", "md")
+    assert "flash_chip" not in o and fake.calls == []                  # sem a flag, nada é escrito no cartucho
+    code, o, _ = _md(monkeypatch, capsys, {"flash_prog": False}, "detect", "-s", "md", "--flash-id")
+    assert o["flash_chip"] is None
+    code, o, _ = _md(monkeypatch, capsys, {"flash_prog": True}, "detect", "-s", "snes", "--flash-id")
+    assert code == 64
+
+
+def test_rom_write_md_mostra_o_chip(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "jogo.md"
+    f.write_bytes(md_rom(524288))
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(f), "--chip", "md-flash", "--yes", "--no-verify")
+    assert code == 0 and o["flash_chip"]["chip"] == "MX29F1610" and len(fake.writes) == 1
+
+
+# ---------------------------------------------------------------- dump --raw (NES: PRG e CHR em arquivos separados)
+class _FakeNes:
+    def __init__(self, prg_kb, chr_kb):
+        self.prg = bytes((i * 5) & 0xFF for i in range(prg_kb * 1024))
+        self.chr = bytes((i * 11) & 0xFF for i in range(chr_kb * 1024))
+        hdr = b"NES\x1a" + bytes([prg_kb // 16, chr_kb // 8, 0x10, 0]) + bytes(8)
+        self.ines = hdr + self.prg + self.chr
+
+    def detect(self, system, *a):
+        return {"name": "JOGO TESTE"}
+
+    def dump_rom(self, *a, **k):
+        import zlib
+        return type("R", (), {"data": self.ines, "crc32": zlib.crc32(self.ines)})()
+
+
+def _nes_raw(monkeypatch, capsys, tmp_path, prg, chr_, *extra):
+    from oscr_host import cli
+    fake = _FakeNes(prg, chr_)
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), {}))
+    code = cli.main(["--json", "dump", "-s", "nes", "--raw", "-o", str(tmp_path / "jogo"), "--mapper", "1", "--prg", str(prg), "--chr", str(chr_), *extra])
+    return code, json.loads(capsys.readouterr().out), fake
+
+
+def test_dump_raw_separa_prg_e_chr(monkeypatch, capsys, tmp_path):
+    code, o, fake = _nes_raw(monkeypatch, capsys, tmp_path, 32, 8)
+    assert code == 0
+    assert (tmp_path / "jogo.prg").read_bytes() == fake.prg and (tmp_path / "jogo.chr").read_bytes() == fake.chr
+    assert not (tmp_path / "jogo.nes").exists() and o["prg_bytes"] == 32768 and o["chr_bytes"] == 8192
+
+
+def test_dump_raw_sem_chr_rom(monkeypatch, capsys, tmp_path):
+    code, o, fake = _nes_raw(monkeypatch, capsys, tmp_path, 16, 0)
+    assert code == 0 and (tmp_path / "jogo.prg").read_bytes() == fake.prg and not (tmp_path / "jogo.chr").exists() and "chr_bytes" not in o
+
+
+def test_dump_raw_so_nes(tmp_path, capsys):
+    from oscr_host import cli
+    assert cli.main(["--simulate", "--json", "dump", "-s", "snes", "--raw", "-o", str(tmp_path / "x")]) == 64

@@ -26,7 +26,7 @@ def test_lista_do_firmware_nao_esta_vazia():
 
 
 def test_cli_lista_todos_os_mappers():
-    src = (ROOT / "host/oscr_host/cli.py").read_text()
+    src = (ROOT / "host/oscr_host/cli/parser.py").read_text()
     line = next(l for l in src.splitlines() if "NES/Famicom: número do mapper" in l)
     assert has_all(line, firmware_mappers()) == []
 
