@@ -33,7 +33,7 @@ enum class S {
     READ_SECTION, WRITE_SECTION,
     SETTINGS, DB_TITLE, DB_HINT, DB_CHOOSE, DB_CLEAR, DB_LOADING, DB_LOADED, DB_NONE, DB_ERROR, GAME_LABEL, GAME_NOT_FOUND, GAME_SEARCH, GAME_FILLED, GAME_NO_RESULTS, NES_PRESET, NES_PRESET_PICK, NES_PRESET_FILLED, HELP_SEARCH, HELP_NO_RESULTS, FONT_SIZE, A11Y_PROGRESS, A11Y_WARNING, A11Y_ERROR, A11Y_INFO, SOON_TITLE, SOON_HINT, STUB_NOTICE, CONNECTION_TITLE, CARTRIDGE_TITLE,
     ERR_DEV_11, ERR_DEV_12, POWER_RAIL_SAFE, POWER_RAIL_HOT, DETECT_ATTEMPTS, POWER_STATUS_ON, POWER_STATUS_OFF, POWER_BTN_OFF, POWER_BTN_ON, STAGE_POWER_ON, STAGE_POWER_OFF, POWER_OFF_DONE, POWER_ON_DONE, WRITE_ROM, FLASH_CHIP, FLASH_CHIP_AUTO, ROM_WRITE_HINT, CONFIRM_ROM_TITLE, CONFIRM_ROM_BODY, STAGE_WRITING_ROM, ROM_WRITTEN, ROM_VERIFY_HINT, ROM_NO_FW, ROM_ONLY_NES, RIMG_TRAINER, RIMG_SIZE, RIMG_NEEDS_HEADER, RIMG_RAW, RIMG_CHIP, RIMG_TRUNCATED, RIMG_SNES_SIZE, RIMG_SNES_TOO_BIG, RIMG_SNES_NO_FIT, RIMG_SNES_CAPACITY, RIMG_SNES_NEEDS_CHIP, ROM_WRITE_HINT_SNES, RIMG_MD_SIZE, RIMG_MD_TOO_BIG, RIMG_MD_SMD, ROM_WRITE_HINT_MD, LBL_LAYOUT, LBL_CAPACITY, LBL_CAPACITY_AUTO, RIMG_GBA_BLOCK, RIMG_GBA_SIZE, RIMG_GBA_TOO_BIG, ROM_WRITE_HINT_GBA, LBL_BLOCK369, RIMG_GB_SIZE, RIMG_GB_TOO_BIG, RIMG_GB_ORANGE, RIMG_GB_NEEDS_CHIP, ROM_WRITE_HINT_GB, LBL_FLASH_TYPE, LBL_FLASH_MB, LBL_SECTOR_KB, LBL_BUFFER, RIMG_SNES_LAYOUT, RIMG_SNES_BAD_LAYOUT, RIMG_SNES_CAPACITY_FIXED, RIMG_GEN_TYPE, RIMG_GEN_MB, RIMG_GEN_NO_FIT, RIMG_GEN_NEEDS_SECTOR, RIMG_GEN_SECTOR, RIMG_GEN_BUFFER, RIMG_GEN_PADDED, FP_BUS, FP_BUS_8, FP_BUS_PLCC32, FP_BUS_16, FP_BUS_EPROM, FP_KB, FP_HINT, FP_ERASE, FP_BLANK, FP_WRITE, FP_ID, FP_CONFIRM_ERASE, FP_CONFIRM_WRITE, FP_ERASED, FP_BLANK_YES, FP_BLANK_NO, FP_ID_NONE, FP_NO_FW, FP_EPROM_NO_ERASE, STAGE_ERASING, STAGE_CHECKING_BLANK, RIMG_FP_BUS, RIMG_FP_KB, RIMG_FP_NEEDS_TYPE, RIMG_FP_SIZE, RIMG_FP_NO_FIT, RIMG_FP_PADDED, FP_BUS_MD, FP_MD_UNKNOWN, FP_MD_ONLY_ID, RIMG_FP_DETECT_ONLY, RIMG_FP_MD_OPTIONS,
-    VERIFY_AFTER, STAGE_VERIFYING_ROM, ROM_VERIFY_OK, ROM_VERIFY_BAD, VERIFY_SAVE_AFTER, STAGE_VERIFYING_SAVE, SAVE_VERIFY_OK, SAVE_VERIFY_BAD, MD_CHIP_KNOWN, MD_CHIP_UNKNOWN, MD_CHIP_NONE, FLASH_ABORT_WARN, NES_RAW, NES_RAW_FAIL, READ_TWICE, TWICE_OK, TWICE_BAD,
+    VERIFY_AFTER, STAGE_VERIFYING_ROM, ROM_VERIFY_OK, ROM_VERIFY_BAD, VERIFY_SAVE_AFTER, STAGE_VERIFYING_SAVE, SAVE_VERIFY_OK, SAVE_VERIFY_BAD, MD_CHIP_KNOWN, MD_CHIP_UNKNOWN, MD_CHIP_NONE, FLASH_ABORT_WARN, NES_RAW, NES_RAW_FAIL, READ_TWICE, TWICE_OK, TWICE_BAD, WARN_5V,
 }
 
 object I18n {
@@ -161,6 +161,7 @@ object I18n {
         S.READ_TWICE to "Ler a ROM 2 vezes e comparar (dobra o tempo; acha erro de leitura sem depender da base)",
         S.TWICE_OK to "As duas leituras são idênticas",
         S.TWICE_BAD to "As duas leituras diferem",
+        S.WARN_5V to "Este slot é de 5 V. Flashcarts, cartuchos não licenciados e repros só de 3,3 V podem ser danificados (e o dumper). Confira antes de inserir.",
         S.BYTES to "bytes",
         S.V_PRG_REQUIRED to "Informe o tamanho da PRG (KB).",
         S.V_PRG_MULTIPLE16 to "A PRG deve ser múltipla de 16 KB.",
@@ -449,6 +450,7 @@ object I18n {
         S.READ_TWICE to "Read the ROM twice and compare (doubles the time; catches read errors without needing the database)",
         S.TWICE_OK to "Both reads are identical",
         S.TWICE_BAD to "The two reads differ",
+        S.WARN_5V to "This slot is 5 V. Flashcarts, unlicensed cartridges and repros that accept only 3.3 V can be damaged (and so can the dumper). Check before inserting.",
         S.BYTES to "bytes",
         S.V_PRG_REQUIRED to "Enter the PRG size (KB).",
         S.V_PRG_MULTIPLE16 to "PRG must be a multiple of 16 KB.",
@@ -737,6 +739,7 @@ object I18n {
         S.READ_TWICE to "Прочитать ROM дважды и сравнить (вдвое дольше; находит ошибки чтения без базы данных)",
         S.TWICE_OK to "Оба чтения совпадают",
         S.TWICE_BAD to "Два чтения различаются",
+        S.WARN_5V to "Этот слот работает на 5 В. Флэшкарты, нелицензионные картриджи и репро только на 3,3 В могут выйти из строя (и дампер тоже). Проверьте перед установкой.",
         S.BYTES to "байт",
         S.V_PRG_REQUIRED to "Укажите размер PRG (КБ).",
         S.V_PRG_MULTIPLE16 to "PRG должен быть кратен 16 КБ.",
@@ -1025,6 +1028,7 @@ object I18n {
         S.READ_TWICE to "读取 ROM 两次并比较（耗时加倍；无需数据库即可发现读取错误）",
         S.TWICE_OK to "两次读取完全一致",
         S.TWICE_BAD to "两次读取不一致",
+        S.WARN_5V to "此卡槽为 5 V。仅支持 3.3 V 的闪存卡、非授权卡带和复刻卡可能损坏（读取器也可能损坏）。插入前请确认。",
         S.BYTES to "字节",
         S.V_PRG_REQUIRED to "请填写 PRG 大小（KB）。",
         S.V_PRG_MULTIPLE16 to "PRG 必须是 16 KB 的倍数。",

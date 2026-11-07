@@ -717,6 +717,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             }
             CheckRow(saveReport, { saveReport = it; Prefs.saveReport = it }, t(S.SAVE_REPORT))
             if (!isFlash) CheckRow(readTwice, { readTwice = it }, t(S.READ_TWICE))
+            if (system == CartSystem.SNES || system == CartSystem.NES || system == CartSystem.FAMICOM || system == CartSystem.MD) Callout(t(S.WARN_5V), Tone.WARN)
             Text(t(S.SHORTCUTS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }

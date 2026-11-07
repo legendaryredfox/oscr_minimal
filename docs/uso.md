@@ -129,8 +129,10 @@ Códigos de erro do protocolo: `docs/protocolo.md`, seção 8. Na CLI, o código
 
 ## 6. Limites e segurança
 
-- Um cartucho por vez; USB desligado ao trocar.
+- Um cartucho por vez; USB desligado ao trocar (nas placas v1.1, `power off` e o LED amarelo aceso bastam).
 - Nunca insira cartucho de outro console no slot GBA (3,3 V).
+- **Os slots de SNES, NES, Famicom e Mega Drive são de 5 V fixos** (decisão do projeto). Alguns flashcarts, cartuchos não licenciados e placas de repro aceitam só 3,3 V: 5 V pode danificá-los **e o dumper**. Confira a placa do cartucho antes; na dúvida, não insira. A GUI mostra esse aviso nesses sistemas (P-07, `docs/pesquisa-comunidade.md`).
+- Com as placas v1.1 (D126): para trocar o cartucho, `dumper.py power off` e espere o LED amarelo; sem isso, desligue o USB.
 - Cartuchos SNES com chip especial e jogos raros podem exigir leitura adicional (futura).
 - Gravar save é irreversível para o conteúdo anterior: faça backup antes.
 
