@@ -16,4 +16,13 @@ Placa só GBA (`boards/gb_gba/`); GB e GBC entram pelo mesmo slot, com adaptador
 
 O OSCR lê GB a 5 V; aqui todos saem do regulador a 3,3 V. A maioria dos cartuchos GB lê bem, mas **alguns GB antigos podem falhar** (bits trocados, CRC diferente a cada tentativa). A saída prevista é um jumper de solda do VCC do slot ao 5 V (`docs/limites-gb.md`, seção 2), que **só vale para GB/GBC**: nunca para GBA, que se danifica com 5 V.
 
-> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.
+## Bloco de troca de cartucho (v1.1)
+
+| Peça | Opcional? | O que se perde sem ela |
+|---|---|---|
+| Q1, R2, R3 | **Não** (sem o Q1 o 5V dos slots não chega: pôr uma ponte do 5V ao `+5V_CART` se quiser abrir mão do `POWER`) | `POWER on/off` em software; a troca segura do cartucho |
+| R4, D2 (LED verde) | Sim | só a indicação visual de 5V dos slots |
+| Q2, R5, R6 | Sim | descarga rápida do rail: o firmware espera 2 s em vez de 500 ms |
+| Q3, R7, R8, R9, D3 (sensor e LED amarelo) | Sim | o LED amarelo e a leitura do D53 (`POWER_RESP.rail` fica `0xFF`) |
+
+Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1.

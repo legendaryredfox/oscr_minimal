@@ -6,7 +6,7 @@ Versão mínima de duas funções: um slot **Famicom** (60p, 2,54 mm) e um slot 
 
 **Si5351, sem PIC:** o NES usa o `CLK0` do Si5351 no pino 37; o Famicom não tem pino de clock. Sem PIC (CIC do SNES), sem R2 e sem regulador de 3,3 V.
 
-**Estado:** v1.0, 117,1 × 79,1 mm (alongada 5 mm à esquerda e com o slot NES 5 mm mais à esquerda, para dar folga ao U1, D124). ERC 0 violações; DRC sem erros nem ligações abertas (só 4 avisos de biblioteca e os de paridade das outras placas); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com GND roteado junto e costurado com vias; alimentação (`+5V`) com 0,8 mm. **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`.
+**Estado:** v1.1, 117,1 × 79,1 mm (alongada 5 mm à esquerda e com o slot NES 5 mm mais à esquerda, para dar folga ao U1, D124). ERC 0 violações; DRC sem erros nem ligações abertas (só 4 avisos de biblioteca e os de paridade das outras placas); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com GND roteado junto e costurado com vias; alimentação (`+5V`) com 0,8 mm. **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`.
 
 ## Diferenças em relação à `16_and_8_bits`
 
@@ -33,3 +33,18 @@ tools/export_fab.sh famicom_nes v1.0
 ```
 
 **Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+
+## Bloco de troca de cartucho (v1.1, D126)
+
+Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+
+| Ref. | Valor | Função |
+|---|---|---|
+| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
+| R2 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
+| R3 | 100 Ω | D19 ao gate do Q1 |
+| R4, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
+| Q2, R5 | 2N7000 (TO-92), 330 Ω | descarga do rail quando o Q1 abre |
+| Q3, R6, R7, R8, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R8 leva o nó ao D53 |
+
+Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).

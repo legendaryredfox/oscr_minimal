@@ -38,8 +38,10 @@ Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas
 | {q2}, {r6}{(" e " + r6b) if r6b else ""} | 2N7000 (TO-92), 330 Ω{(" (o " + r6b + " descarrega o 3,3 V)") if r6b else ""} | descarga do rail quando o {q1} abre |
 | {q3}, {r7}, {r8}, {r9}, {dy} | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: {dy} aceso = seguro trocar; {r9} leva o nó ao D53 |
 
-Os pinos de 5V dos slots{", do Si5351 e do PIC" if a.board != "famicom" else ""} e os capacitores deles ficam em `+5V_CART`. O {q1} (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
+Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O {q1} (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
 """.strip("\n") + "\n"
+
+MARK = "## Bloco de troca de cartucho"
 
 def edit(path, fn):
     p = B / path
@@ -52,12 +54,13 @@ def edit(path, fn):
 # README
 def readme(s):
     s = re.sub(r"\*\*Estado:\*\* v1\.0", f"**Estado:** {V}", s)
-    s = s.rstrip("\n") + "\n\n" + T
-    return s
+    return s if MARK in s else s.rstrip("\n") + "\n\n" + T
 edit("README.md", readme)
 # BOM
 def bom(s):
     s = s.replace("v1.0", V)
+    if MARK in s:
+        return s
     s = s.rstrip("\n") + "\n\n" + T + f"""
 Peças a comprar a mais por placa: 1 × IRF9540N, 2 × 2N7000, 1 LED verde e 1 LED amarelo de 3 mm, resistores axiais 1/4 W (pequenos, 0204 ou 0207 em pé): 100 kΩ × 2, 100 Ω × 1, 1 kΩ × 3, 330 Ω × {2 if v3 else 1}.
 """
@@ -68,6 +71,8 @@ def mont(s):
     s = s.replace("v1.0", V)
     s = s.replace("NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO", "SÓ TROQUE O CARTUCHO COM O LED AMARELO ACESO")
     s = s.replace("Desligue o USB antes de trocar de cartucho", "Antes de trocar de cartucho, desligue o 5V dos slots (`dumper.py power off`, espere o LED amarelo acender) ou o USB")
+    if MARK in s:
+        return s
     s = s.rstrip("\n") + f"""
 
 ## Bloco de troca de cartucho ({V})
@@ -86,7 +91,9 @@ Testes extras (multímetro, sem cartucho):
 edit("docs/montagem.md", mont)
 # componentes opcionais
 def opc(s):
-    return re.sub(r"> Quando a v1\.1 com o bloco de troca.*", f"""## Bloco de troca de cartucho ({V})
+    if MARK in s:
+        return s
+    sec = f"""## Bloco de troca de cartucho ({V})
 
 | Peça | Opcional? | O que se perde sem ela |
 |---|---|---|
@@ -95,7 +102,10 @@ def opc(s):
 | {q2}, {r6}{(", " + r6b) if r6b else ""} | Sim | descarga rápida do rail: o firmware espera 2 s em vez de 500 ms |
 | {q3}, {r7}, {r8}, {r9}, {dy} (sensor e LED amarelo) | Sim | o LED amarelo e a leitura do D53 (`POWER_RESP.rail` fica `0xFF`) |
 
-Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1.""", s)
+Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1."""
+    if re.search(r"> Quando a v1\.1 com o bloco de troca", s):
+        return re.sub(r"> Quando a v1\.1 com o bloco de troca.*", lambda m: sec, s)
+    return s.rstrip("\n") + "\n\n" + sec + "\n"
 edit("docs/componentes-opcionais.md", opc)
 # PEDIDO
 def pedido(s):

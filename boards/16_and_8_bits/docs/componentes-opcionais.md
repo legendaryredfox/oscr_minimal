@@ -20,4 +20,13 @@ Como os slots dividem os mesmos barramentos, pode-se montar só os slots que o u
 
 Sobre GB/GBC a 3,3 V: ver `docs/limites-gb.md` (alguns GB antigos podem falhar; jumper para 5 V só para GB/GBC, nunca GBA).
 
-> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.
+## Bloco de troca de cartucho (v1.1)
+
+| Peça | Opcional? | O que se perde sem ela |
+|---|---|---|
+| Q1, R3, R4 | **Não** (sem o Q1 o 5V dos slots não chega: pôr uma ponte do 5V ao `+5V_CART` se quiser abrir mão do `POWER`) | `POWER on/off` em software; a troca segura do cartucho |
+| R5, D2 (LED verde) | Sim | só a indicação visual de 5V dos slots |
+| Q2, R6, R7 | Sim | descarga rápida do rail: o firmware espera 2 s em vez de 500 ms |
+| Q3, R8, R9, R10, D3 (sensor e LED amarelo) | Sim | o LED amarelo e a leitura do D53 (`POWER_RESP.rail` fica `0xFF`) |
+
+Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1.

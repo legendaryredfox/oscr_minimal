@@ -1,8 +1,8 @@
-# Pedido da placa megadrive v1.0 (JLCPCB)
+# Pedido da placa megadrive v1.1 (JLCPCB)
 
-Placa **só Mega Drive**, 2 camadas, 107,1 × 65,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só Mega Drive**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `814297c791b70f12a37cd0fa8ad9d184279bbb74f33d3ac1f9e92a95bcc398e3` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `ddc28be2b5077ead31ffb825a9fe56c82a5b39985ca4316da6fa2f954fbc1f4c` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 
@@ -15,4 +15,4 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 
 Se a pré-visualização mostrar outra coisa, **não pague**.
 
-**DRC:** 0 erros, 0 ligações abertas e nenhum `starved_thermal` (os pads GND3 do Mega e A18 do slot têm conexão sólida com o plano da B.Cu, D96); só avisos de biblioteca/paridade já justificados em D71. ERC 0 violações. `tools/check_netlist.py --board megadrive` confere (56 nets, 139 ligações).
+**DRC:** 0 erros, 0 ligações abertas e nenhum `starved_thermal` (os pads GND3 do Mega e A18 do slot têm conexão sólida com o plano da B.Cu, D96); só avisos de biblioteca/paridade já justificados em D71. ERC 0 violações. `tools/check_netlist.py --board megadrive` confere (63 nets, 169 ligações).

@@ -5,13 +5,13 @@
       "Application": "Pcbnew",
       "Version": "10.0.8-10.0.8~ubuntu24.04.1"
     },
-    "CreationDate": "2026-11-07T16:06:01-03:00"
+    "CreationDate": "2026-11-07T19:05:43-03:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "dumper",
       "GUID": "64756d70-6572-42e6-9b69-6361645f7063",
-      "Revision": "v1.0"
+      "Revision": "v1.1"
     },
     "Size": {
       "X": 117.1,

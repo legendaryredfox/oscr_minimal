@@ -1,8 +1,8 @@
-# Montagem — placa famicom_nes (Famicom e NES) v1.0
+# Montagem — placa famicom_nes (Famicom e NES) v1.1
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e em `boards/famicom_nes/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez, de NES (72 pinos) **ou** de Famicom (60 pinos), nunca os dois slots ao mesmo tempo (os dois estão ligados em paralelo nos mesmos pinos do Mega). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho.
+> **Segurança:** só um cartucho por vez, de NES (72 pinos) **ou** de Famicom (60 pinos), nunca os dois slots ao mesmo tempo (os dois estão ligados em paralelo nos mesmos pinos do Mega). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Antes de trocar de cartucho, desligue o 5V dos slots (`dumper.py power off`, espere o LED amarelo acender) ou o USB.
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão. Se algo dos testes das seções 5 e 6 falhar, pare e avise antes de seguir.
 >
@@ -110,3 +110,15 @@ Use um cartucho simples: NES ou Famicom mapper 0 (NROM), de pouco valor. Escolha
 - Altura dos espaçadores M3 dos cantos (D25): o USB-C e o jack do Mega têm que passar por baixo do shield.
 - Posição do módulo Si5351 sobre o header (sem furos de fixação): confira que ele não encosta em peças.
 - A placa foi roteada por autoroteador: confira as trilhas no KiCad e faça o teste de continuidade da seção 5 com atenção.
+
+## Bloco de troca de cartucho (v1.1)
+
+Solde com os componentes baixos: R2 a R8 (em pé, como no silkscreen), os dois 2N7000 (Q2, Q3; o lado chato do silk é o lado chato do transistor), os LEDs D2 (verde) e D3 (amarelo) e, **por último entre os baixos**, o Q1 (TO-220, em pé, como no silkscreen).
+
+**Firmware:** grave o ambiente `SerialASCII_PowerSense` (`pio run -e SerialASCII_PowerSense -t upload` em `firmware/oscr`): começa com o 5V dos slots desligado; o host liga com `POWER`.
+
+Testes extras (multímetro, sem cartucho):
+
+1. Antes de ligar: continuidade entre o dreno do Q1 (`+5V_CART`) e o VCC do slot; **nenhuma** entre `+5V_CART` e o 5V do Mega.
+2. Ligado ao USB, com o firmware padrão: o 5V do Mega presente, `+5V_CART` conforme o comando `POWER` (`dumper.py power on|off`): ligado = LED verde (D2) aceso e 4,7 a 5,2 V no VCC do slot; desligado = D3 aceso e VCC abaixo de 0,5 V em até 1 s.
+3. Medir a queda do Q1 em carga e o tempo de descarga; anotar nos logs. O limiar do LED amarelo varia com o 2N7000 (1 a 2,5 V).

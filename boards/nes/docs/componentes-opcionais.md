@@ -13,4 +13,13 @@ Placa só NES (`boards/nes/`, 72 pinos). Tem Si5351; não tem PIC, R2 nem regula
 
 Como o Si5351 é a peça mais cara e mais difícil de achar certa, **a placa funciona para NES sem ele**. Se a meta for só NES, `boards/famicom/` (sem Si5351) é a versão sem nada opcional. As limitações de mappers estão em `docs/limites-nes.md` e valem para qualquer montagem.
 
-> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.
+## Bloco de troca de cartucho (v1.1)
+
+| Peça | Opcional? | O que se perde sem ela |
+|---|---|---|
+| Q1, R2, R3 | **Não** (sem o Q1 o 5V dos slots não chega: pôr uma ponte do 5V ao `+5V_CART` se quiser abrir mão do `POWER`) | `POWER on/off` em software; a troca segura do cartucho |
+| R4, D2 (LED verde) | Sim | só a indicação visual de 5V dos slots |
+| Q2, R5 | Sim | descarga rápida do rail: o firmware espera 2 s em vez de 500 ms |
+| Q3, R6, R7, R8, D3 (sensor e LED amarelo) | Sim | o LED amarelo e a leitura do D53 (`POWER_RESP.rail` fica `0xFF`) |
+
+Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1.

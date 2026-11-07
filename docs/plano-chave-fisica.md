@@ -1,3 +1,5 @@
+> **Atualização (D126, 2026-11-07): o bloco foi gerado nas placas v1.1** (`snes`, `megadrive`, `nes`, `famicom`, `famicom_nes`, `gb_gba`, `16_and_8_bits`, `n64`), sem passar antes pela placa perfurada. A `16_bits` v1.3 segue esperando o RP2040. Ver `docs/bloco-troca.md`.
+
 # Plano: bloco de troca de cartucho (`16_bits` v1.3 e demais placas v1.1), **sem chave física**
 
 > **Revisado em 2026-11-07 (D123): a chave física (SPST, D18, trava de segurança e aborto de leitura) foi cancelada.** Fica só o controle **em software** (`POWER`, D116), o sensor do rail com o LED de "seguro trocar", a descarga forçada e o ciclo de energia do SA-1. O texto abaixo mantém o histórico; o que menciona a chave está marcado como cancelado. Firmware, host e GUI já foram atualizados.

@@ -10,3 +10,14 @@ Tabela a partir de `pinmap.md` e de `firmware/oscr/src/cores/N64.cpp`; vale a me
 | LED de status, capacitores de 100 nF, 470 µF | LED sim; capacitores não recomendado | LED: indicação. Capacitores: leitura errada possível | — |
 
 Chips de segurança do N64 (CIC) ficam no cartucho e na própria placa do console; o dumper não os usa (pinos 18 e 43 sem ligação).
+
+## Bloco de troca de cartucho (v1.1)
+
+| Peça | Opcional? | O que se perde sem ela |
+|---|---|---|
+| Q1, R3, R4 | **Não** (sem o Q1 o 5V dos slots não chega: pôr uma ponte do 5V ao `+5V_CART` se quiser abrir mão do `POWER`) | `POWER on/off` em software; a troca segura do cartucho |
+| R5, D2 (LED verde) | Sim | só a indicação visual de 5V dos slots |
+| Q2, R6, R7 | Sim | descarga rápida do rail: o firmware espera 2 s em vez de 500 ms |
+| Q3, R8, R9, R10, D3 (sensor e LED amarelo) | Sim | o LED amarelo e a leitura do D53 (`POWER_RESP.rail` fica `0xFF`) |
+
+Nenhuma peça do bloco afeta quais cartuchos podem ser lidos; todas atuam só na troca de cartucho e no ciclo de energia do SA-1.

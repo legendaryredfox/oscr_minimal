@@ -1,8 +1,8 @@
-# Pedido da placa nes v1.0 (JLCPCB)
+# Pedido da placa nes v1.1 (JLCPCB)
 
-Placa **só NES**, 2 camadas, 110,1 × 65,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só NES**, 2 camadas, 110,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `e299eb7c576050b0244c6caa8da5c6ccf1bf22f80fa2a4cac0c7a81059fe8e3c` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `4734e185b01fdd3672b79ffb2ab80cb69a9cb43745c9ef81bb92d78531d87c48` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 
@@ -15,4 +15,4 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 
 Se a pré-visualização mostrar outra coisa, **não pague**.
 
-**Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade já justificados em D71); ERC 0 violações; `tools/check_netlist.py --board nes` confere (39 nets, 116 ligações).
+**Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade já justificados em D71); ERC 0 violações; `tools/check_netlist.py --board nes` confere (46 nets, 146 ligações).

@@ -4,7 +4,7 @@
 
 **Slots:** N64 (50 pinos, cartucho de 3,3 V; footprint `N64_Slot` do OSCR, a trazer para `_lib/`)
 
-**Estado:** v1.0, 110,1 × 65,1 mm. ERC com 1 aviso de biblioteca (U2, o mesmo das outras placas); DRC sem erros nem ligações abertas (só 4 avisos de biblioteca dos furos); netlist confere com `docs/pinmap.md` (30 nets, 96 ligações); gerbers em `fab/`. Roteada pelo Freerouting, **não revisada à mão no KiCad**; nada encomendado nem montado. Reproduzir: `tools/n64/build_pcb.sh` (PCB) e `tools/n64/make_sch.py` (esquemático). Aprovado pelo usuário em 2026-11-07 ("confere tudo e pode fazer no kicad"). **Fase 1 do `CLAUDE.md`:** `docs/pinmap.md` gerado por `tools/n64/gen_pinmap.py` cruzando `pinout.ods`, `n64_adapter` + `six_slot_adapter` e `N64.ino`: 50 pinos, 0 divergências entre as fontes. 
+**Estado:** v1.1, 110,1 × 65,1 mm. ERC com 1 aviso de biblioteca (U2, o mesmo das outras placas); DRC sem erros nem ligações abertas (só 4 avisos de biblioteca dos furos); netlist confere com `docs/pinmap.md` (30 nets, 96 ligações); gerbers em `fab/`. Roteada pelo Freerouting, **não revisada à mão no KiCad**; nada encomendado nem montado. Reproduzir: `tools/n64/build_pcb.sh` (PCB) e `tools/n64/make_sch.py` (esquemático). Aprovado pelo usuário em 2026-11-07 ("confere tudo e pode fazer no kicad"). **Fase 1 do `CLAUDE.md`:** `docs/pinmap.md` gerado por `tools/n64/gen_pinmap.py` cruzando `pinout.ods`, `n64_adapter` + `six_slot_adapter` e `N64.ino`: 50 pinos, 0 divergências entre as fontes. 
 
 ## O que o pinmap mostra
 
@@ -35,3 +35,18 @@ O `CLAUDE.md` (seção 4) deixava o N64 fora das placas anteriores; esta placa n
 Regras gerais: `CLAUDE.md`. Layout da pasta: `boards/README.md`.
 
 **Peças opcionais:** [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+
+## Bloco de troca de cartucho (v1.1, D126)
+
+Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+
+| Ref. | Valor | Função |
+|---|---|---|
+| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
+| R3 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
+| R4 | 100 Ω | D19 ao gate do Q1 |
+| R5, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
+| Q2, R6 e R7 | 2N7000 (TO-92), 330 Ω (o R7 descarrega o 3,3 V) | descarga do rail quando o Q1 abre |
+| Q3, R8, R9, R10, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R10 leva o nó ao D53 |
+
+Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).

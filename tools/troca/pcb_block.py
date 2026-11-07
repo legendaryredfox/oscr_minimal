@@ -95,10 +95,15 @@ for f in b.GetFootprints():
     elif ref.startswith(("SNES", "MD", "NES", "FC", "N64", "GBA", "GB", "SMS")) and str(f.GetFPID().GetLibItemName()).endswith("Slot"):
         r = f.GetBoundingBox(False)
         OBST.append((tomm(r.GetLeft()) - 1.5, tomm(r.GetTop()) - 1.5, tomm(r.GetRight()) + 1.5, tomm(r.GetBottom()) + 1.5))
-    else:
+    elif ref == "A1":
         OBST += pad_boxes(f, 1.0)
-        if ref == "A1":
-            pass
+    else:                      # peças com corpo (resistor deitado, capacitor, LED, soquete): a caixa inteira, não só os pads
+        r = f.GetBoundingBox(False)
+        OBST.append((tomm(r.GetLeft()) - 0.8, tomm(r.GetTop()) - 0.8, tomm(r.GetRight()) + 0.8, tomm(r.GetBottom()) + 0.8))
+for d in b.GetDrawings():            # textos do silkscreen da frente (créditos, rótulos) também não podem ser cobertos
+    if d.GetClass() == "PCB_TEXT" and d.GetLayer() == pcbnew.F_SilkS:
+        r = d.GetBoundingBox()
+        OBST.append((tomm(r.GetLeft()) - 0.5, tomm(r.GetTop()) - 0.5, tomm(r.GetRight()) + 0.5, tomm(r.GetBottom()) + 0.5))
 def hit(box):
     for o in OBST:
         if box[0] < o[2] and box[2] > o[0] and box[1] < o[3] and box[3] > o[1]:

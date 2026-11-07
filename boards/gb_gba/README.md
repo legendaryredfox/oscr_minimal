@@ -4,7 +4,7 @@
 
 Versão mínima de uma função: um slot **GBA** (32 pads SMD, 1,5 mm, **3,3 V**) em shield para Arduino Mega 2560 R3, só USB. GB e GBC entram **só pelo slot GBA, com adaptador** (D56). Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`). Sem SD, sem LCD, sem Si5351 e sem PIC.
 
-**Estado:** v1.0, 138,1 × 67,1 mm. ERC com 1 aviso de biblioteca (U1, antes U3; o mesmo da `16_and_8_bits`); DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com o GND junto; o `/D9` o autoroteador não achou caminho em nenhuma tentativa e foi roteado pelo A* de `tools/pcb_v12` (`tools/gb_gba/route_net.py`). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`, `+3V3`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
+**Estado:** v1.1, 138,1 × 67,1 mm. ERC com 1 aviso de biblioteca (U1, antes U3; o mesmo da `16_and_8_bits`); DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com o GND junto; o `/D9` o autoroteador não achou caminho em nenhuma tentativa e foi roteado pelo A* de `tools/pcb_v12` (`tools/gb_gba/route_net.py`). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`, `+3V3`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
 
 ## Diferenças em relação à `16_and_8_bits`
 
@@ -30,3 +30,18 @@ tools/export_fab.sh gb_gba v1.0
 ```
 
 **Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+
+## Bloco de troca de cartucho (v1.1, D126)
+
+Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+
+| Ref. | Valor | Função |
+|---|---|---|
+| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
+| R2 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
+| R3 | 100 Ω | D19 ao gate do Q1 |
+| R4, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
+| Q2, R5 e R6 | 2N7000 (TO-92), 330 Ω (o R6 descarrega o 3,3 V) | descarga do rail quando o Q1 abre |
+| Q3, R7, R8, R9, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R9 leva o nó ao D53 |
+
+Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
