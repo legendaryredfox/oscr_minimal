@@ -13,7 +13,7 @@ Quantidades e valores: `boards/megadrive/docs/bom.md`. Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistor 220 Ω | R1 (do LED) |
-| Capacitores cerâmicos 100 nF | C3 (meio do slot), C5 (junto ao pino A31), C6 (junto ao pino A2) |
+| Capacitores cerâmicos 100 nF | C2 (meio do slot), C3 (junto ao pino A31), C4 (junto ao pino A2) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | LED 3 mm | D1 |
 | Slot Mega Drive 64 pinos | MD1 |
@@ -21,7 +21,7 @@ Quantidades e valores: `boards/megadrive/docs/bom.md`. Resumo:
 | Pontos de teste (opcional: tira de pinos macho 1x6, 2,54 mm) | TP1 a TP6 |
 | Mecânica | 4 espaçadores M3 + pés de borracha (cantos) |
 
-Não existem nesta placa: Si5351, PIC, soquete DIP-8, R2, C2 e C4. Se a lista de compras vier da `16_bits`, ignore essas peças.
+Não existem nesta placa: Si5351, PIC, soquete DIP-8 e R2. Se a lista de compras vier da `16_bits`, ignore essas peças.
 
 ## 2. Ferramentas
 
@@ -34,7 +34,7 @@ Não existem nesta placa: Si5351, PIC, soquete DIP-8, R2, C2 e C4. Se a lista de
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
 1. **Resistor R1** (220 Ω, deitado, como no silkscreen).
-2. **Capacitores cerâmicos de 100 nF**: C3, C5 e C6. Eles ficam na faixa entre o slot e a fileira de cima do Mega; C6 e C5 ficam perto das pontas do slot (pinos A2 e A31).
+2. **Capacitores cerâmicos de 100 nF**: C2, C3 e C4. Eles ficam na faixa entre o slot e a fileira de cima do Mega; C4 e C3 ficam perto das pontas do slot (pinos A2 e A31).
 3. **LED D1**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 4. **Capacitor eletrolítico C1 (470 µF)**, respeitando a polaridade (o `+` está no silkscreen), no canto superior esquerdo.
 5. **Pontos de teste TP1 a TP6** (fileira junto à borda de baixo, `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`): a 2,54 mm um do outro, com o rótulo na vertical acima de cada furo. Solde uma tira de pinos macho 1x6 padrão (ou 6 pinos soltos) para ligar um analisador lógico ou uma ponta de prova. **Opcional.**
@@ -100,7 +100,7 @@ Só depois disso, e na ordem de risco de `docs/uso.md` seção 7, teste saves (S
 |---|---|
 | Cartucho não detectado | Cartucho todo encaixado; um cartucho por vez; limpeza dos contatos; slot reto; VCC do slot (5 V em A2 e A31); `/CART` (B32) em nível baixo com o cartucho inserido. |
 | CRC diverge | Contato oxidado (limpe com álcool isopropílico); refaça o dump 3 vezes; compare com o banco; verifique `/CAS0` (B16) e `/CE` (B17) nos pontos de teste. |
-| Leitura com bytes errados em blocos | Capacitores C3, C5 e C6; solda dos pinos A19 a A30 e B22 a B25 (dados); cabo USB com queda de tensão. |
+| Leitura com bytes errados em blocos | Capacitores C2, C3 e C4; solda dos pinos A19 a A30 e B22 a B25 (dados); cabo USB com queda de tensão. |
 | Porta serial não aparece | Cabo USB-C só de carga (troque); no Linux, adicione-se ao grupo `dialout` (`sudo usermod -aG dialout $USER` e reinicie a sessão); clone com CH340 aparece como `/dev/ttyUSB0`; no Windows/macOS instale o driver CH340. |
 | LED não acende | Polaridade (ânodo no 5V); resistor R1; o LED é ativo em nível baixo (D38). |
 | `/CART` sempre baixo ou sempre alto | Solda do pino D50 e do B32; trilha de 25 mm entre eles; cartucho com contato B32 sujo. |

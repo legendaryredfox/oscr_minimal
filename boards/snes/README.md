@@ -11,8 +11,8 @@ Versão mínima de uma função: um slot **SNES/SFC** (62p, 2,5 mm) em shield pa
 | Item | 16_bits | snes |
 |---|---|---|
 | Slots | SNES, Mega Drive | só SNES |
-| Mantido | Si5351 (U1), PIC (U2), R2 (pull-up do IRQ), C2, C4, C1, LED | idem |
-| Removido | | MD1, C3, C5, C6, TP3 (`/CE` do Mega Drive), `/CART` (D50 sem ligação) |
+| Mantido | Si5351 (U1), PIC (U2), R2 (pull-up do IRQ), C2, C4 (agora C3, D109), C1, LED | idem |
+| Removido | | MD1, C3, C5, C6, TP3 (`/CE` do Mega Drive), `/CART` (D50 sem ligação). Referências renumeradas em D109 (C4 virou C3; TP4 a TP6 viraram TP3 a TP5) |
 | Pontos de teste | `/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE` | `/IRQ` (D7), `5V`, `GND`, `/RD` (D9), `/WR` (D8) |
 | Placa | 108,1 × 86,1 mm | 107,1 × 65,1 mm |
 

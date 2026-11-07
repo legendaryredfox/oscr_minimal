@@ -13,7 +13,7 @@ Versão mínima de uma função: um slot **Famicom** (60p, 2,54 mm) em shield pa
 | Item | 16_and_8_bits | famicom |
 |---|---|---|
 | Slots | SNES, NES, Famicom, Mega Drive, GBA | só Famicom |
-| Mantido | LED (D1, R1), C1, C4 (VCC do slot) | idem |
+| Mantido | LED (D1, R1), C1, C4 (VCC do slot; agora C2, D109) | idem |
 | Removido | SNES1, NES1, MD1, GBA1, Si5351 (U1), PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C3, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 107,1 × 65,1 mm |
 

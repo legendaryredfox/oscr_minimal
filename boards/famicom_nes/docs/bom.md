@@ -27,7 +27,7 @@ Montagem **manual**. Lista gerada de `boards/famicom_nes/fab/bom.csv` mais as pe
 | D1 | 1 | LED 3 mm | `LED_D3.0mm` | Ativo em nível baixo (cátodo em D38). |
 | R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
 | C1 | 1 | 470 µF / 16 V, radial Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
-| C3, C4 | 2 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | C3 no NES (pino 36), C4 no Famicom (pinos 30 e 31). |
+| C2, C3 | 2 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | C2 no NES (pino 36), C3 no Famicom (pinos 30 e 31). |
 
 Sem PIC, R2, regulador nem pontos de teste.
 

@@ -10,6 +10,7 @@
 	(title_block
 		(title "dumper")
 		(date "2026-11-02")
+		(rev "v1.0")
 	)
 	(layers
 		(0 "F.Cu" signal)
@@ -1011,7 +1012,7 @@
 		(at 100 80)
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm diameter 5mm width 2.5mm Capacitor")
-		(property "Reference" "C9"
+		(property "Reference" "C4"
 			(at 2.5 -2.5 0)
 			(layer "F.SilkS")
 			(uuid "e29adddd-ac3c-4e6c-ab24-8d11748ca50c")
@@ -3222,7 +3223,7 @@
 		(at 76 80)
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm diameter 5mm width 2.5mm Capacitor")
-		(property "Reference" "C8"
+		(property "Reference" "C3"
 			(at 2.5 0.3 0)
 			(layer "F.SilkS")
 			(uuid "58623f4f-b006-4d91-8d83-e7d5894e92e4")
@@ -4280,7 +4281,7 @@
 		(at 50 80)
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm diameter 5mm width 2.5mm Capacitor")
-		(property "Reference" "C7"
+		(property "Reference" "C2"
 			(at 2.5 -2.5 0)
 			(layer "F.SilkS")
 			(uuid "b16215d1-ada6-432a-810a-567162083a37")
@@ -4525,7 +4526,7 @@
 		(at 64 80)
 		(descr "TO-92 leads molded, narrow, drill 0.75mm (see NXP sot054_po.pdf)")
 		(tags "to-92 sc-43 sc-43a sot54 PA33 transistor")
-		(property "Reference" "U3"
+		(property "Reference" "U1"
 			(at 1.27 -3.56 0)
 			(layer "F.SilkS")
 			(uuid "c8b17e0d-e8c6-49fe-b74a-50a59589a511")

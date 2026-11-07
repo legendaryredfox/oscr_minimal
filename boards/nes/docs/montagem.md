@@ -15,7 +15,7 @@ Ver `boards/nes/docs/bom.md` (quantidades e referências). Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistor | R1 (220 Ω) |
-| Capacitor cerâmico 100 nF | C3 (slot NES, junto ao pino 36) |
+| Capacitor cerâmico 100 nF | C2 (slot NES, junto ao pino 36) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | LED 3 mm | D1 |
 | Header fêmea 1x7 (Si5351) e módulo | U1 |
@@ -34,7 +34,7 @@ Ver `boards/nes/docs/bom.md` (quantidades e referências). Resumo:
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
 1. **Resistor** R1 (deitado, como no silkscreen).
-2. **Capacitor cerâmico de 100 nF**: C3.
+2. **Capacitor cerâmico de 100 nF**: C2.
 3. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 4. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 5. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).

@@ -28,7 +28,8 @@ if "--board" in _args:
     del _args[i:i + 2]
 SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad_sch"
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
-# Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa
+# Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa.
+# Referências sempre sequenciais por prefixo (C1, C2, ...): ao tirar peças de uma placa derivada, renumerar (D109)
 BOARD_CFG = {
     "16_and_8_bits": dict(caps=range(2, 7), reg=True, tps={}),
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
@@ -36,18 +37,18 @@ BOARD_CFG = {
     # v. 1.2 final (D108): resistores serie R3..R14 e TVS D3..D14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES,
     # chave de 5V dos slots (Q1, R16..R18, D2; comando no D19), reset (SW1)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}, v12b=True),
-    # só GBA (GB e GBC por adaptador): regulador de 3,3 V, sem Si5351, PIC e R2, sem capacitores de slot além do C9
-    "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}),
-    # só SNES: C2 do slot e C4 do PIC; Si5351, PIC e R2 ficam; sem /CART
-    "snes": dict(caps=(2, 4), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
-    # só NES: Si5351 (só o CLK0 vai ao slot, pino 37) e C3 do slot; sem PIC, R2, regulador, pontos de teste nem /CART
-    "nes": dict(caps=(3,), reg=False, nopic=True, tps={}),
-    # Famicom + NES: Si5351 (só o CLK0, no pino 37 do NES), C3 (NES) e C4 (Famicom); sem PIC, R2, regulador nem pontos de teste
-    "famicom_nes": dict(caps=(3, 4), reg=False, nopic=True, tps={}),
-    # só Famicom: sem Si5351 (o slot não usa clock), PIC, R2 nem regulador; C4 do slot
-    "famicom": dict(caps=(4,), reg=False, mdonly=True, tps={}),
-    # só Mega Drive: sem SNES, Si5351, PIC nem R2; C3 do slot e C5/C6 extras
-    "megadrive": dict(caps=(3, 5, 6), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
+    # só GBA (GB e GBC por adaptador): regulador de 3,3 V (U1, C2, C3, C4), sem Si5351, PIC e R2
+    "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}, regref=("U1", "C2", "C3", "C4")),
+    # só SNES: C2 do slot e C3 do PIC; Si5351, PIC e R2 ficam; sem /CART
+    "snes": dict(caps=(2, 3), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D9", "TP4": "D8", "TP5": "D7"}),
+    # só NES: Si5351 (só o CLK0 vai ao slot, pino 37) e C2 do slot; sem PIC, R2, regulador, pontos de teste nem /CART
+    "nes": dict(caps=(2,), reg=False, nopic=True, tps={}),
+    # Famicom + NES: Si5351 (só o CLK0, no pino 37 do NES), C2 (NES) e C3 (Famicom); sem PIC, R2, regulador nem pontos de teste
+    "famicom_nes": dict(caps=(2, 3), reg=False, nopic=True, tps={}),
+    # só Famicom: sem Si5351 (o slot não usa clock), PIC, R2 nem regulador; C2 do slot
+    "famicom": dict(caps=(2,), reg=False, mdonly=True, tps={}),
+    # só Mega Drive: sem SNES, Si5351, PIC nem R2; C2 do slot e C3/C4 extras
+    "megadrive": dict(caps=(2, 3, 4), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
 V12B = CFG.get("v12b", False)
@@ -141,9 +142,10 @@ def expected_nets(pm_nets):
     for tp, net in CFG["tps"].items():
         exp.setdefault(net, set()).add((tp, "1"))
     if CFG["reg"]:
-        exp["+5V"].update({("U3", "2"), ("C7", "1")})
-        exp.setdefault("+3V3", set()).update({("U3", "3"), ("C8", "1"), ("C9", "1")})
-        exp["GND"].update({("U3", "1"), ("C7", "2"), ("C8", "2"), ("C9", "2")})
+        ru, ci, co, cv = CFG.get("regref", ("U3", "C7", "C8", "C9"))
+        exp["+5V"].update({(ru, "2"), (ci, "1")})
+        exp.setdefault("+3V3", set()).update({(ru, "3"), (co, "1"), (cv, "1")})
+        exp["GND"].update({(ru, "1"), (ci, "2"), (co, "2"), (cv, "2")})
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
     exp["GND"].update({("C1", "2"), ("FLG2", "1")})
     if not MDONLY:
@@ -235,8 +237,9 @@ def main():
                 errors.append(f"{ref}.{pin} (VCC) não está na net do 5V do Mega")
     for pin in ("1",) if "GBA1" in SLOTS else ():
         net = next((k for k, v in act.items() if ("GBA1", pin) in v), None)
-        if net is None or ("U3", "3") not in act[net] or (MEGA, "5V1") in act[net]:
-            errors.append("GBA1.1 (VCC) deve estar só na saída de 3,3 V do U3, nunca no 5V")
+        REGU = CFG.get("regref", ("U3",))[0]
+        if net is None or (REGU, "3") not in act[net] or (MEGA, "5V1") in act[net]:
+            errors.append(f"GBA1.1 (VCC) deve estar só na saída de 3,3 V do {REGU}, nunca no 5V")
     for ref, pins in (("SNES1", ("5", "36")), ("NES1", ("1", "72")), ("FC1", ("1", "16")),
                       ("MD1", ("A1", "A18", "A32")), ("GBA1", ("32", "SHIELD_3", "SHIELD_4"))):
         if ref not in SLOTS:

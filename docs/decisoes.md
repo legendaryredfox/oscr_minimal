@@ -107,6 +107,7 @@
 - **D106** Estudo final da `16_bits` v. 1.2 antes de fechar o projeto (pedido do usuário, 2026-11-06)
 - **D107** `16_bits` v. 1.2: fixes finais antes de fechar (pedido do usuário, 2026-11-06)
 - **D108** `16_bits` v. 1.2 final: tudo o que era da v. 1.3, menos o RP2040 (pedido do usuário, 2026-11-06)
+- **D109** Referências sequenciais nas placas derivadas e revisão (`rev`) no carimbo (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -876,3 +877,13 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificação.** ERC 0; DRC (todas as severidades, com paridade) 0 erros e 0 ligações abertas, só avisos de biblioteca, de campos e das peças só do PCB; netlist OK; gerbers refeitos (404 furos metalizados, 7 não metalizados, 89 vias, 108,1 × 86,1 mm). 5V e 5V chaveado a 0,8 mm.
 - **Não conferido.** Queda do IRF9540N com Vgs = −5 V (não está no datasheet); tempos do OSCR com 47 a 100 Ω; encaixe dos furos M3 com o Mega real; altura de Q1 e dos espaçadores; nada montado. A v. 1.0 encomendada e a `rev2` não foram tocadas.
 
+
+### D109 — Referências sequenciais nas placas derivadas e revisão (`rev`) no carimbo (pedido do usuário, 2026-11-07)
+- **Pedido.** "Algumas das placas estão com as numerações dos componentes erradas" (na `gb_gba` havia C1, C7, C8, C9). Conferir todas; depois pôr a versão da placa e, onde não houver, assumir v1.0.
+- **Causa.** As placas derivadas (D92 a D100) tiraram peças da `16_and_8_bits` ou da `16_bits` sem renumerar o resto, e o silkscreen herdou os furos (C7, C8, C9, U3, TP4 a TP6...).
+- **Renumeração (esquemático, PCB, BOM, docs, `fab/PEDIDO.md`).** `gb_gba`: C7, C8, C9, U3 → C2, C3, C4, U1. `megadrive`: C3, C5, C6 → C2, C3, C4. `snes`: C4 → C3; TP4, TP5, TP6 → TP3, TP4, TP5. `nes`: C3 → C2. `famicom`: C4 → C2. `famicom_nes`: C3, C4 → C2, C3. `16_and_8_bits`, `16_bits` (v1.0 e v1.2) já estavam sequenciais. Nenhuma ligação mudou: só o nome.
+- **Ferramentas.** `tools/check_netlist.py` passou a usar as referências novas (`regref` para o regulador da `gb_gba`). Os `tools/<placa>/place.py` e `strip_sch.py` continuam com as referências da placa de origem (são receitas de derivação); a renumeração é o último passo, feito depois do roteamento.
+- **Revisão.** Carimbo (`title_block`/`rev`) acrescentado ao esquemático e ao PCB: `v1.0` nas placas sem versão (as variantes de um sistema e a `16_and_8_bits`), `v1.2` na `16_bits` atual e em `hardware-v1.2`. O silkscreen já trazia a versão em todas. A `16_bits/hardware-v1.0` (encomendada) não foi tocada.
+- **Arquivos refeitos.** Gerbers, zips, `fab/bom.csv`, SHA-256 do `PEDIDO.md` e prévias PNG das seis placas alteradas (cobre idêntico; muda só o texto do silkscreen e os cabeçalhos).
+- **Verificação.** `check_netlist.py` OK nas 8 placas; DRC com as mesmas contagens de antes (só avisos de biblioteca, de campos e de peças só do PCB); ERC da `snes` com 0 violações pelo MCP do KiCad. Nada encomendado nem montado.
+- **Fora do escopo.** O shield do Uno (`tools/pic/shield_uno`) tem U2 sem U1: o U2 espelha o PIC da `16_bits`, está em scripts, desenhos e gerbers; deixado como está.

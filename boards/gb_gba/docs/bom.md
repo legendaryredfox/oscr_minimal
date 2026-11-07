@@ -22,9 +22,9 @@ Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom.csv` mais as peças 
 |---|---|---|---|---|
 | A1 | 1 | Arduino Mega 2560 R3 (do usuário, USB-C) | `Mega2560_R3_Shield` | Não vai na compra da placa. |
 | GBA1 | 1 | Slot de cartucho GBA 32 pads, SMD, 1,5 mm | `GBA_Slot` | Igual ao do OSCR; única peça SMD. |
-| U3 | 1 | MCP1700-3302E/TO, 3,3 V, TO-92 | `TO-92` | Só alimenta o slot GBA. |
-| C7, C8 | 2 | 1 µF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Entrada e saída do U3. |
-| C9 | 1 | 100 nF cerâmico, passo 5 mm | idem | VCC do slot. |
+| U1 | 1 | MCP1700-3302E/TO, 3,3 V, TO-92 | `TO-92` | Só alimenta o slot GBA. |
+| C2, C3 | 2 | 1 µF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Entrada e saída do U1. |
+| C4 | 1 | 100 nF cerâmico, passo 5 mm | idem | VCC do slot. |
 | D1 | 1 | LED 3 mm | `LED_D3.0mm` | Ativo em nível baixo (cátodo em D38). |
 | R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
 | C1 | 1 | 470 µF / 16 V, radial Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |

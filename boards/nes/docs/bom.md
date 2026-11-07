@@ -26,7 +26,7 @@ Montagem **manual**. Lista gerada de `boards/nes/fab/bom.csv` mais as peças sem
 | D1 | 1 | LED 3 mm | `LED_D3.0mm` | Ativo em nível baixo (cátodo em D38). |
 | R1 | 1 | 220 Ω 1/4 W | `R_Axial_DIN0207...P10.16mm` | Resistor do LED. |
 | C1 | 1 | 470 µF / 16 V, radial Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
-| C3 | 1 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | No slot NES (pino 36, VCC). |
+| C2 | 1 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | No slot NES (pino 36, VCC). |
 
 Sem PIC (o NES não usa CIC do SNES), sem R2 e sem pontos de teste.
 

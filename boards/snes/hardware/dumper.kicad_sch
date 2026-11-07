@@ -4,6 +4,10 @@
 	(generator_version "10.0")
 	(uuid 7a60289e-82cc-4290-bd86-3bc08aff2373)
 	(paper "A0")
+	(title_block
+		(title "dumper")
+		(rev "v1.0")
+	)
 	(lib_symbols
 		(symbol "dumper:Mega2560_R3_Shield"
 			(exclude_from_sim no)
@@ -5343,7 +5347,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "58b65381-6ba6-4f79-a8e4-90c2780c9f8f")
-		(property "Reference" "C4"
+		(property "Reference" "C3"
 			(at 1057.91 480.06 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5407,7 +5411,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "C4")
+					(reference "C3")
 					(unit 1)
 				)
 			)
@@ -5738,7 +5742,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e0de9e74-b3b5-4d8b-9795-85a1210c4419")
-		(property "Reference" "TP4"
+		(property "Reference" "TP3"
 			(at 1083.31 519.4300000000001 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5802,7 +5806,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "TP4")
+					(reference "TP3")
 					(unit 1)
 				)
 			)
@@ -5819,7 +5823,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "92d45194-5a7f-497b-95d4-f72394c84c9d")
-		(property "Reference" "TP5"
+		(property "Reference" "TP4"
 			(at 1103.6299999999999 519.4300000000001 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5883,7 +5887,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "TP5")
+					(reference "TP4")
 					(unit 1)
 				)
 			)
@@ -5900,7 +5904,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "71029081-80fb-4008-86e0-57e35d610bb5")
-		(property "Reference" "TP6"
+		(property "Reference" "TP5"
 			(at 1123.95 519.4300000000001 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5964,7 +5968,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "TP6")
+					(reference "TP5")
 					(unit 1)
 				)
 			)

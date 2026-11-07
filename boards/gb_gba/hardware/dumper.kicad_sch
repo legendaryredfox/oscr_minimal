@@ -4,6 +4,10 @@
 	(generator_version "10.0")
 	(uuid 7a60289e-82cc-4290-bd86-3bc08aff2373)
 	(paper "A0")
+	(title_block
+		(title "dumper")
+		(rev "v1.0")
+	)
 	(lib_symbols
 		(symbol "dumper:Mega2560_R3_Shield"
 			(exclude_from_sim no)
@@ -4808,7 +4812,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "46708911-1c3d-4080-97a2-36e78c1354d6")
-		(property "Reference" "U3"
+		(property "Reference" "U1"
 			(at 1099.82 139.7 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4875,7 +4879,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "U3")
+					(reference "U1")
 					(unit 1)
 				)
 			)
@@ -4892,7 +4896,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "64d394f6-08c2-441a-8b2f-621221ee7c91")
-		(property "Reference" "C7"
+		(property "Reference" "C2"
 			(at 1057.91 539.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4956,7 +4960,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "C7")
+					(reference "C2")
 					(unit 1)
 				)
 			)
@@ -4973,7 +4977,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "24f93045-d543-4a94-ba60-7bde5fe9a3a0")
-		(property "Reference" "C8"
+		(property "Reference" "C3"
 			(at 1076.96 539.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5037,7 +5041,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "C8")
+					(reference "C3")
 					(unit 1)
 				)
 			)
@@ -5054,7 +5058,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b2bdd952-a107-4dd1-9321-9a03b9e10127")
-		(property "Reference" "C9"
+		(property "Reference" "C4"
 			(at 1097.28 539.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5118,7 +5122,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "C9")
+					(reference "C4")
 					(unit 1)
 				)
 			)

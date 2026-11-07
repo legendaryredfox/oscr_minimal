@@ -10,7 +10,7 @@ Versão mínima de uma função: um slot **Mega Drive** (64p, 2,54 mm) em shield
 |---|---|---|
 | Slots | SNES, Mega Drive | só Mega Drive |
 | Si5351, PIC12F629 (CIC), R2 (pull-up do IRQ do SNES) | sim | **não** (o `MegaDrive.cpp` do OSCR não usa clock nem CIC) |
-| Capacitores de 100 nF | C2 a C6 | C3, C5, C6 (slot Mega Drive) |
+| Capacitores de 100 nF | C2 a C6 | C2, C3, C4 (slot Mega Drive; renumerados em D109, eram C3, C5, C6 na `16_bits`) |
 | Slot dentro da área do Mega | não (SNES ocupava) | **sim**: o slot MD fica entre as fileiras de pinos do Mega |
 | Placa | 108,1 × 86,1 mm | 107,1 × 65,1 mm |
 | Mantido | `/CART` em D50, pontos de teste (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`), LED de status em D38, C1 470 µF | idem |

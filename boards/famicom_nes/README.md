@@ -11,7 +11,7 @@ Versão mínima de duas funções: um slot **Famicom** (60p, 2,54 mm) e um slot 
 | Item | 16_and_8_bits | famicom_nes |
 |---|---|---|
 | Slots | SNES, NES, Famicom, Mega Drive, GBA | NES e Famicom |
-| Mantido | Si5351 (U1), LED (D1, R1), C1, C3 (VCC do NES), C4 (VCC do Famicom) | idem |
+| Mantido | Si5351 (U1), LED (D1, R1), C1, C3 (VCC do NES), C4 (VCC do Famicom) (agora C2 e C3, D109) | idem |
 | Removido | SNES1, MD1, GBA1, PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 112,1 × 79,1 mm |
 

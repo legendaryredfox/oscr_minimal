@@ -4,6 +4,10 @@
 	(generator_version "10.0")
 	(uuid 7a60289e-82cc-4290-bd86-3bc08aff2373)
 	(paper "A0")
+	(title_block
+		(title "dumper")
+		(rev "v1.0")
+	)
 	(lib_symbols
 		(symbol "dumper:Mega2560_R3_Shield"
 			(exclude_from_sim no)
@@ -4385,7 +4389,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c469ebd1-8dd2-4d87-8d16-dc596a6ad2c9")
-		(property "Reference" "C4"
+		(property "Reference" "C2"
 			(at 1017.27 480.06 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4449,7 +4453,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "C4")
+					(reference "C2")
 					(unit 1)
 				)
 			)

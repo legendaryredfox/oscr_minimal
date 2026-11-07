@@ -15,7 +15,7 @@ Ver `boards/famicom_nes/docs/bom.md` (quantidades e referências). Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistor | R1 (220 Ω) |
-| Capacitores cerâmicos 100 nF | C3 (slot NES, junto ao pino 36), C4 (slot Famicom, junto aos pinos 30 e 31) |
+| Capacitores cerâmicos 100 nF | C2 (slot NES, junto ao pino 36), C3 (slot Famicom, junto aos pinos 30 e 31) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | LED 3 mm | D1 |
 | Header fêmea 1x7 (Si5351) e módulo | U1 |
@@ -34,7 +34,7 @@ Ver `boards/famicom_nes/docs/bom.md` (quantidades e referências). Resumo:
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
 1. **Resistor** R1 (deitado, como no silkscreen).
-2. **Capacitores cerâmicos de 100 nF**: C3 e C4.
+2. **Capacitores cerâmicos de 100 nF**: C2 e C3.
 3. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 4. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 5. **Header fêmea do Si5351 (U1)** (1x7), **na vertical**, ao lado do header duplo do Mega (borda direita da placa). O pino 1 (VIN, quadrado) fica em cima, sob o rótulo `Si5351`. **Ainda sem o módulo**, que fica em pé no header (sem furos de fixação nesta placa); confira que ele não encosta nos pinos do Mega nem no slot NES.

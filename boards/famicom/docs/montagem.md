@@ -15,7 +15,7 @@ Ver `boards/famicom/docs/bom.md` (quantidades e referências). Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistor | R1 (220 Ω) |
-| Capacitor cerâmico 100 nF | C4 (slot Famicom, junto ao pino 30) |
+| Capacitor cerâmico 100 nF | C2 (slot Famicom, junto ao pino 30) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | LED 3 mm | D1 |
 | Slot Famicom 60 pinos | FC1 |
@@ -33,7 +33,7 @@ Ver `boards/famicom/docs/bom.md` (quantidades e referências). Resumo:
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
 1. **Resistor** R1 (deitado, como no silkscreen).
-2. **Capacitor cerâmico de 100 nF**: C4.
+2. **Capacitor cerâmico de 100 nF**: C2.
 3. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 4. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 5. **Slot FC1.** Solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo.

@@ -11,7 +11,7 @@ Versão mínima de uma função: um slot **NES** (72p, 2,5 mm) em shield para Ar
 | Item | 16_and_8_bits | nes |
 |---|---|---|
 | Slots | SNES, NES, Famicom, Mega Drive, GBA | só NES |
-| Mantido | Si5351 (U1, o CLK0 vai ao pino 37 do slot), LED (D1, R1), C1, C3 (VCC do slot) | idem |
+| Mantido | Si5351 (U1, o CLK0 vai ao pino 37 do slot), LED (D1, R1), C1, C3 (VCC do slot; agora C2, D109) | idem |
 | Removido | SNES1, FC1, MD1, GBA1, PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C4, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 110,1 × 65,1 mm |
 

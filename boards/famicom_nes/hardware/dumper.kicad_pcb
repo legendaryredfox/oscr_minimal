@@ -10,6 +10,7 @@
 	(title_block
 		(title "dumper")
 		(date "2026-11-02")
+		(rev "v1.0")
 	)
 	(layers
 		(0 "F.Cu" signal)
@@ -97,7 +98,7 @@
 		(at 100.8 56.6)
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm diameter 5mm width 2.5mm Capacitor")
-		(property "Reference" "C4"
+		(property "Reference" "C3"
 			(at 0 -2.3 0)
 			(layer "F.SilkS")
 			(uuid "beef6ebf-75b8-4046-8462-fd6d1ecbff2e")
@@ -3974,7 +3975,7 @@
 		(at 18 96.5)
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, diameter*width=5*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm diameter 5mm width 2.5mm Capacitor")
-		(property "Reference" "C3"
+		(property "Reference" "C2"
 			(at 2.5 0.1 0)
 			(layer "F.SilkS")
 			(uuid "edd37816-5fda-4576-b8db-f892fb3c42ae")

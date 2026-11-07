@@ -1,6 +1,6 @@
 # Mapa de pinos — placa gb_gba (GBA; GB e GBC por adaptador) → pino do Arduino Mega 2560
 
-> Recorte de `boards/16_and_8_bits/docs/pinmap.md` (mesma pinagem do OSCR HW5): só a tabela do GBA. Sem SNES, NES, Famicom, Mega Drive, Si5351 e PIC. O regulador de 3,3 V (U3) fica: VCC do slot GBA = 3V3, nunca 5V.
+> Recorte de `boards/16_and_8_bits/docs/pinmap.md` (mesma pinagem do OSCR HW5): só a tabela do GBA. Sem SNES, NES, Famicom, Mega Drive, Si5351 e PIC. O regulador de 3,3 V (U1) fica: VCC do slot GBA = 3V3, nunca 5V.
 
 **FONTE DA VERDADE da placa `gb_gba`.** Recorte à mão do pinmap da `16_and_8_bits` (que vem de `tools/gen_pinmap.py`); `tools/check_netlist.py --board gb_gba` confere o esquemático contra este arquivo.
 
@@ -24,7 +24,7 @@ Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva
 
 | pino do slot | sinal | net / pino Arduino | porta/bit AVR | fonte |
 |---|---|---|---|---|
-| 1 | VCC_1 | 3V3 (regulador U3) | - | sch |
+| 1 | VCC_1 | 3V3 (regulador U1) | - | sch |
 | 2 | CLK_2 | D16 | PH1 | sch ods -fw |
 | 3 | WR_3 | D8 | PH5 | sch ods fw |
 | 4 | RD_4 | D9 | PH6 | sch ods fw |
@@ -65,5 +65,5 @@ Pinos do Mega **não usados** por nenhum slot: `D0`/`D1` (serial USB; o HW5 leva
 |---|---|---|
 | LED de status (cátodo via 220Ω, ânodo em VCC; **ativo em nível baixo**) | D38 (PD7) | sch main D1/R1 + fw `statusLED()` |
 | Reset do Mega | RESET → J4.35 (adaptadores não usam) | sch main |
-| Regulador U3 (MCP1700-3302E), C7 (1 µF, 5V), C8 (1 µF, 3V3), C9 (100 nF, VCC do slot) | 5V → 3V3 | D22 em `docs/decisoes.md` |
+| Regulador U1 (MCP1700-3302E), C2 (1 µF, 5V), C3 (1 µF, 3V3), C4 (100 nF, VCC do slot) | 5V → 3V3 | D22 em `docs/decisoes.md` |
 | Pino 31 do slot GBA (AUD_IRQ) | sem ligação (no HW5 vai ao D7) | D22 |

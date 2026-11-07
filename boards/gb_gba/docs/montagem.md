@@ -13,10 +13,10 @@ Quantidades e valores: `boards/gb_gba/docs/bom.md`. Resumo:
 | Grupo | Referências |
 |---|---|
 | Resistor 220 Ω | R1 (do LED) |
-| Capacitor cerâmico 100 nF | C9 (VCC do slot GBA) |
-| Capacitores cerâmicos 1 µF | C7 (entrada 5V do regulador), C8 (saída 3,3 V) |
+| Capacitor cerâmico 100 nF | C4 (VCC do slot GBA) |
+| Capacitores cerâmicos 1 µF | C2 (entrada 5V do regulador), C3 (saída 3,3 V) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
-| Regulador MCP1700-3302E/TO (TO-92) | U3 |
+| Regulador MCP1700-3302E/TO (TO-92) | U1 |
 | LED 3 mm | D1 |
 | Slot GBA 32 pads, SMD, 1,5 mm | GBA1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
@@ -41,9 +41,9 @@ Não existem nesta placa: Si5351, PIC, R2 e os outros slots.
    - Solde as 2 abas de blindagem (grandes).
    - Passe malha com fluxo se houver ponte entre pads.
 2. **Resistor R1** (deitado, como no silkscreen).
-3. **Capacitor cerâmico de 100 nF (C9).**
+3. **Capacitor cerâmico de 100 nF (C4).**
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
-5. **Regulador U3 (TO-92)** com a face chata de acordo com o desenho do silkscreen, e os capacitores C7 e C8 (1 µF). Pinagem do MCP1700 TO-92: 1 = GND, 2 = entrada, 3 = saída.
+5. **Regulador U1 (TO-92)** com a face chata de acordo com o desenho do silkscreen, e os capacitores C2 e C3 (1 µF). Pinagem do MCP1700 TO-92: 1 = GND, 2 = entrada, 3 = saída.
 6. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen), no canto superior esquerdo.
 7. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).
@@ -55,14 +55,14 @@ Não existem nesta placa: Si5351, PIC, R2 e os outros slots.
 - Pontes de solda entre pads do slot GBA (1,5 mm).
 - Nenhum pino do slot GBA encostando na blindagem metálica.
 - Juntas frias (solda sem formar cone).
-- Polaridade: C1, D1 e a face chata do U3.
+- Polaridade: C1, D1 e a face chata do U1.
 - Os pinos macho longos de todos os pads do Mega, inclusive os sem sinal, estão soldados e retos.
 
 ## 5. Testes antes de ligar (multímetro, sem energia)
 
 1. **Continuidade 5V–GND** entre os pinos 5V e GND do header do Mega (por exemplo, o canto 2x18). **Não pode haver curto.**
 2. **Continuidade 3,3 V–GND** entre o pino 1 do GBA (3,3 V) e o GND. Também não pode ter curto.
-3. **Isolação 5V–3,3 V:** a saída do regulador (pino 3 do U3) **não pode** ter continuidade com o 5V.
+3. **Isolação 5V–3,3 V:** a saída do regulador (pino 3 do U1) **não pode** ter continuidade com o 5V.
 4. **Algumas linhas até o Mega** (conforme `boards/gb_gba/docs/pinmap.md`):
 
 | Do slot | Para o pino do Mega | Sinal |
@@ -84,8 +84,8 @@ Não existem nesta placa: Si5351, PIC, R2 e os outros slots.
 
 Sem cartucho. Conecte o Mega ao PC pelo USB-C.
 
-- Meça **3,3 V** (±0,1 V) no pino 1 do slot GBA. Se medir 5 V, **desligue** e confira o U3 (pinagem).
-- Meça **5 V** (±0,25 V) na entrada do U3 (pino 2).
+- Meça **3,3 V** (±0,1 V) no pino 1 do slot GBA. Se medir 5 V, **desligue** e confira o U1 (pinagem).
+- Meça **5 V** (±0,25 V) na entrada do U1 (pino 2).
 - O LED D1 acende e apaga pelo firmware (ativo em nível baixo, D38).
 
 ## 7. Gravar o firmware e testar
@@ -110,7 +110,7 @@ Só depois, e na ordem de risco de `docs/uso.md` seção 7, teste saves (SRAM co
 | GBA sem leitura | VCC do slot em 3,3 V; pads 2 a 5 (CLK, WR, RD, CS1) e 30 (CS2) sem ponte; cartucho GBA (não GB) neste slot, ou adaptador de GB bem encaixado. |
 | Porta serial não aparece | Cabo USB-C só de carga (troque); no Linux, adicione-se ao grupo `dialout` (`sudo usermod -aG dialout $USER` e reinicie a sessão); clone com CH340 aparece como `/dev/ttyUSB0`; no Windows/macOS instale o driver CH340. |
 | LED não acende | Polaridade (ânodo no 5V); resistor R1; o LED é ativo em nível baixo (D38). |
-| 3,3 V errado | Pinagem do U3 (1 GND, 2 entrada, 3 saída), C7 e C8 soldados, curto no slot. |
+| 3,3 V errado | Pinagem do U1 (1 GND, 2 entrada, 3 saída), C2 e C3 soldados, curto no slot. |
 
 ## Pendências (a conferir com as peças reais)
 
