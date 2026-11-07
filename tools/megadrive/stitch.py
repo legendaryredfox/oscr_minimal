@@ -6,7 +6,7 @@ e que caiam dentro do preenchimento de GND das duas camadas. Evita legendas do s
 import sys, pcbnew
 mm = pcbnew.FromMM
 path = sys.argv[1]; step = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
-b = pcbnew.LoadBoard(path); gnd = b.FindNet("/GND").GetNetCode()
+b = pcbnew.LoadBoard(path); gnd = (b.FindNet("GND") or b.FindNet("/GND")).GetNetCode()
 items = list(b.GetTracks()) + [p for f in b.GetFootprints() for p in f.Pads()]
 bb = b.GetBoardEdgesBoundingBox()
 x0, y0, x1, y1 = [v / 1e6 for v in (bb.GetLeft(), bb.GetTop(), bb.GetRight(), bb.GetBottom())]
@@ -38,7 +38,7 @@ while y < y1 - 3:
     while x < x1 - 3:
         pt = pcbnew.VECTOR2I(mm(x), mm(y))
         if free(pt) and in_zone(pt) and not any(k.Contains(pt) for k in silk):
-            v = pcbnew.PCB_VIA(b); v.SetPosition(pt); v.SetNet(b.FindNet("/GND"))
+            v = pcbnew.PCB_VIA(b); v.SetPosition(pt); v.SetNet((b.FindNet("GND") or b.FindNet("/GND")))
             v.SetWidth(mm(0.6)); v.SetDrill(mm(0.3)); b.Add(v); n += 1
         x += step
     y += step

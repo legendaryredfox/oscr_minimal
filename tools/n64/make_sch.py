@@ -4,6 +4,7 @@
 acrescenta o slot N64 (símbolo dumper:N64_Slot, rótulos pelo pinmap.md), tira SNES1, NES1, FC1, MD1, GBA1, PIC (U2) e C2 a C6
 (tools/megadrive/strip_sch.py), liga o pull-up R2 ao 3,3 V (EEPROM_DATA do N64) e renumera as referências (D109):
   U3 -> U2 (regulador), C7 -> C2, C8 -> C3, C9 -> C4 (VCC do slot).
+Depois, rode tools/sch/regen.py boards/n64/hardware/dumper.kicad_sch (fios diretos e símbolos de alimentação, D122).
 Uso: make_sch.py   (da raiz do repositório; idempotência: rode sobre a cópia nova da 16_and_8_bits)"""
 import re, subprocess, sys, uuid
 from pathlib import Path

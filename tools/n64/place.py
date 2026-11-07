@@ -34,12 +34,12 @@ for p in slot.Pads():
     n = net_of[p.GetNumber()]
     if n.startswith("NC"): continue
     n = "+3V3" if n.startswith("3V3") else n.split()[0]
-    net = b.FindNet("/" + n)
+    net = b.FindNet("/" + n) or b.FindNet(n)
     assert net is not None, n
     p.SetNet(net)
 r2 = b.FindFootprintByReference("R2")
 for p in r2.Pads():
-    if p.GetNumber() == "1": p.SetNet(b.FindNet("/+3V3"))
+    if p.GetNumber() == "1": p.SetNet((b.FindNet("+3V3") or b.FindNet("/+3V3")))
 
 X0, Y0, X1, Y1 = 13.0, 52.0, 123.0, 117.0
 for d in list(b.GetDrawings()):

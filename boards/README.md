@@ -19,6 +19,10 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 
 Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima; refazer com `kicad-cli pcb render` quando o layout mudar) e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
 
+## Como os esquemáticos são desenhados
+
+Para leitura humana (D122): os circuitos locais (LED, resistores, capacitores, Si5351, PIC, regulador, pull-ups) têm **fios diretos** entre os pinos; a alimentação usa **símbolos** `+5V`, `+3V3`, `+5V_CART` e `GND`; **rótulos de net só nos barramentos longos** entre o Mega e os slots. As folhas são geradas por `tools/sch/regen.py` (preserva peças, referências e UUIDs, só refaz o desenho); `tools/sch/verify.py` confere que a conectividade ficou idêntica e `tools/sch/sync_names.py` alinha os nomes de net do PCB (a geometria não muda).
+
 ## Layout de cada variante
 
 ```

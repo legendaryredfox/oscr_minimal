@@ -9,7 +9,7 @@ import sys, pcbnew
 mm = pcbnew.FromMM
 path = sys.argv[1]
 b = pcbnew.LoadBoard(path)
-NETS = {"/+5V", "/+3V3"}
+NETS = {"/+5V", "/+3V3", "+5V", "+3V3", "+5V_CART"}
 CLR = mm(0.2)
 others = [t for t in b.GetTracks()] + [p for f in b.GetFootprints() for p in f.Pads()]
 hist = {}

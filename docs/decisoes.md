@@ -120,6 +120,7 @@
 - **D119** Firmware e software da chave física, do sensor do rail e do ciclo de energia do SA-1 (pedido do usuário, 2026-11-07)
 - **D120** Componentes opcionais por placa e fase 1 da placa N64 (pedido do usuário, 2026-11-07)
 - **D121** Placa `boards/n64/`: só N64, 3,3 V (pedido do usuário, 2026-11-07)
+- **D122** Esquemáticos com fios diretos e símbolos de alimentação (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -983,4 +984,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Ferramentas.** `tools/build_lib.py` (acrescenta `N64_Slot`, footprint próprio), `tools/n64/gen_pinmap.py`, `make_sch.py` (esquemático), `place.py` e `build_pcb.sh` (PCB, Freerouting fora do MCP, zonas e costura). `tools/check_netlist.py` ganhou a placa `n64` (slot `N64_1`, VCC no 3,3 V, `CLK1`, R2 ao 3,3 V). Firmware, protocolo, host e GUI do N64 não existem ainda (`n64 = false` em `user.ini`).
 - **Verificação.** ERC 0 erros (1 aviso de biblioteca); DRC sem erros nem ligações abertas, 4 avisos de biblioteca; `check_netlist --board n64` confere (30 nets, 96 ligações, 11 pinos de slot sem ligação). As outras placas continuam conferindo (16_and_8_bits, gb_gba, nes, famicom). Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.
 - **Renders.** Pedido na mesma sessão: `render.png` (3D do `kicad-cli pcb render`, vista de cima) em cada pasta de placa e no README dela.
+
+### D122 — Esquemáticos com fios diretos e símbolos de alimentação (pedido do usuário, 2026-11-07)
+- **Pedido.** "Faça conexões diretas onde puder, não flags. O objetivo disso é facilitar a leitura humana", em todos os esquemáticos. Entre as duas leituras, o usuário escolheu a **opção 1**: fios nas ligações locais e rótulos só nos barramentos Mega↔slot.
+- **O que mudou.** Todos os `.kicad_sch` de `boards/` (as 9 placas, mais `16_bits/hardware-v1.0` e `hardware-v1.2`) foram redesenhados por `tools/sch/regen.py`: Si5351 com SDA/SCL ligados direto ao D20/D21 do Mega, PIC direto ao D40/D41 e ao `CLK2` do Si5351, cadeia LED+resistor no D38, resistores série da `16_bits` em colunas escalonadas, regulador de 3,3 V com os capacitores no mesmo desenho, pull-up do D7 direto no pino; `+5V`, `+3V3`, `+5V_CART` e `GND` viraram símbolos de alimentação nos pinos; sobram rótulos só nos barramentos longos (e nos poucos casos sem espaço para fio). `PWR_FLAG` e as marcas de pino sem ligação continuam (são do ERC, não de net).
+- **Nomes de net.** Os símbolos de alimentação dão nomes globais (`GND`, não `/GND`), e as nets locais ganham nomes automáticos. `tools/sch/sync_names.py` renomeou as nets dos PCBs pelas listas de pads; trilhas, zonas e gerbers não mudam. De brinde, a net class `Power` (padrões `+5V` e `+3V3`) passa a casar com as nets. Ferramentas de PCB aceitam os dois nomes.
+- **Verificação.** `tools/sch/verify.py`: a conectividade (grupos de pinos) é idêntica à de antes em todos os arquivos; ERC sem violações novas (só o aviso de biblioteca do MCP1700 que já existia); `check_netlist` confere nas 9 placas; DRC dos PCBs igual ao anterior.
+- **Limites.** Os TestPoints ficam num canto com rótulo (não há espaço para fio no meio das linhas); os 12 TVS da `16_bits` ficam ao lado dos resistores série só onde coube. Os arquivos congelados `hardware-v1.0` e `hardware-v1.2` da `16_bits` foram redesenhados (só desenho; os gerbers da v1.2 não mudam). `tools/pic/shield_uno` (esquemático do shield do Uno, outro projeto) não foi tocado. O script `tools/n64/build_pcb.sh` foi ajustado para `sync_names.py` mas não foi executado de novo depois disto.
 

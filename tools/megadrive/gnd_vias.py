@@ -4,7 +4,7 @@
 Uso (Python do venv do KiCad MCP): gnd_vias.py placa.kicad_pcb X,Y [X,Y ...]"""
 import sys, math, pcbnew
 mm = pcbnew.FromMM
-b = pcbnew.LoadBoard(sys.argv[1]); gnd = b.FindNet("/GND")
+b = pcbnew.LoadBoard(sys.argv[1]); gnd = (b.FindNet("GND") or b.FindNet("/GND"))
 def free(pt, r, net):
     for it in list(b.GetTracks()) + [p for f in b.GetFootprints() for p in f.Pads()]:
         if it.GetNetCode() == net and it.GetNetCode() != 0: continue

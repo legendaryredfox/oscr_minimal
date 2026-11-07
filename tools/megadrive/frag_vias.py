@@ -8,7 +8,7 @@ mm = pcbnew.FromMM
 path = sys.argv[1]
 MARGIN = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5   # folga extra (mm) de cobre de outra net
 STEP = float(sys.argv[3]) if len(sys.argv) > 3 else 0.4
-b = pcbnew.LoadBoard(path); gnd = b.FindNet("/GND").GetNetCode()
+b = pcbnew.LoadBoard(path); gnd = (b.FindNet("GND") or b.FindNet("/GND")).GetNetCode()
 zs = list(b.Zones())
 def items(): return list(b.GetTracks()) + [p for f in b.GetFootprints() for p in f.Pads()]
 def free(pt, its):
@@ -38,7 +38,7 @@ for z in zs:
             if best: break
             x += STEP
         if best:
-            v = pcbnew.PCB_VIA(b); v.SetPosition(best); v.SetNet(b.FindNet("/GND")); v.SetWidth(mm(0.6)); v.SetDrill(mm(0.3)); b.Add(v); n += 1
+            v = pcbnew.PCB_VIA(b); v.SetPosition(best); v.SetNet((b.FindNet("GND") or b.FindNet("/GND"))); v.SetWidth(mm(0.6)); v.SetDrill(mm(0.3)); b.Add(v); n += 1
             print("via", b.GetLayerName(L), round(best.x / 1e6, 2), round(best.y / 1e6, 2))
         else:
             print("sem ponto", b.GetLayerName(L), round(bb.GetX() / 1e6, 1), round(bb.GetY() / 1e6, 1))

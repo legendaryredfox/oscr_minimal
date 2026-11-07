@@ -9,7 +9,7 @@ path = sys.argv[1]
 b = pcbnew.LoadBoard(path)
 bb = b.GetBoardEdgesBoundingBox()
 pts = [(bb.GetLeft(), bb.GetTop()), (bb.GetRight(), bb.GetTop()), (bb.GetRight(), bb.GetBottom()), (bb.GetLeft(), bb.GetBottom())]
-net = b.FindNet("/GND")
+net = (b.FindNet("GND") or b.FindNet("/GND"))
 for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
     z = pcbnew.ZONE(b); z.SetLayer(layer); z.SetNet(net)
     z.SetMinThickness(mm(0.2)); z.SetLocalClearance(mm(0.3))

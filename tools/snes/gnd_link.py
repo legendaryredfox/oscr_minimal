@@ -7,7 +7,7 @@ import sys, pcbnew
 mm = pcbnew.FromMM
 path = sys.argv[1]; layer = pcbnew.B_Cu if len(sys.argv) > 2 and sys.argv[2] == "B.Cu" else pcbnew.F_Cu
 y = float(sys.argv[3]) if len(sys.argv) > 3 else 110.9
-b = pcbnew.LoadBoard(path); g = b.FindNet("/GND")
+b = pcbnew.LoadBoard(path); g = (b.FindNet("GND") or b.FindNet("/GND"))
 pad = [p for p in b.FindFootprintByReference("A1").Pads() if p.GetNumber() == "GND2"][0]
 tp = b.FindFootprintByReference("TP2").Pads()[0]
 a = pad.GetPosition(); t = tp.GetPosition()
