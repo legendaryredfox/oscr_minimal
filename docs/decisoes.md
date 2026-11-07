@@ -113,6 +113,7 @@
 - **D112** Presets de placas comuns do NES na GUI (pedido do usuário, 2026-11-07)
 - **D113** Acessibilidade da GUI e busca na ajuda (pedido do usuário, 2026-11-07)
 - **D114** Pesquisa na comunidade, adaptadores dos 41 consoles e nota da troca de cartucho (pedido do usuário, 2026-11-07)
+- **D115** Chave física de troca de cartucho: decisões (usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -932,3 +933,8 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Troca de cartucho.** Sim, é possível: a `16_bits` v1.2 já tem Q1, D19 e o LED D2. Falta o comando `POWER`, soltar os barramentos antes de cortar o 5V (senão o cartucho se alimenta pelos pinos), resistor de descarga e, opcionalmente, uma chave física lida pelo firmware. Nada implementado nem medido.
 - **Limites.** Reddit e Discord sem resultados; leitura por agentes de busca com resumo de modelo; algumas páginas só em parte; nada testado em hardware; nenhum projeto de adaptador foi baixado nem conferido pino a pino. Codeberg e GitLab: só dois projetos relevantes (`wolfre/usb-cart-reader` e `FermataRest/SanniOSCR`, este último não aberto).
 - **Não feito (de propósito).** Nenhum adaptador foi copiado para o repositório (pedido: só os links).
+
+### D115 — Chave física de troca de cartucho: decisões (usuário, 2026-11-07)
+- **Decidido pelo usuário.** Chave física na próxima iteração de cada placa: `16_bits` na **v1.3**, as demais na **v1.1**. O pino do Mega e os itens 4 e 5 (LED, descarga, comportamento do firmware) ficaram a critério do projeto, com boas práticas.
+- **Escolhas do projeto (detalhe e motivos em `docs/troca-de-cartucho.md`).** Chave no **D18** (PD3, INT3; o comando do 5V segue no D19); SPST deslizante fechada ao GND = ligado; **trava de segurança** (5V = chave E pedido do software); soltar os barramentos antes de cortar o 5V e reassumir depois de ligar; descarga por Q2 (2N7000) com 330 Ω; LED amarelo "seguro trocar" por Q3 (2N7000) que lê o rail (D2 verde segue como "5V presente"); firmware **começa desligado**, host liga explicitamente (`--power auto`, `power on|off|status`, flag `power_switch` no `INFO`); ciclo de energia automático no SA-1; **sem buffers de isolamento**; teste de aceitação com VCC do cartucho < 0,5 V em 1 s com a chave aberta.
+- **Não feito.** Nenhum desenho, firmware, protocolo ou teste; as placas existentes não foram tocadas. A v1.2 da `16_bits` continua fechada (D108): só o software `POWER` pode usar o Q1 dela.
