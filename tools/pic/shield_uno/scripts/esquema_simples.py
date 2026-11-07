@@ -37,8 +37,8 @@ PIN = {
     "UNO.D4": (250, 300), "UNO.D7": (250, 350), "UNO.D2": (250, 460), "UNO.A1": (250, 540), "UNO.A5": (250, 700),
     "UNO.GND": (250, RAIL_G),
     # PIC12F629 desenhado com o entalhe para BAIXO: esquerda de cima para baixo 5,6,7,8; direita 4,3,2,1
-    "U2.5": (500, 250), "U2.6": (500, 300), "U2.7": (500, 350), "U2.8": (500, 400),
-    "U2.4": (XD, 250), "U2.3": (XD, 300), "U2.2": (XD, 350), "U2.1": (XD, 400),
+    "U1.5": (500, 250), "U1.6": (500, 300), "U1.7": (500, 350), "U1.8": (500, 400),
+    "U1.4": (XD, 250), "U1.3": (XD, 300), "U1.2": (XD, 350), "U1.1": (XD, 400),
     "R1.2": (XN, 170), "R1.1": (XN, 230),            # R1 na vertical: 1 = lado do chip, 2 = lado dos 13 V
     "C1.1": (XC, 430), "C1.2": (XC, 520),
     "Q1.C": (XQ, 330), "Q1.B": (XQ - 50, 385), "Q1.E": (XQ, 440),
@@ -50,16 +50,16 @@ PIN = {
 # ------------------------------------------------------------------ fios: (cor, [pontos], rotulo opcional)
 FIOS = [
     ("laranja", [PIN["UNO.D2"], (XN, 460), (XN, 400)], None),                        # Uno D2 -> sobe ate o no do pino 1
-    ("laranja", [PIN["U2.1"], (XC, 400), PIN["C1.1"]], None),                        # pino 1 -> capacitor
-    ("verde", [PIN["UNO.D4"], PIN["U2.6"]], None),
-    ("azul", [PIN["UNO.D7"], PIN["U2.7"]], None),
-    ("preto", [PIN["U2.8"], (470, 400), (470, RAIL_G)], None),                      # pino 8 -> GND
+    ("laranja", [PIN["U1.1"], (XC, 400), PIN["C1.1"]], None),                        # pino 1 -> capacitor
+    ("verde", [PIN["UNO.D4"], PIN["U1.6"]], None),
+    ("azul", [PIN["UNO.D7"], PIN["U1.7"]], None),
+    ("preto", [PIN["U1.8"], (470, 400), (470, RAIL_G)], None),                      # pino 8 -> GND
     ("preto", [PIN["C1.2"], (XC, RAIL_G)], None),
     ("preto", [PIN["Q1.E"], (XQ, RAIL_G)], None),
     ("preto", [PIN["D2.K"], (XL, RAIL_G)], None),
     ("preto", [PIN["D3.K"], (410, RAIL_G)], None),
     ("preto", [PIN["UNO.GND"], (XF, RAIL_G), PIN["FONTE.-"]], None),               # trilho de GND
-    ("rosa", [PIN["U2.4"], (XN, 250), PIN["R1.1"]], None),                           # MCLR ate o resistor de 10 k
+    ("rosa", [PIN["U1.4"], (XN, 250), PIN["R1.1"]], None),                           # MCLR ate o resistor de 10 k
     ("rosa", [(XN, 250), (XQ, 250), PIN["Q1.C"]], None),                             # e ate o coletor do transistor
     ("vermelho", [PIN["FONTE.+"], (XF, RAIL_V), (XN, RAIL_V), PIN["R1.2"]], None),  # trilho de 13 V
     ("vermelho", [(XL, RAIL_V), PIN["R4.1"]], None),
@@ -112,7 +112,7 @@ def verificar():
                     grupos.setdefault(raiz(i), set()).add(nome)
     redes = [g for g in grupos.values()]
     # pecas que ligam duas redes por dentro nao fazem parte de nenhum fio: nao entram aqui
-    esperado = [e - {"U2.2", "U2.3", "U2.5"} for e in pb.ESPERADO]
+    esperado = [e - {"U1.2", "U1.3", "U1.5"} for e in pb.ESPERADO]
     # Q1.B e R2.2 ficam na mesma rede; R2.1 e UNO.A1 tambem; e assim por diante: comparamos as redes que tem >= 2 pinos
     vistos = [frozenset(g) for g in redes if len(g) >= 2]
     for e in esperado:
@@ -249,10 +249,10 @@ def desenhar():
     xm = (520 + XD - 20) / 2
     S.append(f'<path d="M{xm - 30},455 A30,30 0 0 1 {xm + 30},455 Z" fill="{FUNDO}"/>')
     for nome in ("5", "6", "7", "8"):
-        x, y = PIN["U2." + nome]
+        x, y = PIN["U1." + nome]
         S.append(f'<line x1="{x}" y1="{y}" x2="520" y2="{y}" stroke="#bbb" stroke-width="5"/>')
     for nome in ("4", "3", "2", "1"):
-        x, y = PIN["U2." + nome]
+        x, y = PIN["U1." + nome]
         S.append(f'<line x1="{XD - 20}" y1="{y}" x2="{x}" y2="{y}" stroke="#bbb" stroke-width="5"/>')
 
     def bolha(x, y, n):
@@ -260,18 +260,18 @@ def desenhar():
     desc_e = {"5": "livre", "6": "relógio", "7": "dados", "8": "GND"}
     desc_d = {"4": "MCLR", "3": "livre", "2": "livre", "1": "energia"}
     for n, t in desc_e.items():
-        y = PIN["U2." + n][1]
+        y = PIN["U1." + n][1]
         S.append(bolha(548, y, n) + texto(572, y + 6, t, 16, "bold", "#fff"))
     for n, t in desc_d.items():
-        y = PIN["U2." + n][1]
+        y = PIN["U1." + n][1]
         S.append(bolha(XD - 48, y, n) + texto(XD - 72, y + 6, t, 16, "bold", "#fff", "end"))
     S.append(texto(xm, 202, "PIC12F629 (o chip)", 18, "bold", "#111", "middle"))
     S.append(texto(xm, 478, "entalhe", 14, "bold", "#555", "middle"))
     S.append(texto(XD + 4, 432, "pino 1", 14, "bold", "#111"))
     # pinos livres: X
-    for n in ("U2.5", "U2.3", "U2.2"):
+    for n in ("U1.5", "U1.3", "U1.2"):
         x, y = PIN[n]
-        xx = x - 14 if n == "U2.5" else x + 14
+        xx = x - 14 if n == "U1.5" else x + 14
         S.append(f'<path d="M{xx - 7},{y - 7} L{xx + 7},{y + 7} M{xx - 7},{y + 7} L{xx + 7},{y - 7}" stroke="#888" stroke-width="4"/>')
     S.append(texto(XD + 34, 304, "sem fio", 13, "normal", "#777"))
     S.append(texto(XD + 34, 354, "sem fio", 13, "normal", "#777"))

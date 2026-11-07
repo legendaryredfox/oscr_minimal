@@ -95,8 +95,8 @@ PIC pinos 2, 3 e 5: sem ligação
 |---|---|---|---|
 | 1 | Arduino Uno R3 + cabo USB | | clone com CH340 serve (aparece como `/dev/ttyUSB0`) |
 | 1 | Fonte de 13 V, ≥ 100 mA, **regulada** | | meça em vazio antes (veja "Antes de ligar") |
-| 1 | PIC12F629-I/P (DIP-8) virgem ou a regravar | U2 | em soquete DIP-8 |
-| 1 | Soquete DIP-8 | U2 | de contato torneado, para trocar de chip muitas vezes |
+| 1 | PIC12F629-I/P (DIP-8) virgem ou a regravar | U1 | em soquete DIP-8 |
+| 1 | Soquete DIP-8 | U1 | de contato torneado, para trocar de chip muitas vezes |
 | 1 | Transistor NPN pequeno: BC547 ou BC548 (ou 2N3904, 2N2222) | Q1 | pinagem abaixo |
 | 0 (1 se quiser) | Diodo 1N5819 | D1 | **opcional, DNP**: só se for usar a proteção contra fonte invertida |
 | 1 | Barra de 2 pinos 2,54 mm + jumper (shunt) | JP1 | só na PCB; fechado = sem D1. Pode ser um fio ou solda |

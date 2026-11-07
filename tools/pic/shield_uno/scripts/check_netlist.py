@@ -10,13 +10,13 @@ import pcbnew
 
 PCB = str(Path(__file__).resolve().parent.parent / "hardware" / "shield_uno.kicad_pcb")
 GRUPOS = {
-    "VDD (D2 do Uno -> pino 1 do PIC)": [("A1", "D2"), ("U2", "1"), ("C1", "1"), ("J2", "2"), ("TP2", "1")],
-    "clock (D4 -> pino 6)": [("A1", "D4"), ("U2", "6"), ("J2", "5")],
-    "dados (D7 -> pino 7)": [("A1", "D7"), ("U2", "7"), ("J2", "4")],
-    "MCLR (pino 4)": [("U2", "4"), ("R1", "2"), ("Q1", "1"), ("J2", "1"), ("TP1", "1")],
+    "VDD (D2 do Uno -> pino 1 do PIC)": [("A1", "D2"), ("U1", "1"), ("C1", "1"), ("J2", "2"), ("TP2", "1")],
+    "clock (D4 -> pino 6)": [("A1", "D4"), ("U1", "6"), ("J2", "5")],
+    "dados (D7 -> pino 7)": [("A1", "D7"), ("U1", "7"), ("J2", "4")],
+    "MCLR (pino 4)": [("U1", "4"), ("R1", "2"), ("Q1", "1"), ("J2", "1"), ("TP1", "1")],
     "comando do MCLR (A1 -> R2)": [("A1", "A1"), ("R2", "1")],
     "base do transistor": [("R2", "2"), ("Q1", "2")],
-    "GND": [("A1", "GND1"), ("A1", "GND2"), ("A1", "GND3"), ("U2", "8"), ("Q1", "3"), ("C1", "2"), ("J1", "2"), ("J2", "3"),
+    "GND": [("A1", "GND1"), ("A1", "GND2"), ("A1", "GND3"), ("U1", "8"), ("Q1", "3"), ("C1", "2"), ("J1", "2"), ("J2", "3"),
             ("D2", "1"), ("D3", "1"), ("TP3", "1")],
     "13 V depois do diodo (D1 K, JP1 2)": [("D1", "1"), ("JP1", "2"), ("R1", "1"), ("R4", "1")],
     "13 V na entrada (D1 A, JP1 1)": [("J1", "1"), ("D1", "2"), ("JP1", "1")],
@@ -25,7 +25,7 @@ GRUPOS = {
     "LED de atividade": [("R3", "2"), ("D3", "2")],
 }
 # pinos que devem ficar sem ligacao
-LIVRES = [("U2", "2"), ("U2", "3"), ("U2", "5"), ("J2", "6")]
+LIVRES = [("U1", "2"), ("U1", "3"), ("U1", "5"), ("J2", "6")]
 
 
 def main():

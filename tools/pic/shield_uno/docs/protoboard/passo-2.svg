@@ -395,6 +395,6 @@
 <rect x="337.2" y="195" width="29.6" height="16" rx="4" fill="#111" fill-opacity=".85"/>
 <text x="352" y="207" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">j10</text>
 <text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 2 de 9: O chip PIC12F629</text>
-<text x="30" y="660" font-size="14" font-weight="normal" fill="#111">• U2: PIC12F629 no soquete DIP-8: pino 1 em e10 (pinos 1 a 4 na fileira e, 5 a 8 na fileira f)</text>
+<text x="30" y="660" font-size="14" font-weight="normal" fill="#111">• U1: PIC12F629 no soquete DIP-8: pino 1 em e10 (pinos 1 a 4 na fileira e, 5 a 8 na fileira f)</text>
 <text x="30" y="680" font-size="14" font-weight="normal" fill="#111">• fio PRETO: furo j10 → trilho -</text>
 </svg>

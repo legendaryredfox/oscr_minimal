@@ -1036,7 +1036,7 @@
 		(at 146 111.34 90)
 		(descr "8-lead though-hole mounted DIP package, row spacing 7.62mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
-		(property "Reference" "U2"
+		(property "Reference" "U1"
 			(at 3.81 -2.33 90)
 			(layer "F.SilkS")
 			(uuid "b0f35a18-e323-4862-a1c9-87d4385810af")
@@ -1271,7 +1271,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(U2-GP5-Pad2)")
+			(net "unconnected-(U1-GP5-Pad2)")
 			(uuid "09ef5b7d-9d2f-4ca9-a438-38a4e2cb9b2c")
 		)
 		(pad "3" thru_hole circle
@@ -1280,7 +1280,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(U2-GP4-Pad3)")
+			(net "unconnected-(U1-GP4-Pad3)")
 			(uuid "140f7ecd-107c-42dc-a8a1-9e0af6788332")
 		)
 		(pad "4" thru_hole circle
@@ -1298,7 +1298,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(U2-GP2-Pad5)")
+			(net "unconnected-(U1-GP2-Pad5)")
 			(uuid "fce9b907-e95c-4747-8fb3-f9993d0f2b35")
 		)
 		(pad "6" thru_hole circle

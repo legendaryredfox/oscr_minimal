@@ -14,7 +14,7 @@ COR = {"preto": "#111111", "vermelho": "#d62828", "laranja": "#f77f00", "azul": 
 
 # ---- pecas: ref -> dict(tipo, descricao, pinos={pino: furo}, extra)
 PECAS = {
-    "U2": dict(tipo="dip", nome="PIC12F629 no soquete DIP-8", pinos={"1": "e10", "2": "e11", "3": "e12", "4": "e13",
+    "U1": dict(tipo="dip", nome="PIC12F629 no soquete DIP-8", pinos={"1": "e10", "2": "e11", "3": "e12", "4": "e13",
                                                                       "8": "f10", "7": "f11", "6": "f12", "5": "f13"}),
     "C1": dict(tipo="cap", nome="Capacitor 100 nF (marcado 104)", pinos={"1": "b10", "2": "b8"}),
     "Q1": dict(tipo="npn", nome="Transistor BC547", pinos={"C": "a13", "B": "a14", "E": "a15"}),
@@ -45,7 +45,7 @@ FIOS = [
 # ---- passos: (titulo, [pecas], [fios], o que conferir)
 PASSOS = [
     ("Fio de GND do Uno", [], ["W_GND_UNO"], "Todo o circuito precisa do mesmo GND do Uno."),
-    ("O chip PIC12F629", ["U2"], ["W_PIC8"],
+    ("O chip PIC12F629", ["U1"], ["W_PIC8"],
      "O PIC fica a cavaleiro do vao do meio, com o pino 1 em e10 (o entalhe do chip aponta para a esquerda)."),
     ("Energia do chip", ["C1"], ["W_D2", "W_C1GND"], "O capacitor fica junto do pino 1, perto do chip."),
     ("Dados e clock", [], ["W_D7", "W_D4"], ""),
@@ -60,12 +60,12 @@ PINOS_UNO = {"D2": "laranja", "D4": "verde", "D7": "azul", "A1": "roxo", "A5": "
 
 # ---- expectativa
 ESPERADO = [
-    {"UNO.D2", "U2.1", "C1.1"}, {"UNO.D4", "U2.6"}, {"UNO.D7", "U2.7"},
-    {"U2.4", "Q1.C", "R1.1"}, {"UNO.A1", "R2.1"}, {"R2.2", "Q1.B"},
-    {"UNO.GND", "FONTE.-", "U2.8", "Q1.E", "C1.2", "D2.K", "D3.K"},
+    {"UNO.D2", "U1.1", "C1.1"}, {"UNO.D4", "U1.6"}, {"UNO.D7", "U1.7"},
+    {"U1.4", "Q1.C", "R1.1"}, {"UNO.A1", "R2.1"}, {"R2.2", "Q1.B"},
+    {"UNO.GND", "FONTE.-", "U1.8", "Q1.E", "C1.2", "D2.K", "D3.K"},
     {"R1.2", "R4.1", "FONTE.+"}, {"R4.2", "D2.A"}, {"UNO.A5", "R3.1"}, {"R3.2", "D3.A"},
 ]
-LIVRES = ["U2.2", "U2.3", "U2.5"]
+LIVRES = ["U1.2", "U1.3", "U1.5"]
 COLS = range(7, 31)
 
 

@@ -233,7 +233,7 @@ def main():
 
     # ---- PIC
     texto("3) PIC12F629 (DIP-8 em soquete) E CABECALHO ICSP", 160, 155, 1.5, True)
-    comp(PIC, "U2", "PIC12F629", "Package_DIP:DIP-8_W7.62mm_Socket", 205, 195, 0,
+    comp(PIC, "U1", "PIC12F629", "Package_DIP:DIP-8_W7.62mm_Socket", 205, 195, 0,
          {"1": "VDD", "8": "GND", "4": "MCLR", "6": "CLK", "7": "DAT"}, "PIC12F629-I/P (DIP-8) em soquete",
          nao_usados={"2", "3", "5"}, off=(10, -18))
     comp(C, "C1", "100n", "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm", 285, 195, 0, {"1": "VDD", "2": "GND"},

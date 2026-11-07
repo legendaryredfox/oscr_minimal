@@ -19,7 +19,7 @@ PECAS = {
     "J3": ("Barra de 6 pinos macho (vai ao Uno por cabos Dupont)",
            {"GND": (4, 0), "D2": (5, 0), "D4": (6, 0), "D7": (7, 0), "A1": (8, 0), "A5": (9, 0)}),
     "J1": ("Borne de parafuso 5,08 mm (entrada de 13 V)", {"1": (1, 2), "2": (3, 2)}),
-    "U2": ("Soquete DIP-8 (entalhe para cima = pino 1 em cima a esquerda)",
+    "U1": ("Soquete DIP-8 (entalhe para cima = pino 1 em cima a esquerda)",
            {"1": (12, 3), "2": (12, 4), "3": (12, 5), "4": (12, 6), "8": (15, 3), "7": (15, 4), "6": (15, 5), "5": (15, 6)}),
     "C1": ("100 nF", {"1": (10, 3), "2": (10, 5)}),
     "R1": ("10 k", {"1": (5, 8), "2": (9, 8)}),
@@ -39,14 +39,14 @@ FIOS = [
     ("GND", [(10, 5), (10, 13)]),                           # C1.2
     ("GND", [(12, 10), (12, 13)]),                          # D2.K
     ("GND", [(14, 8), (14, 13)]),                           # Q1.E
-    ("GND", [(15, 3), (18, 3), (18, 13)]),                  # U2 pino 8
+    ("GND", [(15, 3), (18, 3), (18, 13)]),                  # U1 pino 8
     ("GND", [(20, 8), (20, 13)]),                           # D3.K
-    ("VDD", [(5, 0), (5, 3), (10, 3), (12, 3)]),            # D2 do Uno -> U2 pino 1, com C1.1 em (10,3)
-    ("CLK", [(6, 0), (6, 2), (17, 2), (17, 5), (15, 5)]),   # D4 -> U2 pino 6
-    ("DAT", [(7, 0), (7, 1), (16, 1), (16, 4), (15, 4)]),   # D7 -> U2 pino 7
+    ("VDD", [(5, 0), (5, 3), (10, 3), (12, 3)]),            # D2 do Uno -> U1 pino 1, com C1.1 em (10,3)
+    ("CLK", [(6, 0), (6, 2), (17, 2), (17, 5), (15, 5)]),   # D4 -> U1 pino 6
+    ("DAT", [(7, 0), (7, 1), (16, 1), (16, 4), (15, 4)]),   # D7 -> U1 pino 7
     ("VPP_CTL", [(8, 0), (8, 11), (17, 11), (17, 10)]),     # A1 -> R2.1
     ("BASE", [(13, 8), (13, 10)]),                          # Q1.B - R2.2
-    ("MCLR", [(12, 6), (12, 8)]),                           # U2 pino 4 - Q1.C
+    ("MCLR", [(12, 6), (12, 8)]),                           # U1 pino 4 - Q1.C
     ("MCLR", [(9, 8), (12, 8)]),                            # R1.2
     ("V13", [(1, 2), (1, 4)]),                              # J1.1 (entrada de 13 V)
     ("V13", [(1, 4), (1, 8)]),                              # PONTE no lugar do D1 (DNP); com D1: tirar este fio e soldar o diodo, anodo em E2 e catodo em I2
@@ -58,19 +58,19 @@ FIOS = [
 
 # ---- grupos esperados (ref, pino)
 ESPERADO = {
-    "VDD": [("J3", "D2"), ("U2", "1"), ("C1", "1")],
-    "CLK": [("J3", "D4"), ("U2", "6")],
-    "DAT": [("J3", "D7"), ("U2", "7")],
-    "MCLR": [("U2", "4"), ("R1", "2"), ("Q1", "C")],
+    "VDD": [("J3", "D2"), ("U1", "1"), ("C1", "1")],
+    "CLK": [("J3", "D4"), ("U1", "6")],
+    "DAT": [("J3", "D7"), ("U1", "7")],
+    "MCLR": [("U1", "4"), ("R1", "2"), ("Q1", "C")],
     "VPP_CTL": [("J3", "A1"), ("R2", "1")],
     "BASE": [("R2", "2"), ("Q1", "B")],
-    "GND": [("J3", "GND"), ("J1", "2"), ("U2", "8"), ("Q1", "E"), ("C1", "2"), ("D2", "K"), ("D3", "K")],
+    "GND": [("J3", "GND"), ("J1", "2"), ("U1", "8"), ("Q1", "E"), ("C1", "2"), ("D2", "K"), ("D3", "K")],
     "V13": [("J1", "1"), ("R1", "1"), ("R4", "1")],
     "LED13_A": [("R4", "2"), ("D2", "A")],
     "LED_ATIVO": [("J3", "A5"), ("R3", "1")],
     "LEDA_A": [("R3", "2"), ("D3", "A")],
 }
-LIVRES = [("U2", "2"), ("U2", "3"), ("U2", "5")]
+LIVRES = [("U1", "2"), ("U1", "3"), ("U1", "5")]
 TAM = (22, 14)   # colunas x linhas usadas (x de 0 a 21, y de 0 a 13)
 
 
@@ -167,7 +167,7 @@ def desenhar():
     q = PECAS["Q1"][1]
     s.append(f'<path d="M{cx(q["C"][0]) - 12} {cy(q["C"][1]) + 9} L{cx(q["E"][0]) + 12} {cy(q["E"][1]) + 9} L{cx(q["E"][0]) + 12} {cy(q["E"][1]) - 4} '
              f'A 30 26 0 0 0 {cx(q["C"][0]) - 12} {cy(q["C"][1]) - 4} Z" fill="#555" fill-opacity="0.35" stroke="#222"/>')
-    u2 = PECAS["U2"][1]
+    u2 = PECAS["U1"][1]
     s.append(f'<rect x="{cx(12) - 10}" y="{cy(3) - 11}" width="{3 * P + 20}" height="{3 * P + 22}" rx="3" fill="#bbb" fill-opacity="0.5" stroke="#333"/>')
     s.append(f'<path d="M{cx(13) + 2} {cy(3) - 11} a 10 10 0 0 0 {P - 4} 0" fill="none" stroke="#333"/>')
     j1 = PECAS["J1"][1]
@@ -191,7 +191,7 @@ def desenhar():
     rot("J1 GND", cx(3), cy(2) + 24, "#111", 9)
     rot("ponte no lugar do D1", cx(1) + 12, cy(6), "#c2410c", 9, anchor="start")
     rot("(D1 opcional: E2 a I2)", cx(1) + 12, cy(6) + 12, "#c2410c", 9, anchor="start")
-    rot("U2 DIP-8", cx(13.5), cy(6) + 30)
+    rot("U1 DIP-8", cx(13.5), cy(6) + 30)
     for i, (x, y) in enumerate(((12, 3), (12, 4), (12, 5), (12, 6))):
         rot(str(i + 1), cx(x) - 14, cy(y) + 4, "#333", 9)
     for i, (x, y) in enumerate(((15, 6), (15, 5), (15, 4), (15, 3))):

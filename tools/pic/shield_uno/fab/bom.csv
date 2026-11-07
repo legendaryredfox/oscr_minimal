@@ -11,4 +11,4 @@
 "R2","4k7","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","1"
 "R3","220","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","1"
 "R4","1k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","1"
-"U2","PIC12F629","Package_DIP:DIP-8_W7.62mm_Socket","1"
+"U1","PIC12F629","Package_DIP:DIP-8_W7.62mm_Socket","1"

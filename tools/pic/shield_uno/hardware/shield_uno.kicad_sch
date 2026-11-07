@@ -3339,7 +3339,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e1e1f746-f9c9-4dbc-be5d-6c6e44edf87e")
-		(property "Reference" "U2"
+		(property "Reference" "U1"
 			(at 215.74 177.58 0)
 			(effects
 				(font
@@ -3411,7 +3411,7 @@
 		(instances
 			(project "shield_uno"
 				(path "/6f1d3a52-9b0e-4d57-8c3a-5e7a1b2c9d40"
-					(reference "U2")
+					(reference "U1")
 					(unit 1)
 				)
 			)
