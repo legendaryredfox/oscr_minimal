@@ -5,7 +5,7 @@
 set -euo pipefail
 BOARD=${1:?placa (pasta em boards/)}; VER=${2:?versão, ex. v1.0}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-# HWDIR e GDIR permitem exportar uma revisão antiga guardada ao lado (ex.: HWDIR=hardware-v1.0 GDIR=gerbers-v1.0-rev2 tools/export_fab.sh 16_bits v1.0-rev2)
+# HWDIR e GDIR permitem exportar uma revisão antiga guardada ao lado (ex.: HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh 16_bits v1.0)
 HWDIR=${HWDIR:-hardware}; GDIR=${GDIR:-gerbers}
 PCB="$ROOT/boards/$BOARD/$HWDIR/dumper.kicad_pcb"
 SCH="$ROOT/boards/$BOARD/$HWDIR/dumper.kicad_sch"

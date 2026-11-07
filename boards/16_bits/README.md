@@ -2,7 +2,7 @@
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
-**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers v. 1.2 em `fab/`. A v1.0 (`dumper-v1.0-jlcpcb.zip`) foi encomendada pelo usuário em 2026-11-06 (informado no chat); nenhuma versão foi montada nem testada com cartucho.
+**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers v. 1.2 em `fab/`. A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
 
 ## v. 1.2 final: proteção, chave de 5V, reset e furos do Mega (2026-11-06, D108)
 
@@ -35,8 +35,8 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 |---|---|
 | `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): pasta de trabalho, hoje igual à `hardware-v1.2/` (a v. 1.3 começa daqui) |
 | `hardware-v1.2/` | **a v. 1.2 final congelada** (2026-11-06, D108): esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (conferido: DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist` OK, mesmos gerbers). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
-| `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-rev2-jlcpcb.zip` |
-| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`), `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0-rev2/` da v1.0), `bom.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
+| `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
+| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`), `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):

@@ -56,7 +56,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | Firmware, compilação | `pio run -e SerialASCII` em `firmware/oscr` | compila para o Mega 2560 |
 | GUI e CLI Kotlin | `cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin` | testes passam, os dois módulos compilam; a janela foi vista só em display virtual |
 | Placas (as 8) | ERC, DRC (`--schematic-parity`) e `tools/check_netlist.py --board <placa>` | ERC sem violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e de paridade); netlist confere com o `pinmap.md` de cada placa |
-| Gerbers | `16_bits` v1.0: o zip encomendado é idêntico ao exportado do commit de origem; prévias 3D das placas novas vistas | ok |
+| Gerbers | `16_bits` v1.0 (a antiga `rev2`, D110): zip idêntico ao exportado de `hardware-v1.0`; prévias 3D das placas novas vistas | ok |
 | CI (`.github/workflows/ci.yml`) | **nunca executou**; a primeira execução será ao publicar | pendente |
 
 **Falta (nada disso foi feito):**
@@ -65,7 +65,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
   - Montar uma placa, medir continuidade e tensão e rodar o primeiro dump (SNES LoROM, NES mapper 0 ou um Mega Drive simples) comparando o CRC32 com o No-Intro.
   - Conferir com as peças reais as medidas dos slots e do módulo Si5351 (D17, D23), o lado da etiqueta (D27, D28) e a altura dos espaçadores (D25).
   - Revisar à mão, no KiCad, os layouts feitos por autoroteador (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`).
-  - A única placa encomendada até agora é a `16_bits` v1.0.
+  - A única placa encomendada até agora é a `16_bits` v1.0 original (trilhas de alimentação em 0,3 mm); o repositório guarda no lugar dela a v1.0 revisada, a antiga `rev2` (D110).
 - **Firmware.** Os núcleos do OSCR só rodam no AVR, então nenhum teste os cobre. Pontos prováveis de ajuste: tempos de leitura do NES, 1.000.000 baud, `Power::setVoltage` sem VSELECT e o laço de gravação de flash. Roteiro e ordem de risco das gravações em `docs/uso.md`, seção 7.
 - **GUI e CLI.** Serial a 1.000.000 baud em Linux, macOS e Windows, janela estreita, revisão das traduções ru e zh por falantes nativos, empacotamento (deb/AppImage, dmg, msi). `save-write` ainda não relê o save depois de gravar.
 - **Funções do OSCR que faltam** (SF Memory, Satellaview, mais mappers do NES, outros sistemas etc.): `docs/funcoes-oscr.md`.

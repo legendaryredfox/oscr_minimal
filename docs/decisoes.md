@@ -108,6 +108,7 @@
 - **D107** `16_bits` v. 1.2: fixes finais antes de fechar (pedido do usuário, 2026-11-06)
 - **D108** `16_bits` v. 1.2 final: tudo o que era da v. 1.3, menos o RP2040 (pedido do usuário, 2026-11-06)
 - **D109** Referências sequenciais nas placas derivadas e revisão (`rev`) no carimbo (pedido do usuário, 2026-11-07)
+- **D110** `16_bits`: a v1.0 original (encomendada) sai do repositório e a antiga `rev2` vira a v1.0 (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -887,3 +888,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Arquivos refeitos.** Gerbers, zips, `fab/bom.csv`, SHA-256 do `PEDIDO.md` e prévias PNG das seis placas alteradas (cobre idêntico; muda só o texto do silkscreen e os cabeçalhos).
 - **Verificação.** `check_netlist.py` OK nas 8 placas; DRC com as mesmas contagens de antes (só avisos de biblioteca, de campos e de peças só do PCB); ERC da `snes` com 0 violações pelo MCP do KiCad. Nada encomendado nem montado.
 - **Shield do Uno (`tools/pic/shield_uno`), pedido do usuário no mesmo dia.** O PIC era U2 sem U1 (espelhava o U2 da `16_bits`); virou U1 no esquemático, PCB, BOM, README, `docs/perfboard.md`, nos scripts (`gerar_sch.py`, `gerar_pcb.py`, `esquema_simples.py`, `perfboard.py`, `protoboard.py`, `check_netlist.py`) e nos desenhos (`perfboard`, `protoboard/passo-2`, `placa-frente.png`, `esquematico.pdf`). Gerbers e zip refeitos com `scripts/exportar_fab.sh v1.0`; `check_netlist.py` do shield OK (12 grupos). Nada encomendado.
+
+### D110 — `16_bits`: a v1.0 original (encomendada) sai do repositório e a antiga `rev2` vira a v1.0 (pedido do usuário, 2026-11-07)
+- **Pedido.** "Pode apagar a placa que foi pedida (16bits versão 1.0) e colocar no lugar a 1.0 rev2."
+- **Feito.** Removidos `fab/dumper-v1.0-jlcpcb.zip` e a cópia `-gerbers-` (a v1.0 original, com trilhas de alimentação em 0,3 mm). `dumper-v1.0-rev2-*.zip` virou `dumper-v1.0-*.zip` e `gerbers-v1.0-rev2/` virou `gerbers-v1.0/` (conteúdo idêntico, SHA-256 `7751339e...da62`). `hardware-v1.0/` já guardava as fontes da rev2 e ganhou o carimbo `rev v1.0`. README, `PEDIDO.md`, `boards/README.md`, README da raiz e `tools/export_fab.sh` apontam para os nomes novos.
+- **Recuperar a original.** Está no histórico do git (zips `fab/dumper-v1.0-jlcpcb.zip` até o commit `4f1b6de`).
+- **Mantido.** O gabarito de capacitores (`docs/gabarito-v1.0-capacitores.*`, `tools/revisao/gabarito_v10_capacitores.py`) continua: serve para a placa física encomendada, e os furos da `hardware-v1.0` são os mesmos dos da original.
+- **Nada encomendado de novo.**
