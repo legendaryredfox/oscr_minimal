@@ -116,6 +116,7 @@
 - **D115** Chave física de troca de cartucho: decisões (usuário, 2026-11-07)
 - **D116** `POWER` em software: liga e desliga o 5V dos slots (pedido do usuário, 2026-11-07)
 - **D117** Plano da chave física, de Q2/Q3 e do ciclo de energia do SA-1 (pedido do usuário, 2026-11-07)
+- **D118** Respostas sobre o plano da chave física (usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -954,3 +955,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Documento.** `docs/plano-chave-fisica.md`: ordem de trabalho (firmware primeiro, depois a `16_bits` v1.3, depois as outras sete placas), tarefas F1 a F8 do firmware e do software, o bloco de hardware com valores e BOM extra, a receita por placa (copiando D108), as decisões que dependem do usuário, o teste de aceitação e os riscos.
 - **Achados do levantamento.** (1) A chave pode ser testada na v1.2 já pronta com um fio do D18 ao GND. (2) As placas que não são a `16_bits` **não têm Q1 nem `+5V_CART`**: precisam do bloco de D108 inteiro além do bloco novo, e alterar quais cargas ficam no rail chaveado. (3) As placas de um sistema são pequenas (65 mm de altura) e podem exigir contorno maior. (4) O sensor do rail pede um pino do Mega (proposta: **D53**), ainda não aprovado.
 - **Decisões abertas** (seção 4 do plano): abertura da chave no meio de uma operação, pino do sensor, posição e tipo da chave, tamanho das placas, se a v1.3 leva o RP2040 junto, e a ordem das placas.
+
+### D118 — Respostas sobre o plano da chave física (usuário, 2026-11-07)
+- **Usuário.** Item 4 (tamanho das placas): **sim, podem crescer**. Item 5 (RP2040 na v1.3 da `16_bits`): **sim, mas não agora**. O resto ficou a critério do projeto.
+- **Projeto.** Chave aberta no meio de uma operação: leitura aborta, gravação e apagamento ignoram até o fim (F2). Sensor do rail no **D53**. Chave deslizante SPST na borda de baixo da placa, com os dois LEDs (verde e **amarelo**) junto dela. **Ordem:** firmware e software; bloco validado em **placa perfurada ligada às pernas do Q1 da v1.2**; v1.1 das demais (começando pela `snes`, sem esperar o RP2040); `16_bits` v1.3 com o RP2040 só depois da validação do RP2040 (D89). Tudo em `docs/plano-chave-fisica.md` (seções "Ordem de trabalho" e 4). Nada foi implementado.

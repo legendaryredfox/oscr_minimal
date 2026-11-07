@@ -8,19 +8,20 @@ Para fazer **depois** (pedido do usuário, 2026-11-07). Continua `docs/troca-de-
 - Firmware: `releaseCartPins()`, `cart_power()`, `OSCR_POWER_SWITCH`, `OSCR_POWER_DISCHARGE_MS`, ambiente `SerialASCII_Power` em `firmware/oscr/config.d/83-dumper-power.ini`.
 - Hardware só na `16_bits` v1.2: Q1 (P-MOSFET), R16, R17, R18, D2 verde, comando no D19, rede `+5V_CART` (D108). **As outras placas não têm Q1 nem `+5V_CART`.**
 
-## Ordem de trabalho
+## Ordem de trabalho (revisada em 2026-11-07, D118)
 
-1. **Firmware e software (fazer primeiro, testável no PC).** A chave pode ser testada na v1.2 já montada com um fio do D18 ao GND.
-2. **Hardware `16_bits` v1.3** (referência do bloco).
-3. **Hardware v1.1 das demais:** `16_and_8_bits`, `snes`, `nes`, `famicom`, `famicom_nes`, `megadrive`, `gb_gba` (e `8_bits`, `completa` quando saírem do esqueleto).
-4. Bancada (só o usuário) e ajustes.
+1. **Firmware e software (F1 a F8)**, testável no PC. A chave pode ser testada na v1.2 já montada com um fio do D18 ao GND.
+2. **Validação do bloco na bancada, sem placa nova:** montar o bloco da seção 2 (Q2, Q3, resistores, LED amarelo, chave) numa placa perfurada ligada às pernas do Q1 da `16_bits` v1.2 (gate `PWR_G`, dreno `+5V_CART`), ao 5V do Mega e a fios para D18 e D53. Confere limiar do 2N7000, tempo de descarga, o VCC do cartucho com a chave aberta (< 0,5 V) e o ciclo do SA-1, antes de gastar placa.
+3. **Hardware v1.1 das demais placas** (`snes` primeiro, pelo benefício no SA-1; depois `megadrive`, `nes`, `famicom`, `famicom_nes`, `gb_gba`, `16_and_8_bits`), com um script único generalizado. **Não esperam o RP2040.**
+4. **`16_bits` v1.3**, que **leva o RP2040 junto** (decisão do usuário), **só quando o RP2040 estiver validado em bancada** (D89). Se o usuário preferir não esperar, a chave pode sair numa v1.3 com o PIC e o RP2040 virar v1.4: perguntar nessa hora.
+5. Bancada de cada placa (só o usuário) e ajustes.
 
 ## 1. Firmware e software
 
 | # | Tarefa | Detalhe |
 |---|---|---|
 | F1 | **Chave no D18 como trava** | `INPUT_PULLUP`, debounce de 20 ms; `5V = chave fechada E pedido do software`. Chave aberta: soltar pinos, abrir Q1, esperar a descarga, e os comandos de cartucho voltam `0x000C`. `POWER on` com a chave aberta devolve `0x000C` com o texto `chave`. `power_info()` passa a preencher `features` bit 0 e `sw` (0 aberta, 1 fechada). Build: `OSCR_POWER_SWITCH_HW=1`. |
-| F2 | **O que fazer se a chave abrir no meio de uma operação** | **Decidir com o usuário.** Proposta: **leitura** (ROM e save): abortar com `E_ABORTADO` e cortar; **gravação e apagamento** (`WRITE_ROM`, `WRITE_SAVE`, `ERASE`): ignorar a chave até o fim e avisar (cortar o 5V no meio de uma gravação de flash estraga o chip); a GUI mostra "troca bloqueada durante a gravação". |
+| F2 | **O que fazer se a chave abrir no meio de uma operação** | **Decidido (seção 4).** **Leitura** (ROM e save): abortar com `E_ABORTADO` e cortar; **gravação e apagamento** (`WRITE_ROM`, `WRITE_SAVE`, `ERASE`): ignorar a chave até o fim e avisar (cortar o 5V no meio de uma gravação de flash estraga o chip); a GUI mostra "troca bloqueada durante a gravação". |
 | F3 | **Sensor do rail** | Hoje o LED amarelo (Q3) é só analógico. Proposta: ligar o nó do Q3 a um pino livre (**D53, PB0**: não é do ICSP nem de slot; entrada sem pull-up, 1 kΩ em série). Firmware: depois de abrir Q1, esperar o sensor ou 500 ms (2 s sem o sensor); `POWER_RESP.rail` e `features` bit 1. Build: `OSCR_POWER_SENSE=1`. |
 | F4 | **Descarga forçada** | Só informa: `features` bit 2 com `OSCR_POWER_DISCHARGE=1` (tempo de espera 500 ms em vez de 2 s). |
 | F5 | **Ciclo de energia do SA-1** | Antes de cada tentativa de destravamento: desligar, esperar 500 ms, ligar, esperar 50 ms; até 3 tentativas. Achar no `SNES.cpp` do upstream (`firmware/oscr/src/cores/`) onde o SA-1 é detectado e onde a falha vira "cabeçalho inválido" (status 4); o gancho fica em `Dumper.cpp` (`prepare`/`detect` do SNES). Só em placa com `power_switch`. Registrar quantas tentativas foram precisas no log da GUI e na CLI (`attempts`). |
@@ -28,7 +29,7 @@ Para fazer **depois** (pedido do usuário, 2026-11-07). Continua `docs/troca-de-
 | F7 | **Simuladores e testes** | `SimDevice` e `MockDevice` com chave e sensor (`OSCR_SIM_SWITCH=open|closed`); `PowerBackend` do `pc-tests` com a trava e o abort; teste do ciclo do SA-1 (3 falhas, 4ª ok). |
 | F8 | **Docs** | `docs/protocolo.md` (campos de `POWER_RESP`), `docs/cli.md`, nova decisão (D118). |
 
-**Pino do sensor (F3): decidir com o usuário** antes de desenhar (D53 é a proposta; alternativas D10 a D13 são do LED do OSCR/Mega).
+**Pino do sensor (F3): D53 (decidido, seção 4).** As alternativas D10 a D13 são do LED do OSCR/Mega.
 
 ## 2. Bloco de troca (hardware, igual em todas as placas)
 
@@ -63,14 +64,19 @@ Seguir D108 e `boards/nes/README.md`/D96 (scripts por placa):
 6. Fábrica: `tools/export_fab.sh <pasta> <versão>`, BOM, `fab/PEDIDO.md` com o SHA-256, `docs/bom.md`, `docs/montagem.md` (ordem de solda: 2N7000 e resistores com os baixos, chave por último; teste de aceitação), README da placa e `boards/README.md`.
 7. Decisão nova em `docs/decisoes.md` por placa ou uma geral (D118+), `docs/pinmap.md` regenerado (`tools/gen_pinmap.py`), commit e push nos dois remotos.
 
-## 4. Decisões que dependem do usuário (antes de desenhar)
+## 4. Decisões (usuário e projeto, 2026-11-07; D118)
 
-1. **F2:** o que fazer quando a chave abre no meio de uma operação (a proposta acima).
-2. **F3:** usar D53 para o sensor do rail (sim/não); sem o sensor, o LED amarelo fica só analógico.
-3. **Posição e tipo da chave** em cada placa (borda, altura, ao alcance com o cartucho inserido) e se aceita chave deslizante THT.
-4. **Tamanho da placa:** aceitar crescer o contorno das placas pequenas (65 mm de altura) para caber o bloco, ou usar o espaço sob os slots.
-5. **v1.3 da `16_bits` leva o RP2040 junto?** (D89 diz que o RP2040 só entra se der certo na bancada; separar as duas mudanças evita atrasar a chave.)
-6. **Ordem das placas:** só a `16_bits` v1.3 primeiro e as outras depois da bancada, ou todas de uma vez.
+| # | Tema | Decisão | Quem |
+|---|---|---|---|
+| 1 | F2: chave aberta no meio de uma operação | **Leitura** (ROM e save): abortar com `E_ABORTADO` e cortar o 5V. **Gravação e apagamento** (`WRITE_ROM`, `WRITE_SAVE`, `ERASE`): **ignorar a chave até o fim** e avisar (cortar no meio estraga o chip); a GUI mostra "troca bloqueada durante a gravação"; ao terminar, o firmware aplica a chave | projeto |
+| 2 | F3: sensor do rail | **Sim, no D53 (PB0)**: nó `SENSE` do Q3 por 1 kΩ, entrada sem pull-up; alto = rail baixo = seguro trocar. Sem o sensor (placas sem o bloco) `rail` fica `0xFF` | projeto |
+| 3 | Chave | SPST deslizante THT de 2,54 mm, **na borda de baixo da placa** (a que fica de frente para quem insere o cartucho), no eixo do slot ou entre os slots, a ≥ 10 mm da borda e fora da sombra do cartucho; silkscreen "CARTUCHO LIGADO / DESLIGADO" ao lado e os dois LEDs juntos dela. Posição exata no layout de cada placa | projeto |
+| 4 | Tamanho das placas | **Pode crescer** (usuário). Crescer o mínimo, de preferência para baixo (o lado da chave), mantendo os furos M3 alinhados com os do Mega e o encaixe nos headers | usuário |
+| 5 | RP2040 na v1.3 da `16_bits` | **Sim, mas não agora** (usuário): a v1.3 só começa com o RP2040 validado em bancada (D89); ver a ordem acima | usuário |
+| 6 | Ordem das placas | Bloco validado em perfboard na v1.2 → v1.1 das demais (`snes` primeiro) → `16_bits` v1.3 com o RP2040 | projeto |
+| 7 | LED | verde (D2, 5V presente) + **amarelo** (seguro trocar), 3 mm THT; os dois junto da chave | projeto |
+
+**Perguntar na hora, se surgir:** a v1.3 da `16_bits` sem o RP2040 se o RP2040 atrasar; tamanho final de cada contorno; se alguma placa de um sistema deve ficar sem a chave (por exemplo a `famicom`, sem Si5351 nem PIC, só tem o ganho da troca segura).
 
 ## 5. Teste de aceitação (bancada, só o usuário)
 
