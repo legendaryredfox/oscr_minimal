@@ -73,3 +73,10 @@ def save_result(args, res: P.Frame | object, ext: str, default: str, extra: dict
     emit(args, obj, [f"{path}  {len(res.data)} bytes  CRC32 {res.crc32:08X}"] + (notes or []))
     return 0
 
+
+
+def diff_summary(a: bytes, b: bytes) -> tuple[int, int]:
+    """(bytes diferentes, deslocamento do primeiro). Tamanhos diferentes contam o excesso; sem diferença nos bytes comuns, o primeiro é o fim do menor. Iguais: (0, -1)."""
+    n = min(len(a), len(b))
+    idx = [i for i in range(n) if a[i] != b[i]]
+    return len(idx) + abs(len(a) - len(b)), (idx[0] if idx else (n if len(a) != len(b) else -1))

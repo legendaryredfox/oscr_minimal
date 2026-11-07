@@ -32,6 +32,19 @@ class CliTest {
         }
     }
 
+    @Test fun dumpTwiceComLeiturasIguais() {
+        val d = tmp()
+        val r = run("--simulate", "--json", "dump", "-s", "mock", "--twice", "-o", "$d/x")
+        assertEquals(0, r.code); assertEquals("true", r.json()["twice"])
+        assertContentEquals(mockData(), File("$d/x.bin").readBytes()); assertFalse(File("$d/x.leitura1.bin").exists())
+    }
+
+    @Test fun diffSummaryContaDiferencas() {
+        assertEquals(0 to -1, diffSummary(byteArrayOf(1, 2, 3), byteArrayOf(1, 2, 3)))
+        assertEquals(1 to 3, diffSummary(byteArrayOf(1, 2, 3, 4), byteArrayOf(1, 2, 3)))
+        assertEquals(1 to 2, diffSummary(byteArrayOf(1, 2, 9, 4), byteArrayOf(1, 2, 3, 4)))
+    }
+
     @Test fun dumpCrcEArquivoBatemComOMock() {
         val d = tmp()
         val r = run("--simulate", "--json", "dump", "-s", "mock", "-o", "$d/x")

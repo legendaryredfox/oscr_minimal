@@ -62,3 +62,12 @@ internal fun saveResult(io: CliIo, a: Args, res: DumpResult, ext: String, defaul
 }
 
 internal fun hex8(v: Int) = (v.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
+
+/** (bytes diferentes, deslocamento do primeiro). Tamanhos diferentes contam o excesso; sem diferença nos bytes comuns, o primeiro é o fim do menor. Iguais: (0, -1). */
+internal fun diffSummary(a: ByteArray, b: ByteArray): Pair<Int, Int> {
+    val n = minOf(a.size, b.size)
+    var count = 0; var first = -1
+    for (i in 0 until n) if (a[i] != b[i]) { count++; if (first < 0) first = i }
+    if (a.size != b.size && first < 0) first = n
+    return (count + kotlin.math.abs(a.size - b.size)) to first
+}

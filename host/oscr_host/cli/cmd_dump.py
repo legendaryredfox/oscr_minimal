@@ -12,7 +12,7 @@ from ..verify import gba_save_hint, verify_rom
 from . import common
 from .common import game_options, load_db, system_id
 from .errors import CliError, EXIT_ERROR, EXIT_USAGE
-from .output import emit, out_path, progress, safe_name, save_result
+from .output import diff_summary, emit, out_path, progress, safe_name, save_result
 
 
 def cmd_dump(args) -> int:
@@ -38,14 +38,22 @@ def cmd_dump(args) -> int:
     if getattr(args, "raw", False) and sid not in DB.NES_SYSTEMS:
         t.close()
         raise CliError("usage", "--raw vale só para NES e Famicom", EXIT_USAGE)
-    res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, args.chr)
-    t.close()
+    try:
+        res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, args.chr)
+        res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, args.chr) if getattr(args, "twice", False) else None
+    finally:
+        t.close()
     ext = P.SYSTEMS[args.system][1]
     if sid == 6 and len(res.data) > 0x143 and res.data[0x143] & 0x80:
         ext = ".gbc"                                      # cabeçalho com a flag de Game Boy Color
+    if res2 is not None and res2.data != res.data:
+        _twice_mismatch(args, res, res2, ext, safe_name(title, f"rom_{args.system}"))
     chk = verify_rom(sid, res.data)
     notes = []
     extra: dict = {"checksum": chk.status}
+    if res2 is not None:
+        extra["twice"] = True
+        notes.append(f"leitura dupla: as duas leituras são idênticas (CRC32 {res.crc32:08X})")
     if chk.status != "na":
         notes.append(("aviso: " if chk.status == "mismatch" else "") + str(chk))
     if db is not None:
@@ -99,3 +107,15 @@ def _save_nes_raw(args, res, default: str, extra: dict, notes: list[str]) -> int
     emit(args, obj, lines + notes)
     return 0
 
+
+
+def _twice_mismatch(args, res, res2, ext: str, default: str) -> None:
+    """--twice: as duas leituras diferem. Grava as duas (NOME.leitura1 e NOME.leitura2) para comparar e sai com erro."""
+    diff, first = diff_summary(res.data, res2.data)
+    base = out_path(args, ext, default)
+    f1, f2 = base.with_suffix(f".leitura1{base.suffix}"), base.with_suffix(f".leitura2{base.suffix}")
+    f1.write_bytes(res.data)
+    f2.write_bytes(res2.data)
+    raise CliError("mismatch", f"as duas leituras diferem ({diff} byte(s); primeira diferença no byte {first:#x}; CRC32 {res.crc32:08X} e {res2.crc32:08X})", EXIT_ERROR,
+                   hint="limpe os contatos do cartucho e do slot e leia de novo; compare os dois arquivos gravados",
+                   files=[str(f1), str(f2)], diff_bytes=diff, first_diff=first)

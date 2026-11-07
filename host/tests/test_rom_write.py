@@ -565,3 +565,52 @@ def test_dump_raw_sem_chr_rom(monkeypatch, capsys, tmp_path):
 def test_dump_raw_so_nes(tmp_path, capsys):
     from oscr_host import cli
     assert cli.main(["--simulate", "--json", "dump", "-s", "snes", "--raw", "-o", str(tmp_path / "x")]) == 64
+
+
+# ---------------------------------------------------------------- dump --twice (lê duas vezes e compara)
+class _FakeTwice:
+    def __init__(self, reads):
+        self.reads, self.calls = list(reads), 0
+
+    def detect(self, system, *a):
+        return {"name": "JOGO TESTE"}
+
+    def dump_rom(self, *a, **k):
+        import zlib
+        d = self.reads[self.calls]
+        self.calls += 1
+        return type("R", (), {"data": d, "crc32": zlib.crc32(d)})()
+
+
+def _twice(monkeypatch, capsys, tmp_path, reads):
+    from oscr_host import cli
+    fake = _FakeTwice(reads)
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), {}))
+    code = cli.main(["--json", "dump", "-s", "snes", "--twice", "-o", str(tmp_path / "jogo.sfc")])
+    return code, json.loads(capsys.readouterr().out.strip().splitlines()[-1]), fake
+
+
+def test_dump_twice_iguais_grava_um_arquivo(monkeypatch, capsys, tmp_path):
+    d = bytes(range(256)) * 16
+    code, o, fake = _twice(monkeypatch, capsys, tmp_path, [d, d])
+    assert code == 0 and o["ok"] and o["twice"] is True and fake.calls == 2
+    assert (tmp_path / "jogo.sfc").read_bytes() == d and not (tmp_path / "jogo.leitura1.sfc").exists()
+
+
+def test_dump_twice_diferentes_grava_as_duas_e_falha(monkeypatch, capsys, tmp_path):
+    a = bytes(range(256)) * 16
+    b = bytearray(a)
+    b[100] ^= 1
+    b[3000] ^= 0x80
+    code, o, _ = _twice(monkeypatch, capsys, tmp_path, [a, bytes(b)])
+    assert code == 1 and o["ok"] is False and o["error"]["kind"] == "mismatch"
+    assert o["error"]["diff_bytes"] == 2 and o["error"]["first_diff"] == 100
+    assert (tmp_path / "jogo.leitura1.sfc").read_bytes() == a and (tmp_path / "jogo.leitura2.sfc").read_bytes() == bytes(b)
+    assert not (tmp_path / "jogo.sfc").exists()
+
+
+def test_diff_summary_tamanhos_diferentes():
+    from oscr_host.cli.output import diff_summary
+    assert diff_summary(b"abc", b"abc") == (0, -1)
+    assert diff_summary(b"abcd", b"abc") == (1, 3)
+    assert diff_summary(b"abxd", b"abcd") == (1, 2)

@@ -59,6 +59,7 @@ options (accepted before or after the command):
   --buffer N           rom-write, SNES P0/P1, same types: write buffer in bytes (power of 2, 2 to 128)
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
   --raw                dump -s nes|famicom: write PRG and CHR as separate files (.prg and .chr), without the iNES header (the OSCR raw read)
+  --twice              dump: read the ROM twice and compare; if they differ, write both reads (NAME.leitura1 and NAME.leitura2, as in the Python CLI) and exit with an error (kind mismatch)
   --flash-id           detect -s md: also identify the cartridge's flash chip (the probe writes ID commands to the cartridge; mask ROM ignores them)
   --color MODE         auto (default: only in a terminal, respects NO_COLOR), always or never: colours and ASCII art; --json never has them
   --power MODE         power-switch boards: auto (default: turn the slots' 5V on before the command and keep it on) or keep (do not touch the 5V)
