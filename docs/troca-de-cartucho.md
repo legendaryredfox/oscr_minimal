@@ -30,7 +30,7 @@ A comunidade relata que cartuchos SA-1 destravam melhor depois de **desligar e d
 
 ## Estado (2026-11-07): o `POWER` em software está feito (D116)
 
-Implementado e testado no PC (nada em hardware): `POWER` (0x0D) e `POWER_RESP` (0x89) no protocolo, erro `0x000C` "cartucho desligado", flag `INFO` bit 5 (`power_switch`), firmware (`releaseCartPins()`, `cart_power()`, ambiente `SerialASCII_Power`), CLI Python e Kotlin (`power on|off|status`, `--power auto|keep`), GUI (estado, botão "Desligar para trocar o cartucho" e ligação automática antes das ações), simuladores (`OSCR_SIM_POWER=1`) e testes. Detalhes em `docs/protocolo.md`, `docs/cli.md` e D116. **Falta** (v1.3 da `16_bits` e v1.1 das demais): a chave física no D18, o transistor de descarga (Q2), o LED amarelo (Q3) e o ciclo de energia automático do SA-1; o firmware já tem a espera de 2 s para o caso sem Q2.
+Implementado e testado no PC (nada em hardware): `POWER` (0x0D) e `POWER_RESP` (0x89) no protocolo, erro `0x000C` "cartucho desligado", flag `INFO` bit 5 (`power_switch`), firmware (`releaseCartPins()`, `cart_power()`, ambiente `SerialASCII_Power`), CLI Python e Kotlin (`power on|off|status`, `--power auto|keep`), GUI (estado, botão "Desligar para trocar o cartucho" e ligação automática antes das ações), simuladores (`OSCR_SIM_POWER=1`) e testes. Detalhes em `docs/protocolo.md`, `docs/cli.md` e D116. **Falta** (plano completo em `docs/plano-chave-fisica.md`; v1.3 da `16_bits` e v1.1 das demais): a chave física no D18, o transistor de descarga (Q2), o LED amarelo (Q3) e o ciclo de energia automático do SA-1; o firmware já tem a espera de 2 s para o caso sem Q2.
 
 ## Decisões (usuário, 2026-11-07; D115)
 
