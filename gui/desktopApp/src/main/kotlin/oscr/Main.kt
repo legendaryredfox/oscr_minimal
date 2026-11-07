@@ -598,6 +598,17 @@ fun App() {
             }
             if (stub == null && isNes) {
                 Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
+                LabeledField(t(S.NES_PRESET)) {
+                    ComboBox(value = t(S.NES_PRESET_PICK), modifier = Modifier.fillMaxWidth()) { close ->
+                        Rules.nesPresets.forEach { p ->
+                            DropdownMenuItem(text = { Text(p.name) }, onClick = {
+                                close()
+                                mapper = p.mapper.toString(); prgKb = p.prgKb.toString(); chrKb = p.chrKb.toString(); ramKb = p.ramKb.toString()
+                                say(f(S.NES_PRESET_FILLED, p.name))
+                            })
+                        }
+                    }
+                }
                 if (dbHasNes) {
                     OutlinedTextField(gameQuery, { gameQuery = it }, label = { Text(t(S.GAME_SEARCH)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     if (gameQuery.trim().length >= 2) {

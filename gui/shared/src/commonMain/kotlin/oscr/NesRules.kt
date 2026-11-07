@@ -8,7 +8,30 @@ data class Problem(val key: S, val arg: Int? = null)
  * Regras do firmware para os campos de tamanho e mapper (iguais a oscr_carts_nes.cpp e docs/protocolo.md), para avisar enquanto o usuário
  * digita em vez de só depois do envio. O firmware continua sendo a palavra final (erro 0x0002 ou 0x0004).
  */
+/** Uma placa comum do NES: o nome técnico (igual em todos os idiomas) e os campos que ela preenche. */
+data class NesPreset(val name: String, val mapper: Int, val prgKb: Int, val chrKb: Int, val ramKb: Int = 0)
+
 object Rules {
+    /**
+     * Placas comuns, para quem não acha o jogo na base. Cada uma passa por [nes] e [nesRam] (teste em RevisaoTest), então o firmware as aceita.
+     * RAM 0 = sem PRG-RAM com bateria (o campo fica em 0, que o firmware lê como 8 KB só quando o mapper tem save).
+     */
+    val nesPresets: List<NesPreset> = listOf(
+        NesPreset("NROM-128 (16 KB PRG, 8 KB CHR)", 0, 16, 8),
+        NesPreset("NROM-256 (32 KB PRG, 8 KB CHR)", 0, 32, 8),
+        NesPreset("CNROM (32 KB PRG, 32 KB CHR)", 3, 32, 32),
+        NesPreset("UxROM (128 KB PRG, CHR-RAM)", 2, 128, 0),
+        NesPreset("UxROM (256 KB PRG, CHR-RAM)", 2, 256, 0),
+        NesPreset("AxROM (128 KB PRG, CHR-RAM)", 7, 128, 0),
+        NesPreset("GxROM (64 KB PRG, 16 KB CHR)", 66, 64, 16),
+        NesPreset("MMC1 SNROM (128 KB PRG, CHR-RAM, 8 KB RAM)", 1, 128, 0, 8),
+        NesPreset("MMC1 SxROM (256 KB PRG, 128 KB CHR)", 1, 256, 128),
+        NesPreset("MMC3 TxROM (128 KB PRG, 128 KB CHR)", 4, 128, 128),
+        NesPreset("MMC3 TxROM (256 KB PRG, 256 KB CHR)", 4, 256, 256),
+        NesPreset("MMC3 TKROM (256 KB PRG, 256 KB CHR, 8 KB RAM)", 4, 256, 256, 8),
+        NesPreset("MMC5 ExROM (512 KB PRG, 256 KB CHR, 32 KB RAM)", 5, 512, 256, 32),
+    )
+
     val mapperNames: Map<Int, String> = mapOf(
         0 to "NROM", 1 to "MMC1", 2 to "UxROM", 3 to "CNROM", 4 to "MMC3", 5 to "MMC5", 7 to "AxROM", 9 to "MMC2", 10 to "MMC4",
         11 to "Color Dreams", 33 to "Taito TC0190", 48 to "Taito TC0190", 66 to "GxROM", 69 to "FME-7", 70 to "Jaleco/Bandai", 71 to "Camerica",

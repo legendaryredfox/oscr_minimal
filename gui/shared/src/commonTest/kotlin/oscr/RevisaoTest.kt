@@ -21,6 +21,16 @@ private class BeginOnly(val kind: Int, val size: Int) : Transport {
 }
 
 class RevisaoTest {
+    @Test fun presetsDoNesPassamNasRegrasDoFirmware() {
+        assertTrue(Rules.nesPresets.size >= 10)
+        for (p in Rules.nesPresets) {
+            assertNull(Rules.nes(p.mapper, p.prgKb, p.chrKb), p.name)
+            assertNull(Rules.nesRam(p.mapper, p.ramKb), p.name)
+            assertTrue(Rules.mapperName(p.mapper) != null, p.name)
+        }
+        assertEquals(Rules.nesPresets.size, Rules.nesPresets.map { it.name }.toSet().size)
+    }
+
     // ---- regras de validação (iguais às do firmware)
     @Test fun nesRegras() {
         assertNull(Rules.nes(0, 0, 0))                                         // automático

@@ -110,6 +110,7 @@
 - **D109** Referências sequenciais nas placas derivadas e revisão (`rev`) no carimbo (pedido do usuário, 2026-11-07)
 - **D110** `16_bits`: a v1.0 original (encomendada) sai do repositório e a antiga `rev2` vira a v1.0 (pedido do usuário, 2026-11-07)
 - **D111** Software do PC: pendências da CLI e da GUI, CLI em módulos e camada visual (pedido do usuário, 2026-11-07)
+- **D112** Presets de placas comuns do NES na GUI (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -908,3 +909,9 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificação.** Host 163 testes (eram 142); Gradle `:shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin` verdes. **Nada disso rodou com hardware**; a arte foi vista em texto, não num terminal com fonte real; a barra colorida e o desenho do `detect` não foram vistos num terminal interativo de verdade (só com `--color always` em pipe).
 - **Não feito, e por quê.** Item 4 (presets por jogo e link do NESCartDB na GUI), 5 (`PROGRESSO` do firmware: muda protocolo e firmware), 6 (acessibilidade e busca na ajuda), 7 (revisão ru e zh: precisa de falante nativo), 8 (CRDB: sem arquivos de exemplo), 9 (empacotamento, excluído). O pedido do usuário foi parar depois da parte visual.
 - **Anotado para o futuro (docs/continuacao.md).** CLI multi-idioma; gravar o firmware do Arduino pelo próprio programa (GUI e CLI).
+
+### D112 — Presets de placas comuns do NES na GUI (pedido do usuário, 2026-11-07)
+- **Pedido.** "Pode fazer os presets" (item 4 das pendências da D111).
+- **Feito.** Lista "Preset de placa comum" no cartão de opções do NES: 13 placas (NROM-128/256, CNROM, UxROM 128/256, AxROM, GxROM, MMC1 SNROM e SxROM, MMC3 TxROM 128/256 e TKROM, MMC5 ExROM). Escolher uma preenche mapper, PRG, CHR e RAM e avisa no log para conferir com o cartucho (o mesmo mapper existe em tamanhos diferentes). Serve para jogo fora da base; a busca por jogo continua preenchendo pelo nome. Dados em `Rules.nesPresets` (`NesRules.kt`); textos nos 4 idiomas (`NES_PRESET`, `NES_PRESET_PICK`, `NES_PRESET_FILLED`); os nomes das placas são técnicos e iguais em todos os idiomas.
+- **Teste.** `RevisaoTest.presetsDoNesPassamNasRegrasDoFirmware`: cada preset passa em `Rules.nes` e `Rules.nesRam` (as mesmas regras do firmware), tem mapper conhecido e nome único.
+- **Não feito.** Link do NESCartDB (o endereço do site não foi conferido e a base do projeto já cobre a busca); presets na CLI (a CLI usa `--mapper/--prg/--chr/--game`). A lista de placas é de conhecimento geral, **não foi conferida com cartuchos reais**.
