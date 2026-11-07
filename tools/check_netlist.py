@@ -48,6 +48,8 @@ BOARD_CFG = {
     # só Famicom: sem Si5351 (o slot não usa clock), PIC, R2 nem regulador; C2 do slot
     "famicom": dict(caps=(2,), reg=False, mdonly=True, tps={}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C2 do slot e C3/C4 extras
+    # só N64 (3,3 V): Si5351 (só o CLK1, EEPROM_CLK no pino 19), regulador de 3,3 V (U2, C2, C3, C4), R2 de 1 kΩ do D7 ao 3,3 V; sem PIC
+    "n64": dict(caps=(), reg=True, nopic=True, clks=("CLK1",), r2_3v3=True, tps={}, regref=("U2", "C2", "C3", "C4")),
     "megadrive": dict(caps=(2, 3, 4), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
@@ -56,7 +58,9 @@ CTRL = ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D14", "D15", "D16", "D1
 MDONLY = CFG.get("mdonly", False)
 NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
 
-SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1"}
+R2_3V3 = CFG.get("r2_3v3", False)    # R2 puxa o D7 para o 3,3 V (EEPROM_DATA do N64)
+SI_CLKS = CFG.get("clks", ("CLK0",))   # saídas do Si5351 usadas pela placa sem PIC
+SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1", "N64": "N64_1"}
 SLOTS = set()      # slots presentes no pinmap da placa
 MEGA = "A1"          # shield
 SI = "U1"            # Si5351: 1 VIN 2 GND 3 SDA 4 SCL 5 CLK2 6 CLK1 7 CLK0
@@ -82,7 +86,7 @@ def read_pinmap():
     sec = None
     SLOTS.clear()
     for ln in PINMAP.read_text().splitlines():
-        m = re.match(r"## (SNES|NES|Famicom|Mega Drive|GBA) \(", ln)
+        m = re.match(r"## (SNES|NES|Famicom|Mega Drive|GBA|N64) \(", ln)
         if m:
             sec = SLOT_REF[m.group(1)]
             SLOTS.add(sec)
@@ -117,7 +121,7 @@ def expected_nets(pm_nets):
             exp[net].add((MEGA, net))                       # pad do Mega com o mesmo nome
     if not MDONLY:
         for net, pin in SI_CLK.items():
-            if NOPIC and net != "CLK0": continue
+            if NOPIC and net not in SI_CLKS: continue
             exp.setdefault(net, set()).add((SI, pin))
         if not NOPIC:
             for net, pin in PIC_NET.items():
@@ -131,7 +135,7 @@ def expected_nets(pm_nets):
             exp.setdefault("D40", set()).update({(MEGA, "D40"), (PIC, "4")})
     exp.setdefault("D38", set()).update({(MEGA, "D38"), ("R1", "2")})
     exp.setdefault("LED_K", set()).update({("R1", "1"), ("D1", "1")})
-    if not MDONLY and not NOPIC:
+    if not MDONLY and (not NOPIC or R2_3V3):
         exp.setdefault("D7", set()).update({(MEGA, "D7"), ("R2", "2")})
     exp.setdefault("+5V", set()).update({(MEGA, p) for p in MEGA_5V})
     exp["+5V"].update({("D1", "2"), ("C1", "1"), ("FLG1", "1")})
@@ -145,6 +149,7 @@ def expected_nets(pm_nets):
         ru, ci, co, cv = CFG.get("regref", ("U3", "C7", "C8", "C9"))
         exp["+5V"].update({(ru, "2"), (ci, "1")})
         exp.setdefault("+3V3", set()).update({(ru, "3"), (co, "1"), (cv, "1")})
+        if R2_3V3: exp["+3V3"].add(("R2", "1"))
         exp["GND"].update({(ru, "1"), (ci, "2"), (co, "2"), (cv, "2")})
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
     exp["GND"].update({("C1", "2"), ("FLG2", "1")})
@@ -235,13 +240,17 @@ def main():
                     errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
             elif net is None or (MEGA, "5V1") not in act[net]:
                 errors.append(f"{ref}.{pin} (VCC) não está na net do 5V do Mega")
-    for pin in ("1",) if "GBA1" in SLOTS else ():
-        net = next((k for k, v in act.items() if ("GBA1", pin) in v), None)
-        REGU = CFG.get("regref", ("U3",))[0]
-        if net is None or (REGU, "3") not in act[net] or (MEGA, "5V1") in act[net]:
-            errors.append(f"GBA1.1 (VCC) deve estar só na saída de 3,3 V do {REGU}, nunca no 5V")
+    for ref, pins in (("GBA1", ("1",)), ("N64_1", ("9", "17", "34", "42"))):
+        if ref not in SLOTS:
+            continue
+        for pin in pins:
+            net = next((k for k, v in act.items() if (ref, pin) in v), None)
+            REGU = CFG.get("regref", ("U3",))[0]
+            if net is None or (REGU, "3") not in act[net] or (MEGA, "5V1") in act[net]:
+                errors.append(f"{ref}.{pin} (VCC) deve estar só na saída de 3,3 V do {REGU}, nunca no 5V")
     for ref, pins in (("SNES1", ("5", "36")), ("NES1", ("1", "72")), ("FC1", ("1", "16")),
-                      ("MD1", ("A1", "A18", "A32")), ("GBA1", ("32", "SHIELD_3", "SHIELD_4"))):
+                      ("MD1", ("A1", "A18", "A32")), ("GBA1", ("32", "SHIELD_3", "SHIELD_4")),
+                      ("N64_1", ("1", "2", "6", "22", "23", "25", "26", "27", "31", "47", "48", "50"))):
         if ref not in SLOTS:
             continue
         for pin in pins:

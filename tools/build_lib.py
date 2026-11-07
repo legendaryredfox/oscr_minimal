@@ -25,6 +25,7 @@ SLOTS = {  # símbolo OSCR, footprint OSCR, nome novo, rótulo de silkscreen
     "NES_Slot": ("NES_Slot.kicad_mod", "NES_Slot", "NES 72p"),
     "FC_Slot": ("FC_Slot.kicad_mod", "FC_Slot", "FAMICOM 60p"),
     "MD_Slot": ("MD_Slot.kicad_mod", "MD_Slot", "MEGA DRIVE 64p"),
+    "N64_Slot": ("N64 Slot.kicad_mod", "N64_Slot", "N64 50p"),   # footprint próprio (build_n64_footprint): duas fileiras ao longo de x
 }
 
 # ----------------------------------------------------------------- símbolos
@@ -227,6 +228,27 @@ def build_slot(fname, newname, label):
     return dict(pads=len(pads), bbox=(bx0, by0, bx1, by1))
 
 
+def build_n64_footprint():
+    """Slot N64 (50 pinos, 2,5 mm, duas fileiras ao longo de x, pino 1 em (0, 0)). Pads do OSCR;
+    contorno e courtyard são ESTIMATIVA (D17/D120): conferir com o slot comprado."""
+    s = (SRC / "footprints/!OSCR.pretty/N64 Slot.kicad_mod").read_text()
+    pads = PAD_RE.findall(s)
+    xs = [float(p[3]) for p in pads]; ys = [float(p[4]) for p in pads]
+    s = s.rstrip()
+    assert s.endswith(")")
+    s = s[:-1].rstrip()
+    s = re.sub(r'\(footprint "[^"]*"', '(footprint "N64_Slot"', s, count=1)
+    s = re.sub(r'\(fp_text value "[^"]*"', '(fp_text value "N64_Slot"', s)
+    x0, x1 = min(xs) - 4.0, max(xs) + 4.0
+    y0, y1 = min(ys) - 4.0, max(ys) + 4.0
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    extra = [rect(x0, y0, x1, y1, "F.CrtYd", 0.05), rect(x0, y0, x1, y1, "F.Fab", 0.1), rect(x0, y0, x1, y1, "F.SilkS", 0.15),
+             text("1", -2.4, 0, "F.SilkS", 1.0),
+             text("N64 3,3 V", cx, cy, "F.SilkS", 1.5)]
+    (PRETTY / "N64_Slot.kicad_mod").write_text(s + "\n" + "\n".join(extra) + "\n)\n")
+    return len(pads), (x0, y0, x1, y1)
+
+
 def mega_pads():
     """Cotas oficiais do Arduino Mega 2560 R3 (docs.arduino.cc/hardware/mega-2560), mm."""
     P = []
@@ -270,6 +292,10 @@ def main():
     PRETTY.mkdir(parents=True, exist_ok=True)
     build_symbols()
     for sym, (fname, newname, label) in SLOTS.items():
+        if newname == "N64_Slot":
+            n, bb = build_n64_footprint()
+            print(f"N64_Slot: {n} pads, courtyard {bb[2]-bb[0]:.2f} x {bb[3]-bb[1]:.2f} mm")
+            continue
         r = build_slot(fname, newname, label)
         print(f"{newname}: {r['pads']} pads, courtyard {r['bbox'][2]-r['bbox'][0]:.2f} x {r['bbox'][3]-r['bbox'][1]:.2f} mm")
     build_gba_footprint()

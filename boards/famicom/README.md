@@ -1,5 +1,7 @@
 # famicom — só Famicom
 
+![Render 3D da placa famicom (KiCad, vista de cima)](render.png)
+
 Versão mínima de uma função: um slot **Famicom** (60p, 2,54 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`).
 
 **Sem Si5351 e sem PIC:** o slot Famicom não tem pino de clock nem CIC do SNES; o `pinmap.md` não liga nenhum deles ao slot. A placa é a mais simples de todas: slot, LED, C1 e um capacitor.

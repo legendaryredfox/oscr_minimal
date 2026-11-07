@@ -1,5 +1,7 @@
 # famicom_nes — Famicom e NES
 
+![Render 3D da placa famicom_nes (KiCad, vista de cima)](render.png)
+
 Versão mínima de duas funções: um slot **Famicom** (60p, 2,54 mm) e um slot **NES** (72p, 2,5 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Os dois slots ficam **em paralelo** nos mesmos pinos do Mega (como no `six_slot_adapter` do OSCR): **um cartucho por vez, em um slot só**. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`).
 
 **Si5351, sem PIC:** o NES usa o `CLK0` do Si5351 no pino 37; o Famicom não tem pino de clock. Sem PIC (CIC do SNES), sem R2 e sem regulador de 3,3 V.

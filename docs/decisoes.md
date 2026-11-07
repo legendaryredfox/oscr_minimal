@@ -119,6 +119,7 @@
 - **D118** Respostas sobre o plano da chave física (usuário, 2026-11-07)
 - **D119** Firmware e software da chave física, do sensor do rail e do ciclo de energia do SA-1 (pedido do usuário, 2026-11-07)
 - **D120** Componentes opcionais por placa e fase 1 da placa N64 (pedido do usuário, 2026-11-07)
+- **D121** Placa `boards/n64/`: só N64, 3,3 V (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -975,4 +976,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Documentação.** `boards/<placa>/docs/componentes-opcionais.md` nas 8 placas com projeto, mais uma previsão em `boards/n64/docs/`. Fonte: netlists (`kicad-cli`), BOMs, `pinmap.md`, `SNES.cpp`, `N64.cpp`, `NES.cpp` (sem uso do Si5351), D54, D55, `limites-gb.md`. Conclusões marcadas como inferência quando vêm só da leitura do código. Achados: PIC e Si5351 só pesam no SA-1 (e, quando portados, Satellaview e SF Memory); o Si5351 também alimenta o clock do PIC, então sem ele o PIC fica mudo; nas placas NES o `CLK0` do Si5351 vai ao pino 37 mas o firmware atual não o usa; o regulador U3/U1 do GBA é obrigatório; na `16_bits` os 0 Ω R3 a R14 e o Q1 **não** são opcionais (R3 a R14 são fios; Q1 só sai com ponte e perde o `POWER`).
 - **N64, fase 1 do `CLAUDE.md`.** `tools/n64/gen_pinmap.py` (reaproveita `tools/gen_pinmap.py`, que ganhou `if __name__ == "__main__"`) gerou `boards/n64/docs/pinmap.md`: 50 pinos do `n64_adapter`, 0 divergências entre `pinout.ods` (colunas `N64 ROM` e `N64 EEP`), esquemáticos (`n64_adapter` e `six_slot_adapter`) e `N64.ino`. VCC em 3,3 V (pinos 9, 17, 34, 42); `EEPROM_CLK` vem do `CLK1` do Si5351 e `EEPROM_DATA` do D7 com pull-up de 1 kΩ. **Parou aqui, como a regra pede:** o projeto KiCad só começa com aprovação do pinmap, das escolhas de tensão e Si5351 e das medidas reais do slot.
 - **MCP do KiCad.** O usuário autorizou node 24 e a atualização do MCP. `stable` já estava em v2.8.3 (último release); `npm install` e `npm run build` refeitos com node 24.22.2 sem erro. `origin/main` tem commits posteriores ao release (fios e junções de esquemático); não foram puxados.
+
+### D121 — Placa `boards/n64/`: só N64, 3,3 V (pedido do usuário, 2026-11-07)
+- **Pedido.** "Confere tudo e pode fazer no KiCad", depois do `pinmap.md` da D120 (aprovação do pinmap, do 3,3 V com sinais de 5 V como no GBA e do Si5351 para a EEPROM). Medidas do slot não foram fornecidas: footprint do OSCR, contorno e courtyard estimados (D17), etiqueta a confirmar (D27).
+- **Escolhas.** Cópia da `16_and_8_bits`; ficam N64_1 (novo, `dumper:N64_Slot`, 50 pinos, 2 fileiras de 25 a 2,5 mm), U1 (Si5351; só o `CLK1` vai ao slot, pino 19), U2 (MCP1700, era U3), C2 e C3 (1 µF, eram C7 e C8), C4 (100 nF do VCC do slot, era C9), R2 (1 kΩ, agora do D7 ao **3,3 V**, EEPROM_DATA), R1, D1, C1. Saem os outros slots, o PIC, C2 a C6 antigos e os furos M2. Contorno 110,1 × 65,1 mm; slot horizontal dentro da área do Mega.
+- **Ferramentas.** `tools/build_lib.py` (acrescenta `N64_Slot`, footprint próprio), `tools/n64/gen_pinmap.py`, `make_sch.py` (esquemático), `place.py` e `build_pcb.sh` (PCB, Freerouting fora do MCP, zonas e costura). `tools/check_netlist.py` ganhou a placa `n64` (slot `N64_1`, VCC no 3,3 V, `CLK1`, R2 ao 3,3 V). Firmware, protocolo, host e GUI do N64 não existem ainda (`n64 = false` em `user.ini`).
+- **Verificação.** ERC 0 erros (1 aviso de biblioteca); DRC sem erros nem ligações abertas, 4 avisos de biblioteca; `check_netlist --board n64` confere (30 nets, 96 ligações, 11 pinos de slot sem ligação). As outras placas continuam conferindo (16_and_8_bits, gb_gba, nes, famicom). Roteada por autoroteador, não revisada à mão; nada encomendado nem montado.
+- **Renders.** Pedido na mesma sessão: `render.png` (3D do `kicad-cli pcb render`, vista de cima) em cada pasta de placa e no README dela.
 

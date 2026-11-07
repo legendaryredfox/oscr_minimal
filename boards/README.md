@@ -13,11 +13,11 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.0 gerados. Nada encomendado |
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
 | [`gb_gba/`](gb_gba/) | GBA; GB e GBC por adaptador | Projeto KiCad criado de `16_and_8_bits` (D94), 138 × 67 mm, gerbers v1.0 gerados. Nada encomendado |
-| [`n64/`](n64/) | N64 | Esqueleto com `docs/pinmap.md` gerado (fase 1, aguarda aprovação). Sem projeto KiCad |
+| [`n64/`](n64/) | N64 | Projeto KiCad criado da `16_and_8_bits` (D121), 3,3 V, Si5351 só para a EEPROM, 110,1 × 65,1 mm, gerbers v1.0 gerados. Nada encomendado |
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
 | [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por todas as placas com projeto KiCad |
 
-Cada placa com projeto tem `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
+Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima; refazer com `kicad-cli pcb render` quando o layout mudar) e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
 
 ## Layout de cada variante
 
@@ -31,4 +31,4 @@ boards/<variante>/
 
 As tabelas de bibliotecas apontam para `${KIPRJMOD}/../../_lib/`. Pinagem idêntica ao OSCR HW5 continua regra de ouro (`CLAUDE.md`, seção 3). Uma variante nova nasce copiando o esqueleto e gerando o próprio `docs/pinmap.md`; `tools/check_netlist.py` aceita `--board <pasta>` e `tools/export_fab.sh <pasta> <versão>` gera os arquivos da fábrica; `gen_pinmap.py` e os demais scripts gerais de `tools/` apontam para `16_and_8_bits/`. As placas de um sistema só têm scripts próprios em `tools/<placa>/` (receita completa em `boards/nes/README.md` e na D96).
 
-Todas as placas novas (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`) foram roteadas por autoroteador e **não foram revisadas à mão no KiCad**; nenhuma foi encomendada, montada ou testada com cartucho.
+Todas as placas novas (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`, `n64`) foram roteadas por autoroteador e **não foram revisadas à mão no KiCad**; nenhuma foi encomendada, montada ou testada com cartucho.

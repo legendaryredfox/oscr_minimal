@@ -1,8 +1,10 @@
 # n64 — Nintendo 64
 
+![Render 3D da placa n64 (KiCad, vista de cima)](render.png)
+
 **Slots:** N64 (50 pinos, cartucho de 3,3 V; footprint `N64_Slot` do OSCR, a trazer para `_lib/`)
 
-**Estado:** esqueleto, sem projeto KiCad. **Fase 1 do `CLAUDE.md` feita:** `docs/pinmap.md` gerado por `tools/n64/gen_pinmap.py` cruzando `pinout.ods`, `n64_adapter` + `six_slot_adapter` e `N64.ino`: 50 pinos, 0 divergências entre as fontes. **Aguarda aprovação do usuário** para seguir.
+**Estado:** v1.0, 110,1 × 65,1 mm. ERC com 1 aviso de biblioteca (U2, o mesmo das outras placas); DRC sem erros nem ligações abertas (só 4 avisos de biblioteca dos furos); netlist confere com `docs/pinmap.md` (30 nets, 96 ligações); gerbers em `fab/`. Roteada pelo Freerouting, **não revisada à mão no KiCad**; nada encomendado nem montado. Reproduzir: `tools/n64/build_pcb.sh` (PCB) e `tools/n64/make_sch.py` (esquemático). Aprovado pelo usuário em 2026-11-07 ("confere tudo e pode fazer no kicad"). **Fase 1 do `CLAUDE.md`:** `docs/pinmap.md` gerado por `tools/n64/gen_pinmap.py` cruzando `pinout.ods`, `n64_adapter` + `six_slot_adapter` e `N64.ino`: 50 pinos, 0 divergências entre as fontes. 
 
 ## O que o pinmap mostra
 
@@ -10,7 +12,7 @@
 - Tensão: `VCC` (pinos 9, 17, 34, 42) em **3,3 V**. Mesmo regulador do GBA (MCP1700, `gb_gba/`) e sinais do Mega em 5 V, como o OSCR HW5 e a família já fazem no slot GBA.
 - Sem ligação (como no OSCR): `12V` (13, 38), `NC` (14, 39), `CIC_to_PIF` (18), `L_AUDIO` (24), `PIF_to_CIC` (43), `R4300_CLK` (44), `NMI` (45), `Video_CLK` (46), `R_AUDIO` (49). O CIC do N64 **não** é lido por esta placa.
 
-## O que a placa levaria e o que cada peça faz
+## O que a placa leva e o que cada peça faz
 
 Detalhe em `docs/componentes-opcionais.md`. Resumo:
 
@@ -20,13 +22,16 @@ Detalhe em `docs/componentes-opcionais.md`. Resumo:
 | Si5351 (só `CLK1`) | Não lê as **EEPROMs** de save (4K e 16K); ROM e SRAM/Flash seguem |
 | Pull-up de 1 kΩ no D7 | EEPROM não lê com confiança |
 
-## Pendências para seguir
+## Pendências
 
-1. Aprovação do `pinmap.md` e das escolhas acima (CLAUDE.md, seção 3, passo 5).
-2. Medidas reais do slot N64 comprado (CLAUDE.md, seção 5) e direção da etiqueta.
-3. Firmware: religar o núcleo em `firmware/oscr/user.ini` (`n64 = true`), id no protocolo, host e GUI.
-4. Footprint `N64_Slot` e símbolo em `boards/_lib/` (do OSCR: `vendor/oscr/legacy/hardware/footprints`).
+1. Medidas reais do slot N64 comprado (CLAUDE.md, seção 5), contorno do footprint (estimativa) e direção da etiqueta (D27; o silk diz "a confirmar").
+2. Firmware: religar o núcleo em `firmware/oscr/user.ini` (`n64 = true`), id no protocolo, host e GUI.
+3. Revisar o layout no KiCad antes de encomendar.
 
-O `CLAUDE.md` (seção 4) deixava o N64 fora das placas atuais; esta pasta nasce a pedido do usuário (2026-11-07).
+Montagem: `docs/montagem.md`; compra: `docs/bom.md`.
+
+O `CLAUDE.md` (seção 4) deixava o N64 fora das placas anteriores; esta placa nasce a pedido do usuário (2026-11-07).
 
 Regras gerais: `CLAUDE.md`. Layout da pasta: `boards/README.md`.
+
+**Peças opcionais:** [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).

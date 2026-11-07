@@ -1,5 +1,7 @@
 # megadrive — só Mega Drive / Genesis
 
+![Render 3D da placa megadrive (KiCad, vista de cima)](render.png)
+
 Versão mínima de uma função: um slot **Mega Drive** (64p, 2,54 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_bits`).
 
 **Estado:** v1.0, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (os 2 `starved_thermal` da B.Cu, nos pads GND3 do Mega e A18 do slot, foram resolvidos ligando esses pads sem alívio térmico, D96); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar** (trilhas não foram conferidas à mão). Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
