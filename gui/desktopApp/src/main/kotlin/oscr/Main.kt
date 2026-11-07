@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
@@ -66,7 +70,12 @@ fun main() = application {
         Prefs.winW = state.size.width.value.toInt(); Prefs.winH = state.size.height.value.toInt()
         exitApplication()
     }, title = "oscr_minimal", state = state) {
-        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) { App() }
+        var fontPercent by remember { mutableStateOf(Prefs.fontPercent) }
+        val base = LocalDensity.current
+        // zoom da interface: aumenta tudo (textos e espaços); a janela passa a ter menos dp e o layout cai para uma coluna sozinho
+        CompositionLocalProvider(LocalDensity provides Density(base.density * fontPercent / 100f, base.fontScale)) {
+            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) { App(fontPercent) { fontPercent = it; Prefs.fontPercent = it } }
+        }
     }
 }
 
@@ -74,8 +83,9 @@ private fun safeName(title: String, fallback: String): String = title.replace(Re
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun App() {
+fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var lang by remember { mutableStateOf(Lang.entries.firstOrNull { it.tag == Prefs.lang } ?: I18n.fromLocale(Locale.getDefault().toString())) }
+    SideEffect { CurrentLang.value = lang }
     fun t(k: S) = I18n.t(lang, k)
     fun f(k: S, vararg a: Any) = I18n.f(lang, k, *a)
 
@@ -635,7 +645,7 @@ fun App() {
                 }
                 (problem ?: ramProblem)?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
                 Text(t(S.NES_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(nesRaw, { nesRaw = it }); Text(t(S.NES_RAW), style = MaterialTheme.typography.bodyMedium) }
+                CheckRow(nesRaw, { nesRaw = it }, t(S.NES_RAW))
             }
         }
     }
@@ -650,9 +660,7 @@ fun App() {
                 if (isFlash) OutlinedButton(enabled = canRun && fpBus != "md", onClick = { actFpBlank() }) { Text(t(S.FP_BLANK)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(saveReport, { saveReport = it; Prefs.saveReport = it }); Text(t(S.SAVE_REPORT), style = MaterialTheme.typography.bodyMedium)
-            }
+            CheckRow(saveReport, { saveReport = it; Prefs.saveReport = it }, t(S.SAVE_REPORT))
             Text(t(S.SHORTCUTS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
@@ -703,9 +711,7 @@ fun App() {
                     }
                 }
             }
-            if (stub == null && canWriteRom) Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(verifyRom, { verifyRom = it; Prefs.verifyRom = it }); Text(t(S.VERIFY_AFTER), style = MaterialTheme.typography.bodyMedium)
-            }
+            if (stub == null && canWriteRom) CheckRow(verifyRom, { verifyRom = it; Prefs.verifyRom = it }, t(S.VERIFY_AFTER))
             Text(if (stub == null && canWriteRom) (if (info?.writeRom == false && connected) t(S.ROM_NO_FW) else t(if (isSnes) S.ROM_WRITE_HINT_SNES else if (isMd) S.ROM_WRITE_HINT_MD else if (isGba) S.ROM_WRITE_HINT_GBA else if (isGb) S.ROM_WRITE_HINT_GB else S.ROM_WRITE_HINT)) else t(S.ROM_ONLY_NES),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
@@ -729,6 +735,9 @@ fun App() {
                 ev.isCtrlPressed && ev.key == Key.D && connected && !busy -> { actDetect(); true }
                 ev.isCtrlPressed && ev.key == Key.R && connected && !busy -> { actDumpRom(); true }
                 ev.isCtrlPressed && ev.key == Key.S && connected && !busy -> { actReadSave(); true }
+                ev.isCtrlPressed && (ev.key == Key.Equals || ev.key == Key.Plus || ev.key == Key.NumPadAdd) -> { onFontPercent(ZOOM_STEPS.firstOrNull { it > fontPercent } ?: fontPercent); true }
+                ev.isCtrlPressed && (ev.key == Key.Minus || ev.key == Key.NumPadSubtract) -> { onFontPercent(ZOOM_STEPS.lastOrNull { it < fontPercent } ?: fontPercent); true }
+                ev.isCtrlPressed && (ev.key == Key.Zero || ev.key == Key.NumPad0) -> { onFontPercent(100); true }
                 else -> false
             }
         },
@@ -746,7 +755,7 @@ fun App() {
             val wide = maxWidth >= 840.dp
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Column(Modifier.widthIn(max = 1120.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
+                    if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, fontPercent, onFontPercent, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
                     if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
                     if (wide) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard() }
@@ -763,10 +772,10 @@ fun App() {
                     Text(t(stage ?: S.STAGE_IDLE), style = MaterialTheme.typography.titleSmall)
                     if (speed.isNotEmpty()) Text(speed, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
                 }
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = t(stage ?: S.STAGE_IDLE); stateDescription = f(S.A11Y_PROGRESS, (progress * 100).toInt()) }, strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                 if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
                 if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING)) Callout(t(S.FLASH_ABORT_WARN), Tone.WARN)      // abortar no meio deixa o chip apagado ou pela metade
-                if (lastMessage.isNotEmpty()) Text(lastMessage, style = MaterialTheme.typography.bodyLarge,
+                if (lastMessage.isNotEmpty()) Text(lastMessage, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge,
                     color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { logOpen = !logOpen }) { Text((if (logOpen) "▾ " else "▸ ") + t(S.LOG), style = MaterialTheme.typography.titleSmall) }
@@ -810,8 +819,8 @@ fun App() {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(f(S.CONFIRM_WRITE_BODY, req.file.name, req.data.size, system.name))
-                    Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(backupFirst, { backupFirst = it }); Text(t(S.BACKUP_FIRST), style = MaterialTheme.typography.bodyMedium) }
-                    Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(verifySave, { verifySave = it }); Text(t(S.VERIFY_SAVE_AFTER), style = MaterialTheme.typography.bodyMedium) }
+                    CheckRow(backupFirst, { backupFirst = it }, t(S.BACKUP_FIRST))
+                    CheckRow(verifySave, { verifySave = it }, t(S.VERIFY_SAVE_AFTER))
                 }
             },
             confirmButton = { Button(onClick = { writeReq = null; actWriteConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE)) } },
@@ -849,7 +858,7 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
 
 /** Configurações: idioma, base de dados de jogos e ajuda (a ajuda e o idioma deixaram a tela principal). */
 @Composable
-private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<String>, dbStatus: String, dbLoading: Boolean, onAddDb: () -> Unit, onClearDb: () -> Unit) {
+private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, fontPercent: Int, onFontPercent: (Int) -> Unit, dbPaths: List<String>, dbStatus: String, dbLoading: Boolean, onAddDb: () -> Unit, onClearDb: () -> Unit) {
     fun t(k: S) = I18n.t(lang, k)
     var helpOpen by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth()) {
@@ -858,6 +867,10 @@ private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<Stri
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(t(S.LANGUAGE))
                 Lang.entries.forEach { l -> FilterChip(selected = lang == l, onClick = { onLang(l) }, label = { Text(l.label) }) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(t(S.FONT_SIZE), Modifier.weight(1f, fill = false))
+                ZOOM_STEPS.forEach { z -> FilterChip(selected = fontPercent == z, onClick = { onFontPercent(z) }, label = { Text("$z%") }) }
             }
             HorizontalDivider()
             Text(t(S.DB_TITLE), style = MaterialTheme.typography.titleSmall)
@@ -877,6 +890,9 @@ private fun SettingsPanel(lang: Lang, onLang: (Lang) -> Unit, dbPaths: List<Stri
 
 private enum class Tone { INFO, WARN, ERROR }
 
+/** Idioma atual, para componentes soltos (avisos) dizerem "Erro"/"Aviso" ao leitor de tela. */
+private object CurrentLang { var value by mutableStateOf(Lang.EN) }
+
 /** Cartão com título: agrupa o que é do mesmo assunto (proximidade) e dá um nível de hierarquia. */
 @Composable
 private fun SectionCard(title: String, container: Color = MaterialTheme.colorScheme.surfaceContainerLow, titleColor: Color = MaterialTheme.colorScheme.onSurface, content: @Composable ColumnScope.() -> Unit) {
@@ -893,7 +909,22 @@ private fun SectionCard(title: String, container: Color = MaterialTheme.colorSch
 private fun LabeledField(label: String, content: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-        content()
+        CompositionLocalProvider(LocalFieldLabel provides label) { content() }
+    }
+}
+
+/** Rótulo do campo em volta, para o leitor de tela dizer qual é a lista suspensa. */
+private val LocalFieldLabel = compositionLocalOf { "" }
+
+/** Passos do zoom da interface, em %. */
+private val ZOOM_STEPS = listOf(100, 125, 150, 175, 200)
+
+/** Caixa de seleção com o rótulo no mesmo alvo: o leitor de tela lê "rótulo, caixa de seleção, marcada" e o clique no texto também marca. */
+@Composable
+private fun CheckRow(checked: Boolean, onChange: (Boolean) -> Unit, label: String) {
+    Row(Modifier.toggleable(value = checked, role = Role.Checkbox, onValueChange = onChange).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked, null)
+        Text(label, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -906,7 +937,11 @@ private fun Callout(text: String, tone: Tone) {
         Tone.WARN -> Triple(cs.tertiaryContainer, cs.onTertiaryContainer, "⚠")
         Tone.INFO -> Triple(cs.secondaryContainer, cs.onSecondaryContainer, "ℹ")
     }
-    Row(Modifier.fillMaxWidth().background(bg, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    val lang = CurrentLang.value
+    val toneName = I18n.t(lang, when (tone) { Tone.ERROR -> S.A11Y_ERROR; Tone.WARN -> S.A11Y_WARNING; Tone.INFO -> S.A11Y_INFO })
+    Row(Modifier.fillMaxWidth().background(bg, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp)
+        .semantics(mergeDescendants = true) { contentDescription = "$toneName: $text"; if (tone == Tone.ERROR) liveRegion = LiveRegionMode.Assertive },
+        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(icon, color = fg)
         Text(text, color = fg, style = MaterialTheme.typography.bodyMedium)
     }
@@ -926,8 +961,10 @@ private fun StatusPill(connected: Boolean, text: String) {
 @Composable
 private fun ComboBox(value: String, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable ColumnScope.(close: () -> Unit) -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val label = LocalFieldLabel.current
     Box(modifier) {
-        OutlinedButton(enabled = enabled, onClick = { open = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        // leitor de tela: "rótulo: valor, lista suspensa" (o rótulo vem do LabeledField em volta)
+        OutlinedButton(enabled = enabled, onClick = { open = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { role = Role.DropdownList; contentDescription = if (label.isEmpty()) value else "$label: $value" }) {
             Text(value, Modifier.weight(1f), maxLines = 1); Text("▾")
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.heightIn(max = 420.dp)) { content { open = false } }
@@ -952,13 +989,14 @@ fun HelpPanel(lang: Lang) {
     fun t(k: S) = I18n.t(lang, k)
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            var query by remember { mutableStateOf("") }
             Text(t(S.HELP_TITLE), style = MaterialTheme.typography.titleMedium)
-            Section(t(S.HELP_USE_TITLE)) {
-                listOf(S.HELP_USE_1, S.HELP_USE_2, S.HELP_USE_3, S.HELP_USE_4, S.HELP_USE_5, S.HELP_USE_6).forEach { Text("• " + t(it), style = MaterialTheme.typography.bodyMedium) }
-            }
-            Section(t(S.HELP_FIX_TITLE)) {
-                listOf(S.HELP_FIX_1, S.HELP_FIX_2, S.HELP_FIX_3, S.HELP_FIX_4, S.HELP_FIX_5, S.HELP_FIX_6, S.HELP_FIX_7, S.HELP_FIX_8).forEach { Text("• " + t(it), style = MaterialTheme.typography.bodyMedium) }
-            }
+            OutlinedTextField(query, { query = it }, label = { Text(t(S.HELP_SEARCH)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            val use = HelpTopics.filter(lang, HelpTopics.use, query)
+            val fix = HelpTopics.filter(lang, HelpTopics.fix, query)
+            if (use.isEmpty() && fix.isEmpty()) Text(t(S.HELP_NO_RESULTS), Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+            if (use.isNotEmpty()) Section(t(S.HELP_USE_TITLE)) { use.forEach { Text("• " + t(it), style = MaterialTheme.typography.bodyMedium) } }
+            if (fix.isNotEmpty()) Section(t(S.HELP_FIX_TITLE)) { fix.forEach { Text("• " + t(it), style = MaterialTheme.typography.bodyMedium) } }
             Text(t(S.HELP_DOCS), style = MaterialTheme.typography.bodySmall)
         }
     }

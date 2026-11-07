@@ -105,3 +105,26 @@ class RevisaoTest {
         assertEquals(CheckStatus.NA, verifyRom(CartSystem.GB, ByteArray(0x200)).status)   // sem o logo da Nintendo
     }
 }
+
+class HelpTopicsTest {
+    @Test fun buscaIgnoraAcentoEMaiusculaEExigeTodasAsPalavras() {
+        assertEquals("solucao de problemas", HelpTopics.fold("Solução DE Problemas"))
+        assertTrue(HelpTopics.matches("Solução de problemas comuns", "SOLUCAO comuns"))
+        assertTrue(!HelpTopics.matches("Solução de problemas comuns", "solucao backup"))
+        assertTrue(HelpTopics.matches("qualquer coisa", "   "))
+        assertTrue(HelpTopics.matches("读取 ROM 并比较 CRC32", "crc32 rom"))
+    }
+
+    @Test fun filtroDevolveSoOsTopicosQueCasam() {
+        for (lang in Lang.entries) {
+            assertEquals(HelpTopics.use, HelpTopics.filter(lang, HelpTopics.use, ""))
+            assertTrue(HelpTopics.filter(lang, HelpTopics.use + HelpTopics.fix, "crc32").isNotEmpty(), lang.tag)
+            assertTrue(HelpTopics.filter(lang, HelpTopics.use + HelpTopics.fix, "zzzxxyy").isEmpty())
+        }
+        assertTrue(HelpTopics.filter(Lang.PT, HelpTopics.fix, "dialout").isNotEmpty())
+    }
+
+    @Test fun topicosDaAjudaNaoSeRepetem() {
+        assertEquals(HelpTopics.use.size + HelpTopics.fix.size, (HelpTopics.use + HelpTopics.fix).toSet().size)
+    }
+}

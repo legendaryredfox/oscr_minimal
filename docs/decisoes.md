@@ -111,6 +111,7 @@
 - **D110** `16_bits`: a v1.0 original (encomendada) sai do repositório e a antiga `rev2` vira a v1.0 (pedido do usuário, 2026-11-07)
 - **D111** Software do PC: pendências da CLI e da GUI, CLI em módulos e camada visual (pedido do usuário, 2026-11-07)
 - **D112** Presets de placas comuns do NES na GUI (pedido do usuário, 2026-11-07)
+- **D113** Acessibilidade da GUI e busca na ajuda (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -915,3 +916,10 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Feito.** Lista "Preset de placa comum" no cartão de opções do NES: 13 placas (NROM-128/256, CNROM, UxROM 128/256, AxROM, GxROM, MMC1 SNROM e SxROM, MMC3 TxROM 128/256 e TKROM, MMC5 ExROM). Escolher uma preenche mapper, PRG, CHR e RAM e avisa no log para conferir com o cartucho (o mesmo mapper existe em tamanhos diferentes). Serve para jogo fora da base; a busca por jogo continua preenchendo pelo nome. Dados em `Rules.nesPresets` (`NesRules.kt`); textos nos 4 idiomas (`NES_PRESET`, `NES_PRESET_PICK`, `NES_PRESET_FILLED`); os nomes das placas são técnicos e iguais em todos os idiomas.
 - **Teste.** `RevisaoTest.presetsDoNesPassamNasRegrasDoFirmware`: cada preset passa em `Rules.nes` e `Rules.nesRam` (as mesmas regras do firmware), tem mapper conhecido e nome único.
 - **Não feito.** Link do NESCartDB (o endereço do site não foi conferido e a base do projeto já cobre a busca); presets na CLI (a CLI usa `--mapper/--prg/--chr/--game`). A lista de placas é de conhecimento geral, **não foi conferida com cartuchos reais**.
+
+### D113 — Acessibilidade da GUI e busca na ajuda (pedido do usuário, 2026-11-07)
+- **Pedido.** Item 6 das pendências: acessibilidade da GUI e busca na ajuda.
+- **Busca na ajuda.** Campo "Buscar na ajuda" no painel de ajuda; a busca ignora maiúsculas e acentos latinos e exige todas as palavras (`HelpTopics` em `shared`, igual nos 4 idiomas; chinês e russo só passam para minúsculas). Sem resultado, aparece o aviso (anunciado ao leitor de tela). Testes: `HelpTopicsTest`.
+- **Zoom da interface (100 a 200 %).** Escolha em Configurações (chips 100/125/150/175/200 %) e atalhos Ctrl+= / Ctrl+− / Ctrl+0; fica salvo em `Prefs.fontPercent`. Aumenta textos e espaços juntos (muda a densidade da janela), então o layout cai para uma coluna sozinho. Conferido num display virtual: abre sem erro e 150 % funciona.
+- **Leitor de tela (semântica do Compose).** Caixas de seleção viraram `CheckRow` (`toggleable` com `Role.Checkbox`: o rótulo faz parte do controle e o clique no texto também marca); listas suspensas dizem "rótulo: valor" (`Role.DropdownList`, o rótulo vem do `LabeledField` por `LocalFieldLabel`); a barra de progresso diz a etapa e "NN % concluído"; os avisos dizem "Erro/Aviso/Informação: texto" e os de erro são anunciados na hora (`liveRegion`); a mensagem de resultado na barra de estado é anunciada com educação (`Polite`). Textos novos nos 4 idiomas.
+- **Não conferido.** Nenhum leitor de tela real (Orca, NVDA, VoiceOver) foi usado: a semântica foi escrita seguindo a API do Compose e só a compilação e a abertura da janela foram verificadas. Contraste de cores não foi medido. Falta ainda: ordem de foco revisada com teclado puro, modo de alto contraste, tradução ru e zh revisada por nativo.
