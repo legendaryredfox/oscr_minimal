@@ -26,6 +26,8 @@ def cmd_detect(args) -> int:
         lines.append(f"  título: {r['name'] or '(desconhecido)'}  ROM: {r['rom_size']} bytes  save: {r['save_size']} bytes")
     if getattr(args, "flash_id", False):
         lines.append("  " + md_chip_line(flash))
+    if r.get("attempts", 1) > 1:
+        lines.append(f"  {r['attempts']} tentativas de leitura do cabeçalho (ciclo de energia do SA-1)")
     obj = {"ok": r["status"] == 0, **r, "status_text": status.get(r["status"], str(r["status"])),
            **({"flash_chip": flash} if getattr(args, "flash_id", False) else {})}
     if not args.json and ui.fancy():                       # terminal: o cartucho desenhado ao lado dos dados
@@ -34,6 +36,8 @@ def cmd_detect(args) -> int:
             fields = [("título", r["name"] or "(desconhecido)"), ("ROM", f"{r['rom_size']} bytes"), ("save", f"{r['save_size']} bytes")]
         if getattr(args, "flash_id", False):
             fields.append(("chip", md_chip_line(flash).removeprefix("chip de flash: ")))
+        if r.get("attempts", 1) > 1:
+            fields.append(("tentativas", f"{r['attempts']} (ciclo de energia do SA-1)"))
         name = P.SYSTEM_BY_ID.get(r["system"], str(r["system"]))
         text = f"{name}: {status.get(r['status'], r['status']).split(' (')[0]}"
         art = {"snes": 1, "nes": 2, "famicom": 3, "md": 4, "gba": 5, "gb": 6}.get(name, 1)

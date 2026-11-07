@@ -25,6 +25,7 @@ struct DetectInfo {
   uint32_t rom_size = 0, save_size = 0;
   uint8_t save_type = 0;
   char name[33] = {0};      // ASCII, até 32 caracteres
+  uint8_t attempts = 1;     // SNES com ciclo de energia (SA-1): quantas leituras do cabeçalho foram precisas; só vai ao host se > 1
 };
 
 // Fluxo (modo "push"): os núcleos do OSCR geram os bytes durante a leitura em vez de atender `read(off)`.
@@ -77,6 +78,10 @@ class Backend {
   // Liga ou desliga (bloqueia até a descarga). Devolve false e `err` se a trava impedir (por exemplo a chave física aberta).
   virtual bool cart_power(bool on, uint16_t& err) { (void)on; err = E_COMANDO; return false; }
   virtual void power_info(PowerInfo& p) { p.on = cart_powered(); }
+  // Trava física (D119): `power_poll` roda a cada poll() ocioso (chave aberta com o 5V ligado: corta); `power_abort` é consultado a cada bloco
+  // de uma LEITURA em curso (true = parar com E_ABORTADO). Gravação e apagamento não consultam: a chave só vale depois que terminam.
+  virtual void power_poll() {}
+  virtual bool power_abort() { return false; }
 };
 
 class MockBackend : public Backend {

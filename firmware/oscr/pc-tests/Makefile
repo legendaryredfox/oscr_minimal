@@ -5,10 +5,15 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto build/test_snes_plan build/test_mdflash
+test: build/test_proto build/test_snes_plan build/test_mdflash build/test_power_core
+	./build/test_power_core
 	./build/test_proto
 	./build/test_snes_plan
 	./build/test_mdflash
+
+build/test_power_core: test_power_core.cpp ../include/dumper/PowerCore.h
+	mkdir -p build
+	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_power_core.cpp
 
 build/test_mdflash: test_mdflash.cpp md_chip_model.h ../include/dumper/MdFlashCore.h
 	mkdir -p build

@@ -22,11 +22,17 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False):
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False, switch_closed: Optional[bool] = None,
+                 rail_sensor: bool = False, detect_attempts: int = 1):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
         self.written_rom: Optional[bytes] = None
+        # `switch_closed`: None = sem a chave física; True/False = chave fechada/aberta (D119). Com a chave física a placa tem a chave de 5V.
+        self.switch_closed = switch_closed
+        self.rail_sensor = rail_sensor
+        self.detect_attempts = detect_attempts    # SNES: tentativas do ciclo de energia do SA-1 que o DETECT informa
+        power_switch = power_switch or switch_closed is not None
         self.power_switch = power_switch          # placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
         self.powered = not power_switch
         self.power_calls: list[int] = []
@@ -91,7 +97,18 @@ class MockDevice:
                 self.log.append("abort")
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
 
+    def _hw_poll(self) -> None:
+        if self.switch_closed is False and self.powered:       # chave aberta com o 5V ligado: o firmware solta os pinos e corta
+            self.powered = False
+
+    def _power_resp(self) -> bytes:
+        feat = (1 if self.switch_closed is not None else 0) | (2 if self.rail_sensor else 0)
+        sw = 0xFF if self.switch_closed is None else (1 if self.switch_closed else 0)
+        rail = 0xFF if not self.rail_sensor else (1 if self.powered else 0)
+        return bytes([1 if self.powered else 0, feat, sw, rail])
+
     def _handle(self, t: Transport, f: P.Frame) -> None:
+        self._hw_poll()
         needs_cart = f.type in (P.T_DETECT, P.T_DUMP_ROM, P.T_READ_SAVE, P.T_WRITE_SAVE, P.T_WRITE_ROM, P.T_ERASE)
         if needs_cart and f.payload and f.payload[0] not in (0, 255) and self.power_switch and not self.powered:
             self._error(t, f.seq, 12, "off")           # 5V desligado: o MOCK não precisa de cartucho, os outros sistemas sim
@@ -103,10 +120,13 @@ class MockDevice:
             elif action == P.POWER_OFF and not self.power_switch:
                 self._error(t, f.seq, 1, "sem chave")
             else:
+                if action == P.POWER_ON and self.switch_closed is False:
+                    self._error(t, f.seq, 12, "chave")                 # trava física: a chave aberta vence o pedido do software
+                    return
                 if action != P.POWER_STATUS and self.power_switch:
                     self.power_calls.append(action)
                     self.powered = action == P.POWER_ON
-                self._send(t, P.T_POWER_RESP, f.seq, bytes([1 if self.powered else 0, 0, 0xFF, 0xFF]))
+                self._send(t, P.T_POWER_RESP, f.seq, self._power_resp())
         elif f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
             self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b11001 | (0b100000 if self.power_switch else 0)]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
@@ -118,7 +138,8 @@ class MockDevice:
                            bytes([255, 0]) + len(self.rom).to_bytes(4, "little") + len(self.save).to_bytes(4, "little")
                            + bytes([1, len(name)]) + name)
             else:
-                self._send(t, P.T_DETECT_RESP, f.seq, bytes([sysid, 1]) + bytes(8) + bytes([0, 0]))
+                extra = bytes([self.detect_attempts]) if self.detect_attempts > 1 else b""
+                self._send(t, P.T_DETECT_RESP, f.seq, bytes([sysid, 1]) + bytes(8) + bytes([0, 0]) + extra)
         elif f.type in (P.T_DUMP_ROM, P.T_READ_SAVE):
             sysid = f.payload[0] if f.payload else 0
             block = int.from_bytes(f.payload[1:3], "little") if len(f.payload) >= 3 else 0

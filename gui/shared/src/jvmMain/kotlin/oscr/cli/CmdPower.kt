@@ -14,7 +14,9 @@ internal fun cmdPower(io: CliIo, a: Args): Int {
     val sw = c.info.powerSwitch
     val lines = mutableListOf("slots 5V: ${if (r.on) "on" else "off"}")
     if (!sw) lines += "this board/firmware has no 5V switch: the 5V is always on"
-    else if (action == Power.OFF) lines += "you can swap the cartridge" + (if (r.railSensor) "" else " (no voltage sensor: the firmware already waited for the discharge)") + "; then run `dumper power on`"
+    r.switch?.let { lines += "physical switch: " + (if (it) "closed (power allowed)" else "OPEN (the 5V stays off; close the switch to turn it on)") }
+    r.railLow?.let { lines += "rail sensor: " + (if (it) "low (safe to swap the cartridge)" else "high (voltage still present: do not swap the cartridge)") }
+    if (sw && action == Power.OFF) lines += "you can swap the cartridge" + (if (r.railSensor) "" else " (no voltage sensor: the firmware already waited for the discharge; check with a multimeter)") + "; then run `dumper power on`"
     emit(io, a, Json.obj("state" to (if (r.on) "on" else "off"), "on" to r.on, "interlock" to r.interlock, "rail_sensor" to r.railSensor,
         "forced_discharge" to r.forcedDischarge, "switch" to r.switch, "rail_low" to r.railLow, "power_switch" to sw), lines)
     return EXIT_OK

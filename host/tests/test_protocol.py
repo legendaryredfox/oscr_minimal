@@ -65,7 +65,7 @@ def test_magia_partida_entre_chamadas():
 def test_parsers():
     assert P.parse_detect_resp(bytes([1, 0]) + (1024).to_bytes(4, "little") + (8).to_bytes(4, "little")
                                + bytes([1, 3]) + b"ABC") == {
-        "system": 1, "status": 0, "rom_size": 1024, "save_size": 8, "save_type": 1, "name": "ABC"}
+        "system": 1, "status": 0, "rom_size": 1024, "save_size": 8, "save_type": 1, "name": "ABC", "attempts": 1}
     assert P.parse_begin(bytes([1]) + (100).to_bytes(4, "little") + (512).to_bytes(2, "little")) == (1, 100, 512)
     off, data = P.parse_data(P.build_data(1024, b"xyz"))
     assert (off, data) == (1024, b"xyz")

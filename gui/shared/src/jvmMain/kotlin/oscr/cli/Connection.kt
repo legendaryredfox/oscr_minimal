@@ -20,7 +20,9 @@ internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
 
 private fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(powerSwitch = io.simPower); val c = OscrClient(t, 500, 5000)
+        val sw = io.simSwitch?.takeIf { it == "open" || it == "closed" }
+        val t = SimDevice(powerSwitch = io.simPower, switchClosed = sw?.let { it == "closed" }, railSensor = sw != null, detectAttempts = if (sw != null) 3 else 1)
+        val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }
     val port = a.opts["port"] ?: io.listPorts().firstOrNull { p -> listOf("ttyUSB", "ttyACM", "cu.usb", "COM").any { it in p } }

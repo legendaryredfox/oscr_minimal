@@ -210,8 +210,10 @@ def parse_detect_resp(p: bytes) -> dict:
         raise ProtocolError("DETECT_RESP curto")
     system, status, rom, save, stype, n = struct.unpack_from("<BBIIBB", p)
     name = p[12:12 + n].decode("ascii", "replace")
+    # depois do nome pode vir 1 byte com as tentativas de leitura do cabeçalho (SNES com ciclo de energia, D119); ausente = 1
+    attempts = p[12 + n] if len(p) > 12 + n else 1
     return {"system": system, "status": status, "rom_size": rom, "save_size": save,
-            "save_type": stype, "name": name}
+            "save_type": stype, "name": name, "attempts": attempts}
 
 
 def parse_begin(p: bytes) -> tuple[int, int, int]:

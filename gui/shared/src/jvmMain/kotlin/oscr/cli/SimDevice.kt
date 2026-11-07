@@ -7,8 +7,11 @@ import oscr.*
  * Dispositivo simulado e síncrono (modo MOCK, sistemas 0 e 255) para `--simulate` e testes: responde dentro de `write`, sem threads.
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
-class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val powerSwitch: Boolean = false) : Transport {
-    var powered = !powerSwitch                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
+class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val powerSwitch: Boolean = false,
+                 var switchClosed: Boolean? = null, val railSensor: Boolean = false, val detectAttempts: Int = 1) : Transport {
+    /** `switchClosed`: null = sem a chave física; true/false = fechada/aberta (D119). Com a chave física a placa tem a chave de 5V. */
+    private val hasPower get() = powerSwitch || switchClosed != null
+    var powered = !(powerSwitch || switchClosed != null)                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
     val powerCalls = mutableListOf<Int>()
     private val dec = FrameDecoder()
     private var out = ByteArray(0)
@@ -36,24 +39,27 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
     private fun handle(f: Frame) {
         val needsCart = f.type in setOf(Proto.T_DETECT, Proto.T_DUMP_ROM, Proto.T_READ_SAVE, Proto.T_WRITE_SAVE, Proto.T_WRITE_ROM, Proto.T_ERASE)
         val first = f.payload.getOrNull(0)?.toInt()?.and(0xFF)
-        if (needsCart && first != null && first != 0 && first != 255 && powerSwitch && !powered) return error(12, "off")    // o MOCK não precisa de cartucho
+        if (needsCart && first != null && first != 0 && first != 255 && hasPower && !powered) return error(12, "off")    // o MOCK não precisa de cartucho
+        if (switchClosed == false && powered) powered = false            // chave aberta com o 5V ligado: o firmware corta no poll seguinte
         when (f.type) {
             Proto.T_POWER -> {
                 val action = first ?: 9
                 when {
                     action > Power.STATUS -> error(4, "args")
-                    action == Power.OFF && !powerSwitch -> error(1, "sem chave")
+                    action == Power.OFF && !hasPower -> error(1, "sem chave")
+                    action == Power.ON && switchClosed == false -> error(12, "chave")     // trava física: a chave aberta vence o pedido do software
                     else -> {
-                        if (action != Power.STATUS && powerSwitch) { powerCalls += action; powered = action == Power.ON }
-                        push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, 0, 0xFF.toByte(), 0xFF.toByte()))
+                        if (action != Power.STATUS && hasPower) { powerCalls += action; powered = action == Power.ON }
+                        push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, ((if (switchClosed != null) 1 else 0) or (if (railSensor) 2 else 0)).toByte(),
+                            (switchClosed?.let { if (it) 1 else 0 } ?: 0xFF).toByte(), (if (railSensor) (if (powered) 1 else 0) else 0xFF).toByte()))
                     }
                 }
             }
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (powerSwitch) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (hasPower) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
-                else push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 1) + ByteArray(8) + byteArrayOf(0, 0))
+                else push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 1) + ByteArray(8) + byteArrayOf(0, 0) + (if (detectAttempts > 1) byteArrayOf(detectAttempts.toByte()) else ByteArray(0)))
             }
             Proto.T_DUMP_ROM, Proto.T_READ_SAVE -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0

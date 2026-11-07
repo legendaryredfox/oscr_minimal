@@ -1,6 +1,6 @@
 # Plano: chave física de troca de cartucho (`16_bits` v1.3 e demais placas v1.1)
 
-Para fazer **depois** (pedido do usuário, 2026-11-07). Continua `docs/troca-de-cartucho.md` (decisões de D115) e parte do que o `POWER` em software (D116) já entrega. **Nada deste plano foi feito.**
+Para fazer **depois** (pedido do usuário, 2026-11-07). Continua `docs/troca-de-cartucho.md` (decisões de D115) e parte do que o `POWER` em software (D116) já entrega. **Estado (2026-11-07, D119): o firmware e o software (F1 a F8) estão feitos e testados no PC; o hardware (seções 2 e 3) e a bancada não.**
 
 ## O que já existe (não refazer)
 
@@ -16,7 +16,9 @@ Para fazer **depois** (pedido do usuário, 2026-11-07). Continua `docs/troca-de-
 4. **`16_bits` v1.3**, que **leva o RP2040 junto** (decisão do usuário), **só quando o RP2040 estiver validado em bancada** (D89). Se o usuário preferir não esperar, a chave pode sair numa v1.3 com o PIC e o RP2040 virar v1.4: perguntar nessa hora.
 5. Bancada de cada placa (só o usuário) e ajustes.
 
-## 1. Firmware e software
+## 1. Firmware e software (FEITO em D119: F1 a F8, nada testado em hardware)
+
+Feito: `include/dumper/PowerCore.h` (debounce de 20 ms, espera da descarga, tentativas com ciclo de energia; 17 verificações em `pc-tests/test_power_core.cpp`), `Backend::power_poll`/`power_abort`, `DetectInfo::attempts`, `POWER_RESP` completo, aborto de leitura com a chave aberta (gravação e apagamento ignoram), ambiente `SerialASCII_PowerHW`, simuladores (`OSCR_SIM_SWITCH`), CLI Python e Kotlin, GUI (LEDs virtuais, chave, aviso de gravação) e testes. **Ainda a confirmar em hardware:** o debounce e a leitura do D18, o D53, o tempo de descarga, o `releaseCartPins()` entre as tentativas do SA-1 e se o SA-1 melhora de fato com o ciclo.
 
 | # | Tarefa | Detalhe |
 |---|---|---|

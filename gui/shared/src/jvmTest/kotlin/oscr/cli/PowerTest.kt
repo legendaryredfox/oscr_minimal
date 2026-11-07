@@ -55,3 +55,46 @@ class PowerTest {
         assertEquals(1, run("--simulate", "--json", "power", "off", simPower = false).first)
     }
 }
+
+/** Chave física, sensor do rail e tentativas do SA-1 (D119). Igual a host/tests/test_power.py. */
+class PowerHwTest {
+    private fun run(sw: String?, vararg argv: String): Triple<Int, String, String> {
+        val out = StringBuilder(); val err = StringBuilder()
+        val io = CliIo({ out.appendLine(it) }, { err.appendLine(it) }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".", simSwitch = sw)
+        return Triple(Cli.run(argv.toList(), io), out.toString().trim(), err.toString())
+    }
+
+    @Test fun chaveAbertaRecusaLigarECortaSeAbrir() {
+        val dev = SimDevice(switchClosed = false, railSensor = true); val c = OscrClient(dev, 500, 5000)
+        assertTrue(c.info().powerSwitch)                                            // a chave física implica a chave de 5V
+        val st = c.power(Power.STATUS)
+        assertTrue(st.interlock && st.railSensor); assertEquals(false, st.switch); assertFalse(st.on); assertEquals(true, st.railLow)
+        val e = assertFailsWith<DeviceError> { c.power(Power.ON) }
+        assertEquals(12, e.code); assertEquals("chave", e.text)
+        dev.switchClosed = true
+        val on = c.power(Power.ON)
+        assertTrue(on.on); assertEquals(true, on.switch); assertEquals(false, on.railLow)
+        dev.switchClosed = false                                                     // abre com o 5V ligado: o firmware corta
+        assertFalse(c.power(Power.STATUS).on)
+        assertEquals(12, assertFailsWith<DeviceError> { c.detect(CartSystem.SNES) }.code)
+    }
+
+    @Test fun detectInformaAsTentativasDoSa1() {
+        val c = OscrClient(SimDevice(switchClosed = true, detectAttempts = 3), 500, 5000)
+        c.power(Power.ON)
+        assertEquals(3, c.detect(CartSystem.SNES).attempts)
+        assertEquals(1, c.detect(CartSystem.MOCK).attempts)
+        assertEquals(1, OscrClient(SimDevice(), 500, 5000).detect(CartSystem.SNES).attempts)   // sem o byte extra: 1
+    }
+
+    @Test fun cliChaveFisica() {
+        val (c1, o1, _) = run("closed", "--simulate", "--json", "power", "status")
+        val j1 = o1.replace(" ", "")
+        assertEquals(0, c1); assertTrue("\"switch\":true" in j1 && "\"interlock\":true" in j1 && "\"rail_low\":true" in j1)
+        val (c2, o2, _) = run("closed", "--simulate", "--json", "detect", "-s", "snes")
+        assertEquals(2, c2); assertTrue("\"attempts\":3" in o2.replace(" ", ""))
+        val (c3, o3, _) = run("open", "--simulate", "--json", "power", "on")
+        assertEquals(1, c3); assertTrue("\"device_code\":12" in o3.replace(" ", ""))
+        assertEquals(1, run("open", "--simulate", "--json", "detect", "-s", "snes").first)       // ligar sozinha falha: chave aberta
+    }
+}

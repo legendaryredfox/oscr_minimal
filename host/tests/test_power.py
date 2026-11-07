@@ -109,3 +109,62 @@ def test_firmware_real_com_a_chave():
         assert c.power(P.POWER_OFF)["on"] is False
     finally:
         t.close()
+
+
+# ---------------------------------------------------------------- chave física, sensor do rail e tentativas do SA-1 (D119)
+def _hw(closed, **kw):
+    t, dev, stop, th = sim.start(sim.MockDevice(switch_closed=closed, rail_sensor=True, **kw))
+    return Client(t, timeout=0.5, long_timeout=5.0), dev, t, stop
+
+
+def test_chave_aberta_recusa_ligar_e_corta_se_abrir():
+    c, dev, t, stop = _hw(False)
+    try:
+        assert c.info()["power_switch"] is True                        # a chave física implica a chave de 5V
+        r = c.power(P.POWER_STATUS)
+        assert r["interlock"] and r["rail_sensor"] and r["switch"] is False and r["on"] is False and r["rail_low"] is True    # desligado: o rail caiu, seguro trocar
+        with pytest.raises(P.DeviceError) as e:
+            c.power(P.POWER_ON)
+        assert e.value.code == 12 and "chave" in e.value.text
+        dev.switch_closed = True
+        r = c.power(P.POWER_ON)
+        assert r["on"] and r["switch"] is True and r["rail_low"] is False  # ligado: o rail está alto
+        dev.switch_closed = False                                       # abre com o 5V ligado: o firmware corta no poll seguinte
+        r = c.power(P.POWER_STATUS)
+        assert r["on"] is False and r["switch"] is False
+        with pytest.raises(P.DeviceError) as e:
+            c.detect(1)
+        assert e.value.code == 12
+    finally:
+        stop.set(); t.close()
+
+
+def test_detect_informa_as_tentativas_do_sa1():
+    c, dev, t, stop = _hw(True, detect_attempts=3)
+    try:
+        c.power(P.POWER_ON)
+        assert c.detect(1)["attempts"] == 3
+        assert c.detect(255)["attempts"] == 1                              # o MOCK não usa ciclo de energia
+    finally:
+        stop.set(); t.close()
+
+
+def test_parse_detect_sem_o_byte_extra_vale_uma_tentativa():
+    p = bytes([1, 0]) + (1).to_bytes(4, "little") + (2).to_bytes(4, "little") + bytes([0, 4]) + b"ABCD"
+    assert P.parse_detect_resp(p)["attempts"] == 1
+    assert P.parse_detect_resp(p + bytes([2]))["attempts"] == 2
+
+
+def test_cli_chave_fisica(capsys, monkeypatch):
+    monkeypatch.setenv("OSCR_SIM_SWITCH", "closed")
+    code, out = run(capsys, "--simulate", "--json", "power", "status")
+    o = json.loads(out)
+    assert code == 0 and o["switch"] is True and o["interlock"] is True and o["rail_low"] is True
+    code, out = run(capsys, "--simulate", "--json", "detect", "-s", "snes")
+    assert code == 2 and json.loads(out)["attempts"] == 3                   # ligou sozinha; o simulador informa 3 tentativas
+    monkeypatch.setenv("OSCR_SIM_SWITCH", "open")
+    code, out = run(capsys, "--simulate", "--json", "power", "on")
+    err = json.loads(out)
+    assert code == 1 and err["error"]["device_code"] == 12
+    code, out = run(capsys, "--simulate", "--json", "detect", "-s", "snes")      # auto-ligar falha: chave aberta
+    assert code == 1 and json.loads(out)["error"]["device_code"] == 12

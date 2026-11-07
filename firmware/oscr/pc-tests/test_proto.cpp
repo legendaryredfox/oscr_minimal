@@ -63,7 +63,8 @@ struct Loop {
   uint32_t now = 0;
   std::vector<uint8_t> file;                   // ROM/save reconstruído
   uint32_t expect = 0, crc = 0, total = 0, file_crc = 0;
-  bool got_end = false, corrupt_first_data = false, drop_all_acks = false;
+  bool got_end = false, corrupt_first_data = false, drop_all_acks = false, got_err = false;
+  uint16_t err_code = 0;
   uint8_t cur_seq = 1;
   std::vector<uint8_t> host_rx;
   Decoder dec;
@@ -86,6 +87,8 @@ struct Loop {
       uint32_t off = get_u32(dec.payload());
       if (off == expect) { file.insert(file.end(), dec.payload() + 4, dec.payload() + dec.len); expect += dec.len - 4; }
       host_ack(T_ACK, off);
+    } else if (dec.type == T_ERRO) {
+      got_err = true; err_code = get_u16(dec.payload());
     } else if (dec.type == T_END) {
       total = get_u32(dec.payload()); file_crc = get_u32(dec.payload() + 4); got_end = true;
       host_ack(T_ACK, total);
@@ -228,6 +231,65 @@ struct PowerRun {
   }
 };
 
+// ---- chave física (D119): trava, aborto de leitura, tentativas do SA-1
+struct HwBackend : PowerBackend {
+  bool sw_closed = true, hw = true;
+  int polls = 0, abort_checks = 0, abort_after = 1 << 30;
+  uint8_t attempts_to_report = 1;
+  bool streams() override { return true; }
+  bool cart_power(bool v, uint16_t& err) override { if (v && hw && !sw_closed) { err = E_DESLIGADO; return false; } return PowerBackend::cart_power(v, err); }
+  void power_poll() override { polls++; if (hw && on && !sw_closed) on = false; }
+  bool power_abort() override { return hw && (!sw_closed || ++abort_checks > abort_after); }
+  void power_info(PowerInfo& p) override { p.on = cart_powered(); p.features = hw ? 1 : 0; p.sw = hw ? (sw_closed ? 1 : 0) : 0xFF; p.rail = 0xFF; }
+  void detect(uint8_t s, DetectInfo& o) override { MockBackend::detect(s, o); o.attempts = attempts_to_report; }
+  bool stream_read(uint8_t, uint8_t, StreamSink& out, uint16_t& err) override {
+    uint8_t buf[300];
+    for (int i = 0; i < 6; i++) { for (int k = 0; k < 300; k++) buf[k] = uint8_t(i + k); if (!out.write(buf, sizeof buf)) { err = E_ABORTADO; return false; } }
+    return true;
+  }
+};
+
+static void test_chave_fisica() {
+  HwBackend be;
+  PowerRun r(be);
+  uint8_t t; std::vector<uint8_t> p;
+  uint8_t on[1] = {POWER_ON}, st[1] = {POWER_STATUS};
+  be.sw_closed = false;                                                                    // chave aberta: não liga
+  CHECK(r.ask(T_POWER, on, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO && p.size() >= 8 && memcmp(p.data() + 3, "chave", 5) == 0);
+  CHECK(r.ask(T_POWER, st, 1, t, p) && t == T_POWER_RESP && p[0] == 0 && (p[1] & 1) && p[2] == 0 && p[3] == 0xFF);    // trava presente, chave aberta
+  be.sw_closed = true;
+  CHECK(r.ask(T_POWER, on, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && p[2] == 1);
+  int polls = be.polls;
+  be.sw_closed = false;                                                                    // abre com o 5V ligado: o próximo poll() corta
+  r.s.poll();
+  CHECK(be.polls > polls && !be.on);
+  uint8_t det[1] = {SYS_SNES};
+  CHECK(r.ask(T_DETECT, det, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO);
+
+  // aborto de leitura: a chave abre depois do 2º bloco
+  HwBackend b2; b2.on = true; b2.abort_after = 2;
+  Loop l; static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
+  Session s(Io{&l, lread, lwrite, lnow}, b2, rx, sizeof rx, tx, sizeof tx);
+  uint8_t rd[3] = {SYS_SNES, 0, 0};
+  l.host_send(T_DUMP_ROM, rd, 3);
+  for (int i = 0; i < 200 && !l.got_err && !l.got_end; i++) s.poll();
+  CHECK(l.got_err && l.err_code == E_ABORTADO && !l.got_end);
+
+  // sem a chave física a leitura corre até o fim
+  HwBackend b3; b3.on = true; b3.hw = false;
+  Loop l3; Session s3(Io{&l3, lread, lwrite, lnow}, b3, rx, sizeof rx, tx, sizeof tx);
+  l3.host_send(T_DUMP_ROM, rd, 3);
+  for (int i = 0; i < 400 && !l3.got_end && !l3.got_err; i++) s3.poll();
+  CHECK(l3.got_end && !l3.got_err && l3.file.size() == 1800);
+
+  // tentativas do SA-1: o byte extra só vai se > 1
+  HwBackend b4; b4.on = true; b4.attempts_to_report = 3;
+  PowerRun r4(b4);
+  CHECK(r4.ask(T_DETECT, det, 1, t, p) && t == T_DETECT_RESP && p.size() == size_t(12 + p[11] + 1) && p.back() == 3);
+  b4.attempts_to_report = 1;
+  CHECK(r4.ask(T_DETECT, det, 1, t, p) && t == T_DETECT_RESP && p.size() == size_t(12 + p[11]));
+}
+
 static void test_power() {
   PowerBackend be;
   PowerRun r(be);
@@ -265,6 +327,7 @@ int main() {
   test_session_info_detect();
   test_erase_e_detect_com_opcoes();
   test_power();
+  test_chave_fisica();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

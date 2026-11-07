@@ -103,7 +103,8 @@ object Power { const val OFF = 0; const val ON = 1; const val STATUS = 2 }
 /** POWER_RESP. `switch` (chave física fechada) e `railLow` (rail abaixo de ~2 V: seguro trocar) são null sem a chave ou sem o sensor. */
 data class PowerState(val on: Boolean, val interlock: Boolean, val railSensor: Boolean, val forcedDischarge: Boolean, val switch: Boolean?, val railLow: Boolean?)
 
-data class DetectResult(val system: Int, val status: Int, val romSize: Long, val saveSize: Long, val saveType: Int, val name: String)
+/** `attempts`: leituras do cabeçalho do SNES feitas pelo firmware (> 1 = usou o ciclo de energia do SA-1, D119); 1 se o firmware não diz. */
+data class DetectResult(val system: Int, val status: Int, val romSize: Long, val saveSize: Long, val saveType: Int, val name: String, val attempts: Int = 1)
 
 class DumpResult(val data: ByteArray, val crc32: Int, val kind: Int) {
     val crcHex get() = (crc32.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')

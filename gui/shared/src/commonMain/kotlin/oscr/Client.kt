@@ -75,7 +75,7 @@ class OscrClient(
         val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()) + opts, nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload
         if (p.size < 12) throw ProtocolError(Fail.SHORT_REPLY, "DETECT_RESP")
         return DetectResult(p.u8(0), p.u8(1), p.u32(2).toLong() and 0xFFFFFFFFL, p.u32(6).toLong() and 0xFFFFFFFFL,
-            p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString())
+            p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString(), if (p.size > 12 + p.u8(11)) p.u8(12 + p.u8(11)) else 1)
     }
 
     /** Pode ser chamado de outra thread (botão Cancelar): o `write` do transporte é sincronizado. */

@@ -21,8 +21,12 @@ def cmd_power(args) -> int:
     lines = [f"5V dos slots: {state}"]
     if not r["power_switch"]:
         lines.append("esta placa/firmware não tem a chave de 5V: o 5V fica sempre ligado")
-    elif args.action == "off":
-        lines.append("pode trocar o cartucho" + ("" if r["rail_sensor"] else " (sem sensor de tensão: o firmware já esperou a descarga)")
+    if r["switch"] is not None:
+        lines.append("chave física: " + ("fechada (ligado permitido)" if r["switch"] else "ABERTA (o 5V fica desligado; feche a chave para ligar)"))
+    if r["rail_low"] is not None:
+        lines.append("sensor do rail: " + ("baixo (seguro trocar o cartucho)" if r["rail_low"] else "alto (ainda há tensão: não troque o cartucho)"))
+    if r["power_switch"] and args.action == "off":
+        lines.append("pode trocar o cartucho" + ("" if r["rail_sensor"] else " (sem sensor de tensão: o firmware já esperou a descarga; confira com o multímetro)")
                      + "; depois rode `dumper power on`")
     emit(args, {"state": "on" if r["on"] else "off", **r}, lines)
     return EXIT_OK if r["power_switch"] or args.action != "off" else EXIT_ERROR

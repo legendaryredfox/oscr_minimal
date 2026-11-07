@@ -14,13 +14,15 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
     val lines = mutableListOf("${CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system}: $text")
     if (r.status == 0) lines += "  title: ${r.name.ifEmpty { "(unknown)" }}  ROM: ${r.romSize} bytes  save: ${r.saveSize} bytes"
     if (wantChip) lines += "  " + mdChipLine(chip)
+    if (r.attempts > 1) lines += "  ${r.attempts} header read attempts (SA-1 power cycle)"
     val json = linkedMapOf<String, Any?>("ok" to (r.status == 0), "system" to r.system, "status" to r.status, "rom_size" to r.romSize, "save_size" to r.saveSize,
-        "save_type" to r.saveType, "name" to r.name, "status_text" to text)
+        "save_type" to r.saveType, "name" to r.name, "attempts" to r.attempts, "status_text" to text)
     if (wantChip) json["flash_chip"] = mdChipJson(chip)
     if (!a.json && colorOn(io, a)) {                      // terminal: o cartucho desenhado ao lado dos dados
         val fields = mutableListOf<Pair<String, String>>()
         if (r.status == 0) { fields += "title" to r.name.ifEmpty { "(unknown)" }; fields += "ROM" to "${r.romSize} bytes"; fields += "save" to "${r.saveSize} bytes" }
         if (wantChip) fields += "chip" to mdChipLine(chip).removePrefix("flash chip: ")
+        if (r.attempts > 1) fields += "attempts" to "${r.attempts} (SA-1 power cycle)"
         val name = CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system.toString()
         val art = mapOf("snes" to 1, "nes" to 2, "famicom" to 3, "md" to 4, "gba" to 5, "gb" to 6)[name] ?: 1
         Ui.detectCard(true, art, "$name: ${text.substringBefore(" (")}", r.status == 0, fields).forEach(io.out)

@@ -97,6 +97,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var client by remember { mutableStateOf<OscrClient?>(null) }
     var transport by remember { mutableStateOf<Transport?>(null) }
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
+    var powerSt by remember { mutableStateOf<PowerState?>(null) }       // estado completo do POWER (chave física, sensor do rail)
     var powerOn by remember { mutableStateOf<Boolean?>(null) }          // 5V dos slots (placa com a chave de 5V); null = placa sem chave ou desconectado
     var busy by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -186,7 +187,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else null
 
     fun dropConnection(msg: S? = S.NOT_CONNECTED) {
-        transport?.close(); client = null; transport = null; info = null; powerOn = null
+        transport?.close(); client = null; transport = null; info = null; powerOn = null; powerSt = null
         if (msg != null) say(t(msg))
     }
 
@@ -196,7 +197,14 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (info?.powerSwitch != true || powerOn == true) return
         stage = S.STAGE_POWER_ON
         val st = withContext(Dispatchers.IO) { c.power(Power.ON) }
-        powerOn = st.on; say(t(S.POWER_ON_DONE)); stage = back; progress = 0f
+        powerOn = st.on; powerSt = st; say(t(S.POWER_ON_DONE)); stage = back; progress = 0f
+    }
+
+    /** Relê o estado do 5V (a chave física pode ter aberto e cortado sozinha, D119). Não faz nada sem chave ou desconectado. */
+    suspend fun refreshPower() {
+        val c = client ?: return
+        if (info?.powerSwitch != true) return
+        try { val st = withContext(Dispatchers.IO) { c.power(Power.STATUS) }; powerSt = st; powerOn = st.on } catch (_: Exception) {}
     }
 
     fun run(stageKey: S, needsCart: Boolean = true, block: suspend () -> Unit) {
@@ -205,7 +213,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             try { if (needsCart && stageKey != S.STAGE_IDLE) ensurePowered(stageKey); block() } catch (e: Exception) {
                 say(describeError(lang, e))
                 if ((e is ProtocolError && e.fail == Fail.DISCONNECTED) || transport?.isOpen == false) { dropConnection(null); say(t(S.STATUS_DISCONNECTED)) }
-            } finally { busy = false; stage = null; speed = ""; slowNote = false }
+            } finally { refreshPower(); busy = false; stage = null; speed = ""; slowNote = false }
         }
     }
 
@@ -266,7 +274,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     }
                     if (b != baud) { say(f(S.BAUD_FALLBACK, baud, b)); baud = b }
                     transport = tr2; client = c; info = i
-                    powerOn = if (i.powerSwitch) withContext(Dispatchers.IO) { c.power(Power.STATUS).on } else null
+                    powerSt = if (i.powerSwitch) withContext(Dispatchers.IO) { c.power(Power.STATUS) } else null
+                    powerOn = powerSt?.on
                     Prefs.port = port; Prefs.baud = baud; Prefs.firstRunDone = true; firstRun = false
                     say("${t(S.CONNECTED)}: ${t(S.DEVICE_INFO)} ${i.firmware}" + if (i.mock) " — ${t(S.MOCK_MODE)}" else "")
                     return@run
@@ -282,7 +291,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         run(if (on) S.STAGE_POWER_ON else S.STAGE_POWER_OFF, needsCart = false) {
             val st = withContext(Dispatchers.IO) { c.power(if (on) Power.ON else Power.OFF) }
-            powerOn = st.on
+            powerOn = st.on; powerSt = st
             say(t(if (st.on) S.POWER_ON_DONE else S.POWER_OFF_DONE))
         }
     }
@@ -416,6 +425,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system) }
+            if (r.attempts > 1) say(f(S.DETECT_ATTEMPTS, r.attempts))                 // SNES: o firmware precisou do ciclo de energia do SA-1
             val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; 4 -> S.CART_BAD_HEADER; else -> S.CART_HW_ERROR }
             if (r.status == 0) detectedNames[system] = r.name
             say(t(st) + if (r.status == 0) " — ${t(S.TITLE_LABEL)}: ${r.name.ifEmpty { "?" }}, ${t(S.ROM_LABEL)}: ${r.romSize}, ${t(S.SAVE_LABEL)}: ${r.saveSize}" else "")
@@ -588,6 +598,14 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(t(if (powerOn == true) S.POWER_STATUS_ON else S.POWER_STATUS_OFF), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
                     OutlinedButton(enabled = !busy, onClick = { actPower(powerOn != true) }) { Text(t(if (powerOn == true) S.POWER_BTN_OFF else S.POWER_BTN_ON)) }
+                }
+                powerSt?.let { ps ->                                    // LEDs virtuais e a chave física (placa com a chave no D18 e o sensor do rail)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("●", color = if (ps.on) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline)
+                        if (ps.railLow != null) Text("●", color = if (ps.railLow == true) Color(0xFFF9A825) else MaterialTheme.colorScheme.outline)
+                        ps.switch?.let { Text(t(if (it) S.POWER_SWITCH_CLOSED else S.POWER_SWITCH_OPEN), style = MaterialTheme.typography.bodySmall, color = if (it) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.error) }
+                        ps.railLow?.let { Text(t(if (it) S.POWER_RAIL_SAFE else S.POWER_RAIL_HOT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+                    }
                 }
             }
             LabeledField(t(S.SYSTEM)) {
@@ -801,7 +819,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = t(stage ?: S.STAGE_IDLE); stateDescription = f(S.A11Y_PROGRESS, (progress * 100).toInt()) }, strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                 if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
-                if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING)) Callout(t(S.FLASH_ABORT_WARN), Tone.WARN)      // abortar no meio deixa o chip apagado ou pela metade
+                if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING)) Callout(t(S.FLASH_ABORT_WARN), Tone.WARN)
+                if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING || stage == S.STAGE_WRITING_SAVE) && powerSt?.interlock == true) Callout(t(S.POWER_WRITE_LOCK), Tone.INFO)      // a chave só vale depois da gravação      // abortar no meio deixa o chip apagado ou pela metade
                 if (lastMessage.isNotEmpty()) Text(lastMessage, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge,
                     color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

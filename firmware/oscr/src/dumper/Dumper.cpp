@@ -25,6 +25,7 @@
 # include "dumper/GbaFlash.h"
 # include "dumper/GbFlash.h"
 # include "dumper/FlashProg.h"
+# include "dumper/PowerCore.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -207,6 +208,87 @@ namespace OSCR::Dumper
     }
 
     /**
+     * Chave de 5V dos slots (D108, D115, D116, D119). D19 = PD2, nível baixo liga o P-MOSFET Q1; com o pino solto (Mega em reset) o R16 mantém
+     * a chave desligada. Em placas sem a chave o pino fica sem ligação e isto não tem efeito.
+     *  OSCR_POWER_SWITCH     1 = placa com a chave de 5V: o firmware começa desligado e o host liga (POWER).
+     *  OSCR_POWER_SWITCH_HW  1 = chave física no D18 (PD3, pull-up interno; fechada ao GND = ligado): trava de segurança.
+     *  OSCR_POWER_SENSE      1 = sensor do rail no D53 (PB0, nó do Q3): nível alto = rail baixo = seguro trocar.
+     *  OSCR_POWER_DISCHARGE  1 = transistor de descarga (Q2): a espera depois de cortar cai de 2 s para 0,5 s.
+     */
+    void cartPower(bool on)
+    {
+      DDRD |= _BV(PD2);
+      if (on) PORTD &= ~_BV(PD2);
+      else PORTD |= _BV(PD2);
+    }
+
+#ifndef OSCR_POWER_SWITCH
+# define OSCR_POWER_SWITCH 0
+#endif
+#ifndef OSCR_POWER_SWITCH_HW
+# define OSCR_POWER_SWITCH_HW 0
+#endif
+#ifndef OSCR_POWER_SENSE
+# define OSCR_POWER_SENSE 0
+#endif
+#ifndef OSCR_POWER_DISCHARGE
+# define OSCR_POWER_DISCHARGE 0
+#endif
+#ifndef OSCR_POWER_DISCHARGE_MS
+# define OSCR_POWER_DISCHARGE_MS (OSCR_POWER_DISCHARGE ? 500 : 2000)   // espera depois de cortar o 5V sem sensor
+#endif
+#ifndef OSCR_POWER_CYCLE_TRIES
+# define OSCR_POWER_CYCLE_TRIES 3                                       // SA-1: tentativas de ler o cabeçalho, com ciclo de energia entre elas
+#endif
+    constexpr bool kPowerSwitch = OSCR_POWER_SWITCH || OSCR_POWER_SWITCH_HW;
+
+    /** Solta todos os pinos de sinal dos slots (entrada, sem pull-up). Cortar o 5V com o Mega ainda dirigindo os pinos alimentaria o cartucho por eles.
+     *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), em D18/D19 (PD3/PD2), no sensor (PB0) nem nos LEDs (PB4 a PB7). */
+    void releaseCartPins()
+    {
+      DDRA = 0; PORTA = 0;                      // D22 a D29
+      DDRC = 0; PORTC = 0;                      // D30 a D37
+      DDRF = 0; PORTF = 0;                      // A0 a A7
+      DDRK = 0; PORTK = 0;                      // A8 a A15
+      DDRL = 0; PORTL = 0;                      // D42 a D49
+      DDRE &= ~(_BV(PE3) | _BV(PE4) | _BV(PE5)); PORTE &= ~(_BV(PE3) | _BV(PE4) | _BV(PE5));                 // D5, D2, D3
+      DDRG &= ~(_BV(PG0) | _BV(PG1) | _BV(PG2) | _BV(PG5)); PORTG &= ~(_BV(PG0) | _BV(PG1) | _BV(PG2) | _BV(PG5));   // D41, D40, D39, D4
+      DDRH &= ~(_BV(PH0) | _BV(PH1) | _BV(PH3) | _BV(PH4) | _BV(PH5) | _BV(PH6));
+      PORTH &= ~(_BV(PH0) | _BV(PH1) | _BV(PH3) | _BV(PH4) | _BV(PH5) | _BV(PH6));                            // D17, D16, D6, D7, D8, D9
+      DDRJ &= ~(_BV(PJ0) | _BV(PJ1)); PORTJ &= ~(_BV(PJ0) | _BV(PJ1));                                         // D15, D14
+      DDRD &= ~_BV(PD7); PORTD &= ~_BV(PD7);                                                                    // D38
+      DDRB &= ~_BV(PB3); PORTB &= ~_BV(PB3);                                                                    // D50 (/CART), sem pull-up
+    }
+
+    bool powerOn = true;
+    oscr::power::Debounce switchDebounce;
+
+    /** Chave física fechada (ligado permitido). Sem a chave na placa vale sempre true. Debounce de 20 ms. */
+    bool switchClosed()
+    {
+      if (!OSCR_POWER_SWITCH_HW) return true;
+      return switchDebounce.update((PIND & _BV(PD3)) == 0, millis());
+    }
+
+    bool railLow() { return (PINB & _BV(PB0)) != 0; }          // sensor do Q3: alto = rail baixo
+
+    /** 1) solta os barramentos  2) abre o Q1  3) espera a descarga (o sensor, se houver; senão o tempo fixo). */
+    void railDown()
+    {
+      releaseCartPins();
+      cartPower(false);
+      oscr::power::wait_discharge(OSCR_POWER_SENSE != 0, 500, OSCR_POWER_DISCHARGE_MS, [] { return railLow(); }, [](uint32_t ms) { delay(ms); }, [] { return uint32_t(millis()); });
+    }
+
+    void railUp()
+    {
+      cartPower(true);                          // 5V primeiro; os núcleos reconfiguram os pinos no próximo comando de leitura
+      delay(50);                                // 5V, Si5351 e PIC estabilizam
+    }
+
+    uint8_t probeAttempts = 1;                  // SNES: leituras do cabeçalho feitas no último `snesProbe` (> 1 = usou o ciclo de energia do SA-1)
+
+    /**
      * SNES: o `getCartInfo` do OSCR lê o cabeçalho ($FFB0) e preenche romSize (Mbit), numBanks, sramSize (Kbit), romChips, romType e checksum
      * (sem a base de dados: tamanhos fora do padrão, como 6 MB, vêm do PC pela opção `prg_kb`). `sizeKb` > 0 troca o tamanho da ROM.
      * Devolve 0 = ok, 1 = sem cartucho, 4 = há dados mas o cabeçalho não confere.
@@ -214,9 +296,20 @@ namespace OSCR::Dumper
     uint8_t snesProbe(uint16_t sizeKb)
     {
       using namespace OSCR::Cores;
-      checksum = 0; romSize = 0; numBanks = 0; sramSize = 0;
-      SN::getCartInfo();
-      SN::cartOff();
+      // SA-1: o destravamento falha de vez em quando (clock, tensão, capacitores ainda carregados). Com a chave de 5V (kPowerSwitch) a leitura do
+      // cabeçalho se repete até OSCR_POWER_CYCLE_TRIES vezes, desligando e ligando o 5V entre as tentativas (D119).
+      auto attempt = []() -> bool
+      {
+        abortHit = false;
+        checksum = 0; romSize = 0; numBanks = 0; sramSize = 0;
+        SN::getCartInfo();
+        SN::cartOff();
+        return !abortHit;
+      };
+      bool ok = false;
+      if (kPowerSwitch && powerOn) probeAttempts = oscr::power::retry_with_cycle(OSCR_POWER_CYCLE_TRIES, attempt, [] { railDown(); railUp(); }, ok);
+      else { probeAttempts = 1; ok = attempt(); }
+      (void)ok;
       if (abortHit) return (checksum == 0 || checksum == 0xFFFF) ? 1 : 4;
       if (romSize == 0 || numBanks < 1) return 1;
 
@@ -340,68 +433,36 @@ namespace OSCR::Dumper
       return 0;
     }
 
-    /**
-     * Chave de 5V dos slots (placa 16_bits v. 1.2 final, D108): D19 = PD2, nível baixo liga o P-MOSFET Q1. Com o pino solto (Mega em reset) o R16
-     * mantém a chave desligada. Em placas sem a chave o pino fica sem ligação e isto não tem efeito.
-     */
-    void cartPower(bool on)
-    {
-      DDRD |= _BV(PD2);
-      if (on) PORTD &= ~_BV(PD2);
-      else PORTD |= _BV(PD2);
-    }
-
-#ifndef OSCR_POWER_SWITCH
-# define OSCR_POWER_SWITCH 0                  // 1 = placa com a chave de 5V (Q1 no D19): o firmware começa desligado e o host liga (docs/troca-de-cartucho.md)
-#endif
-#ifndef OSCR_POWER_DISCHARGE_MS
-# define OSCR_POWER_DISCHARGE_MS 2000         // espera depois de cortar o 5V; sem o transistor de descarga (Q2) o rail só cai pelo consumo. Com Q2: 500
-#endif
-
-    /** Solta todos os pinos de sinal dos slots (entrada, sem pull-up). Cortar o 5V com o Mega ainda dirigindo os pinos alimentaria o cartucho por eles.
-     *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), em D18/D19 (PD3/PD2) nem nos LEDs (PB4 a PB7). */
-    void releaseCartPins()
-    {
-      DDRA = 0; PORTA = 0;                      // D22 a D29
-      DDRC = 0; PORTC = 0;                      // D30 a D37
-      DDRF = 0; PORTF = 0;                      // A0 a A7
-      DDRK = 0; PORTK = 0;                      // A8 a A15
-      DDRL = 0; PORTL = 0;                      // D42 a D49
-      DDRE &= ~(_BV(PE3) | _BV(PE4) | _BV(PE5)); PORTE &= ~(_BV(PE3) | _BV(PE4) | _BV(PE5));                 // D5, D2, D3
-      DDRG &= ~(_BV(PG0) | _BV(PG1) | _BV(PG2) | _BV(PG5)); PORTG &= ~(_BV(PG0) | _BV(PG1) | _BV(PG2) | _BV(PG5));   // D41, D40, D39, D4
-      DDRH &= ~(_BV(PH0) | _BV(PH1) | _BV(PH3) | _BV(PH4) | _BV(PH5) | _BV(PH6));
-      PORTH &= ~(_BV(PH0) | _BV(PH1) | _BV(PH3) | _BV(PH4) | _BV(PH5) | _BV(PH6));                            // D17, D16, D6, D7, D8, D9
-      DDRJ &= ~(_BV(PJ0) | _BV(PJ1)); PORTJ &= ~(_BV(PJ0) | _BV(PJ1));                                         // D15, D14
-      DDRD &= ~_BV(PD7); PORTD &= ~_BV(PD7);                                                                    // D38
-      DDRB &= ~_BV(PB3); PORTB &= ~_BV(PB3);                                                                    // D50 (/CART), sem pull-up
-    }
-
-    bool powerOn = true;
-
     /** Backend dos núcleos do OSCR: SNES, NES/Famicom, Mega Drive, Game Boy Advance e Game Boy/Color. */
     class CoreBackend : public oscr::Backend
     {
     public:
-      bool power_switch() override { return OSCR_POWER_SWITCH != 0; }
+      bool power_switch() override { return kPowerSwitch; }
       bool cart_powered() override { return powerOn; }
       bool cart_power(bool on, uint16_t & err) override
       {
-        (void)err;
         if (on == powerOn) return true;
         if (on)
         {
-          cartPower(true);                    // 5V primeiro; os núcleos reconfiguram os pinos no próximo comando de leitura
-          delay(50);                          // 5V, Si5351 e PIC estabilizam
+          if (!switchClosed()) { err = oscr::E_DESLIGADO; return false; }     // trava física: a chave aberta vence o pedido do software
+          railUp();
         }
-        else
-        {
-          releaseCartPins();                  // 1) solta os barramentos  2) abre Q1  3) espera a descarga
-          cartPower(false);
-          delay(OSCR_POWER_DISCHARGE_MS);
-        }
+        else railDown();
         powerOn = on;
         return true;
       }
+      void power_info(oscr::PowerInfo & p) override
+      {
+        p.on = powerOn;
+        p.features = uint8_t((OSCR_POWER_SWITCH_HW ? 1 : 0) | (OSCR_POWER_SENSE ? 2 : 0) | (OSCR_POWER_DISCHARGE ? 4 : 0));
+        p.sw = OSCR_POWER_SWITCH_HW ? (switchClosed() ? 1 : 0) : 0xFF;
+        p.rail = OSCR_POWER_SENSE ? (railLow() ? 0 : 1) : 0xFF;
+      }
+      void power_poll() override
+      {
+        if (OSCR_POWER_SWITCH_HW && powerOn && !switchClosed()) { railDown(); powerOn = false; }    // chave aberta: solta os pinos e corta
+      }
+      bool power_abort() override { return OSCR_POWER_SWITCH_HW && !switchClosed(); }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
       uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_FLASH); }
@@ -475,6 +536,7 @@ namespace OSCR::Dumper
           uint16_t kb = 0;                                       // o DETECT ignora as opções
           runCore([&st, kb] { st = snesProbe(kb); });
           out.status = st;
+          out.attempts = probeAttempts;
           if (st == 1) return;
           out.rom_size = uint32_t(OSCR::Cores::romSize) * 131072UL;
           out.save_size = uint32_t(OSCR::Cores::sramSize) * 128UL;
@@ -867,7 +929,9 @@ namespace OSCR::Dumper
 
   void setup()
   {
-    if (OSCR_POWER_SWITCH) { cartPower(false); powerOn = false; }   // placa com chave: começa desligado, o host liga (D115)
+    if (OSCR_POWER_SWITCH_HW) { DDRD &= ~_BV(PD3); PORTD |= _BV(PD3); }     // chave no D18: entrada com pull-up
+    if (OSCR_POWER_SENSE) { DDRB &= ~_BV(PB0); PORTB &= ~_BV(PB0); }        // sensor do rail no D53: entrada sem pull-up
+    if (kPowerSwitch) { cartPower(false); powerOn = false; }                  // placa com chave: começa desligado, o host liga (D115)
     else cartPower(true);                     // sem isso o cartucho fica sem 5V; o OSCR original não tinha chave
     delay(50);                                // o 5V dos slots, o Si5351 e o PIC sobem antes do primeiro comando
     ClockedSerial.begin(OSCR_DUMPER_BAUD);

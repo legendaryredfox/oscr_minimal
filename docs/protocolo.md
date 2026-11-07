@@ -49,14 +49,14 @@ offset  tamanho  campo
 | Tipo | Nome | Payload |
 |---|---|---|
 | `0x81` | `INFO_RESP` | `u8 versão_proto`, `u8 maior`, `u8 menor`, `u8 patch` (firmware), `u8 flags`, `u16 sistemas` (máscara de bits, bit = id do sistema), `u16 max_payload` (maior payload que o dispositivo aceita: 1024 no PC/simulador, 520 no AVR; o host usa bloco ≤ `max_payload` − 4; opcional para o host, o campo vem no fim) |
-| `0x82` | `DETECT_RESP` | ver seção 5 |
+| `0x82` | `DETECT_RESP` | ver seção 5. **Campo opcional depois do nome (D119):** `u8 tentativas` — só no SNES, só quando o firmware precisou de mais de uma leitura do cabeçalho por causa do ciclo de energia do SA-1 (placa com a chave de 5V); ausente = 1. Hosts antigos ignoram o byte |
 | `0x83` | `BEGIN` | `u8 tipo_dado` (1 = ROM, 2 = save), `u32 tamanho`, `u16 bloco`. **Tamanho `0xFFFFFFFF` = desconhecido** (firmware baseado nos núcleos do OSCR, modo fluxo: o tamanho real e o CRC32 vêm no `END`; o host aceita qualquer `offset` sequencial até o `END`, e a barra de progresso usa o tamanho do `DETECT`) |
 | `0x84` | `DATA` | `u32 offset` + dados (até `bloco` bytes) |
 | `0x85` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro |
 | `0x86` | `ACK` | `u32 offset` (confirma um pedido ou um bloco de `WRITE_SAVE`) |
 | `0x87` | `ERRO` | `u16 código`, `u8 n`, `n` bytes de texto ASCII (diagnóstico, não traduzido) |
 | `0x88` | `PROGRESSO` | `u32 offset`, `u32 total` (opcional, a cada ~1 s sem `DATA`) |
-| `0x89` | `POWER_RESP` | `u8 estado` (1 = 5V ligado), `u8 recursos` (bit 0 trava física lida, bit 1 sensor de tensão do rail, bit 2 descarga forçada), `u8 chave` (0 aberta, 1 fechada, `0xFF` sem chave), `u8 rail` (0 baixo = seguro trocar, 1 alto, `0xFF` sem sensor). Placas atuais (só o Q1): recursos 0, chave e rail `0xFF` |
+| `0x89` | `POWER_RESP` | `u8 estado` (1 = 5V ligado), `u8 recursos` (bit 0 chave física no D18 lida, bit 1 sensor do rail no D53, bit 2 descarga forçada Q2), `u8 chave` (0 aberta, 1 fechada, `0xFF` sem chave física), `u8 rail` (0 baixo = seguro trocar, 1 alto, `0xFF` sem sensor). Placa só com o Q1 (v1.2 da `16_bits`): recursos 0, chave e rail `0xFF`. Com a chave física a flag `INFO` bit 5 também vale 1 (D119) |
 
 `seq` do host é livre (incremente a cada pedido). O dispositivo repete o `seq` do pedido em todas as respostas daquele pedido (`DATA` do mesmo fluxo repete o `seq` do `DUMP_ROM`/`READ_SAVE`).
 
@@ -171,7 +171,7 @@ O dispositivo só grava na memória do cartucho **depois** do `END` com CRC32 co
 | 0x0009 | abortado |
 | 0x000A | cartucho não tem save |
 | 0x000B | chip de flash não reconhecido (`WRITE_ROM`): nada foi gravado |
-| 0x000C | cartucho desligado: a placa tem a chave de 5V e o 5V dos slots está cortado (`POWER`); também é o erro de `POWER` ligar com a trava física aberta (futuro) |
+| 0x000C | cartucho desligado: a placa tem a chave de 5V e o 5V dos slots está cortado (`POWER`). Com texto `chave` (`POWER` ligar com a chave física aberta, D119); com texto `off` (comando de cartucho com o 5V desligado) |
 
 ## 9. Vetores de teste
 

@@ -63,6 +63,7 @@ bool Session::next_frame(uint32_t timeout_ms) {
 }
 
 void Session::poll() {
+  be_.power_poll();                  // trava física da chave de 5V (D119); sem chave não faz nada
   // consome sem bloquear até achar um quadro
   for (;;) {
     int b = io_.read_byte(io_.ctx, 0);
@@ -118,13 +119,15 @@ void Session::do_info(uint8_t seq) {
 void Session::do_detect(uint8_t seq, uint8_t sys) {
   DetectInfo d;
   be_.detect(sys, d);
-  uint8_t p[12 + 32];
+  uint8_t p[12 + 32 + 1];
   uint8_t n = uint8_t(strlen(d.name));
   p[0] = sys; p[1] = d.status;
   put_u32(p + 2, d.rom_size); put_u32(p + 6, d.save_size);
   p[10] = d.save_type; p[11] = n;
   memcpy(p + 12, d.name, n);
-  send(T_DETECT_RESP, seq, p, 12 + n);
+  uint16_t total = 12 + n;
+  if (d.attempts > 1) p[total++] = d.attempts;      // campo opcional depois do nome (D119): hosts antigos o ignoram
+  send(T_DETECT_RESP, seq, p, total);
 }
 
 void Session::do_erase(uint8_t seq, const uint8_t* p, uint16_t len) {
@@ -142,7 +145,7 @@ void Session::do_power(uint8_t seq, const uint8_t* p, uint16_t len) {
   uint8_t action = p[0];
   if (action != POWER_STATUS && be_.power_switch()) {
     uint16_t err = E_CARTUCHO_IO;
-    if (!be_.cart_power(action == POWER_ON, err)) { send_error(seq, err); return; }
+    if (!be_.cart_power(action == POWER_ON, err)) { send_error(seq, err, err == E_DESLIGADO ? "chave" : ""); return; }
   } else if (action == POWER_OFF) {             // sem chave na placa não dá para desligar o 5V (POWER_ON e POWER_STATUS respondem o estado: sempre ligado)
     send_error(seq, E_COMANDO, "sem chave");
     return;
@@ -284,6 +287,7 @@ struct StreamOut : StreamSink {
   }
   bool write(const uint8_t* d, size_t n) override {
     if (fail) return false;
+    if (s.be_.power_abort()) { fail = E_ABORTADO; return false; }     // chave aberta durante uma leitura
     while (n) {
       size_t room = block - fill, k = n < room ? n : room;
       memcpy(s.tx_ + 10 + fill, d, k);
