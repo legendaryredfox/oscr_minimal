@@ -29,7 +29,7 @@ internal fun cmdErrors(io: CliIo, a: Args, lang: Lang): Int {
 }
 
 internal fun cmdInfo(io: CliIo, a: Args): Int {
-    val c = connect(io, a); val i = c.info
+    val c = connect(io, a, needCart = false); val i = c.info
     val names = CartSystem.entries.filter { it.id < 16 && i.systemsMask and (1 shl it.id) != 0 }.map { it.name.lowercase() }
     c.transport.close()
     if (!a.json && colorOn(io, a)) io.out(Ui.banner(true, VERSION) + "\n")

@@ -23,7 +23,8 @@ __pycache__
 *-backup.*
 
 # User files
-/user.ini
+# user.ini do shield dumper (núcleos ligados, D65 e D77) é versionado de propósito; sem ele um clone novo compila outro firmware
+!/user.ini
 /scripts/settings.json
 
 # Don't commit new stuff by accident...

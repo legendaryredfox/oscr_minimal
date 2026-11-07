@@ -14,6 +14,7 @@ from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
 from .cmd_flash import cmd_flash_blank, cmd_flash_erase, cmd_flash_id, cmd_flash_read, cmd_flash_write
 from .cmd_info import cmd_errors, cmd_info, cmd_ports, cmd_systems
+from .cmd_power import cmd_power
 from .cmd_rom import cmd_rom_write
 from .cmd_save import cmd_save_read, cmd_save_write
 from .errors import EXIT_USAGE
@@ -47,6 +48,8 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
                    help='saída em JSON (uma linha em stdout, sempre com "ok"; erros: {"ok":false,"error":{kind,message,hint}})')
     p.add_argument("--color", choices=("auto", "always", "never"), default=d("auto"),
                    help="cores e arte ASCII: auto (só em terminal; respeita NO_COLOR), always, never. Com --json nunca há enfeite")
+    p.add_argument("--power", choices=("auto", "keep"), default=d("auto"),
+                   help="placa com chave de 5V: auto (padrão) liga o 5V dos slots antes do comando e o mantém ligado; keep não mexe no 5V")
     p.add_argument("--progress", choices=("auto", "none", "jsonl"), default=d("auto"),
                    help="progresso em stderr: auto (barra se for terminal), none, jsonl (uma linha JSON por 1%%)")
 
@@ -56,6 +59,7 @@ exemplos:
   dumper --json detect -s snes
   dumper dump -s snes -o jogo --json --progress jsonl
   dumper save-write -s snes -i jogo.sav --yes --json
+  dumper power off            # antes de trocar o cartucho (placa com chave de 5V); depois: dumper power on
   dumper --simulate --json systems
 Guia completo para agentes: docs/cli.md"""
 
@@ -85,6 +89,8 @@ def build_parser() -> argparse.ArgumentParser:
     add("systems", cmd_systems, "lista os sistemas, extensões e opções de cada um (não abre a porta)", system=False)
     add("errors", cmd_errors, "lista os códigos de erro do dispositivo e os códigos de saída da CLI (não abre a porta)", system=False)
     add("info", cmd_info, "versão do firmware e sistemas suportados", system=False)
+    pwp = add("power", cmd_power, "liga, desliga ou consulta o 5V dos slots (placa com chave de 5V; para trocar o cartucho)", system=False)
+    pwp.add_argument("action", choices=("on", "off", "status"), help="on liga; off solta os pinos, corta o 5V e espera a descarga; status só consulta")
     dtp = add("detect", cmd_detect, "detecta o cartucho")
     dtp.add_argument("--flash-id", action="store_true", help="Mega Drive: identifica também o chip de flash do cartucho (a sondagem escreve comandos de ID no cartucho; ROM de máscara os ignora)")
     ip = add("identify", cmd_identify, "identifica arquivos já salvos pelo CRC32 na base de dados (--db), sem abrir a porta")

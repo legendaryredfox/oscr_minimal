@@ -22,11 +22,14 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None):
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
         self.written_rom: Optional[bytes] = None
+        self.power_switch = power_switch          # placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
+        self.powered = not power_switch
+        self.power_calls: list[int] = []
         self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
@@ -89,9 +92,24 @@ class MockDevice:
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
 
     def _handle(self, t: Transport, f: P.Frame) -> None:
-        if f.type == P.T_INFO:
+        needs_cart = f.type in (P.T_DETECT, P.T_DUMP_ROM, P.T_READ_SAVE, P.T_WRITE_SAVE, P.T_WRITE_ROM, P.T_ERASE)
+        if needs_cart and f.payload and f.payload[0] not in (0, 255) and self.power_switch and not self.powered:
+            self._error(t, f.seq, 12, "off")           # 5V desligado: o MOCK não precisa de cartucho, os outros sistemas sim
+            return
+        if f.type == P.T_POWER:
+            action = f.payload[0] if f.payload else 9
+            if action > P.POWER_STATUS:
+                self._error(t, f.seq, 4, "args")
+            elif action == P.POWER_OFF and not self.power_switch:
+                self._error(t, f.seq, 1, "sem chave")
+            else:
+                if action != P.POWER_STATUS and self.power_switch:
+                    self.power_calls.append(action)
+                    self.powered = action == P.POWER_ON
+                self._send(t, P.T_POWER_RESP, f.seq, bytes([1 if self.powered else 0, 0, 0xFF, 0xFF]))
+        elif f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
-            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b11001]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
+            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b11001 | (0b100000 if self.power_switch else 0)]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
         elif f.type == P.T_DETECT:
             sysid = f.payload[0] if f.payload else 0
             if sysid in (0, 255):

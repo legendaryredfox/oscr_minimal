@@ -17,7 +17,7 @@ Também mudaram de lugar (a placa foi roteada de novo): o PIC (U2) e o C4, os po
 
 ## Como o comando D19 funciona
 
-`firmware/oscr/src/dumper/Dumper.cpp` liga o 5V dos slots no `setup()` (`cartPower(true)`: D19 saída em nível baixo, 50 ms de espera), então com o firmware desta árvore a placa se comporta como as anteriores. **Ainda não existe comando no protocolo para desligar o 5V** (e portanto a chave ainda não serve para trocar o cartucho com o USB ligado): falta um comando `POWER` no protocolo, na CLI Python/Kotlin e na GUI. Enquanto isso, a regra continua: USB desligado para trocar o cartucho. Com a chave desligada o firmware também teria que deixar todos os pinos de sinal em alta impedância, senão o Mega alimenta o cartucho pelos diodos de proteção dos pinos.
+`firmware/oscr/src/dumper/Dumper.cpp` liga o 5V dos slots no `setup()` (`cartPower(true)`: D19 saída em nível baixo, 50 ms de espera), então com o firmware desta árvore a placa se comporta como as anteriores. **Comando `POWER` (D116, só software):** grave o firmware com `pio run -e SerialASCII_Power -t upload` (em `firmware/oscr`); ele começa com o 5V **desligado** e o programa liga (a CLI e a GUI ligam sozinhas). `dumper power off` solta todos os pinos, abre o Q1 e espera 2 s (sem o transistor de descarga da v. 1.3 não há como confirmar que o rail caiu: meça com o multímetro antes de trocar o cartucho); `dumper power on` liga de novo. Com o firmware padrão (`SerialASCII`) nada muda: o 5V liga no `setup()`. A chave física, o LED "seguro trocar" e a descarga forçada ficam para a v. 1.3 (`docs/troca-de-cartucho.md`, D115).
 
 ## Antes de ligar um cartucho (testes de bancada, nada foi feito)
 
@@ -44,5 +44,5 @@ O `+5V` do Mega agora só alimenta o LED D1, o C1, o TP1 e a fonte do Q1; tudo o
 ## O que não entrou
 
 - Resistores série e TVS nas **linhas de endereço e de dados** (cerca de 44 redes): sem espaço na placa de duas camadas sem aumentar muito o tamanho. Só as linhas de controle estão protegidas.
-- Comando `POWER` no protocolo (ver acima).
+- Chave física, LED "seguro trocar" e descarga forçada do 5V (v. 1.3, D115). O comando `POWER` em software já existe (D116).
 - O RP2040 no lugar do PIC (fica para a v. 1.3).

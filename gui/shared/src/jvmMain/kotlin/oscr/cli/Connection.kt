@@ -6,9 +6,21 @@ import oscr.*
 /** Conexão com o dispositivo (porta serial ou simulador) e leitura do sistema escolhido. */
 internal class Conn(val client: OscrClient, val transport: Transport, val info: DeviceInfo)
 
-internal fun connect(io: CliIo, a: Args): Conn {
+/**
+ * Abre a porta (ou o simulador), faz INFO e, em placa com a chave de 5V, liga o 5V dos slots (`--power auto`, o padrão).
+ * `needCart = false` (info, power) nunca mexe no 5V; com `--power keep` o 5V fica como está.
+ */
+internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
+    val c = open(io, a)
+    if (needCart && c.info.powerSwitch && a.opts["power"] != "keep") {
+        try { if (!c.client.power(Power.STATUS).on) c.client.power(Power.ON) } catch (e: Throwable) { c.transport.close(); throw e }
+    }
+    return c
+}
+
+private fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(); val c = OscrClient(t, 500, 5000)
+        val t = SimDevice(powerSwitch = io.simPower); val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }
     val port = a.opts["port"] ?: io.listPorts().firstOrNull { p -> listOf("ttyUSB", "ttyACM", "cu.usb", "COM").any { it in p } }

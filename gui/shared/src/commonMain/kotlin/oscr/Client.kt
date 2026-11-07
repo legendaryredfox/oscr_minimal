@@ -63,6 +63,13 @@ class OscrClient(
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
+    /** POWER: liga, desliga ou consulta o 5V dos slots ([Power]). Desligar espera a descarga no firmware (até ~2 s). */
+    fun power(action: Int = Power.STATUS): PowerState {
+        val p = request(Proto.T_POWER, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_POWER_RESP), longTimeoutMs).payload
+        if (p.size < 4) throw ProtocolError(Fail.SHORT_REPLY, "POWER_RESP")
+        return PowerState(p.u8(0) != 0, p.u8(1) and 1 != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(2) == 0xFF) null else p.u8(2) != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0)
+    }
+
     fun detect(system: CartSystem, chip: Int = 0, prgKb: Int = 0, chrKb: Int = 0): DetectResult {
         val opts = if (chip != 0 || prgKb != 0 || chrKb != 0) le16(chip) + le16(prgKb) + le16(chrKb) else ByteArray(0)    // programador de flash genérico: as opções vão no DETECT
         val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()) + opts, nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload

@@ -13,6 +13,13 @@ struct Io {
   uint32_t (*now_ms)(void* ctx);
 };
 
+// Estado da chave de 5V dos slots (POWER_RESP). `features`: bit0 trava física (chave) lida, bit1 sensor de tensão do rail, bit2 descarga forçada.
+// `sw`: 0 chave aberta, 1 fechada, 0xFF sem chave. `rail`: 0 baixo (seguro trocar), 1 alto, 0xFF sem sensor.
+struct PowerInfo {
+  bool on = true;
+  uint8_t features = 0, sw = 0xFF, rail = 0xFF;
+};
+
 struct DetectInfo {
   uint8_t status = 1;       // 0 detectado, 1 nenhum, 2 não suportado, 3 erro de hardware, 4 cabeçalho inválido (há dados, checksum errado)
   uint32_t rom_size = 0, save_size = 0;
@@ -64,6 +71,12 @@ class Backend {
   virtual bool stream_write_rom(uint8_t system, StreamSource& in, uint16_t& err) { (void)system; (void)in; err = E_COMANDO; return false; }
   // ERASE (programador de flash genérico): apaga o chip inteiro com as opções (set_options) e responde só no fim. Demora: o host espera até 90 s.
   virtual bool erase(uint8_t system, uint16_t& err) { (void)system; err = E_COMANDO; return false; }
+  // Chave de 5V dos slots (POWER, D115). Sem a chave na placa, `power_switch()` é false: o 5V fica sempre ligado e nada é recusado.
+  virtual bool power_switch() { return false; }                    // INFO bit5
+  virtual bool cart_powered() { return true; }
+  // Liga ou desliga (bloqueia até a descarga). Devolve false e `err` se a trava impedir (por exemplo a chave física aberta).
+  virtual bool cart_power(bool on, uint16_t& err) { (void)on; err = E_COMANDO; return false; }
+  virtual void power_info(PowerInfo& p) { p.on = cart_powered(); }
 };
 
 class MockBackend : public Backend {
@@ -106,6 +119,7 @@ class Session {
   void do_info(uint8_t seq);
   void do_detect(uint8_t seq, uint8_t sys);
   void do_erase(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_power(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);
   void do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block);

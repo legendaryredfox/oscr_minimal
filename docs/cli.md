@@ -9,6 +9,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 - **Erros com `--json`**: também em stdout, uma linha: `{"ok":false,"error":{"kind":"...","message":"...","hint":"..."}}`. Sem `--json`, texto em stderr (`erro: ...`).
 - **Progresso**: `--progress jsonl` escreve em **stderr** uma linha por 1 %: `{"event":"progress","label":"rom","done":N,"total":N,"percent":P}`. `label` é `rom`, `save`, `backup` ou `write`. `--progress none` desliga; `auto` (padrão) mostra barra só se stderr for terminal.
 - **Cores e arte ASCII** (`--color auto|always|never`): num terminal a CLI mostra barra de progresso com degradê, velocidade e tempo restante, ícones (✔ ⚠ ✘), CRC32 e `OK` realçados, o logo OSCR na ajuda e no `info` e, no `detect`, o desenho do cartucho do sistema ao lado dos dados. `auto` (padrão) só enfeita se a saída for um terminal e respeita `NO_COLOR`; `always` força (útil em testes); `never` desliga. **Com `--json` nunca há enfeite**, e saída redirecionada ou em pipe continua texto puro: o contrato para agentes não muda.
+- **5V dos slots** (`--power auto|keep`): em placa com a chave de 5V o firmware começa desligado; por padrão (`auto`) a CLI liga o 5V antes de qualquer comando que precisa do cartucho e o **mantém ligado**. `keep` não mexe (então o comando dá o erro 12 se estiver desligado). `info` e `power` nunca ligam sozinhos. O erro `0x000C` tem a dica `dumper power on`. No simulador, `OSCR_SIM_POWER=1` finge uma placa com a chave (começa desligada).
 - **Sem hardware**: `--simulate` usa o simulador em memória (sistemas `mock`, `snes`, etc. respondem com cartuchos simulados).
 - **Arquivos**: `-o` sobrescreve se existir. A extensão certa é acrescentada quando `-o` não tem uma. Sem `-o`, o nome vem do título do cartucho.
 - **Descoberta sem porta**: `systems` e `errors` não abrem a porta serial.
@@ -34,6 +35,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | `ports` | `ports`: lista de portas |
 | `systems` | `systems`: `[{name, id, extension, options, needs_cartridge}]`; `options` diz quais de `--mapper`, `--prg`, `--chr`, `--ram` o sistema usa. `planned`: `[{name, label, supported:false}]`, os outros cartuchos do OSCR ainda sem suporte (marcadores de lugar; não valem em `-s`) |
 | `errors` | `device_errors`, `exit_codes` |
+| `power on\|off\|status` | 5V dos slots (placa com a chave de 5V, D115): `state` (`on`/`off`), `on`, `power_switch`, `interlock`, `rail_sensor`, `forced_discharge`, `switch`, `rail_low` (os dois últimos `null` sem chave física ou sensor). `off` solta os pinos, corta o 5V e espera a descarga; antes de trocar o cartucho. Sem a chave na placa, `off` dá erro `device_error` (código 1) e `on`/`status` respondem ligado |
 | `info` | `proto`, `firmware`, `mock`, `si5351`, `systems`, `max_payload` |
 | `detect -s SISTEMA` | `status`, `status_text`, `system`, `name`, `rom_size`, `save_size`. `ok` é `false` e a saída é 2 se não houver cartucho |
 | `dump -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` (hex maiúsculo, 8 dígitos), `checksum` (`ok`, `mismatch`, `na`), e `gba_save_type` no GBA |

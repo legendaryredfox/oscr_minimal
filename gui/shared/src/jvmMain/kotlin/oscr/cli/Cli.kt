@@ -28,10 +28,12 @@ object Cli {
             if ("version" in a.flags) { io.out("dumper-kt $VERSION (protocol ${Proto.VERSION})"); return EXIT_OK }
             if ("help" in a.flags || a.cmd == null) { if (Ui.on(colorMode, io.stdoutTty, jsonWanted)) io.out(Ui.banner(true, VERSION) + "\n"); io.out(HELP); return if (a.cmd == null && "help" !in a.flags) EXIT_USAGE else EXIT_OK }
             if (a.cmd !in COMMANDS) throw CliError("usage", "unknown command: ${a.cmd}. Use: ${COMMANDS.joinToString(" ")}", EXIT_USAGE)
+            a.opts["power"]?.let { if (it !in setOf("auto", "keep")) throw CliError("usage", "--power must be auto or keep", EXIT_USAGE) }
             a.opts["color"]?.let { if (it !in setOf("auto", "always", "never")) throw CliError("usage", "--color must be auto, always or never", EXIT_USAGE) }
             a.opts["progress"]?.let { if (it !in setOf("auto", "none", "jsonl")) throw CliError("usage", "--progress must be auto, none or jsonl", EXIT_USAGE) }
             return when (a.cmd) {
                 "ports" -> cmdPorts(io, a)
+                "power" -> cmdPower(io, a)
                 "systems" -> cmdSystems(io, a)
                 "errors" -> cmdErrors(io, a, lang)
                 "info" -> cmdInfo(io, a)

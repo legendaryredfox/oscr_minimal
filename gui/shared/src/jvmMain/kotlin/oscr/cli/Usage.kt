@@ -61,6 +61,7 @@ options (accepted before or after the command):
   --raw                dump -s nes|famicom: write PRG and CHR as separate files (.prg and .chr), without the iNES header (the OSCR raw read)
   --flash-id           detect -s md: also identify the cartridge's flash chip (the probe writes ID commands to the cartridge; mask ROM ignores them)
   --color MODE         auto (default: only in a terminal, respects NO_COLOR), always or never: colours and ASCII art; --json never has them
+  --power MODE         power-switch boards: auto (default: turn the slots' 5V on before the command and keep it on) or keep (do not touch the 5V)
   --no-verify          rom-write, save-write: do not read the ROM/save back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
   --no-backup          save-write: do not read the current save first

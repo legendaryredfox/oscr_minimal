@@ -2,7 +2,7 @@
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". A chave de 5V (Q1) existe, mas o protocolo ainda não tem o comando para desligá-la (`docs/v12-final.md`).
+> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". A chave de 5V (Q1) existe: com o firmware `SerialASCII_Power`, `dumper power off` corta o 5V para trocar o cartucho (veja `docs/v12-final.md`; sem sensor, confira com o multímetro que o 5V do cartucho caiu antes de trocar).
 
 ## 1. Lista de peças
 

@@ -79,6 +79,14 @@ void Session::handle() {
   uint8_t seq = dec_.seq;
   const uint8_t* p = dec_.payload();
   uint16_t len = dec_.len;
+  // Com a chave de 5V na placa e o 5V desligado, os comandos que precisam do cartucho são recusados (o MOCK não precisa de cartucho).
+  bool needs_cart = dec_.type == T_DETECT || dec_.type == T_DUMP_ROM || dec_.type == T_READ_SAVE || dec_.type == T_WRITE_SAVE ||
+                    dec_.type == T_WRITE_ROM || dec_.type == T_ERASE;
+  if (needs_cart && len >= 1 && p[0] != SYS_MOCK && p[0] != 0 && !be_.cart_powered()) {
+    send_error(seq, E_DESLIGADO, "off");
+    be_.set_options(0, 0, 0);
+    return;
+  }
   switch (dec_.type) {
     case T_INFO: do_info(seq); break;
     case T_DETECT:
@@ -87,6 +95,7 @@ void Session::handle() {
       do_detect(seq, len >= 1 ? p[0] : 0);
       break;
     case T_ERASE: do_erase(seq, p, len); break;
+    case T_POWER: do_power(seq, p, len); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
       do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
@@ -100,7 +109,7 @@ void Session::handle() {
 }
 
 void Session::do_info(uint8_t seq) {
-  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, be_.flags(), 0, 0, 0, 0};
+  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, uint8_t(be_.flags() | (be_.power_switch() ? 32 : 0)), 0, 0, 0, 0};   // bit5: chave de 5V (D115)
   put_u16(p + 5, be_.systems());
   put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/protocolo.md, seção 3)
   send(T_INFO_RESP, seq, p, 9);
@@ -126,6 +135,22 @@ void Session::do_erase(uint8_t seq, const uint8_t* p, uint16_t len) {
   uint16_t err = E_CARTUCHO_IO;
   if (!be_.erase(sys, err)) { send_error(seq, err); return; }
   send_offset(T_D_ACK, seq, 0);
+}
+
+void Session::do_power(uint8_t seq, const uint8_t* p, uint16_t len) {
+  if (len < 1 || p[0] > POWER_STATUS) { send_error(seq, E_ARGUMENTO, "args"); return; }
+  uint8_t action = p[0];
+  if (action != POWER_STATUS && be_.power_switch()) {
+    uint16_t err = E_CARTUCHO_IO;
+    if (!be_.cart_power(action == POWER_ON, err)) { send_error(seq, err); return; }
+  } else if (action == POWER_OFF) {             // sem chave na placa não dá para desligar o 5V (POWER_ON e POWER_STATUS respondem o estado: sempre ligado)
+    send_error(seq, E_COMANDO, "sem chave");
+    return;
+  }
+  PowerInfo pi;
+  be_.power_info(pi);
+  uint8_t r[4] = {uint8_t(pi.on ? 1 : 0), pi.features, pi.sw, pi.rail};
+  send(T_POWER_RESP, seq, r, 4);
 }
 
 int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {

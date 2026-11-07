@@ -74,6 +74,11 @@ class Client:
         f = self._request(P.T_INFO, b"", self._next_seq(), {P.T_INFO_RESP}, self.timeout)
         return P.parse_info_resp(f.payload)
 
+    def power(self, action: int = P.POWER_STATUS) -> dict:
+        """POWER: liga (1), desliga (0) ou consulta (2) o 5V dos slots. Desligar espera a descarga no firmware (até ~2 s)."""
+        f = self._request(P.T_POWER, bytes([action]), self._next_seq(), {P.T_POWER_RESP}, self.long_timeout)
+        return P.parse_power_resp(f.payload)
+
     def detect(self, system: int, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> dict:
         f = self._request(P.T_DETECT, P.build_detect(system, chip, prg_kb, chr_kb), self._next_seq(), {P.T_DETECT_RESP},
                           self.long_timeout)

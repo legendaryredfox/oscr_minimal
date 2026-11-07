@@ -17,10 +17,13 @@ CRC_LEN = 4
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
 T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/protocolo.md)
+T_POWER = 0x0D                         # chave de 5V dos slots: liga, desliga ou consulta (docs/protocolo.md, D115)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
+T_POWER_RESP = 0x89
+POWER_OFF, POWER_ON, POWER_STATUS = 0, 1, 2
 
 KIND_ROM, KIND_SAVE = 1, 2
 
@@ -35,7 +38,7 @@ ERRORS = {
     3: "nenhum cartucho detectado", 4: "argumento inválido", 5: "reenvios excedidos",
     6: "CRC32 do arquivo não confere", 7: "erro de leitura/gravação no cartucho",
     8: "dispositivo ocupado", 9: "abortado", 10: "cartucho não tem save",
-    11: "chip de flash não reconhecido",
+    11: "chip de flash não reconhecido", 12: "cartucho desligado (5V dos slots cortado)",
 }
 
 # o que fazer para cada erro (a GUI tem os mesmos textos traduzidos em I18n.kt)
@@ -51,6 +54,7 @@ ERROR_HINTS = {
     9: "operação cancelada",
     10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
     11: "o cartucho não é uma flash do tipo escolhido (ou está sujo/mal encaixado): confira o chip, os contatos e o encaixe; nada foi gravado",
+    12: "ligue o 5V dos slots: `dumper power on` (a CLI e a GUI ligam sozinhas, a menos que use --power keep) e confira a chave física, se a placa tiver",
 }
 
 UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
@@ -188,8 +192,17 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16),
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "power_switch": bool(flags & 32),
             "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
+
+
+def parse_power_resp(p: bytes) -> dict:
+    """POWER_RESP: estado do 5V dos slots. `switch` e `rail_low` são None quando a placa não tem a chave física ou o sensor."""
+    if len(p) < 4:
+        raise ProtocolError("POWER_RESP curto")
+    on, features, sw, rail = p[0], p[1], p[2], p[3]
+    return {"on": bool(on), "interlock": bool(features & 1), "rail_sensor": bool(features & 2), "forced_discharge": bool(features & 4),
+            "switch": None if sw == 0xFF else bool(sw), "rail_low": None if rail == 0xFF else rail == 0}
 
 
 def parse_detect_resp(p: bytes) -> dict:

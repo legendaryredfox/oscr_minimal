@@ -11,7 +11,7 @@ Este guia vale para a **GUI** (`gui/`, aba "Ajuda" também traz um resumo em por
    - `arduino-cli upload ...` ou `pio run -t upload`.
    - Para testar o cabo sem cartucho, grave a versão de teste (`-DOSCR_MOCK` / ambiente `megaatmega2560_mock`).
 3. Cabo USB-C **de dados**. No Linux: `sudo usermod -aG dialout $USER` e reinicie a sessão. Clone com CH340: driver no Windows/macOS.
-4. **Um cartucho por vez. Desligue o USB antes de trocar de cartucho.** O slot GBA é 3,3 V: só cartuchos GBA nele, ou Game Boy/Color pelo adaptador.
+4. **Um cartucho por vez. Desligue o USB antes de trocar de cartucho** (placa com a chave de 5V e firmware `SerialASCII_Power`: `dumper power off`, ou o botão "Desligar para trocar o cartucho" da GUI, e depois `dumper power on`; veja `docs/troca-de-cartucho.md`). O slot GBA é 3,3 V: só cartuchos GBA nele, ou Game Boy/Color pelo adaptador.
 
 Interfaces:
 

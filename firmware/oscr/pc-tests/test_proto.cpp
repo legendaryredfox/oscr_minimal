@@ -197,6 +197,65 @@ static void test_erase_e_detect_com_opcoes() {
   CHECK(det_ok && ack2 && err3 && err4 && err5);
 }
 
+// ---- POWER: chave de 5V dos slots (D115)
+struct PowerBackend : MockBackend {
+  bool on = false, sw = true, deny_on = false;
+  int calls = 0;
+  bool supports(uint8_t s) override { return s == SYS_SNES || MockBackend::supports(s); }
+  bool power_switch() override { return sw; }
+  bool cart_powered() override { return on || !sw; }
+  bool cart_power(bool v, uint16_t& err) override { calls++; if (v && deny_on) { err = E_DESLIGADO; return false; } on = v; return true; }
+  void power_info(PowerInfo& p) override { p.on = cart_powered(); p.features = 0; p.sw = 0xFF; p.rail = 0xFF; }
+};
+
+struct PowerRun {
+  Loop l; std::vector<uint8_t> out;
+  struct C { Loop* l; std::vector<uint8_t>* o; } c;
+  uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
+  Io io; Session s;
+  PowerRun(Backend& be) : c{&l, &out},
+    io{&c, [](void* x, uint32_t t) { return lread(((C*)x)->l, t); },
+       [](void* x, const uint8_t* d, size_t n) { ((C*)x)->o->insert(((C*)x)->o->end(), d, d + n); },
+       [](void* x) { return lnow(((C*)x)->l); }},
+    s(io, be, rx, sizeof rx, tx, sizeof tx) {}
+  uint8_t seq = 0;
+  // envia um comando e devolve o quadro de resposta (tipo e payload)
+  bool ask(uint8_t type, const uint8_t* pl, uint16_t n, uint8_t& rtype, std::vector<uint8_t>& rp) {
+    out.clear(); seq++; l.cur_seq = seq; l.host_send(type, pl, n); s.poll();
+    uint8_t dbuf[128]; Decoder d(dbuf, sizeof dbuf);
+    for (uint8_t b : out) if (d.push(b) && d.seq == seq) { rtype = d.type; rp.assign(d.payload(), d.payload() + d.len); return true; }
+    return false;
+  }
+};
+
+static void test_power() {
+  PowerBackend be;
+  PowerRun r(be);
+  uint8_t t; std::vector<uint8_t> p;
+  CHECK(r.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && (p[4] & 32));            // bit5: tem a chave de 5V
+  uint8_t det_snes[1] = {SYS_SNES}, det_mock[1] = {SYS_MOCK};
+  CHECK(r.ask(T_DETECT, det_snes, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO);   // 5V desligado: recusa
+  CHECK(r.ask(T_DETECT, det_mock, 1, t, p) && t == T_DETECT_RESP);                                // o MOCK não precisa de cartucho
+  uint8_t rd[3] = {SYS_SNES, 0, 0};
+  CHECK(r.ask(T_READ_SAVE, rd, 3, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO);
+  uint8_t st[1] = {POWER_STATUS}, on[1] = {POWER_ON}, off[1] = {POWER_OFF}, bad[1] = {9};
+  CHECK(r.ask(T_POWER, st, 1, t, p) && t == T_POWER_RESP && p.size() == 4 && p[0] == 0 && be.calls == 0);   // status não mexe em nada
+  CHECK(r.ask(T_POWER, on, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && be.calls == 1);
+  CHECK(r.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);                                // ligado: atende
+  CHECK(r.ask(T_POWER, off, 1, t, p) && t == T_POWER_RESP && p[0] == 0 && be.calls == 2);
+  CHECK(r.ask(T_POWER, bad, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);
+  CHECK(r.ask(T_POWER, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);
+  be.deny_on = true;                                                                              // a trava (chave física aberta) recusa ligar
+  CHECK(r.ask(T_POWER, on, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO && !be.on);
+
+  PowerBackend plain; plain.sw = false;                                                           // placa sem chave: 5V sempre ligado
+  PowerRun q(plain);
+  CHECK(q.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && !(p[4] & 32));
+  CHECK(q.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);
+  CHECK(q.ask(T_POWER, on, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && plain.calls == 0);
+  CHECK(q.ask(T_POWER, off, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO);
+}
+
 int main() {
   test_crc();
   test_info_frame_bytes();
@@ -205,6 +264,7 @@ int main() {
   test_session_dump(true, false);    // 1º DATA corrompido: o dispositivo reenvia
   test_session_info_detect();
   test_erase_e_detect_com_opcoes();
+  test_power();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

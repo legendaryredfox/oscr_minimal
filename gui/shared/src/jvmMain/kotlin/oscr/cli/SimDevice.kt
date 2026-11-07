@@ -7,7 +7,9 @@ import oscr.*
  * Dispositivo simulado e síncrono (modo MOCK, sistemas 0 e 255) para `--simulate` e testes: responde dentro de `write`, sem threads.
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
-class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }) : Transport {
+class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val powerSwitch: Boolean = false) : Transport {
+    var powered = !powerSwitch                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
+    val powerCalls = mutableListOf<Int>()
     private val dec = FrameDecoder()
     private var out = ByteArray(0)
     private var seq = 0
@@ -32,8 +34,22 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
     }
 
     private fun handle(f: Frame) {
+        val needsCart = f.type in setOf(Proto.T_DETECT, Proto.T_DUMP_ROM, Proto.T_READ_SAVE, Proto.T_WRITE_SAVE, Proto.T_WRITE_ROM, Proto.T_ERASE)
+        val first = f.payload.getOrNull(0)?.toInt()?.and(0xFF)
+        if (needsCart && first != null && first != 0 && first != 255 && powerSwitch && !powered) return error(12, "off")    // o MOCK não precisa de cartucho
         when (f.type) {
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_POWER -> {
+                val action = first ?: 9
+                when {
+                    action > Power.STATUS -> error(4, "args")
+                    action == Power.OFF && !powerSwitch -> error(1, "sem chave")
+                    else -> {
+                        if (action != Power.STATUS && powerSwitch) { powerCalls += action; powered = action == Power.ON }
+                        push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, 0, 0xFF.toByte(), 0xFF.toByte()))
+                    }
+                }
+            }
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (powerSwitch) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())

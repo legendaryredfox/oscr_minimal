@@ -97,6 +97,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var client by remember { mutableStateOf<OscrClient?>(null) }
     var transport by remember { mutableStateOf<Transport?>(null) }
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
+    var powerOn by remember { mutableStateOf<Boolean?>(null) }          // 5V dos slots (placa com a chave de 5V); null = placa sem chave ou desconectado
     var busy by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var db by remember { mutableStateOf<Database?>(null) }
@@ -185,14 +186,23 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else null
 
     fun dropConnection(msg: S? = S.NOT_CONNECTED) {
-        transport?.close(); client = null; transport = null; info = null
+        transport?.close(); client = null; transport = null; info = null; powerOn = null
         if (msg != null) say(t(msg))
     }
 
-    fun run(stageKey: S, block: suspend () -> Unit) {
+    /** Placa com a chave de 5V: liga o 5V dos slots antes de uma ação que precisa do cartucho (o firmware começa desligado, D115). */
+    suspend fun ensurePowered(back: S) {
+        val c = client ?: return
+        if (info?.powerSwitch != true || powerOn == true) return
+        stage = S.STAGE_POWER_ON
+        val st = withContext(Dispatchers.IO) { c.power(Power.ON) }
+        powerOn = st.on; say(t(S.POWER_ON_DONE)); stage = back; progress = 0f
+    }
+
+    fun run(stageKey: S, needsCart: Boolean = true, block: suspend () -> Unit) {
         scope.launch {
             busy = true; progress = 0f; speed = ""; stage = stageKey
-            try { block() } catch (e: Exception) {
+            try { if (needsCart && stageKey != S.STAGE_IDLE) ensurePowered(stageKey); block() } catch (e: Exception) {
                 say(describeError(lang, e))
                 if ((e is ProtocolError && e.fail == Fail.DISCONNECTED) || transport?.isOpen == false) { dropConnection(null); say(t(S.STATUS_DISCONNECTED)) }
             } finally { busy = false; stage = null; speed = ""; slowNote = false }
@@ -256,6 +266,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     }
                     if (b != baud) { say(f(S.BAUD_FALLBACK, baud, b)); baud = b }
                     transport = tr2; client = c; info = i
+                    powerOn = if (i.powerSwitch) withContext(Dispatchers.IO) { c.power(Power.STATUS).on } else null
                     Prefs.port = port; Prefs.baud = baud; Prefs.firstRunDone = true; firstRun = false
                     say("${t(S.CONNECTED)}: ${t(S.DEVICE_INFO)} ${i.firmware}" + if (i.mock) " — ${t(S.MOCK_MODE)}" else "")
                     return@run
@@ -263,6 +274,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 catch (e: Exception) { tr?.close(); throw e }
             }
             throw last ?: TimeoutError()
+        }
+    }
+
+    /** Liga ou desliga o 5V dos slots (trocar o cartucho). Desligar solta os pinos e espera a descarga no firmware. */
+    fun actPower(on: Boolean) {
+        val c = client ?: return
+        run(if (on) S.STAGE_POWER_ON else S.STAGE_POWER_OFF, needsCart = false) {
+            val st = withContext(Dispatchers.IO) { c.power(if (on) Power.ON else Power.OFF) }
+            powerOn = st.on
+            say(t(if (st.on) S.POWER_ON_DONE else S.POWER_OFF_DONE))
         }
     }
 
@@ -563,6 +584,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     // Cartão "Cartucho": sistema e as opções do sistema escolhido
     val cartridgeCard: @Composable () -> Unit = {
         SectionCard(t(S.CARTRIDGE_TITLE)) {
+            if (connected && info?.powerSwitch == true) {            // placa com a chave de 5V: trocar o cartucho sem desligar o USB
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(t(if (powerOn == true) S.POWER_STATUS_ON else S.POWER_STATUS_OFF), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
+                    OutlinedButton(enabled = !busy, onClick = { actPower(powerOn != true) }) { Text(t(if (powerOn == true) S.POWER_BTN_OFF else S.POWER_BTN_ON)) }
+                }
+            }
             LabeledField(t(S.SYSTEM)) {
                 SystemPicker(
                     systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK },

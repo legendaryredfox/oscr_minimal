@@ -26,12 +26,28 @@ def auto_port() -> str:
     return ports[0]
 
 
-def connect(args) -> tuple[Client, Transport, dict]:
-    """Abre a porta (ou o simulador) e faz INFO, com fallback de baud."""
+def connect(args, need_cart: bool = True) -> tuple[Client, Transport, dict]:
+    """Abre a porta (ou o simulador), faz INFO e, em placa com a chave de 5V, liga o 5V dos slots (`--power auto`, o padrão).
+    `need_cart=False` (info, power) nunca mexe no 5V. Com `--power keep` o 5V fica como está."""
+    c, t, info = _open(args)
+    if need_cart and info.get("power_switch") and getattr(args, "power", "auto") != "keep":
+        try:
+            if not c.power(P.POWER_STATUS)["on"]:
+                c.power(P.POWER_ON)
+        except BaseException:
+            t.close()
+            raise
+    return c, t, info
+
+
+def _open(args) -> tuple[Client, Transport, dict]:
     if args.simulate:
+        import os
+
         from .. import sim
 
-        t, _dev, _stop, _th = sim.start()
+        # OSCR_SIM_POWER=1: o simulador finge uma placa com a chave de 5V (começa desligada)
+        t, _dev, _stop, _th = sim.start(sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1"))
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()
     port = args.port or auto_port()

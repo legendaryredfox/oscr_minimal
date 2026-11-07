@@ -21,17 +21,19 @@ constexpr uint8_t  MAGIC0 = 0xA5, MAGIC1 = 0x5A;
 
 enum : uint8_t {  // host -> dispositivo
   T_INFO = 0x01, T_DETECT = 0x02, T_DUMP_ROM = 0x03, T_READ_SAVE = 0x04, T_WRITE_SAVE = 0x05,
-  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B, T_ERASE = 0x0C,
+  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B, T_ERASE = 0x0C, T_POWER = 0x0D,
   // dispositivo -> host
   T_INFO_RESP = 0x81, T_DETECT_RESP = 0x82, T_BEGIN = 0x83, T_DATA = 0x84, T_END = 0x85,
-  T_D_ACK = 0x86, T_ERRO = 0x87, T_PROGRESSO = 0x88,
+  T_D_ACK = 0x86, T_ERRO = 0x87, T_PROGRESSO = 0x88, T_POWER_RESP = 0x89,
 };
 
 enum : uint8_t { KIND_ROM = 1, KIND_SAVE = 2 };
 
+enum : uint8_t { POWER_OFF = 0, POWER_ON = 1, POWER_STATUS = 2 };   // ação do POWER (docs/protocolo.md)
+
 enum : uint16_t {  // códigos de ERRO
   E_COMANDO = 1, E_SISTEMA = 2, E_SEM_CARTUCHO = 3, E_ARGUMENTO = 4, E_REENVIOS = 5,
-  E_CRC = 6, E_CARTUCHO_IO = 7, E_OCUPADO = 8, E_ABORTADO = 9, E_SEM_SAVE = 10, E_FLASH = 11,
+  E_CRC = 6, E_CARTUCHO_IO = 7, E_OCUPADO = 8, E_ABORTADO = 9, E_SEM_SAVE = 10, E_FLASH = 11, E_DESLIGADO = 12,
 };
 
 enum : uint8_t { SYS_SNES = 1, SYS_NES = 2, SYS_FAMICOM = 3, SYS_MD = 4, SYS_GBA = 5, SYS_GB = 6, SYS_FLASH = 7, SYS_MOCK = 255 };

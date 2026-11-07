@@ -41,7 +41,7 @@ def cmd_errors(args) -> int:
 
 
 def cmd_info(args) -> int:
-    _c, t, info = common.connect(args)
+    _c, t, info = common.connect(args, need_cart=False)
     if args.json:
         emit(args, info, [])
         t.close()
