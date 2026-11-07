@@ -6,7 +6,7 @@ Versão mínima de uma função: um slot **SNES/SFC** (62p, 2,5 mm) em shield pa
 
 **CIC:** PIC12F629 em soquete (D89/D91). O RP2040-Zero (`docs/placa-v1.3-rp2040.md`) só entra depois de validado.
 
-**Estado:** v1.0, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, os mesmos da `16_bits`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP), com GND roteado junto e costurado com vias: **revisar o layout no KiCad antes de encomendar**. Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
+**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, os mesmos da `16_bits`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP), com GND roteado junto e costurado com vias: **revisar o layout no KiCad antes de encomendar**. Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
 
 ## Diferenças em relação à `16_bits`
 
@@ -32,3 +32,18 @@ tools/export_fab.sh snes v1.0
 ```
 
 **Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+
+## Bloco de troca de cartucho (v1.1, D126)
+
+Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+
+| Ref. | Valor | Função |
+|---|---|---|
+| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
+| R3 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
+| R4 | 100 Ω | D19 ao gate do Q1 |
+| R5, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
+| Q2, R6 | 2N7000 (TO-92), 330 Ω | descarga do rail quando o Q1 abre |
+| Q3, R7, R8, R9, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R9 leva o nó ao D53 |
+
+Os pinos de 5V dos slots, do Si5351 e do PIC e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).

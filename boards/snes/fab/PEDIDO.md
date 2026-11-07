@@ -1,8 +1,8 @@
-# Pedido da placa snes v1.0 (JLCPCB)
+# Pedido da placa snes v1.1 (JLCPCB)
 
-Placa **só SNES**, 2 camadas, 107,1 × 65,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só SNES**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `35c93a269c7b84f801db1482f47ae17112af51e309119bb60ce1a8ebb8494c02` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `3883fa620f750ac84bca1f67051e01c35d6587bba4a85cd70e3ff51f7cd4e5bd` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 
@@ -15,4 +15,4 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 
 Se a pré-visualização mostrar outra coisa, **não pague**.
 
-**Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade já justificados em D71); ERC 0 violações; `tools/check_netlist.py --board snes` confere (64 nets, 157 ligações).
+**Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade já justificados em D71); ERC 0 violações; `tools/check_netlist.py --board snes` confere (71 nets, 187 ligações).

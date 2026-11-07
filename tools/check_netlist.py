@@ -54,6 +54,8 @@ BOARD_CFG = {
 }
 CFG = BOARD_CFG[BOARD]
 V12B = CFG.get("v12b", False)
+import json as _json
+TROCA = _json.loads((ROOT / "tools/troca/boards.json").read_text()).get(BOARD)      # bloco de troca de cartucho (D126): dict(q0, r0, d0, f0, q1) com a primeira referência nova de cada tipo; ver troca_ajusta()
 CTRL = ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D14", "D15", "D16", "D17"]      # v12b: ordem de R3..R14 e D3..D14
 MDONLY = CFG.get("mdonly", False)
 NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
@@ -75,6 +77,8 @@ MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50"
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
 if V12B:
     MEGA_NC_OK -= {"D19", "RST1"}      # D19 = comando da chave de 5V, RST1 = reset
+if TROCA:
+    MEGA_NC_OK -= {"D19", "D53"}       # D19 = comando do Q1 (PWR_EN), D53 = sensor do rail (SENSE_MCU)
 if BOARD in ("16_bits", "megadrive"):
     MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
@@ -159,7 +163,40 @@ def expected_nets(pm_nets):
     exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
     if V12B:
         v12b_ajusta(exp)
+    if TROCA:
+        troca_ajusta(exp)
     return exp
+
+
+def troca_ajusta(exp):
+    """Bloco de troca de cartucho (D126, tools/troca/sch_block.py): Q1 (chave de alta), Q2 (descarga), Q3 (sensor), LEDs verde e amarelo.
+    Ordem das referências novas, como o gerador as numera: [Q1, R100k, R100R, R1k, LED verde se a placa não tinha Q1], Q2, R330, [R330 do 3,3 V], Q3, R100k, R1k, R1k, LED amarelo."""
+    t = TROCA
+    q, r, d = t["q0"], t["r0"], t["d0"]
+    keep = {(MEGA, p) for p in MEGA_5V} | {("D1", "2"), ("C1", "1"), ("FLG1", "1")} | {(tp, "1") for tp, n in CFG["tps"].items() if n == "+5V"}
+    cart = {rp for rp in exp["+5V"] if rp not in keep}
+    exp["+5V"] -= cart
+    q1, q2, q3 = f"Q{q}", f"Q{q + 1}", f"Q{q + 2}"
+    r3, r4, r5 = f"R{r}", f"R{r + 1}", f"R{r + 2}"
+    n = r + 3
+    r6 = f"R{n}"; n += 1
+    r6b = None
+    if t.get("v3"):
+        r6b = f"R{n}"; n += 1
+    r7, r8, r9 = f"R{n}", f"R{n + 1}", f"R{n + 2}"
+    dg, dy = f"D{d}", f"D{d + 1}"
+    flg = f"FLG{t['f0']}"
+    exp["+5V"].update({(q1, "3"), (r3, "1"), (r8, "1")})
+    exp["+5V_CART"] = cart | {(q1, "2"), (r5, "1"), (r6, "1"), (q3, "2"), (r7, "1"), (flg, "1")}
+    exp["PWR_G"] = {(q1, "1"), (q2, "2"), (r3, "2"), (r4, "2")}
+    exp["PWR_EN"] = {(MEGA, "D19"), (r4, "1")}
+    exp["LED_CART"] = {(r5, "2"), (dg, "2")}
+    exp["DESCARGA"] = {(q2, "3"), (r6, "2")} | ({(r6b, "2")} if r6b else set())
+    exp["SENSE"] = {(dy, "2"), (q3, "3"), (r8, "2"), (r9, "1")}
+    exp["SENSE_MCU"] = {(MEGA, "D53"), (r9, "2")}
+    exp["GND"].update({(q2, "1"), (q3, "1"), (r7, "2"), (dg, "1"), (dy, "1")})
+    if r6b:
+        exp["+3V3"].add((r6b, "1"))
 
 
 def v12b_ajusta(exp):
@@ -235,7 +272,7 @@ def main():
             continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
-            if V12B:
+            if V12B or TROCA:
                 if net is None or ("Q1", "2") not in act[net] or (MEGA, "5V1") in act[net]:
                     errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
             elif net is None or (MEGA, "5V1") not in act[net]:
