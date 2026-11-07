@@ -227,4 +227,5 @@ def main():
     print(f"escrito {OUT}; divergências automáticas: {len(divs)}")
     for d in divs: print("  ", d)
 
-main()
+if __name__ == "__main__":
+    main()

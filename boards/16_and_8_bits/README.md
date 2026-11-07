@@ -17,3 +17,5 @@ python3 tools/check_netlist.py --board 16_and_8_bits
 kicad-cli sch erc boards/16_and_8_bits/hardware/dumper.kicad_sch
 kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb
 ```
+
+**Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).

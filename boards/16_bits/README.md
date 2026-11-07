@@ -47,3 +47,5 @@ kicad-cli sch erc boards/16_bits/hardware/dumper.kicad_sch
 kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb
 tools/export_fab.sh 16_bits v1.2
 ```
+
+**Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).

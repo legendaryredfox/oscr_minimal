@@ -29,3 +29,5 @@ kicad-cli sch erc boards/famicom_nes/hardware/dumper.kicad_sch
 kicad-cli pcb drc boards/famicom_nes/hardware/dumper.kicad_pcb
 tools/export_fab.sh famicom_nes v1.0
 ```
+
+**Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
