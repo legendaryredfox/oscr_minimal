@@ -40,7 +40,7 @@ class CliTest {
     }
 
     @Test fun diffSummaryContaDiferencas() {
-        assertEquals(0 to -1, diffSummary(byteArrayOf(1, 2, 3), byteArrayOf(1, 2, 3)))
+        assertEquals(0 to -1, oscr.diffSummary(byteArrayOf(1, 2, 3), byteArrayOf(1, 2, 3)))
         assertEquals(1 to 3, diffSummary(byteArrayOf(1, 2, 3, 4), byteArrayOf(1, 2, 3)))
         assertEquals(1 to 2, diffSummary(byteArrayOf(1, 2, 9, 4), byteArrayOf(1, 2, 3, 4)))
     }

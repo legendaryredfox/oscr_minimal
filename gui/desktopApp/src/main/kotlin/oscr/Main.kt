@@ -135,6 +135,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var backupFirst by remember { mutableStateOf(true) }
     var verifySave by remember { mutableStateOf(true) }
     var nesRaw by remember { mutableStateOf(false) }
+    var readTwice by remember { mutableStateOf(false) }               // lê a ROM duas vezes e compara (D125)
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
     val log = remember { mutableStateListOf<String>() }
@@ -439,8 +440,18 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (problem != null) { say(describeProblem(lang, problem)); return }
         run(S.STAGE_READING_ROM) {
             val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgN, chrN, ticker()) }
-            val chk = verifyRom(system, res.data)
             val extra = mutableListOf<String>()
+            if (readTwice) {
+                say("2/2")
+                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgN, chrN, ticker()) }
+                if (res2.data.contentEquals(res.data)) { val m = "${t(S.TWICE_OK)} (CRC32 ${res.crcHex})"; say(m); extra += m }
+                else {
+                    val (n, first) = diffSummary(res.data, res2.data)
+                    val m = "${t(S.TWICE_BAD)}: $n ${t(S.BYTES)}, 0x${first.toString(16)} (CRC32 ${res.crcHex} / ${res2.crcHex})"
+                    say(t(S.ERR_PREFIX) + ": " + m); extra += m
+                }
+            }
+            val chk = verifyRom(system, res.data)
             if (chk.status == CheckStatus.OK) { val m = "${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})"; say(m); extra += m }
             else if (chk.status == CheckStatus.MISMATCH) { val m = "${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}"; say(m); extra += m }
             if (system == CartSystem.GBA) {
@@ -705,6 +716,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
             CheckRow(saveReport, { saveReport = it; Prefs.saveReport = it }, t(S.SAVE_REPORT))
+            if (!isFlash) CheckRow(readTwice, { readTwice = it }, t(S.READ_TWICE))
             Text(t(S.SHORTCUTS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
