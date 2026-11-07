@@ -37,4 +37,4 @@ Dá para montar o soquete do PIC e do Si5351 vazios e completar depois: ambos s�
 
 Chips especiais que o dumper ainda recusa (S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110) valem para qualquer montagem: `docs/decisoes.md` D55.
 
-> Quando a v1.1 com a chave física de troca de cartucho existir (D115, D118), acrescentar aqui Q1/Q2/Q3, a chave e o LED amarelo.
+> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.

@@ -54,7 +54,7 @@ ERROR_HINTS = {
     9: "operação cancelada",
     10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
     11: "o cartucho não é uma flash do tipo escolhido (ou está sujo/mal encaixado): confira o chip, os contatos e o encaixe; nada foi gravado",
-    12: "ligue o 5V dos slots: `dumper power on` (a CLI e a GUI ligam sozinhas, a menos que use --power keep) e confira a chave física, se a placa tiver",
+    12: "ligue o 5V dos slots: `dumper power on` (a CLI e a GUI ligam sozinhas, a menos que use --power keep)",
 }
 
 UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
@@ -197,12 +197,12 @@ def parse_info_resp(p: bytes) -> dict:
 
 
 def parse_power_resp(p: bytes) -> dict:
-    """POWER_RESP: estado do 5V dos slots. `switch` e `rail_low` são None quando a placa não tem a chave física ou o sensor."""
+    """POWER_RESP: estado do 5V dos slots. `rail_low` é None quando a placa não tem o sensor do rail. O byte 2 é reservado (era a chave física, D123)."""
     if len(p) < 4:
         raise ProtocolError("POWER_RESP curto")
     on, features, sw, rail = p[0], p[1], p[2], p[3]
-    return {"on": bool(on), "interlock": bool(features & 1), "rail_sensor": bool(features & 2), "forced_discharge": bool(features & 4),
-            "switch": None if sw == 0xFF else bool(sw), "rail_low": None if rail == 0xFF else rail == 0}
+    return {"on": bool(on), "rail_sensor": bool(features & 2), "forced_discharge": bool(features & 4),
+            "rail_low": None if rail == 0xFF else rail == 0}
 
 
 def parse_detect_resp(p: bytes) -> dict:

@@ -1,22 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Regras da chave de 5V dos slots sem hardware (D115, D119): debounce da chave física, espera da descarga e tentativas com ciclo de energia
+// Regras da chave de 5V dos slots sem hardware (D115, D119, D123): espera da descarga e tentativas com ciclo de energia
 // (SA-1). Código puro, sem Arduino: testado no PC em pc-tests/test_power_core.cpp; o Dumper.cpp só liga os pinos e o tempo.
 #pragma once
 #include <stdint.h>
 
 namespace oscr { namespace power {
-
-/// Debounce: o estado só muda depois que a leitura fica igual por `ms` ms seguidos. A primeira leitura vale na hora.
-struct Debounce {
-  bool state = false, cand = false, primed = false;
-  uint32_t since = 0;
-  bool update(bool raw, uint32_t now, uint32_t ms = 20) {
-    if (!primed) { primed = true; state = cand = raw; since = now; return state; }
-    if (raw != cand) { cand = raw; since = now; }
-    else if (cand != state && uint32_t(now - since) >= ms) state = cand;
-    return state;
-  }
-};
 
 /// Espera o rail cair depois de abrir o Q1. Com sensor (Q3 no D53): sai assim que `sense()` diz "rail baixo" ou no `with_sensor_ms`.
 /// Sem sensor: espera `blind_ms` inteiros (sem o transistor de descarga o rail só cai pelo consumo). Devolve os ms esperados.

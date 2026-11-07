@@ -13,8 +13,8 @@ struct Io {
   uint32_t (*now_ms)(void* ctx);
 };
 
-// Estado da chave de 5V dos slots (POWER_RESP). `features`: bit0 trava física (chave) lida, bit1 sensor de tensão do rail, bit2 descarga forçada.
-// `sw`: 0 chave aberta, 1 fechada, 0xFF sem chave. `rail`: 0 baixo (seguro trocar), 1 alto, 0xFF sem sensor.
+// Estado da chave de 5V dos slots (POWER_RESP). `features`: bit0 reservado (era a chave física, D123), bit1 sensor de tensão do rail, bit2 descarga forçada.
+// `sw`: reservado, sempre 0xFF (não há chave física, D123). `rail`: 0 baixo (seguro trocar), 1 alto, 0xFF sem sensor.
 struct PowerInfo {
   bool on = true;
   uint8_t features = 0, sw = 0xFF, rail = 0xFF;
@@ -75,13 +75,9 @@ class Backend {
   // Chave de 5V dos slots (POWER, D115). Sem a chave na placa, `power_switch()` é false: o 5V fica sempre ligado e nada é recusado.
   virtual bool power_switch() { return false; }                    // INFO bit5
   virtual bool cart_powered() { return true; }
-  // Liga ou desliga (bloqueia até a descarga). Devolve false e `err` se a trava impedir (por exemplo a chave física aberta).
+  // Liga ou desliga (bloqueia até a descarga). Devolve false e `err` se não der para ligar.
   virtual bool cart_power(bool on, uint16_t& err) { (void)on; err = E_COMANDO; return false; }
   virtual void power_info(PowerInfo& p) { p.on = cart_powered(); }
-  // Trava física (D119): `power_poll` roda a cada poll() ocioso (chave aberta com o 5V ligado: corta); `power_abort` é consultado a cada bloco
-  // de uma LEITURA em curso (true = parar com E_ABORTADO). Gravação e apagamento não consultam: a chave só vale depois que terminam.
-  virtual void power_poll() {}
-  virtual bool power_abort() { return false; }
 };
 
 class MockBackend : public Backend {

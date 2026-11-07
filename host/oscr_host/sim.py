@@ -22,17 +22,15 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False, switch_closed: Optional[bool] = None,
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False,
                  rail_sensor: bool = False, detect_attempts: int = 1):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
         self.written_rom: Optional[bytes] = None
-        # `switch_closed`: None = sem a chave física; True/False = chave fechada/aberta (D119). Com a chave física a placa tem a chave de 5V.
-        self.switch_closed = switch_closed
         self.rail_sensor = rail_sensor
         self.detect_attempts = detect_attempts    # SNES: tentativas do ciclo de energia do SA-1 que o DETECT informa
-        power_switch = power_switch or switch_closed is not None
+        power_switch = power_switch or rail_sensor    # com o sensor do rail a placa tem a chave de 5V em software (D123: não há chave física)
         self.power_switch = power_switch          # placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
         self.powered = not power_switch
         self.power_calls: list[int] = []
@@ -97,18 +95,13 @@ class MockDevice:
                 self.log.append("abort")
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
 
-    def _hw_poll(self) -> None:
-        if self.switch_closed is False and self.powered:       # chave aberta com o 5V ligado: o firmware solta os pinos e corta
-            self.powered = False
-
     def _power_resp(self) -> bytes:
-        feat = (1 if self.switch_closed is not None else 0) | (2 if self.rail_sensor else 0)
-        sw = 0xFF if self.switch_closed is None else (1 if self.switch_closed else 0)
+        feat = 2 if self.rail_sensor else 0
+        sw = 0xFF                                  # reservado: não há chave física (D123)
         rail = 0xFF if not self.rail_sensor else (1 if self.powered else 0)
         return bytes([1 if self.powered else 0, feat, sw, rail])
 
     def _handle(self, t: Transport, f: P.Frame) -> None:
-        self._hw_poll()
         needs_cart = f.type in (P.T_DETECT, P.T_DUMP_ROM, P.T_READ_SAVE, P.T_WRITE_SAVE, P.T_WRITE_ROM, P.T_ERASE)
         if needs_cart and f.payload and f.payload[0] not in (0, 255) and self.power_switch and not self.powered:
             self._error(t, f.seq, 12, "off")           # 5V desligado: o MOCK não precisa de cartucho, os outros sistemas sim
@@ -120,9 +113,6 @@ class MockDevice:
             elif action == P.POWER_OFF and not self.power_switch:
                 self._error(t, f.seq, 1, "sem chave")
             else:
-                if action == P.POWER_ON and self.switch_closed is False:
-                    self._error(t, f.seq, 12, "chave")                 # trava física: a chave aberta vence o pedido do software
-                    return
                 if action != P.POWER_STATUS and self.power_switch:
                     self.power_calls.append(action)
                     self.powered = action == P.POWER_ON

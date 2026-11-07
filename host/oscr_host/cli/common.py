@@ -47,10 +47,9 @@ def _open(args) -> tuple[Client, Transport, dict]:
         from .. import sim
 
         # OSCR_SIM_POWER=1: o simulador finge uma placa com a chave de 5V (começa desligada)
-        # OSCR_SIM_SWITCH=open|closed: finge também a chave física, o sensor do rail e 3 tentativas do SA-1 (começa com a chave como pedido)
-        sw = os.environ.get("OSCR_SIM_SWITCH")
-        dev = sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1", switch_closed=None if sw not in ("open", "closed") else sw == "closed",
-                             rail_sensor=sw in ("open", "closed"), detect_attempts=3 if sw in ("open", "closed") else 1)
+        # OSCR_SIM_SENSE=1: finge também o sensor do rail e 3 tentativas do SA-1 (a placa com sensor tem a chave de 5V em software)
+        sense = os.environ.get("OSCR_SIM_SENSE") == "1"
+        dev = sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1", rail_sensor=sense, detect_attempts=3 if sense else 1)
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()

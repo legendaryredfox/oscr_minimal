@@ -21,8 +21,6 @@ def cmd_power(args) -> int:
     lines = [f"5V dos slots: {state}"]
     if not r["power_switch"]:
         lines.append("esta placa/firmware não tem a chave de 5V: o 5V fica sempre ligado")
-    if r["switch"] is not None:
-        lines.append("chave física: " + ("fechada (ligado permitido)" if r["switch"] else "ABERTA (o 5V fica desligado; feche a chave para ligar)"))
     if r["rail_low"] is not None:
         lines.append("sensor do rail: " + ("baixo (seguro trocar o cartucho)" if r["rail_low"] else "alto (ainda há tensão: não troque o cartucho)"))
     if r["power_switch"] and args.action == "off":

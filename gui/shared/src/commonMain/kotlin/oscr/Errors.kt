@@ -4,7 +4,7 @@ package oscr
 /** Texto de erro para o usuário, no idioma escolhido, com a causa provável e o que fazer. */
 fun describeError(lang: Lang, e: Throwable): String {
     val body = when (e) {
-        is DeviceError -> if (e.code == 12 && e.text == "chave") I18n.t(lang, S.ERR_DEV_12_SWITCH) else I18n.keyOrNull("ERR_DEV_${e.code}")?.let { I18n.t(lang, it) } ?: I18n.f(lang, S.ERR_DEV_OTHER, e.code.toString(16).uppercase().padStart(4, '0'))
+        is DeviceError -> I18n.keyOrNull("ERR_DEV_${e.code}")?.let { I18n.t(lang, it) } ?: I18n.f(lang, S.ERR_DEV_OTHER, e.code.toString(16).uppercase().padStart(4, '0'))
         is TimeoutError -> failText(lang, e.fail, e.detail)
         is ProtocolError -> failText(lang, e.fail, e.detail)
         else -> I18n.f(lang, S.ERR_UNKNOWN, e.message ?: e::class.simpleName ?: "?")

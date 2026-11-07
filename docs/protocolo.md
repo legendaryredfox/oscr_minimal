@@ -56,7 +56,7 @@ offset  tamanho  campo
 | `0x86` | `ACK` | `u32 offset` (confirma um pedido ou um bloco de `WRITE_SAVE`) |
 | `0x87` | `ERRO` | `u16 código`, `u8 n`, `n` bytes de texto ASCII (diagnóstico, não traduzido) |
 | `0x88` | `PROGRESSO` | `u32 offset`, `u32 total` (opcional, a cada ~1 s sem `DATA`) |
-| `0x89` | `POWER_RESP` | `u8 estado` (1 = 5V ligado), `u8 recursos` (bit 0 chave física no D18 lida, bit 1 sensor do rail no D53, bit 2 descarga forçada Q2), `u8 chave` (0 aberta, 1 fechada, `0xFF` sem chave física), `u8 rail` (0 baixo = seguro trocar, 1 alto, `0xFF` sem sensor). Placa só com o Q1 (v1.2 da `16_bits`): recursos 0, chave e rail `0xFF`. Com a chave física a flag `INFO` bit 5 também vale 1 (D119) |
+| `0x89` | `POWER_RESP` | `u8 estado` (1 = 5V ligado), `u8 recursos` (bit 0 reservado: era a chave física, D123; bit 1 sensor do rail no D53, bit 2 descarga forçada Q2), `u8 chave` (reservado, sempre `0xFF`: não há chave física, D123), `u8 rail` (0 baixo = seguro trocar, 1 alto, `0xFF` sem sensor). Placa só com o Q1 (v1.2 da `16_bits`): recursos 0, chave e rail `0xFF`. Com a chave física a flag `INFO` bit 5 também vale 1 (D119) |
 
 `seq` do host é livre (incremente a cada pedido). O dispositivo repete o `seq` do pedido em todas as respostas daquele pedido (`DATA` do mesmo fluxo repete o `seq` do `DUMP_ROM`/`READ_SAVE`).
 
@@ -171,7 +171,7 @@ O dispositivo só grava na memória do cartucho **depois** do `END` com CRC32 co
 | 0x0009 | abortado |
 | 0x000A | cartucho não tem save |
 | 0x000B | chip de flash não reconhecido (`WRITE_ROM`): nada foi gravado |
-| 0x000C | cartucho desligado: a placa tem a chave de 5V e o 5V dos slots está cortado (`POWER`). Com texto `chave` (`POWER` ligar com a chave física aberta, D119); com texto `off` (comando de cartucho com o 5V desligado) |
+| 0x000C | cartucho desligado: a placa tem a chave de 5V e o 5V dos slots está cortado (`POWER`). Com texto `off` (comando de cartucho com o 5V desligado) |
 
 ## 9. Vetores de teste
 

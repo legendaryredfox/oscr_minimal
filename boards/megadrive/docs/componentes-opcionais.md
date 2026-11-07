@@ -13,4 +13,4 @@ Placa só Mega Drive/Genesis (`boards/megadrive/`): slot, LED e capacitores. Nã
 
 Não há chip opcional: o Mega Drive não usa clock do console, CIC nem tensão diferente de 5 V no dumper.
 
-> Quando a v1.1 com a chave física de troca de cartucho existir (D115, D118), acrescentar aqui Q1/Q2/Q3, a chave e o LED amarelo.
+> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.

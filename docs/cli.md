@@ -35,7 +35,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | `ports` | `ports`: lista de portas |
 | `systems` | `systems`: `[{name, id, extension, options, needs_cartridge}]`; `options` diz quais de `--mapper`, `--prg`, `--chr`, `--ram` o sistema usa. `planned`: `[{name, label, supported:false}]`, os outros cartuchos do OSCR ainda sem suporte (marcadores de lugar; não valem em `-s`) |
 | `errors` | `device_errors`, `exit_codes` |
-| `power on\|off\|status` | 5V dos slots (placa com a chave de 5V, D115): `state` (`on`/`off`), `on`, `power_switch`, `interlock`, `rail_sensor`, `forced_discharge`, `switch`, `rail_low` (os dois últimos `null` sem chave física ou sensor). `off` solta os pinos, corta o 5V e espera a descarga; antes de trocar o cartucho. Sem a chave na placa, `off` dá erro `device_error` (código 1) e `on`/`status` respondem ligado |
+| `power on\|off\|status` | 5V dos slots (placa com a chave de 5V, D115): `state` (`on`/`off`), `on`, `power_switch`, `rail_sensor`, `forced_discharge`, `rail_low` (`rail_low` é `null` sem chave física ou sensor). `off` solta os pinos, corta o 5V e espera a descarga; antes de trocar o cartucho. Sem a chave na placa, `off` dá erro `device_error` (código 1) e `on`/`status` respondem ligado |
 | `info` | `proto`, `firmware`, `mock`, `si5351`, `systems`, `max_payload` |
 | `detect -s SISTEMA` | `status`, `status_text`, `system`, `name`, `rom_size`, `save_size`. `ok` é `false` e a saída é 2 se não houver cartucho |
 | `dump -s SISTEMA [-o ARQ]` | `file`, `bytes`, `crc32` (hex maiúsculo, 8 dígitos), `checksum` (`ok`, `mismatch`, `na`), e `gba_save_type` no GBA |

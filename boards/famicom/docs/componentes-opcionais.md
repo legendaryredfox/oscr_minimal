@@ -12,4 +12,4 @@ Placa só Famicom (`boards/famicom/`, 60 pinos): slot, LED e dois capacitores. S
 
 Não há chip opcional. Cartuchos Famicom com chip de áudio extra (VRC6, VRC7, Namco 163, Sunsoft 5B) leem como os outros: o áudio não passa pelo dumper. Limites de mappers: `docs/limites-nes.md`.
 
-> Quando a v1.1 com a chave física de troca de cartucho existir (D115, D118), acrescentar aqui Q1/Q2/Q3, a chave e o LED amarelo.
+> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.

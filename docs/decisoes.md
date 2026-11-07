@@ -121,6 +121,7 @@
 - **D120** Componentes opcionais por placa e fase 1 da placa N64 (pedido do usuário, 2026-11-07)
 - **D121** Placa `boards/n64/`: só N64, 3,3 V (pedido do usuário, 2026-11-07)
 - **D122** Esquemáticos com fios diretos e símbolos de alimentação (pedido do usuário, 2026-11-07)
+- **D123** Sem chave física de troca de cartucho: só o `POWER` em software (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -991,4 +992,13 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Nomes de net.** Os símbolos de alimentação dão nomes globais (`GND`, não `/GND`), e as nets locais ganham nomes automáticos. `tools/sch/sync_names.py` renomeou as nets dos PCBs pelas listas de pads; trilhas, zonas e gerbers não mudam. De brinde, a net class `Power` (padrões `+5V` e `+3V3`) passa a casar com as nets. Ferramentas de PCB aceitam os dois nomes.
 - **Verificação.** `tools/sch/verify.py`: a conectividade (grupos de pinos) é idêntica à de antes em todos os arquivos; ERC sem violações novas (só o aviso de biblioteca do MCP1700 que já existia); `check_netlist` confere nas 9 placas; DRC dos PCBs igual ao anterior.
 - **Limites.** Os TestPoints ficam num canto com rótulo (não há espaço para fio no meio das linhas); os 12 TVS da `16_bits` ficam ao lado dos resistores série só onde coube. Os arquivos congelados `hardware-v1.0` e `hardware-v1.2` da `16_bits` foram redesenhados (só desenho; os gerbers da v1.2 não mudam). `tools/pic/shield_uno` (esquemático do shield do Uno, outro projeto) não foi tocado. O script `tools/n64/build_pcb.sh` foi ajustado para `sync_names.py` mas não foi executado de novo depois disto.
+
+### D123 — Sem chave física de troca de cartucho: só o `POWER` em software (pedido do usuário, 2026-11-07)
+- **Pedido.** "Vamos retirar o switch físico de ligar e desligar. Põe só o lógico mesmo." Depois: "pode manter o LED verde que indica que é seguro trocar o cartucho".
+- **Cancelado (D115 a D119).** A chave SPST no D18, o resistor série e o capacitor de debounce, a trava de segurança (chave aberta recusa `POWER on` e corta o 5V) e o aborto de leitura com a chave aberta (F1 e F2 do plano).
+- **Mantido.** `POWER` em software (D116), o sensor do rail (D53, Q3) com o LED de "seguro trocar", a descarga forçada (Q2) e o ciclo de energia do SA-1 (D119). O LED: o plano o chamava de amarelo e o pedido de verde; **a cor fica a confirmar** (na `16_bits` já existe o D2 verde, de "5V presente").
+- **Firmware.** Saíram `OSCR_POWER_SWITCH_HW`, a leitura do D18, `Debounce`, `power_poll` e `power_abort` (`Dumper.cpp`, `oscr_session.{h,cpp}`, `PowerCore.h`); o ambiente `SerialASCII_PowerHW` virou `SerialASCII_PowerSense` (`OSCR_POWER_SWITCH`, `OSCR_POWER_SENSE`, `OSCR_POWER_DISCHARGE`). Testes de PC: 9 do `PowerCore`, 36 do protocolo, 0 falhas. **Não compilei com o PlatformIO** (`pio` não existe nesta máquina); só os testes de PC.
+- **Protocolo.** O formato do `POWER_RESP` não mudou (4 bytes): o bit 0 de `recursos` e o byte `chave` ficam **reservados** (sempre 0 e `0xFF`), para não quebrar quem já lê. O erro `0x000C` perdeu o texto `chave`.
+- **Host e GUI.** Python (`sim.py`, CLI, `parse_power_resp` sem `interlock` e `switch`; variável do simulador `OSCR_SIM_SENSE=1` no lugar de `OSCR_SIM_SWITCH`) e Kotlin (`PowerState`, `SimDevice`, `CliIo.simSense`, GUI sem a linha da chave e sem o aviso de gravação; 4 textos de `I18n` removidos nos 4 idiomas). 173 testes do host e `:shared:jvmTest` + `:desktopApp:compileKotlin` do Gradle passam.
+- **Docs.** `docs/plano-chave-fisica.md` (banner e itens riscados), `docs/troca-de-cartucho.md`, `docs/protocolo.md`, `docs/cli.md`, `docs/continuacao.md` e as notas dos `componentes-opcionais.md`. Os registros D115 a D119 ficam como histórico.
 

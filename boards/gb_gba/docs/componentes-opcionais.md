@@ -16,4 +16,4 @@ Placa só GBA (`boards/gb_gba/`); GB e GBC entram pelo mesmo slot, com adaptador
 
 O OSCR lê GB a 5 V; aqui todos saem do regulador a 3,3 V. A maioria dos cartuchos GB lê bem, mas **alguns GB antigos podem falhar** (bits trocados, CRC diferente a cada tentativa). A saída prevista é um jumper de solda do VCC do slot ao 5 V (`docs/limites-gb.md`, seção 2), que **só vale para GB/GBC**: nunca para GBA, que se danifica com 5 V.
 
-> Quando a v1.1 com a chave física de troca de cartucho existir (D115, D118), acrescentar aqui Q1/Q2/Q3, a chave e o LED amarelo.
+> Quando a v1.1 com o bloco de troca de cartucho existir (Q1, Q2, Q3 e o LED de "seguro trocar"; **sem chave física**, D123), acrescentar aqui.

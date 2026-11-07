@@ -18,7 +18,7 @@ class PowerTest {
         assertEquals(12, assertFailsWith<DeviceError> { c.detect(CartSystem.SNES) }.code)
         assertEquals("MOCK", c.detect(CartSystem.MOCK).name)                         // o MOCK não precisa de cartucho
         val on = c.power(Power.ON)
-        assertTrue(on.on); assertNull(on.switch); assertNull(on.railLow)
+        assertTrue(on.on); assertNull(on.railLow)
         assertEquals(1, c.detect(CartSystem.SNES).status)                            // ligado: o simulador diz "nenhum cartucho"
         assertFalse(c.power(Power.OFF).on); assertEquals(listOf(1, 0), dev.powerCalls)
     }
@@ -56,45 +56,39 @@ class PowerTest {
     }
 }
 
-/** Chave física, sensor do rail e tentativas do SA-1 (D119). Igual a host/tests/test_power.py. */
+/** Sensor do rail e tentativas do SA-1 (D119; sem chave física, D123). Igual a host/tests/test_power.py. */
 class PowerHwTest {
-    private fun run(sw: String?, vararg argv: String): Triple<Int, String, String> {
+    private fun run(sense: Boolean, vararg argv: String): Triple<Int, String, String> {
         val out = StringBuilder(); val err = StringBuilder()
-        val io = CliIo({ out.appendLine(it) }, { err.appendLine(it) }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".", simSwitch = sw)
+        val io = CliIo({ out.appendLine(it) }, { err.appendLine(it) }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".", simSense = sense)
         return Triple(Cli.run(argv.toList(), io), out.toString().trim(), err.toString())
     }
 
-    @Test fun chaveAbertaRecusaLigarECortaSeAbrir() {
-        val dev = SimDevice(switchClosed = false, railSensor = true); val c = OscrClient(dev, 500, 5000)
-        assertTrue(c.info().powerSwitch)                                            // a chave física implica a chave de 5V
+    @Test fun sensorDoRailAcompanhaO5v() {
+        val c = OscrClient(SimDevice(railSensor = true), 500, 5000)
+        assertTrue(c.info().powerSwitch)                                            // o sensor implica a chave de 5V em software
         val st = c.power(Power.STATUS)
-        assertTrue(st.interlock && st.railSensor); assertEquals(false, st.switch); assertFalse(st.on); assertEquals(true, st.railLow)
-        val e = assertFailsWith<DeviceError> { c.power(Power.ON) }
-        assertEquals(12, e.code); assertEquals("chave", e.text)
-        dev.switchClosed = true
+        assertTrue(st.railSensor); assertFalse(st.on); assertEquals(true, st.railLow)
+        assertEquals(12, assertFailsWith<DeviceError> { c.detect(CartSystem.SNES) }.code)    // 5V desligado: recusa
         val on = c.power(Power.ON)
-        assertTrue(on.on); assertEquals(true, on.switch); assertEquals(false, on.railLow)
-        dev.switchClosed = false                                                     // abre com o 5V ligado: o firmware corta
-        assertFalse(c.power(Power.STATUS).on)
-        assertEquals(12, assertFailsWith<DeviceError> { c.detect(CartSystem.SNES) }.code)
+        assertTrue(on.on); assertEquals(false, on.railLow)
+        val off = c.power(Power.OFF)
+        assertFalse(off.on); assertEquals(true, off.railLow)
     }
 
     @Test fun detectInformaAsTentativasDoSa1() {
-        val c = OscrClient(SimDevice(switchClosed = true, detectAttempts = 3), 500, 5000)
+        val c = OscrClient(SimDevice(railSensor = true, detectAttempts = 3), 500, 5000)
         c.power(Power.ON)
         assertEquals(3, c.detect(CartSystem.SNES).attempts)
         assertEquals(1, c.detect(CartSystem.MOCK).attempts)
         assertEquals(1, OscrClient(SimDevice(), 500, 5000).detect(CartSystem.SNES).attempts)   // sem o byte extra: 1
     }
 
-    @Test fun cliChaveFisica() {
-        val (c1, o1, _) = run("closed", "--simulate", "--json", "power", "status")
+    @Test fun cliSensorDoRail() {
+        val (c1, o1, _) = run(true, "--simulate", "--json", "power", "status")
         val j1 = o1.replace(" ", "")
-        assertEquals(0, c1); assertTrue("\"switch\":true" in j1 && "\"interlock\":true" in j1 && "\"rail_low\":true" in j1)
-        val (c2, o2, _) = run("closed", "--simulate", "--json", "detect", "-s", "snes")
+        assertEquals(0, c1); assertTrue("\"rail_low\":true" in j1 && "\"switch\"" !in j1)
+        val (c2, o2, _) = run(true, "--simulate", "--json", "detect", "-s", "snes")
         assertEquals(2, c2); assertTrue("\"attempts\":3" in o2.replace(" ", ""))
-        val (c3, o3, _) = run("open", "--simulate", "--json", "power", "on")
-        assertEquals(1, c3); assertTrue("\"device_code\":12" in o3.replace(" ", ""))
-        assertEquals(1, run("open", "--simulate", "--json", "detect", "-s", "snes").first)       // ligar sozinha falha: chave aberta
     }
 }

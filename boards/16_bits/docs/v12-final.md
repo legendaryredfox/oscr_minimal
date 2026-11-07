@@ -44,5 +44,5 @@ O `+5V` do Mega agora só alimenta o LED D1, o C1, o TP1 e a fonte do Q1; tudo o
 ## O que não entrou
 
 - Resistores série e TVS nas **linhas de endereço e de dados** (cerca de 44 redes): sem espaço na placa de duas camadas sem aumentar muito o tamanho. Só as linhas de controle estão protegidas.
-- Chave física, LED "seguro trocar" e descarga forçada do 5V (v. 1.3, D115). O comando `POWER` em software já existe (D116).
+- LED "seguro trocar" e descarga forçada do 5V (v. 1.3, D115; a chave física foi cancelada em D123). O comando `POWER` em software já existe (D116).
 - O RP2040 no lugar do PIC (fica para a v. 1.3).

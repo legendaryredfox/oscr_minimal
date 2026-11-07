@@ -67,7 +67,7 @@ class OscrClient(
     fun power(action: Int = Power.STATUS): PowerState {
         val p = request(Proto.T_POWER, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_POWER_RESP), longTimeoutMs).payload
         if (p.size < 4) throw ProtocolError(Fail.SHORT_REPLY, "POWER_RESP")
-        return PowerState(p.u8(0) != 0, p.u8(1) and 1 != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(2) == 0xFF) null else p.u8(2) != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0)
+        return PowerState(p.u8(0) != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0)
     }
 
     fun detect(system: CartSystem, chip: Int = 0, prgKb: Int = 0, chrKb: Int = 0): DetectResult {

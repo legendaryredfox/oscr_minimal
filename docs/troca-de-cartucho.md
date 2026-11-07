@@ -1,5 +1,7 @@
 # Trocar o cartucho sem desligar o USB: LED e chave para ligar e desligar o shield
 
+> **Atualização D123 (2026-11-07): a chave física foi cancelada.** Vale só o controle em software (`POWER`, D116), com o sensor do rail (D53) e o LED de "seguro trocar", a descarga forçada e o ciclo de energia do SA-1 (D119). Tudo abaixo que fala em chave física, D18, trava de segurança ou aborto de leitura é histórico. O ambiente de firmware `SerialASCII_PowerHW` virou `SerialASCII_PowerSense` (sem `OSCR_POWER_SWITCH_HW`).
+
 Pedido do usuário (2026-11-07), para sessões futuras: como normalmente não se coloca nem se tira cartucho com o USB ligado, **seria possível adicionar um LED e uma chave para ligar e desligar o shield durante a troca?**
 
 ## Resposta curta
@@ -42,10 +44,10 @@ Respostas do usuário às cinco perguntas: **chave física, na próxima iteraç�
 
 | Tema | Decisão | Por quê |
 |---|---|---|
-| Pino da chave | **D18 (PD3, INT3)**; o comando do 5V continua no **D19 (PD2)** | D18 e D19 não são usados por nenhum slot em nenhuma placa (`pinmap.md`) e nenhum núcleo do OSCR escreve em PD2/PD3 (D108). Vizinhos no Mega (TX1/RX1), roteamento curto. D18 tem interrupção externa (INT3), útil para reagir à chave com o laço ocupado. Evitados: D0/D1 (USB), D10 a D13 (LED do OSCR e do Mega), D39 (botão do OSCR), D50 a D53 (SPI e ICSP) |
+| ~~Pino da chave~~ | **Cancelado (D123).** |
 | Tipo de chave | SPST deslizante THT, passo 2,54 mm. **Fechada ao GND = ligado permitido; aberta (ou fio solto) = desligado** | À prova de falha: se o contato se soltar, a placa desliga |
-| Ligação da chave | D18 com pull-up interno; **1 kΩ em série** (ESD) e **100 nF** do pino ao GND; debounce de 20 ms no firmware | Chave exposta na borda da placa; sem componente de pull-up externo |
-| Papel da chave | **Trava de segurança (interlock)**, não só um pedido: `5V dos slots = chave ligada E pedido do software`. Chave aberta desliga na hora e o firmware recusa comandos que precisam do cartucho com o erro `0x000C` "cartucho desligado" | Evita divergência entre posição da chave e estado real; o hardware vence o software |
+| ~~Ligação da chave~~ | **Cancelado (D123).** |
+| ~~Papel da chave~~ | **Cancelado (D123).** |
 | Ordem ao desligar | (1) soltar todos os pinos de sinal dos slots (`DDRx = 0`, `PORTx = 0`, inclusive o pull-up do `/CART`); (2) abrir Q1 (D19 alto); (3) Q2 descarrega o rail; (4) esperar até o rail cair ou 500 ms | Sem (1), o Mega alimenta o cartucho pelos pinos (ver item 2 acima) |
 | Ordem ao ligar | confirmar pinos soltos; D19 baixo; esperar 50 ms; só então reassumir os barramentos do sistema escolhido | Evita corrente de partida pelos pinos |
 | Descarga | **Q2 (2N7000, TO-92) com R_dis 330 Ω** de `+5V_CART` ao GND; gate de Q2 em `PWR_G` (alto = Q1 aberto = Q2 conduz) | τ ≈ 0,1 s com ~470 µF (conferir se o eletrolítico fica antes ou depois de Q1); pico de ~15 mA, só durante o desligamento; sem consumo com o 5V ligado |

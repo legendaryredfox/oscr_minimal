@@ -63,7 +63,6 @@ bool Session::next_frame(uint32_t timeout_ms) {
 }
 
 void Session::poll() {
-  be_.power_poll();                  // trava física da chave de 5V (D119); sem chave não faz nada
   // consome sem bloquear até achar um quadro
   for (;;) {
     int b = io_.read_byte(io_.ctx, 0);
@@ -287,7 +286,6 @@ struct StreamOut : StreamSink {
   }
   bool write(const uint8_t* d, size_t n) override {
     if (fail) return false;
-    if (s.be_.power_abort()) { fail = E_ABORTADO; return false; }     // chave aberta durante uma leitura
     while (n) {
       size_t room = block - fill, k = n < room ? n : room;
       memcpy(s.tx_ + 10 + fill, d, k);

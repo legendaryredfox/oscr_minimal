@@ -208,10 +208,9 @@ namespace OSCR::Dumper
     }
 
     /**
-     * Chave de 5V dos slots (D108, D115, D116, D119). D19 = PD2, nível baixo liga o P-MOSFET Q1; com o pino solto (Mega em reset) o R16 mantém
+     * Chave de 5V dos slots em software (D108, D116; sem chave física, D123). D19 = PD2, nível baixo liga o P-MOSFET Q1; com o pino solto (Mega em reset) o R16 mantém
      * a chave desligada. Em placas sem a chave o pino fica sem ligação e isto não tem efeito.
      *  OSCR_POWER_SWITCH     1 = placa com a chave de 5V: o firmware começa desligado e o host liga (POWER).
-     *  OSCR_POWER_SWITCH_HW  1 = chave física no D18 (PD3, pull-up interno; fechada ao GND = ligado): trava de segurança.
      *  OSCR_POWER_SENSE      1 = sensor do rail no D53 (PB0, nó do Q3): nível alto = rail baixo = seguro trocar.
      *  OSCR_POWER_DISCHARGE  1 = transistor de descarga (Q2): a espera depois de cortar cai de 2 s para 0,5 s.
      */
@@ -225,9 +224,6 @@ namespace OSCR::Dumper
 #ifndef OSCR_POWER_SWITCH
 # define OSCR_POWER_SWITCH 0
 #endif
-#ifndef OSCR_POWER_SWITCH_HW
-# define OSCR_POWER_SWITCH_HW 0
-#endif
 #ifndef OSCR_POWER_SENSE
 # define OSCR_POWER_SENSE 0
 #endif
@@ -240,10 +236,10 @@ namespace OSCR::Dumper
 #ifndef OSCR_POWER_CYCLE_TRIES
 # define OSCR_POWER_CYCLE_TRIES 3                                       // SA-1: tentativas de ler o cabeçalho, com ciclo de energia entre elas
 #endif
-    constexpr bool kPowerSwitch = OSCR_POWER_SWITCH || OSCR_POWER_SWITCH_HW;
+    constexpr bool kPowerSwitch = OSCR_POWER_SWITCH;
 
     /** Solta todos os pinos de sinal dos slots (entrada, sem pull-up). Cortar o 5V com o Mega ainda dirigindo os pinos alimentaria o cartucho por eles.
-     *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), em D18/D19 (PD3/PD2), no sensor (PB0) nem nos LEDs (PB4 a PB7). */
+     *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), em D19 (PD2), no sensor (PB0) nem nos LEDs (PB4 a PB7). */
     void releaseCartPins()
     {
       DDRA = 0; PORTA = 0;                      // D22 a D29
@@ -261,14 +257,6 @@ namespace OSCR::Dumper
     }
 
     bool powerOn = true;
-    oscr::power::Debounce switchDebounce;
-
-    /** Chave física fechada (ligado permitido). Sem a chave na placa vale sempre true. Debounce de 20 ms. */
-    bool switchClosed()
-    {
-      if (!OSCR_POWER_SWITCH_HW) return true;
-      return switchDebounce.update((PIND & _BV(PD3)) == 0, millis());
-    }
 
     bool railLow() { return (PINB & _BV(PB0)) != 0; }          // sensor do Q3: alto = rail baixo
 
@@ -444,7 +432,6 @@ namespace OSCR::Dumper
         if (on == powerOn) return true;
         if (on)
         {
-          if (!switchClosed()) { err = oscr::E_DESLIGADO; return false; }     // trava física: a chave aberta vence o pedido do software
           railUp();
         }
         else railDown();
@@ -454,15 +441,10 @@ namespace OSCR::Dumper
       void power_info(oscr::PowerInfo & p) override
       {
         p.on = powerOn;
-        p.features = uint8_t((OSCR_POWER_SWITCH_HW ? 1 : 0) | (OSCR_POWER_SENSE ? 2 : 0) | (OSCR_POWER_DISCHARGE ? 4 : 0));
-        p.sw = OSCR_POWER_SWITCH_HW ? (switchClosed() ? 1 : 0) : 0xFF;
+        p.features = uint8_t((OSCR_POWER_SENSE ? 2 : 0) | (OSCR_POWER_DISCHARGE ? 4 : 0));
+        p.sw = 0xFF;                                  // reservado: não há chave física (D123)
         p.rail = OSCR_POWER_SENSE ? (railLow() ? 0 : 1) : 0xFF;
       }
-      void power_poll() override
-      {
-        if (OSCR_POWER_SWITCH_HW && powerOn && !switchClosed()) { railDown(); powerOn = false; }    // chave aberta: solta os pinos e corta
-      }
-      bool power_abort() override { return OSCR_POWER_SWITCH_HW && !switchClosed(); }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
       uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_FLASH); }
@@ -929,9 +911,8 @@ namespace OSCR::Dumper
 
   void setup()
   {
-    if (OSCR_POWER_SWITCH_HW) { DDRD &= ~_BV(PD3); PORTD |= _BV(PD3); }     // chave no D18: entrada com pull-up
     if (OSCR_POWER_SENSE) { DDRB &= ~_BV(PB0); PORTB &= ~_BV(PB0); }        // sensor do rail no D53: entrada sem pull-up
-    if (kPowerSwitch) { cartPower(false); powerOn = false; }                  // placa com chave: começa desligado, o host liga (D115)
+    if (kPowerSwitch) { cartPower(false); powerOn = false; }                  // placa com a chave de 5V em software: começa desligado, o host liga (D115)
     else cartPower(true);                     // sem isso o cartucho fica sem 5V; o OSCR original não tinha chave
     delay(50);                                // o 5V dos slots, o Si5351 e o PIC sobem antes do primeiro comando
     ClockedSerial.begin(OSCR_DUMPER_BAUD);

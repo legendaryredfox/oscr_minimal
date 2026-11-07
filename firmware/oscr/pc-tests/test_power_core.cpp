@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Testes de include/dumper/PowerCore.h no PC: debounce da chave, espera da descarga e tentativas com ciclo de energia (SA-1).
+// Testes de include/dumper/PowerCore.h no PC: espera da descarga e tentativas com ciclo de energia (SA-1).
 #include <stdio.h>
 
 #include "../include/dumper/PowerCore.h"
@@ -8,29 +8,6 @@ static int g_fail = 0, g_n = 0;
 #define CHECK(c) do { g_n++; if (!(c)) { g_fail++; printf("FALHOU %s:%d  %s\n", __FILE__, __LINE__, #c); } } while (0)
 
 using namespace oscr::power;
-
-static void test_debounce() {
-  Debounce d;
-  CHECK(d.update(true, 0) == true);                       // a primeira leitura vale
-  CHECK(d.update(false, 100) == true);                    // mudou agora: ainda não vale
-  CHECK(d.update(false, 119) == true);                    // 19 ms
-  CHECK(d.update(false, 120) == false);                   // 20 ms seguidos: vale
-  // repique: alterna a cada 5 ms por 100 ms e nunca estabiliza
-  Debounce b; b.update(false, 0);
-  bool changed = false;
-  for (uint32_t t = 5; t <= 100; t += 5) if (b.update((t / 5) % 2 == 0, t)) changed = true;
-  CHECK(!changed);
-  // estabiliza depois do repique
-  CHECK(b.update(true, 105) == false && b.update(true, 119) == false && b.update(true, 120) == true);   // o último repique foi em t = 100
-  // volta ao estado atual antes dos 20 ms: cancela
-  Debounce c; c.update(false, 0);
-  c.update(true, 10); c.update(false, 20); c.update(false, 60);
-  CHECK(c.state == false);
-  // contador de ms que dá a volta (uint32): 0xFFFFFFF0 a 0x00000008 são 24 ms
-  Debounce w; w.update(false, 0xFFFFFFE0u);
-  w.update(true, 0xFFFFFFF0u);
-  CHECK(w.update(true, 0x00000008u) == true);
-}
 
 static void test_discharge() {
   uint32_t t = 0, delays = 0;
@@ -75,7 +52,6 @@ static void test_retry() {
 }
 
 int main() {
-  test_debounce();
   test_discharge();
   test_retry();
   printf("%d verificações do PowerCore, %d falhas\n", g_n, g_fail);

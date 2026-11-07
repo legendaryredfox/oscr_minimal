@@ -8,10 +8,10 @@ import oscr.*
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
 class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val powerSwitch: Boolean = false,
-                 var switchClosed: Boolean? = null, val railSensor: Boolean = false, val detectAttempts: Int = 1) : Transport {
-    /** `switchClosed`: null = sem a chave física; true/false = fechada/aberta (D119). Com a chave física a placa tem a chave de 5V. */
-    private val hasPower get() = powerSwitch || switchClosed != null
-    var powered = !(powerSwitch || switchClosed != null)                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
+                 val railSensor: Boolean = false, val detectAttempts: Int = 1) : Transport {
+    /** Com o sensor do rail a placa tem a chave de 5V em software (D123: não há chave física). */
+    private val hasPower get() = powerSwitch || railSensor
+    var powered = !(powerSwitch || railSensor)                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
     val powerCalls = mutableListOf<Int>()
     private val dec = FrameDecoder()
     private var out = ByteArray(0)
@@ -40,18 +40,16 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
         val needsCart = f.type in setOf(Proto.T_DETECT, Proto.T_DUMP_ROM, Proto.T_READ_SAVE, Proto.T_WRITE_SAVE, Proto.T_WRITE_ROM, Proto.T_ERASE)
         val first = f.payload.getOrNull(0)?.toInt()?.and(0xFF)
         if (needsCart && first != null && first != 0 && first != 255 && hasPower && !powered) return error(12, "off")    // o MOCK não precisa de cartucho
-        if (switchClosed == false && powered) powered = false            // chave aberta com o 5V ligado: o firmware corta no poll seguinte
         when (f.type) {
             Proto.T_POWER -> {
                 val action = first ?: 9
                 when {
                     action > Power.STATUS -> error(4, "args")
                     action == Power.OFF && !hasPower -> error(1, "sem chave")
-                    action == Power.ON && switchClosed == false -> error(12, "chave")     // trava física: a chave aberta vence o pedido do software
                     else -> {
                         if (action != Power.STATUS && hasPower) { powerCalls += action; powered = action == Power.ON }
-                        push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, ((if (switchClosed != null) 1 else 0) or (if (railSensor) 2 else 0)).toByte(),
-                            (switchClosed?.let { if (it) 1 else 0 } ?: 0xFF).toByte(), (if (railSensor) (if (powered) 1 else 0) else 0xFF).toByte()))
+                        push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, (if (railSensor) 2 else 0).toByte(),
+                            0xFF.toByte(), (if (railSensor) (if (powered) 1 else 0) else 0xFF).toByte()))
                     }
                 }
             }

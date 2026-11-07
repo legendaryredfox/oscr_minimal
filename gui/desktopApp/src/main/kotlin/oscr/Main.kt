@@ -599,11 +599,10 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     Text(t(if (powerOn == true) S.POWER_STATUS_ON else S.POWER_STATUS_OFF), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
                     OutlinedButton(enabled = !busy, onClick = { actPower(powerOn != true) }) { Text(t(if (powerOn == true) S.POWER_BTN_OFF else S.POWER_BTN_ON)) }
                 }
-                powerSt?.let { ps ->                                    // LEDs virtuais e a chave física (placa com a chave no D18 e o sensor do rail)
+                powerSt?.let { ps ->                                    // LEDs virtuais (5V presente e, com o sensor do rail, seguro trocar)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("●", color = if (ps.on) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline)
                         if (ps.railLow != null) Text("●", color = if (ps.railLow == true) Color(0xFFF9A825) else MaterialTheme.colorScheme.outline)
-                        ps.switch?.let { Text(t(if (it) S.POWER_SWITCH_CLOSED else S.POWER_SWITCH_OPEN), style = MaterialTheme.typography.bodySmall, color = if (it) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.error) }
                         ps.railLow?.let { Text(t(if (it) S.POWER_RAIL_SAFE else S.POWER_RAIL_HOT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
                     }
                 }
@@ -820,7 +819,6 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = t(stage ?: S.STAGE_IDLE); stateDescription = f(S.A11Y_PROGRESS, (progress * 100).toInt()) }, strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                 if (slowNote && busy) Text("⏳ " + t(S.SLOW_NOTE), style = MaterialTheme.typography.bodyMedium)
                 if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING)) Callout(t(S.FLASH_ABORT_WARN), Tone.WARN)
-                if (busy && (stage == S.STAGE_WRITING_ROM || stage == S.STAGE_ERASING || stage == S.STAGE_WRITING_SAVE) && powerSt?.interlock == true) Callout(t(S.POWER_WRITE_LOCK), Tone.INFO)      // a chave só vale depois da gravação      // abortar no meio deixa o chip apagado ou pela metade
                 if (lastMessage.isNotEmpty()) Text(lastMessage, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge,
                     color = if (lastMessage.startsWith(t(S.ERR_PREFIX) + ":")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
