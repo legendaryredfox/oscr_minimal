@@ -34,7 +34,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `docs/protocolo.md`, `docs/cli.md`, `docs/fork-oscr.md`, `docs/funcoes-oscr.md` | Protocolo serial, guia da CLI, plano do fork do firmware e inventário das funções do OSCR |
 | `docs/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/` | CIC do SNES com RP2040-Zero no lugar do PIC (ainda não validado; as placas atuais usam o PIC12F629) |
 | `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |
-| `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3; carregada sozinha pelo host e pela GUI (D88) |
+| `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3, mais `json/` (bases do `oscr-databases`, 4,9 mil CRC32 novos; o repositório de origem não declara licença, D127); carregada sozinha pelo host e pela GUI (D88, D127) |
 | `tools/` | Scripts de hardware: `check_netlist.py` (`--board <placa>`), `export_fab.sh`, `gen_pinmap.py`, `build_lib.py`, `fill_zones.py` e os de cada placa (`megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `gb_gba/`, `revisao/`); ver `tools/README.md` |
 
 ## Aviso

@@ -1,0 +1,53 @@
+Bases de cartuchos do OSCR (formato JSON), usadas no PC para identificar o jogo por CRC32 (D127).
+Origem : https://github.com/oscartreader/oscr-databases  (pasta data/)
+Commit : 7cfa388
+Licença: o repositório de origem NÃO declara licença (sem arquivo de licença; a API do GitHub devolve 404, conferido em 2026-11-07).
+         Importado a pedido do usuário em 2026-11-07. O conteúdo são nomes de jogos e CRC32 (fatos); se os autores pedirem, remova esta pasta.
+Formato: {"system", "type": "CART", "records": [{"name", "crc32" (hexadecimal sem zeros à esquerda; "0" = sem CRC), ...}]}.
+         nes: header (iNES de 16 bytes em hexadecimal). snes: checksum, id32, size (bytes), banks. gba: serial, size (MB), saveType.
+Só entra na base do PC o CRC32 que ainda não está nos .txt do OSCR antigo (o nome do .txt vence).
+Gerado por tools/importar_oscr_databases.py. Não editar à mão.
+
+32x.json  32X  213 registros, 213 com CRC32
+a26.json  A2600  673 registros, 597 com CRC32
+a52.json  A5200  181 registros, 181 com CRC32
+a78.json  A7800  131 registros, 125 com CRC32
+arc.json  ARC  48 registros, 48 com CRC32
+at8bit.json  ATARI8  315 registros, 23 com CRC32
+bally.json  BALLY  64 registros, 64 com CRC32
+c64.json  C64  292 registros, 226 com CRC32
+chf.json  CHF  34 registros, 34 com CRC32
+col.json  COLV  195 registros, 195 com CRC32
+cps3.json  CPS3  31 registros, 31 com CRC32
+gb.json  GB+GBC  4314 registros, 4314 com CRC32
+gba.json  GBA  3304 registros, 3304 com CRC32
+gg.json  GG  808 registros, 808 com CRC32
+int.json  INTV  193 registros, 193 com CRC32
+j64.json  JAGUAR  102 registros, 102 com CRC32
+leap.json  LEAP  72 registros, 0 com CRC32
+lj.json  LJ  36 registros, 0 com CRC32
+lnx.json  LYNX  380 registros, 380 com CRC32
+loopy.json  LOOPY  10 registros, 10 com CRC32
+md.json  MD  2697 registros, 2697 com CRC32
+msx.json  MSX  726 registros, 0 com CRC32
+n64.json  N64  1029 registros, 1029 com CRC32
+nes.json  NES  5562 registros, 5562 com CRC32
+ody2.json  ODY2  133 registros, 0 com CRC32
+pce.json  PCE  463 registros, 463 com CRC32
+pcw.json  PCW  80 registros, 80 com CRC32
+pkmn.json  PKMN  20 registros, 20 com CRC32
+pv1k.json  PV1000  23 registros, 0 com CRC32
+pyuuta.json  PYUUTA  32 registros, 0 com CRC32
+rca2.json  RCA2  16 registros, 0 com CRC32
+sg.json  SG  246 registros, 246 com CRC32
+sms.json  SMS  675 registros, 675 com CRC32
+snes.json  SNES  3906 registros, 3906 com CRC32
+st.json  ST  13 registros, 13 com CRC32
+sv.json  SV  71 registros, 71 com CRC32
+trs.json  TRS80  109 registros, 0 com CRC32
+vb.json  VB  33 registros, 33 com CRC32
+vec.json  VECTREX  31 registros, 0 com CRC32
+vic20.json  VIC20  239 registros, 0 com CRC32
+vsmile.json  VSMILE  74 registros, 0 com CRC32
+ws.json  WS+WSC  506 registros, 506 com CRC32
+Total  28080 registros, 26149 com CRC32

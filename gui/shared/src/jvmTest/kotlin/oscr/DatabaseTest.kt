@@ -145,14 +145,31 @@ class DatabaseTest {
 
     @Test fun baseDoProjetoCarregaSozinha() {
         val db = DatabaseLoader.loadAll(emptyList())
-        assertTrue(db.size > 23000, "${db.size}")
+        assertTrue(db.size > 28000, "${db.size}")
         val by = db.entries.groupingBy { it.source }.eachCount()
+        assertTrue((by["n64.json"] ?: 0) > 1000, by.toString())
         assertTrue((by["md.txt"] ?: 0) > 2500 && (by["nes.txt"] ?: 0) > 7000 && (by["snes.txt"] ?: 0) > 3800, by.toString())
         assertEquals(0, DatabaseLoader.loadAll(emptyList(), builtin = false).size)
         assertTrue(db.search("sonic", 5).isNotEmpty())
         val nesE = db.entries.filter { it.source == "nes.txt" }
         assertTrue(nesE.count { it.nesOptions() != null } > nesE.size * 0.99)
         assertTrue(nesE.none { it.name.endsWith(".nes", true) })
+    }
+
+    @Test fun baseJsonDoOscrSoAcrescentaCrcNovo() {
+        val d = tmp()
+        File(d, "md.txt").writeText("Jogo Velho (USA)\r\nAEB4B262\r\n\r\n")
+        File(d, "json").mkdirs()
+        File(d, "json/md.json").writeText("""{"system":"MD","type":"CART","records":[{"name":"Jogo Novo Nome","crc32":"AEB4B262"},{"name":"So na Nova \u00e9","crc32":"DE2DB48"},{"name":"Sem CRC","crc32":"0"},{"name":"Lixo","crc32":"XYZ"},{"name":"Outro","x":1.5}]}""")
+        File(d, "json/n64-mappers.json").writeText("""{"system":"N64","type":"MAP","records":[{"name":"x","crc32":"1"}]}""")
+        File(d, "json/nes.json").writeText("""{"system":"NES","type":"CART","records":[{"name":"NES Novo","crc32":"A2C2C172","mapper":0,"header":"4E45531A010001080000000700000001"}]}""")
+        val db = Database().also { DatabaseLoader.load(it, d.path) }
+        assertEquals(listOf("Jogo Velho (USA)", "NES Novo", "So na Nova \u00e9"), db.entries.map { it.name }.sorted())
+        assertEquals("Jogo Velho (USA)", db.entries.first { it.crc == 0xAEB4B262.toInt() }.name)
+        val nes = db.entries.first { it.name == "NES Novo" }
+        assertEquals(listOf(0, 16, 0), listOf(nes.mapper, nes.prgKb, nes.chrKb))
+        File(d, "ruim.json").writeText("{nao")
+        assertFailsWith<DatabaseError> { DatabaseLoader.parseFile(File(d, "ruim.json")) }
     }
 
     @Test fun baseDoProjetoESomaComADoUsuario() {

@@ -38,6 +38,9 @@ class Database {
     val files = ArrayList<String>()
     val size get() = entries.size
 
+    /** Já há entrada com esse CRC32? (a base JSON do OSCR só acrescenta o que falta, D127) */
+    fun has(crc: Int) = byCrc.containsKey(crc)
+
     fun add(e: DbEntry) {
         entries += e
         byCrc.getOrPut(e.crc) { ArrayList() } += e

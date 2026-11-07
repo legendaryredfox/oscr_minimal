@@ -67,6 +67,72 @@ object DatabaseLoader {
         return out
     }
 
+    /** Leitor mínimo de JSON (objeto, lista, texto, número, true, false, null) para as bases do oscr-databases; levanta [DatabaseError] se inválido. */
+    private class Json(val s: String) {
+        var i = 0
+        fun ws() { while (i < s.length && s[i].isWhitespace()) i++ }
+        fun value(): Any? {
+            ws()
+            if (i >= s.length) throw DatabaseError("JSON truncated")
+            return when (val c = s[i]) {
+                '{' -> { i++; val m = LinkedHashMap<String, Any?>(); ws()
+                    if (s[i] == '}') { i++; return m }
+                    while (true) { ws(); val k = str(); ws(); expect(':'); m[k] = value(); ws(); if (s[i] == ',') { i++; continue }; expect('}'); return m } }
+                '[' -> { i++; val l = ArrayList<Any?>(); ws()
+                    if (s[i] == ']') { i++; return l }
+                    while (true) { l += value(); ws(); if (s[i] == ',') { i++; continue }; expect(']'); return l } }
+                '"' -> str()
+                't' -> lit("true", true)
+                'f' -> lit("false", false)
+                'n' -> lit("null", null)
+                else -> { val st = i; while (i < s.length && (s[i].isDigit() || s[i] in "+-.eE")) i++
+                    if (st == i) throw DatabaseError("JSON: unexpected '$c' at $i")
+                    s.substring(st, i).let { it.toLongOrNull() ?: it.toDoubleOrNull() ?: throw DatabaseError("JSON: bad number $it") } }
+            }
+        }
+        fun expect(c: Char) { if (i >= s.length || s[i] != c) throw DatabaseError("JSON: expected '$c' at $i"); i++ }
+        fun lit(w: String, v: Any?): Any? { if (!s.startsWith(w, i)) throw DatabaseError("JSON: bad literal at $i"); i += w.length; return v }
+        fun str(): String {
+            expect('"'); val sb = StringBuilder()
+            while (true) {
+                if (i >= s.length) throw DatabaseError("JSON: unterminated string")
+                val c = s[i++]
+                when (c) {
+                    '"' -> return sb.toString()
+                    '\\' -> { val e = s[i++]
+                        when (e) { 'n' -> sb.append('\n'); 't' -> sb.append('\t'); 'r' -> sb.append('\r'); 'b' -> sb.append('\b'); 'f' -> sb.append('\u000c')
+                            'u' -> { sb.append(s.substring(i, i + 4).toInt(16).toChar()); i += 4 }
+                            else -> sb.append(e) } }
+                    else -> sb.append(c)
+                }
+            }
+        }
+    }
+
+    /** Lê uma base `data/NOME.json` do repositório oscartreader/oscr-databases (D127), igual a parse_oscr_json de host/oscr_host/database.py: só `type` CART, só registros com CRC32. */
+    fun parseOscrJson(text: String, source: String): List<DbEntry> {
+        val d = try { Json(text).value() } catch (e: DatabaseError) { throw DatabaseError("$source: invalid JSON (${e.message})") }
+        if (d !is Map<*, *> || d["type"] != "CART" || d["records"] !is List<*>) return emptyList()
+        val stem = source.substringAfterLast('/').substringBeforeLast('.').lowercase()
+        val out = ArrayList<DbEntry>()
+        for (r in d["records"] as List<*>) {
+            if (r !is Map<*, *>) continue
+            val c = r["crc32"] as? String ?: continue
+            if (c.isEmpty() || c.length > 8 || !c.all { it in "0123456789abcdefABCDEF" }) continue
+            val crc = c.toLong(16).toInt()
+            if (crc == 0) continue
+            var e = DbEntry(ROM_EXT.replace(r["name"]?.toString() ?: "", ""), crc, 0, source.substringAfterLast('/'), "oscr")
+            val hdr = (r["header"] as? String)?.takeIf { stem == "nes" && it.length == 32 && it.all { ch -> ch in "0123456789abcdefABCDEF" } }
+                ?.let { h -> ByteArray(16) { h.substring(it * 2, it * 2 + 2).toInt(16).toByte() } }
+            val n = hdr?.let { ines(it) }
+            if (n != null) e = e.copy(size = (n.prgKb + n.chrKb) * 1024L, mapper = n.mapper, submapper = n.submapper, prgKb = n.prgKb, chrKb = n.chrKb, ramKb = n.ramKb, battery = n.battery)
+            else if (stem == "gba" && r["size"] is Long) e = e.copy(size = (r["size"] as Long) * 1024 * 1024)
+            else if (stem == "snes" && r["size"] is Long) e = e.copy(size = r["size"] as Long)
+            out += e
+        }
+        return out
+    }
+
     /** Carrega a base que vem no projeto (recurso `oscr/INDEX.txt` e os .txt listados nele). Devolve quantas entradas entraram (0 se o recurso não existe). */
     fun loadBuiltin(db: Database): Int {
         val loader = DatabaseLoader::class.java.classLoader
@@ -74,7 +140,8 @@ object DatabaseLoader {
         var n = 0
         for (name in index.lines().map { it.trim() }.filter { it.isNotEmpty() }) {
             val text = loader.getResourceAsStream("oscr/$name")?.use { String(it.readBytes(), Charsets.UTF_8) } ?: continue
-            for (e in parseOscr(text, name)) { db.add(e); n++ }
+            if (name.endsWith(".json")) { for (e in parseOscrJson(text, name)) if (!db.has(e.crc)) { db.add(e); n++ } }       // base nova (D127): só o CRC32 que ainda não está na base antiga
+            else for (e in parseOscr(text, name)) { db.add(e); n++ }
             db.files += "oscr/$name"
         }
         return n
@@ -109,6 +176,7 @@ object DatabaseLoader {
 
     fun parseFile(f: File): List<DbEntry> {
         if (f.extension.equals("txt", true)) return parseOscr(f.readText(Charsets.UTF_8), f.name)
+        if (f.extension.equals("json", true)) return parseOscrJson(f.readText(Charsets.UTF_8), f.name)
         val out = ArrayList<DbEntry>()
         val factory = XMLInputFactory.newInstance().apply {
             setProperty(XMLInputFactory.SUPPORT_DTD, false)
@@ -149,13 +217,17 @@ object DatabaseLoader {
         return out
     }
 
-    /** Carrega um arquivo, ou todos os .dat, .xml e .txt (base do OSCR) de uma pasta (recursivo). Devolve quantas entradas entraram. */
+    /** Carrega um arquivo, ou todos os .dat, .xml, .json e .txt (base do OSCR) de uma pasta (recursivo). Devolve quantas entradas entraram. */
     fun load(db: Database, path: String): Int {
         val p = File(if (path.startsWith("~")) (System.getProperty("user.home") ?: ".") + path.substring(1) else path)
         if (!p.exists()) throw DatabaseError("database not found: $p")
-        val files = if (p.isDirectory) p.walkTopDown().filter { it.isFile && (it.extension.lowercase() in setOf("dat", "xml") || (it.extension.equals("txt", true) && it.name.lowercase() !in NOT_DB)) }.sortedBy { it.path }.toList() else listOf(p)
+        val files = if (p.isDirectory) p.walkTopDown().filter { it.isFile && (it.extension.lowercase() in setOf("dat", "xml", "json") || (it.extension.equals("txt", true) && it.name.lowercase() !in NOT_DB)) }.sortedWith(compareBy({ it.extension.equals("json", true) }, { it.path })).toList() else listOf(p)     // .json por último: só entra o CRC32 novo
         var n = 0
-        for (f in files) { for (e in parseFile(f)) { db.add(e); n++ }; db.files += f.path }
+        for (f in files) {
+            val novo = f.extension.equals("json", true)
+            for (e in parseFile(f)) { if (novo && db.has(e.crc)) continue; db.add(e); n++ }
+            db.files += f.path
+        }
         return n
     }
 

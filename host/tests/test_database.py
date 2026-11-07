@@ -167,10 +167,13 @@ def test_base_do_projeto_esta_completa():
     index = (d / "INDEX.txt").read_text().split()
     assert {"nes.txt", "snes.txt", "md.txt", "gba.txt", "gb.txt"} <= set(index)
     assert all((d / n).is_file() for n in index)
+    assert any(n.startswith("json/") for n in index) and index.index("json/nes.json") > index.index("md.txt")      # base JSON do OSCR (D127), depois da antiga
     assert not (d / "config.txt").exists()                      # config.txt do OSCR é configuração, não base
     assert "sanni/cartreader" in (d / "ORIGEM.txt").read_text() and "GPL" in (d / "ORIGEM.txt").read_text()
     on_disk = {p.name for p in d.glob("*.txt")} - {"INDEX.txt", "ORIGEM.txt"}
+    on_disk |= {"json/" + p.name for p in (d / "json").glob("*.json")}
     assert on_disk == set(index)
+    assert "NÃO declara licença" in (d / "json" / "ORIGEM.txt").read_text() and "oscartreader/oscr-databases" in (d / "json" / "ORIGEM.txt").read_text()
 
 
 def test_base_do_projeto_carrega_sozinha():
@@ -178,13 +181,37 @@ def test_base_do_projeto_carrega_sozinha():
     by_src = {}
     for e in db.entries:
         by_src[e.source] = by_src.get(e.source, 0) + 1
-    assert len(db) > 23000 and by_src["md.txt"] > 2500 and by_src["nes.txt"] > 7000 and by_src["snes.txt"] > 3800
+    assert len(db) > 28000 and by_src["n64.json"] > 1000 and by_src["md.txt"] > 2500 and by_src["nes.txt"] > 7000 and by_src["snes.txt"] > 3800
     assert DB.load_databases([], builtin=False).entries == []
     assert any("sonic" in e.name.lower() for e in db.search("sonic", 5))
     nes = [e for e in db.entries if e.source == "nes.txt"]
     assert sum(1 for e in nes if e.nes_options()) > len(nes) * 0.99          # quase todos têm mapper e tamanhos pelo cabeçalho
     assert all(e.name == e.name.strip() and not e.name.lower().endswith(".nes") for e in nes)
     assert all(0 <= e.crc <= 0xFFFFFFFF for e in db.entries)
+
+
+def test_base_json_do_oscr_so_acrescenta_crc_novo(tmp_path):
+    import json
+    (tmp_path / "md.txt").write_text("Jogo Velho (USA)\r\nAEB4B262\r\n\r\n", encoding="utf-8")
+    (tmp_path / "json").mkdir()
+    (tmp_path / "json" / "md.json").write_text(json.dumps({"system": "MD", "type": "CART", "records": [
+        {"name": "Jogo Novo Nome", "crc32": "AEB4B262"},            # CRC32 que a base antiga já tem: o nome antigo vence
+        {"name": "So na Nova", "crc32": "DE2DB48"},                 # CRC32 sem zeros à esquerda
+        {"name": "Sem CRC", "crc32": "0"}, {"name": "Lixo", "crc32": "XYZ"}, {"name": "Outro", "x": 1}]}))
+    (tmp_path / "json" / "n64-mappers.json").write_text(json.dumps({"system": "N64", "type": "MAP", "records": [{"name": "x", "crc32": "1"}]}))
+    (tmp_path / "json" / "nes.json").write_text(json.dumps({"system": "NES", "type": "CART", "records": [
+        {"name": "NES Novo", "crc32": "A2C2C172", "mapper": 0, "header": "4E45531A010001080000000700000001"}]}))
+    (tmp_path / "json" / "gba.json").write_text(json.dumps({"system": "GBA", "type": "CART", "records": [{"name": "GBA X", "crc32": "CAF2E99F", "serial": "BJBJ", "size": 8, "saveType": 1}]}))
+    db = DB.load_databases([tmp_path], builtin=False)
+    nomes = sorted(e.name for e in db.entries)
+    assert nomes == ["GBA X", "Jogo Velho (USA)", "NES Novo", "So na Nova"]                   # tipo MAP, CRC "0" e inválido ficam de fora; duplicado também
+    assert db.by_crc[0xAEB4B262][0].name == "Jogo Velho (USA)" and 0x0DE2DB48 in db.by_crc
+    nes = next(e for e in db.entries if e.name == "NES Novo")
+    assert nes.mapper == 0 and nes.prg_kb == 16 and nes.chr_kb == 0 and nes.size == 16 * 1024
+    assert next(e for e in db.entries if e.name == "GBA X").size == 8 * 1024 * 1024
+    bad = tmp_path / "ruim.json"; bad.write_text("{nao é json")
+    with pytest.raises(ValueError):
+        DB.parse_file(bad)
 
 
 def test_base_do_projeto_e_base_do_usuario_somam(tmp_path):

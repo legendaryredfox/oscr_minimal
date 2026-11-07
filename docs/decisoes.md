@@ -125,6 +125,7 @@
 - **D124** Placa `famicom_nes`: mais folga para o U1 (pedido do usuário, 2026-11-07)
 - **D125** `dump --twice`: ler a ROM duas vezes e comparar (P-05, continuação 2026-11-07)
 - **D126** Bloco de troca de cartucho no hardware: v1.1 das placas de um sistema (pedido do usuário, 2026-11-07)
+- **D127** Importação do `oscr-databases` (P-01; pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1026,4 +1027,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Verificação.** ERC sem violações novas; DRC sem erros nem ligações abertas; `check_netlist.py` confere nas 8 placas. Gerbers, zips (v1.1; os v1.0 saíram, nada foi encomendado), prévias, `render.png` e `PEDIDO.md` refeitos. Roteadas por autoroteador; **o roteamento inteiro das placas foi refeito**, então cada uma deve ser revisada no KiCad antes de encomendar. **Nada montado nem testado em hardware.**
 - **Pendente na bancada** (`docs/bloco-troca.md`): limiar do 2N7000, queda do Q1 em carga, tempo de descarga, VCC do cartucho < 0,5 V com o rail desligado, SA-1 com e sem o ciclo de energia. O plano pedia validar o bloco em placa perfurada antes; o usuário preferiu gerar as placas já.
 - **Limites e cuidados.** `tools/n64/build_pcb.sh` (e os `place.py`/`reroute.sh` das outras placas) regeram o layout **sem** o bloco: para refazer uma placa v1.1 use `tools/troca/aplicar.sh <placa> prep|rota` e `tools/troca/fechar.sh <placa>`, que recusa fechar se faltar peça no PCB ou se o DRC achar problema (um `prep` que falha em silêncio já deixou três placas com zips v1.1 sem o bloco; corrigido). Os rótulos dos LEDs ("5V LIGADO", "SEGURO TROCAR") ficam no primeiro lugar livre do silkscreen, às vezes a alguns milímetros do LED: conferir no `render.png`. Na `megadrive` as referências de D1 e C2 ficaram ocultas (o silk delas encostava nas peças novas) e a `famicom` teve os créditos do verso movidos. A `n64` mantém a posição do slot e do Si5351 da D121.
+
+### D127 — Importação do `oscr-databases` (P-01; pedido do usuário, 2026-11-07)
+- **Pedido.** "Importa o oscr-databases mesmo assim", depois de eu avisar que o repositório `oscartreader/oscr-databases` não tem arquivo de licença (a API do GitHub devolve 404 em `/license`). Decisão do usuário; o aviso fica em `database/oscr/json/ORIGEM.txt` e na `README.md`. O conteúdo são nomes de jogos e CRC32; se os autores pedirem, a pasta sai.
+- **Feito.** `tools/importar_oscr_databases.py <clone>` copia os `data/*.json` de tipo `CART` (42 arquivos, 4,3 MB, commit `7cfa388`) para `database/oscr/json/` e põe `json/<arquivo>` no fim do `INDEX.txt`. Host Python (`parse_oscr_json`) e Kotlin (`DatabaseLoader.parseOscrJson`, leitor JSON próprio) leem o formato (`records[]` com `name` e `crc32`; o CRC32 vem em hexadecimal **sem zeros à esquerda**, `"0"` = sem CRC; NES traz o cabeçalho iNES; GBA, tamanho em MB; SNES, em bytes). Registros sem CRC32 válido ficam de fora (2 mil, quase todos de MSX, Atari 8 bits, VIC-20 e outros).
+- **Regra de mescla.** Os `.json` carregam **depois** dos `.txt` e só entra o CRC32 que ainda não está na base (o nome do `.txt` antigo vence, e o resultado de `identify` não mostra "mais N idêntica(s)" por conta da duplicata). Efeito: 24 007 para 28 879 entradas; NES, SNES, Mega Drive e Master System quase não ganham (as duas bases coincidem), e ganham N64 (1 029), Atari, Lynx, WonderSwan, Game Boy (855) e outros.
+- **Fora do escopo.** Os arquivos `*-mappers.json` (tipo `MAP`) e `flash.json` (tipo `IC`) não entram: não são listas de jogos. As entradas dos sistemas que o projeto ainda não lê só servem para `search` e `identify` por CRC32.
+- **Testes.** Host 177, Gradle `DatabaseTest` 17 (novos: mescla, CRC sem zeros, tipo `MAP`, JSON inválido, cabeçalho iNES e tamanho do GBA).
 

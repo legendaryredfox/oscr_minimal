@@ -13,6 +13,7 @@ A base binária CRDB do OSCR não é lida (formato sem amostra para testar; o di
 from __future__ import annotations
 
 import os
+import json
 import re
 import xml.etree.ElementTree as ET
 import zlib
@@ -161,10 +162,47 @@ def parse_oscr_file(path: Path) -> list[Entry]:
     return out
 
 
+def parse_oscr_json(path: Path) -> list[Entry]:
+    """Lê uma base `data/*.json` do repositório oscartreader/oscr-databases (D127): `{"system", "type", "records": [{"name", "crc32", ...}]}`.
+    Só entram os arquivos de cartucho (`type` CART) e os registros com CRC32 (o campo vem como texto hexadecimal, sem zeros à esquerda; "0" = sem CRC).
+    JSON que não tem esse formato dá lista vazia; JSON inválido levanta ValueError."""
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        raise ValueError(f"{path}: JSON inválido ({e})") from e
+    if not isinstance(d, dict) or d.get("type") != "CART" or not isinstance(d.get("records"), list):
+        return []
+    stem = path.stem.lower()
+    out: list[Entry] = []
+    for r in d["records"]:
+        if not isinstance(r, dict):
+            continue
+        c = r.get("crc32")
+        if not (isinstance(c, str) and re.fullmatch(r"[0-9A-Fa-f]{1,8}", c)) or int(c, 16) == 0:
+            continue
+        e = Entry(name=_ROM_EXT.sub("", str(r.get("name", ""))), crc=int(c, 16), source=path.name, kind="oscr")
+        if stem == "nes" and isinstance(r.get("header"), str):
+            try:
+                n = _ines(bytes.fromhex(r["header"]))
+            except ValueError:
+                n = None
+            if n:
+                e.mapper, e.submapper, e.prg_kb, e.chr_kb, e.ram_kb, e.battery = (n[k] for k in ("mapper", "submapper", "prg_kb", "chr_kb", "ram_kb", "battery"))
+                e.size = (e.prg_kb + e.chr_kb) * 1024
+        elif stem == "gba" and isinstance(r.get("size"), int):
+            e.size = r["size"] * 1024 * 1024                  # tamanho em MB
+        elif stem == "snes" and isinstance(r.get("size"), int):
+            e.size = r["size"]                                # bytes
+        out.append(e)
+    return out
+
+
 def parse_file(path: Path) -> list[Entry]:
     """Lê um .dat/.xml (Logiqx ou NES 2.0). Levanta ValueError se o arquivo não for XML válido."""
     if path.suffix.lower() == ".txt":
         return parse_oscr_file(path)
+    if path.suffix.lower() == ".json":
+        return parse_oscr_json(path)
     out: list[Entry] = []
     source = path.name
     try:
@@ -199,14 +237,17 @@ class Database:
             self.by_prg.setdefault(e.prg_crc, []).append(e)
 
     def load(self, path: str | os.PathLike) -> int:
-        """Carrega um arquivo, ou todos os .dat, .xml e .txt (base do OSCR) de uma pasta (recursivo). Devolve quantas entradas entraram."""
+        """Carrega um arquivo, ou todos os .dat, .xml, .json e .txt (base do OSCR) de uma pasta (recursivo). Devolve quantas entradas entraram."""
         p = Path(path).expanduser()
         if not p.exists():
             raise ValueError(f"base de dados não encontrada: {p}")
-        files = sorted(f for f in p.rglob("*") if f.suffix.lower() in (".dat", ".xml") or (f.suffix.lower() == ".txt" and f.name.lower() not in _NOT_DB)) if p.is_dir() else [p]
+        files = sorted((f for f in p.rglob("*") if f.suffix.lower() in (".dat", ".xml", ".json") or (f.suffix.lower() == ".txt" and f.name.lower() not in _NOT_DB)), key=lambda f: (f.suffix.lower() == ".json", str(f))) if p.is_dir() else [p]   # .json por último: só entra o CRC32 novo
         n = 0
         for f in files:
+            novo = f.suffix.lower() == ".json"               # base nova do OSCR (D127): só entra o CRC32 que ainda não está na base (o nome da base antiga vence)
             for e in parse_file(f):
+                if novo and e.crc in self.by_crc:
+                    continue
                 self.add(e)
                 n += 1
             self.files.append(str(f))
