@@ -122,6 +122,7 @@
 - **D121** Placa `boards/n64/`: só N64, 3,3 V (pedido do usuário, 2026-11-07)
 - **D122** Esquemáticos com fios diretos e símbolos de alimentação (pedido do usuário, 2026-11-07)
 - **D123** Sem chave física de troca de cartucho: só o `POWER` em software (pedido do usuário, 2026-11-07)
+- **D124** Placa `famicom_nes`: mais folga para o U1 (pedido do usuário, 2026-11-07)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1001,4 +1002,11 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **Protocolo.** O formato do `POWER_RESP` não mudou (4 bytes): o bit 0 de `recursos` e o byte `chave` ficam **reservados** (sempre 0 e `0xFF`), para não quebrar quem já lê. O erro `0x000C` perdeu o texto `chave`.
 - **Host e GUI.** Python (`sim.py`, CLI, `parse_power_resp` sem `interlock` e `switch`; variável do simulador `OSCR_SIM_SENSE=1` no lugar de `OSCR_SIM_SWITCH`) e Kotlin (`PowerState`, `SimDevice`, `CliIo.simSense`, GUI sem a linha da chave e sem o aviso de gravação; 4 textos de `I18n` removidos nos 4 idiomas). 173 testes do host e `:shared:jvmTest` + `:desktopApp:compileKotlin` do Gradle passam.
 - **Docs.** `docs/plano-chave-fisica.md` (banner e itens riscados), `docs/troca-de-cartucho.md`, `docs/protocolo.md`, `docs/cli.md`, `docs/continuacao.md` e as notas dos `componentes-opcionais.md`. Os registros D115 a D119 ficam como histórico.
+
+### D124 — Placa `famicom_nes`: mais folga para o U1 (pedido do usuário, 2026-11-07)
+- **Pedido.** "Na placa do famicom + nes, o U1 está mal posicionado. Se for o caso, alongue a placa na horizontal por 0,5 cm e desloque o slot de 72 pinos para a esquerda."
+- **Conferido.** Era o caso: o soquete do Si5351 (x = 111 mm) ficava a 2,4 mm do fim do slot NES (courtyard encostado) e a 3 mm dos pinos do header 2x18 do Mega.
+- **Feito.** Contorno de 112,1 para **117,1 × 79,1 mm** (alongado 5 mm para a esquerda); NES1, o capacitor do VCC do NES (C3), os dois furos de canto da esquerda e a legenda "NES: v v ETIQUETA" deslocados 5 mm para a esquerda; U1 ficou onde estava (agora a 7,4 mm do fim do slot). `tools/famicom_nes/widen.py` e `reroute.sh` (Freerouting fora do MCP, zonas, costura, preenchimento); o pad GND6 do Mega ficou sólido (um `starved_thermal`, `tools/revisao/solid_pad.py`).
+- **Verificação.** DRC sem erros nem ligações abertas (só 4 avisos de biblioteca); `check_netlist --board famicom_nes` confere (39 nets, 176 ligações); gerbers, `PEDIDO.md` (SHA-256 novo) e `render.png` refeitos. Roteada por autoroteador, não revisada à mão; nada encomendado.
+- **Esquemáticos (D122).** Fechados: as 9 placas e as duas revisões congeladas da `16_bits`. O esquemático do shield do Uno (`tools/pic/shield_uno`) não foi redesenhado (outro projeto, sem Mega).
 

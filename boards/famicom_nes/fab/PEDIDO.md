@@ -1,15 +1,15 @@
 # Pedido da placa famicom_nes v1.0 (JLCPCB)
 
-Placa **Famicom + NES**, 2 camadas, 112,1 × 79,1 mm. Feita em 2026-11-06 a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **Famicom + NES**, 2 camadas, 117,1 × 79,1 mm. Refeita em 2026-11-07 (D124) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `9ef54793e776874d86898b06e050a0946c016a917b5bb3ba6de3f70482b3171f` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`). SHA-256: `2e10d7bd145bf826d9fa68a847fb824f760f00b8ae2ba4716fbde8eaa9893384` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 
 | Item | Valor esperado |
 |---|---|
 | Camadas | 2 |
-| Dimensões | 112,1 × 79,1 mm |
+| Dimensões | 117,1 × 79,1 mm |
 | Furos não metalizados | 10 (3,2 mm: 4 de canto e 6 do Mega) |
 | Furo mínimo | 0,3 mm (vias) |
 

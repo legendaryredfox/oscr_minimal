@@ -10,7 +10,7 @@ Montagem **manual**. Lista gerada de `boards/famicom_nes/fab/bom.csv` mais as pe
 |---|---|
 | Arquivo | `boards/famicom_nes/fab/dumper-v1.0-jlcpcb.zip` (cópia idêntica: `dumper-v1.0-gerbers-jlcpcb.zip`) |
 | Camadas | 2 |
-| Dimensões | 112,1 × 79,1 mm (acima de 100 mm de largura: faixa de preço maior) |
+| Dimensões | 117,1 × 79,1 mm (acima de 100 mm de largura: faixa de preço maior) |
 | Espessura / acabamento | 1,6 mm, HASL |
 | Quantidade | 5 |
 | Furos | metalizados (inclui as vias de costura do GND) e 10 não metalizados de 3,2 mm (4 de canto e 6 do Mega) |
