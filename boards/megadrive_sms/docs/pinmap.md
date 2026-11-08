@@ -85,7 +85,7 @@ Os dois slots ficam em paralelo nos mesmos pinos do Mega, como no `six_slot_adap
 | B29 | /UWR_B29 | D7 | PH4 | sch ods fw six |
 | B30 | /M3_B30 | NC (sem ligação) | - | sch |
 | B31 | /TIME_B31 | D15 | PJ0 | sch ods fw six |
-| B32 | /CART_B32 | NC (sem ligação) | - | sch |
+| B32 | /CART_B32 | D50 | PB3 | **v. 1.2**: detecção de cartucho (o cartucho liga B32 ao GND; no Mega, `INPUT_PULLUP`; baixo = cartucho presente). D50 não é usado pelo OSCR neste fork (sem SD); fora do HW5 |
 
 ## Master System (ref. `U1` em `mastersystem_adapter`, 50 pinos)
 
@@ -141,3 +141,10 @@ Os dois slots ficam em paralelo nos mesmos pinos do Mega, como no `six_slot_adap
 | 48 | JRead | NC (sem ligação) | - | sch |
 | 49 | MC-F | NC (sem ligação) | - | sch |
 | 50 | NMI | NC (sem ligação) | - | sch |
+
+## Placa principal — o que esta placa liga além do slot
+
+| item | pino Arduino | fonte |
+|---|---|---|
+| LED de status (cátodo via 220Ω, ânodo em VCC; **ativo em nível baixo**) | D38 (PD7) | sch main D1/R1 + fw `statusLED()` |
+| Reset do Mega | RESET → J4.35 (adaptadores não usam) | sch main |

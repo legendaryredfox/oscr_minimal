@@ -55,6 +55,8 @@ BOARD_CFG = {
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C2 do slot e C3/C4 extras
     # só N64 (3,3 V): Si5351 (só o CLK1, EEPROM_CLK no pino 19), regulador de 3,3 V (U2, C2, C3, C4), R2 de 1 kΩ do D7 ao 3,3 V; sem PIC
     "n64": dict(caps=(), reg=True, nopic=True, clks=("CLK1",), r2_3v3=True, tps={}, regref=("U2", "C2", "C3", "C4")),
+    # Mega Drive + Master System: C2 a C4 do slot Mega Drive (como a megadrive) e C5 junto ao 5V do slot SMS; sem Si5351, PIC nem R2
+    "megadrive_sms": dict(caps=(2, 3, 4, 5), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
     "megadrive": dict(caps=(2, 3, 4), reg=False, mdonly=True, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}),
 }
 CFG = BOARD_CFG[BOARD]
@@ -67,7 +69,7 @@ NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
 
 R2_3V3 = CFG.get("r2_3v3", False)    # R2 puxa o D7 para o 3,3 V (EEPROM_DATA do N64)
 SI_CLKS = CFG.get("clks", ("CLK0",))   # saídas do Si5351 usadas pela placa sem PIC
-SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "GBA": "GBA1", "N64": "N64_1"}
+SLOT_REF = {"SNES": "SNES1", "NES": "NES1", "Famicom": "FC1", "Mega Drive": "MD1", "Master System": "SMS1", "GBA": "GBA1", "N64": "N64_1"}
 SLOTS = set()      # slots presentes no pinmap da placa
 MEGA = "A1"          # shield
 SI = "U1"            # Si5351: 1 VIN 2 GND 3 SDA 4 SCL 5 CLK2 6 CLK1 7 CLK0
@@ -82,7 +84,7 @@ MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50"
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
 if TROCA:
     MEGA_NC_OK -= {"D19", "D53"}       # D19 = comando do Q1 (PWR_EN), D53 = sensor do rail (SENSE_MCU)
-if BOARD in ("16_bits", "megadrive"):
+if BOARD in ("16_bits", "megadrive", "megadrive_sms"):
     MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
 
@@ -93,7 +95,7 @@ def read_pinmap():
     sec = None
     SLOTS.clear()
     for ln in PINMAP.read_text().splitlines():
-        m = re.match(r"## (SNES|NES|Famicom|Mega Drive|GBA|N64) \(", ln)
+        m = re.match(r"## (SNES|NES|Famicom|Mega Drive|Master System|GBA|N64) \(", ln)
         if m:
             sec = SLOT_REF[m.group(1)]
             SLOTS.add(sec)

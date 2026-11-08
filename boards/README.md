@@ -11,7 +11,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`famicom/`](famicom/) | Famicom | Projeto KiCad criado da `16_and_8_bits` (D98), sem Si5351 nem PIC, 107 × 65 mm, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
 | [`famicom_nes/`](famicom_nes/) | Famicom e NES | Projeto KiCad criado da `16_and_8_bits` (D100), Si5351 sem PIC, 117 × 79 mm (D124), gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
 | [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
-| [`megadrive_sms/`](megadrive_sms/) | Mega Drive, Master System | Fase 1: só `docs/pinmap.md` (SMS do `mastersystem_adapter` do OSCR); sem projeto KiCad. Pendências: Clock do SMS e medidas do slot (D136) |
+| [`megadrive_sms/`](megadrive_sms/) | Mega Drive, Master System | Projeto KiCad criado da `megadrive` v1.0 (D136), 107,1 × 83,1 mm, **v1.0 sem o bloco de troca**, gerbers v1.0 gerados. Nada encomendado. Pendências: direção da etiqueta do SMS, núcleo SMS no firmware |
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
 | [`gb_gba/`](gb_gba/) | GBA; GB e GBC por adaptador | Projeto KiCad criado de `16_and_8_bits` (D94), 138 × 67 mm, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
 | [`n64/`](n64/) | N64 | Projeto KiCad criado da `16_and_8_bits` (D121), 3,3 V, Si5351 só para a EEPROM, 110,1 × 65,1 mm, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
