@@ -614,3 +614,25 @@ def test_diff_summary_tamanhos_diferentes():
     assert diff_summary(b"abc", b"abc") == (0, -1)
     assert diff_summary(b"abcd", b"abc") == (1, 3)
     assert diff_summary(b"abxd", b"abcd") == (1, 2)
+
+
+def test_flash_id_8_bits_sugere_o_chip_da_tabela(monkeypatch, capsys):
+    resp = {"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "I=FFFF A=01AD B=0000 S=FFFF"}
+    code, o, _ = _flash_id(monkeypatch, capsys, resp, "--bus", "8", "--flash-kb", "2048")
+    assert code == 0 and o["ok"] and [c["name"] for c in o["candidates"]] == ["AM29F016B"] and o["candidates"][0]["flash_type"] == "29f032"
+
+
+def test_flash_id_8_bits_texto_e_aviso_de_tamanho(monkeypatch, capsys):
+    from oscr_host import cli
+    fake = _FakeFlash({"system": 7, "status": 0, "rom_size": 1 << 20, "save_size": 0, "save_type": 0, "name": "I=FFFF A=01AD B=0000 S=FFFF"})
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), {"flash_prog": True}))
+    assert cli.main(["--lang", "en", "flash-id", "--bus", "8", "--flash-kb", "1024"]) == 0
+    out = capsys.readouterr().out
+    assert "candidate: AM29F016B (29F032, 2048 KB, 5 V), answered routine A  ->  --flash-type 29f032 --flash-kb 2048" in out
+    assert "the given size (1024 KB) differs from the table's (2048 KB)" in out and "not a confirmation" in out
+
+
+def test_flash_id_id_fora_da_tabela(monkeypatch, capsys):
+    resp = {"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "ID 1234"}
+    code, o, _ = _flash_id(monkeypatch, capsys, resp, "--bus", "16", "--flash-kb", "2048")
+    assert code == 0 and o["candidates"] == []

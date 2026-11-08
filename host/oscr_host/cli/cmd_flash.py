@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from .. import flashdb
 from .. import protocol as P
 from .. import romimage as RI
 from . import common
@@ -57,8 +58,16 @@ def cmd_flash_id(args) -> int:
         return EXIT_ERROR
     legend = tr("fid.legend") if "=" in r["name"] else ""
     ok = r["status"] == 0
-    emit(args, {"ok": ok, "ids": r["name"], "size": r["rom_size"], "status": r["status"]},
-         [tr("fid.line", label=RI.FLASHPROG_LABEL[args.bus], ids=r["name"], legend=legend) if ok else tr("fid.none", label=RI.FLASHPROG_LABEL[args.bus])])
+    cands = flashdb.candidates(r["name"], args.bus) if ok and args.bus != "eprom" else []
+    lines = [tr("fid.line", label=RI.FLASHPROG_LABEL[args.bus], ids=r["name"], legend=legend) if ok else tr("fid.none", label=RI.FLASHPROG_LABEL[args.bus])]
+    if ok and args.bus != "eprom":
+        for cd in cands:
+            lines.append(tr("fid.cand", name=cd["name"], type=cd["type"], kb=cd["size"] // 1024, volt=cd["voltage"],
+                            routine=tr("fid.cand_routine", r=cd["routine"]) if cd["routine"] else "", opts=flashdb.command_hint(cd, args.bus)))
+            if args.flash_kb and args.flash_kb != cd["size"] // 1024:
+                lines.append(tr("fid.cand_size", given=args.flash_kb, table=cd["size"] // 1024, name=cd["name"]))
+        lines.append(tr("fid.cand_note") if cands else tr("fid.cand_none"))
+    emit(args, {"ok": ok, "ids": r["name"], "size": r["rom_size"], "status": r["status"], "candidates": cands}, lines)
     return EXIT_OK if ok else EXIT_NO_CART
 
 

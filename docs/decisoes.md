@@ -133,6 +133,7 @@
 - **D132** Cada versão em uma pasta com o nome da versão (pedido do usuário, 2026-11-08)
 - **D133** CLI Python multi-idioma, primeira fatia (2026-11-08)
 - **D134** PNGs do render dentro da pasta de cada versão (pedido do usuário, 2026-11-08)
+- **D135** Tabela de chips de flash do OSCR no `flash-id` (CRDB achado; pedido do usuário, 2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1087,3 +1088,12 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Pedido.** "Dentro de cada pasta de versão do hardware deve ter o png print do kicad e o próprio readme."
 - **Mudança.** `boards/<placa>/renders/` deixou de existir. Cada `hardware-<versão>/` tem `render-cima.png`, `render-baixo.png` (print do render 3D do KiCad, 1768 × 1064) e `README.md`, ao lado do projeto KiCad. `boards/<placa>/render.png` (versão mais nova, de cima) continua na pasta da placa. `tools/render_board.sh` e `tools/gen_readme_versoes.py` escrevem e referenciam os novos caminhos; READMEs das placas, `docs/versoes.md` e `fab/PEDIDO.md` da `16_bits` e `CLAUDE.md` foram ajustados.
 - **Verificação.** As 19 pastas de versão têm README, os dois PNGs e o `.kicad_pcb`; todo link de imagem dos READMEs existe. Atenção: `render_board.sh` copia a **última versão da lista** para `render.png`; ao refazer uma versão antiga, passe todas as versões na ordem (ou restaure o `render.png`).
+
+### D135 — Tabela de chips de flash do OSCR no `flash-id` (CRDB achado; pedido do usuário, 2026-11-08)
+- **Pedido.** "Veja se consegue achar arquivos .crdb online" e "pode procurar no github, gitlab e codeberg".
+- **Achado.** Não existem `.crdb` prontos para baixar: o `databases/` do firmware novo é o submódulo `oscartreader/oscr-databases`, cujos `data/*.json` são a **fonte**; o firmware compila esses JSON para CRDB na hora do build (`builder/crdb.py`). O PC não precisa ler binário: os JSON já estão no projeto desde a D127 (os de jogos). Faltava `flash.json` (tipo `IC`), a tabela ID do chip → tipo, tamanho, setor, buffer e tensão, que no OSCR vinha do cartão SD. Não achei bases em gitlab.com nem no codeberg.org (busca pela API de cada um).
+- **Feito.** `database/oscr/chips/flash.json` (cópia byte a byte, commit `7cfa388`, mesma situação de licença da D127; `chips/ORIGEM.txt`), importada por `tools/importar_oscr_databases.py`. Python `oscr_host/flashdb.py` e Kotlin `oscr/FlashChips.kt` leem a tabela. `flash-id` (barramentos 8, plcc32 e 16) acrescenta ao texto e ao JSON `candidates[]` (`routine`, `id`, `name`, `type`, `flash_type`, `size`, `sector_kb`, `buffer`, `voltage`) e mostra as opções da CLI (`--flash-type 29f032 --flash-kb 2048 [--sector-kb 64 --buffer 32]`). Avisa se o `--flash-kb` dado difere do da tabela.
+- **Só sugere.** Nada é escolhido sozinho: `flash-erase` e `flash-write` continuam exigindo `--flash-type` (8 bits) do usuário. Motivo: o ID só diz o chip se o cartucho for o esperado, e um tipo errado apaga/grava com o algoritmo errado. Chips de 16 bits só aparecem com `--bus 16`; os de tipo 0 (flash de GBA) ficam de fora; o mesmo ID pode servir a dois chips (017E: S29GL032M e S29GL064M), então lista os dois.
+- **Fora do escopo.** `nes-mappers.json` e os `*-mappers.json` de outros sistemas (faixas de PRG/CHR/RAM por mapper) não entraram: o PC já valida isso em `NesRules`. Nada foi testado em chip real.
+- **Testes.** Host 217; Gradle `FlashChipsTest` (4) e `flash-id` nos dois.
+

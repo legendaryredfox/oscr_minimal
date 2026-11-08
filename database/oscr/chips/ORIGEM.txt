@@ -1,0 +1,5 @@
+Tabela de chips de flash do OSCR (ID -> tipo, tamanho, setor, buffer), usada pelo flash-id para sugerir --flash-type e --flash-kb (D135).
+Origem : https://github.com/oscartreader/oscr-databases  (data/flash.json)
+Commit : 7cfa388
+Licença: a mesma do resto de database/oscr/json (o repositório de origem não declara licença; ver ../json/ORIGEM.txt).
+Cópia byte a byte. Gerado por tools/importar_oscr_databases.py. Não editar à mão.

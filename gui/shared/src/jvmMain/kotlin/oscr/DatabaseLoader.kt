@@ -109,6 +109,9 @@ object DatabaseLoader {
         }
     }
 
+    /** JSON genérico (mapas, listas, textos, números Long/Double, booleanos, null); para outros leitores do projeto, como a tabela de chips. */
+    fun readJson(text: String): Any? = Json(text).value()
+
     /** Lê uma base `data/NOME.json` do repositório oscartreader/oscr-databases (D127), igual a parse_oscr_json de host/oscr_host/database.py: só `type` CART, só registros com CRC32. */
     fun parseOscrJson(text: String, source: String): List<DbEntry> {
         val d = try { Json(text).value() } catch (e: DatabaseError) { throw DatabaseError("$source: invalid JSON (${e.message})") }

@@ -39,8 +39,21 @@ internal fun cmdFlashId(io: CliIo, a: Args): Int {
     }
     val ok = r.status == 0
     val legend = if ('=' in r.name) Msg.t("fid.legend") else ""
-    emit(io, a, Json.obj("ok" to ok, "ids" to r.name, "size" to r.romSize, "status" to r.status),
-        listOf(if (ok) Msg.t("fid.line", "label" to FlashProg.LABEL.getValue(bus), "ids" to r.name, "legend" to legend) else Msg.t("fid.none", "label" to FlashProg.LABEL.getValue(bus))))
+    val cands = if (ok && bus != "eprom") FlashChips.candidates(r.name, bus) else emptyList()
+    val lines = ArrayList<String>()
+    lines += if (ok) Msg.t("fid.line", "label" to FlashProg.LABEL.getValue(bus), "ids" to r.name, "legend" to legend) else Msg.t("fid.none", "label" to FlashProg.LABEL.getValue(bus))
+    if (ok && bus != "eprom") {
+        val given = fpInt(a, "flash-kb")
+        for (cd in cands) {
+            lines += Msg.t("fid.cand", "name" to cd.name, "type" to cd.type, "kb" to cd.size / 1024, "volt" to cd.voltage,
+                "routine" to (if (cd.routine.isNotEmpty()) Msg.t("fid.cand_routine", "r" to cd.routine) else ""), "opts" to FlashChips.commandHint(cd, bus))
+            if (given != null && given.toLong() != cd.size / 1024) lines += Msg.t("fid.cand_size", "given" to given, "table" to cd.size / 1024, "name" to cd.name)
+        }
+        lines += if (cands.isNotEmpty()) Msg.t("fid.cand_note") else Msg.t("fid.cand_none")
+    }
+    val candJson = cands.map { Json.obj("routine" to it.routine, "id" to it.id, "name" to it.name, "type" to it.type, "flash_type" to it.flashType, "size" to it.size,
+        "sector_kb" to it.sectorKb, "buffer" to it.buffer, "voltage" to it.voltage) }
+    emit(io, a, Json.obj("ok" to ok, "ids" to r.name, "size" to r.romSize, "status" to r.status, "candidates" to candJson), lines)
     return if (ok) EXIT_OK else EXIT_NO_CART
 }
 

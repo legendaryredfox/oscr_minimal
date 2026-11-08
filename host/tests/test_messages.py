@@ -171,3 +171,20 @@ def test_todo_help_do_parser_vem_do_catalogo():
     from pathlib import Path
     src = (Path(__file__).resolve().parents[1] / "oscr_host/cli/parser.py").read_text(encoding="utf-8")
     assert not re.search(r'help_?=\s*"', src), "help= com texto fixo no parser: use H(\"chave\") e o catálogo (help_texts.py)"
+
+
+# ---------------------------------------------------------------- tabela de chips (flash.json, D135)
+def test_tabela_de_chips_acha_pelo_id():
+    from oscr_host import flashdb
+    assert len(flashdb.records()) >= 30
+    assert flashdb.ids_from_text("I=FFFF A=01AD B=0000 S=FFFF") == [("A", "01AD")]
+    assert flashdb.ids_from_text("ID C2F1") == [("", "C2F1")]
+    c = flashdb.candidates("I=FFFF A=01AD B=0000 S=FFFF", "8")
+    assert [x["name"] for x in c] == ["AM29F016B"] and c[0]["flash_type"] == "29f032" and c[0]["size"] == 2 << 20
+    assert flashdb.command_hint(c[0], "8") == "--flash-type 29f032 --flash-kb 2048"
+    g = flashdb.candidates("I=FFFF A=FFFF B=017E S=FFFF", "8")                 # o mesmo ID serve a dois chips: lista os dois, com setor e buffer
+    assert sorted(x["name"] for x in g) == ["S29GL032M", "S29GL064M"]
+    assert "--sector-kb 64 --buffer 32" in flashdb.command_hint(g[0], "8")
+    assert flashdb.candidates("ID C2F1", "16")[0]["name"] == "MX29F1610" and flashdb.command_hint(flashdb.candidates("ID C2F1", "16")[0], "16") == "--flash-kb 2048"
+    assert flashdb.candidates("ID C2F1", "8") == []                              # barramento errado: não sugere
+    assert flashdb.candidates("ID 227E", "16") == []                             # 227E de 16 bits são chips de GBA (tipo 0), fora desta tabela

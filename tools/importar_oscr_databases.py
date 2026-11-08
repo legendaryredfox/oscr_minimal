@@ -41,6 +41,15 @@ def main(argv) -> int:
         nomes.append(f"json/{f.name}")
         linhas.append(f"{f.name}  {d.get('system', '?')}  {len(d['records'])} registros, {ok} com CRC32")
         total += len(d["records"]); validos += ok
+    flash = src / "flash.json"                                        # tabela de chips (type IC): ID -> tipo, tamanho, setor, buffer (D135)
+    if flash.is_file():
+        (DST / "chips").mkdir(exist_ok=True)
+        (DST / "chips" / "flash.json").write_bytes(flash.read_bytes())
+        (DST / "chips" / "ORIGEM.txt").write_text(
+            "Tabela de chips de flash do OSCR (ID -> tipo, tamanho, setor, buffer), usada pelo flash-id para sugerir --flash-type e --flash-kb (D135).\n"
+            f"Origem : https://github.com/oscartreader/oscr-databases  (data/flash.json)\nCommit : {commit}\n"
+            "Licença: a mesma do resto de database/oscr/json (o repositório de origem não declara licença; ver ../json/ORIGEM.txt).\n"
+            "Cópia byte a byte. Gerado por tools/importar_oscr_databases.py. Não editar à mão.\n")
     index = DST / "INDEX.txt"
     antigas = [l for l in index.read_text().split() if not l.startswith("json/")] if index.exists() else []
     index.write_text("\n".join(antigas + nomes) + "\n")
