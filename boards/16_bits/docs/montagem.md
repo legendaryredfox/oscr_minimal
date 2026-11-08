@@ -111,3 +111,14 @@ Use um cartucho simples: SNES LoROM. Escolha o sistema, faça `detect` e depois 
 - Medidas dos slots e do módulo Si5351 (D17, D23).
 - Altura dos espaçadores M3 dos cantos (D25): o USB-C e o jack do Mega têm que passar por baixo do shield.
 - Posição do módulo Si5351 sobre o header (sem furos de fixação): confira que ele não encosta em peças.
+
+## F1, J1 e seletor de tensão (D138)
+
+<!-- d138 -->
+
+1. **F1** (ou o fio no lugar dele) entra junto com os componentes baixos: depois dos resistores e antes dos capacitores. Confira que não há curto entre o lado do 5 V do Mega e o lado dos slots depois dele.
+2. Teste antes de ligar: continuidade entre os dois furos do F1 (menos de 2 Ω), nenhuma entre 5 V e GND.
+3. **Seletor (v1.3)**: solde os resistores comuns, as redes RN1 a RN5 (DIP-16 com a marca no pino 1, de preferência em soquete), os capacitores, o Q5, o LDO e o Q4 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**).
+4. Gravar `pio run -e SerialASCII_PowerVolt -t upload` (firmware com o seletor no D18). Liga em **5 V** por padrão; `dumper power on --voltage 3v3` liga a 3,3 V.
+5. Medidas sem cartucho: em 5 V, o VCC dos slots fica entre 4,6 e 5,1 V (queda do PTC e do Q4); com `--voltage 3v3`, entre 3,2 e 3,4 V (LDO). Com o J1 fechado, `--voltage 5v` não consegue passar de 3,3 V.
+6. Os slots Mega Drive são os únicos com resistores em série e seletor; o resto da placa (Si5351, PIC e outros slots) fica sempre em 5 V.

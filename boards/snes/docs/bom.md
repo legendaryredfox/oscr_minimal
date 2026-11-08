@@ -55,3 +55,15 @@ Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). P
 Os pinos de 5V dos slots, do Si5351 e do PIC e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
 
 Peças a comprar a mais por placa: 1 × IRF9540N, 2 × 2N7000, 1 LED verde e 1 LED amarelo de 3 mm, resistores axiais 1/4 W (pequenos, 0204 ou 0207 em pé): 100 kΩ × 2, 100 Ω × 1, 1 kΩ × 3, 330 Ω × 1.
+
+## F1, J1 e seletor de tensão (D138)
+
+<!-- d138 -->
+
+Peças opcionais a comprar a mais por placa:
+
+| Ref. | Peça | Qtd | Onde |
+|---|---|---|---|
+| F1 | PTC de furo passante 0,35 a 0,5 A (Bourns MF-RHT050) | 1 | todas as versões (v1.0 e v1.1) |
+
+**F1** (PTC de furo passante, Bourns MF-RHT050 ou equivalente de 0,35 a 0,5 A de retenção, passo de 5,1 mm), em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 e v1.1 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o F1, ponha um fio ou uma ponte de solda entre os dois furos dele**, senão a placa fica sem 5 V.

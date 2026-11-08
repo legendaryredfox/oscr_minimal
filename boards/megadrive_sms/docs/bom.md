@@ -38,3 +38,24 @@ Sem Si5351, sem PIC, sem soquete DIP-8, sem R2 e **sem o bloco de troca de cartu
 | Pinos macho 2,54 mm, **cauda longa** (≥ 10 mm abaixo, ≥ 5 mm acima) | **85 posições** | Todos os pads do shield, inclusive os sem sinal (2 tiras 1x40 e 1 tira 2x20, corte em 2x18). |
 | Espaçador M3 + pé de borracha | 6 | Furos de canto; só apoio. |
 | Cabo USB-C | 1 | Interface com o PC. |
+
+## F1, J1 e seletor de tensão (D138)
+
+<!-- d138 -->
+
+Peças opcionais a comprar a mais por placa:
+
+| Ref. | Peça | Qtd | Onde |
+|---|---|---|---|
+| F1 | PTC de furo passante 0,35 a 0,5 A (Bourns MF-RHT050) | 1 | todas as versões (v1.0 e v1.1) |
+| J1 | cabeçalho de 2 pinos de 2,54 mm e um jumper ("TRAVA 3,3 V") | 1 | v1.1 |
+| LDO | LD1117V33 (TO-220) | 1 | v1.1 |
+| Q4 | IRF9540N (P-MOSFET, TO-220) | 1 | v1.1 |
+| Q5 | 2N7000 (TO-92) | 1 | v1.1 |
+| RN1 a RN7 | rede isolada de 8 resistores de 470 Ω, DIP-16 | 7 | v1.1 |
+| C (2) | 100 nF cerâmico e 10 µF/16 V eletrolítico (entrada e saída do LDO) | 2 | v1.1 |
+| R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | v1.1 |
+
+**F1** (PTC de furo passante, Bourns MF-RHT050 ou equivalente de 0,35 a 0,5 A de retenção, passo de 5,1 mm), em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 e v1.1 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o F1, ponha um fio ou uma ponte de solda entre os dois furos dele**, senão a placa fica sem 5 V.
+
+Seletor 3,3 V/5 V nos slots Mega Drive, Master System (resto da placa sempre em 5 V). Preço aproximado das peças extras: menos de US$ 3 por placa (estimativa de varejo, não cotada).
