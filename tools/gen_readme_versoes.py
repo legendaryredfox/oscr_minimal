@@ -80,8 +80,8 @@ def gerar(placa):
         linhas = bom(sch)
         mapa = {chave(r): r for r in linhas}
         md = [f"# {placa} {v}", ""]
-        md += [f"![{placa} {v}, vista de cima (render 3D do KiCad)](../renders/{placa}-{v}-cima.png)", "",
-               f"![{placa} {v}, vista de baixo (render 3D do KiCad)](../renders/{placa}-{v}-baixo.png)", ""]
+        md += [f"![{placa} {v}, vista de cima (render 3D do KiCad)](render-cima.png)", "",
+               f"![{placa} {v}, vista de baixo (render 3D do KiCad)](render-baixo.png)", ""]
         md += [f"Versão **{v}** da placa [`{placa}`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. "
                f"{'Esta é a versão mais nova.' if i == len(vers) - 1 else 'Versão anterior, mantida ao lado da mais nova.'}", "",
                "| | |", "|---|---|",
@@ -89,7 +89,7 @@ def gerar(placa):
                f"| Desligar o 5V por software | {'**sim**' if bloco else '**não**'} |",
                f"| Projeto KiCad | [`{hw}/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |",
                f"| Fábrica (JLCPCB) | `../fab/{gd}/`, `../fab/dumper-{v}-jlcpcb.zip` |",
-               f"| Renders | `../renders/{placa}-{v}-cima.png`, `../renders/{placa}-{v}-baixo.png` |",
+               f"| Renders | `render-cima.png`, `render-baixo.png` |",
                "| Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |", ""]
         md += ["## Troca de cartucho", "", COM_BLOCO if bloco else SEM_BLOCO, ""]
         if nota:

@@ -1,8 +1,8 @@
 # 16_bits v1.3
 
-![16_bits v1.3, vista de cima (render 3D do KiCad)](../renders/16_bits-v1.3-cima.png)
+![16_bits v1.3, vista de cima (render 3D do KiCad)](render-cima.png)
 
-![16_bits v1.3, vista de baixo (render 3D do KiCad)](../renders/16_bits-v1.3-baixo.png)
+![16_bits v1.3, vista de baixo (render 3D do KiCad)](render-baixo.png)
 
 Versão **v1.3** da placa [`16_bits`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Esta é a versão mais nova.
 
@@ -14,7 +14,7 @@ Versão **v1.3** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Desligar o 5V por software | **sim** |
 | Projeto KiCad | [`hardware-v1.3/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.3/`, `../fab/dumper-v1.3-jlcpcb.zip` |
-| Renders | `../renders/16_bits-v1.3-cima.png`, `../renders/16_bits-v1.3-baixo.png` |
+| Renders | `render-cima.png`, `render-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho

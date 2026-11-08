@@ -1,8 +1,8 @@
 # snes v1.1
 
-![snes v1.1, vista de cima (render 3D do KiCad)](../renders/snes-v1.1-cima.png)
+![snes v1.1, vista de cima (render 3D do KiCad)](render-cima.png)
 
-![snes v1.1, vista de baixo (render 3D do KiCad)](../renders/snes-v1.1-baixo.png)
+![snes v1.1, vista de baixo (render 3D do KiCad)](render-baixo.png)
 
 Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Esta é a versão mais nova.
 
@@ -14,7 +14,7 @@ Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino M
 | Desligar o 5V por software | **sim** |
 | Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
-| Renders | `../renders/snes-v1.1-cima.png`, `../renders/snes-v1.1-baixo.png` |
+| Renders | `render-cima.png`, `render-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho

@@ -46,9 +46,8 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   ├── 16_bits/              # SNES e Mega Drive (derivada da 16_and_8_bits, menor)
 │   ├── 16_and_8_bits/        # placa de 5 slots: SNES, NES, Famicom, Mega Drive e GBA (fabricável, nada encomendado)
 │   │   ├── README.md
-│   │   ├── hardware-v1.0/    # uma pasta por versão (hardware-v1.1/ ...): dumper.kicad_pro / .kicad_sch / .kicad_pcb e README.md da versão
+│   │   ├── hardware-v1.0/    # uma pasta por versão (hardware-v1.1/ ...): dumper.kicad_pro / .kicad_sch / .kicad_pcb, render-cima.png, render-baixo.png e README.md da versão
 │   │   ├── hardware-v1.1/    # a versão atual de cada placa está em boards/versoes.json
-│   │   ├── renders/          # PNGs do render 3D do KiCad (cima e baixo) de cada versão
 │   │   ├── fab/              # gerbers-<versão>/, bom-<versão>.csv e um zip por versão para a JLCPCB
 │   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
 │   ├── 8_bits/               # esqueleto: NES, Famicom, Master System

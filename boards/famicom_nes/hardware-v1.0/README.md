@@ -1,8 +1,8 @@
 # famicom_nes v1.0
 
-![famicom_nes v1.0, vista de cima (render 3D do KiCad)](../renders/famicom_nes-v1.0-cima.png)
+![famicom_nes v1.0, vista de cima (render 3D do KiCad)](render-cima.png)
 
-![famicom_nes v1.0, vista de baixo (render 3D do KiCad)](../renders/famicom_nes-v1.0-baixo.png)
+![famicom_nes v1.0, vista de baixo (render 3D do KiCad)](render-baixo.png)
 
 Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão anterior, mantida ao lado da mais nova.
 
@@ -14,7 +14,7 @@ Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Ar
 | Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
-| Renders | `../renders/famicom_nes-v1.0-cima.png`, `../renders/famicom_nes-v1.0-baixo.png` |
+| Renders | `render-cima.png`, `render-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho

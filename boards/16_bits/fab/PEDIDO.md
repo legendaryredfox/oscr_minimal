@@ -62,7 +62,7 @@ O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos 
 
 ## Antes de pagar
 
-1. Veja a prévia de cima e de baixo na página da JLCPCB e compare com `../renders/16_bits-v1.2-cima.png` e `../renders/16_bits-v1.2-baixo.png` (a de baixo está espelhada, como se vira a placa).
+1. Veja a prévia de cima e de baixo na página da JLCPCB e compare com `../hardware-v1.2/render-cima.png` e `../hardware-v1.2/render-baixo.png` (a de baixo está espelhada, como se vira a placa).
 2. A largura de 108 mm passa de 100 mm, então cai na faixa de preço maior.
 3. O silk de baixo tem 3 linhas de crédito (OSCR, sanni, github): conferir que não ficou cortado.
 

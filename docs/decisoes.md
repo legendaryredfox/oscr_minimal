@@ -132,6 +132,7 @@
 - **D131** `firmware-flash`: gravar o firmware do fork no Mega pela CLI (2026-11-08)
 - **D132** Cada versão em uma pasta com o nome da versão (pedido do usuário, 2026-11-08)
 - **D133** CLI Python multi-idioma, primeira fatia (2026-11-08)
+- **D134** PNGs do render dentro da pasta de cada versão (pedido do usuário, 2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1079,3 +1080,8 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Falta.** Na Kotlin: as linhas de `flash-id`, `identify`/`search` e o `HELP`. Nas duas: o rótulo da barra de progresso e o `--help` e os `help=` do argparse continuam em português; a **CLI Kotlin** (hoje em inglês, só os erros do dispositivo seguem `--lang`) ainda não usa catálogo. As traduções ru e zh pedem revisão nativa (como as da GUI).
 - **Testes.** `host/tests/test_messages.py` (catálogo completo e com os mesmos campos nos quatro idiomas, escolha do idioma, JSON sem mudar de forma, `errors`, `power`, `detect`, recusa em russo); host com 209 testes.
 
+
+### D134 — PNGs do render dentro da pasta de cada versão (pedido do usuário, 2026-11-08)
+- **Pedido.** "Dentro de cada pasta de versão do hardware deve ter o png print do kicad e o próprio readme."
+- **Mudança.** `boards/<placa>/renders/` deixou de existir. Cada `hardware-<versão>/` tem `render-cima.png`, `render-baixo.png` (print do render 3D do KiCad, 1768 × 1064) e `README.md`, ao lado do projeto KiCad. `boards/<placa>/render.png` (versão mais nova, de cima) continua na pasta da placa. `tools/render_board.sh` e `tools/gen_readme_versoes.py` escrevem e referenciam os novos caminhos; READMEs das placas, `docs/versoes.md` e `fab/PEDIDO.md` da `16_bits` e `CLAUDE.md` foram ajustados.
+- **Verificação.** As 19 pastas de versão têm README, os dois PNGs e o `.kicad_pcb`; todo link de imagem dos READMEs existe. Atenção: `render_board.sh` copia a **última versão da lista** para `render.png`; ao refazer uma versão antiga, passe todas as versões na ordem (ou restaure o `render.png`).

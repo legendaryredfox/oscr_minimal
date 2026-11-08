@@ -59,8 +59,8 @@ O desligamento do 5V dos slots por software (bloco de troca de cartucho, D126) �
 
 | Versão | Bloco de troca (Q1, Q2, Q3, LEDs, D19 e D53) | Projeto KiCad | Fábrica | Renders (cima e baixo) |
 |---|---|---|---|---|
-| v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `renders/n64-v1.0-cima.png`, `renders/n64-v1.0-baixo.png` |
-| v1.1 | sim | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `renders/n64-v1.1-cima.png`, `renders/n64-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
+| v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
+| v1.1 | sim | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `hardware-v1.1/render-cima.png`, `hardware-v1.1/render-baixo.png` (`render.png` = v1.1, de cima) |
 
 A v1.0 é o projeto de antes do D126, restaurado do histórico do git; os gerbers dela foram regerados da pasta `hardware-v1.0/`. Verificação: `python3 tools/check_netlist.py --board n64 --sem-troca boards/n64/hardware-v1.0/dumper.kicad_sch` (v1.0) e `python3 tools/check_netlist.py --board n64` (v1.1). Para refazer os gerbers da v1.0: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh n64 v1.0`. Nenhuma das duas foi encomendada, montada nem testada com cartucho.
 

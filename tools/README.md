@@ -2,7 +2,7 @@
 
 Scripts de apoio ao hardware. Todos rodam a partir da raiz do repositório. Os gerais (`gen_pinmap.py`, `build_lib.py`, `plan_layout.py`...) apontam para a placa `boards/16_and_8_bits/`; `check_netlist.py` e `export_fab.sh` aceitam a placa como argumento, e cada placa tem a sua pasta de scripts em `tools/boards/<placa>/`. `tools/historico/` guarda o registro de scripts que já cumpriram o papel (`pcb_v12/`, `revisao/`).
 
-`render_board.sh <placa> <versões...>` refaz os PNGs de `boards/<placa>/renders/`; `gen_readme_versoes.py` refaz o `README.md` de cada versão (D129).
+`render_board.sh <placa> <versões...>` refaz `render-cima.png` e `render-baixo.png` dentro de cada `boards/<placa>/hardware-<versão>/`; `gen_readme_versoes.py` refaz o `README.md` de cada versão (D129).
 
 | Script | Para quê | Precisa de |
 |---|---|---|

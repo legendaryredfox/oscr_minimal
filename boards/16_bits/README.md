@@ -12,13 +12,13 @@ Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES**
 
 ## Versões (D128, 2026-11-07)
 
-Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não tem** o circuito de desligar o 5V dos slots pelo Arduino; a **v1.3** tem o bloco de troca de cartucho. Um par de PNGs (cima e baixo) por versão em `renders/` e um `README.md` por versão na pasta de hardware dela.
+Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não tem** o circuito de desligar o 5V dos slots pelo Arduino; a **v1.3** tem o bloco de troca de cartucho. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
 
 | Versão | Projeto | Bloco de troca (Q1, Q2, Q3, LEDs, D19, D53) | Botão de reset | PNGs |
 |---|---|---|---|---|
-| v1.0 | `hardware-v1.0/` | não | não | `renders/16_bits-v1.0-cima.png`, `renders/16_bits-v1.0-baixo.png` |
-| v1.2 | `hardware-v1.2/` | **não** | **não** | `renders/16_bits-v1.2-cima.png`, `renders/16_bits-v1.2-baixo.png` |
-| v1.3 | `hardware-v1.3/` | sim | **não** | `renders/16_bits-v1.3-cima.png`, `renders/16_bits-v1.3-baixo.png` (`render.png`) |
+| v1.0 | `hardware-v1.0/` | não | não | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
+| v1.2 | `hardware-v1.2/` | **não** | **não** | `hardware-v1.2/render-cima.png`, `hardware-v1.2/render-baixo.png` |
+| v1.3 | `hardware-v1.3/` | sim | **não** | `hardware-v1.3/render-cima.png`, `hardware-v1.3/render-baixo.png` (`render.png`) |
 
 Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, valem só para a v1.3 (chave) ou para nenhuma versão (reset).**
 

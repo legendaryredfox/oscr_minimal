@@ -7,7 +7,7 @@ Pedido do usuário em 2026-11-07: o botão de reset sai de todas as versões; a 
 | Projeto KiCad | `hardware-v1.0/` | `hardware-v1.2/` | `hardware-v1.3/` |
 | Gerbers e zip | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip` | `fab/gerbers-v1.2/`, `fab/dumper-v1.2-jlcpcb.zip` | `fab/gerbers-v1.3/`, `fab/dumper-v1.3-jlcpcb.zip` |
 | Lista de peças (CSV) | — | `fab/bom-v1.2.csv` | `fab/bom-v1.3.csv` |
-| PNGs | `renders/16_bits-v1.0-cima.png`, `-baixo.png` | `renders/16_bits-v1.2-cima.png`, `-baixo.png` | `renders/16_bits-v1.3-cima.png`, `-baixo.png` (`render.png` = v1.3, de cima) |
+| PNGs | `hardware-v1.0/render-cima.png`, `-baixo.png` | `hardware-v1.2/render-cima.png`, `-baixo.png` | `hardware-v1.3/render-cima.png`, `-baixo.png` (`render.png` = v1.3, de cima) |
 | Resistores série (0 Ω) nas 12 linhas de controle, pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste, furos M3 do Mega | não | sim | sim |
 | TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | sim |
 | Botão de reset (SW1) | não | **não** | **não** |
