@@ -21,16 +21,17 @@ object Cli {
     fun run(argv: List<String>, io: CliIo): Int {
         val jsonWanted = "--json" in argv
         val colorMode = argv.zipWithNext().firstOrNull { it.first == "--color" }?.second ?: argv.firstOrNull { it.startsWith("--color=") }?.substringAfter('=')
-        var lang = Lang.EN
+        val lang = Msg.detect(argv, io.env)
+        Msg.lang = lang
         try {
             val a = parseArgs(argv)
-            a.opts["lang"]?.let { t -> lang = Lang.entries.firstOrNull { it.tag.equals(t, true) || it.tag.substringBefore('-').equals(t, true) } ?: throw CliError("usage", "unknown --lang: $t", EXIT_USAGE) }
+            a.opts["lang"]?.let { t -> if (Msg.parse(t) == null) throw CliError("usage", Msg.t("args.unknown_lang", "tag" to t), EXIT_USAGE) }
             if ("version" in a.flags) { io.out("dumper-kt $VERSION (protocol ${Proto.VERSION})"); return EXIT_OK }
             if ("help" in a.flags || a.cmd == null) { if (Ui.on(colorMode, io.stdoutTty, jsonWanted)) io.out(Ui.banner(true, VERSION) + "\n"); io.out(HELP); return if (a.cmd == null && "help" !in a.flags) EXIT_USAGE else EXIT_OK }
-            if (a.cmd !in COMMANDS) throw CliError("usage", "unknown command: ${a.cmd}. Use: ${COMMANDS.joinToString(" ")}", EXIT_USAGE)
-            a.opts["power"]?.let { if (it !in setOf("auto", "keep")) throw CliError("usage", "--power must be auto or keep", EXIT_USAGE) }
-            a.opts["color"]?.let { if (it !in setOf("auto", "always", "never")) throw CliError("usage", "--color must be auto, always or never", EXIT_USAGE) }
-            a.opts["progress"]?.let { if (it !in setOf("auto", "none", "jsonl")) throw CliError("usage", "--progress must be auto, none or jsonl", EXIT_USAGE) }
+            if (a.cmd !in COMMANDS) throw CliError("usage", Msg.t("args.unknown_cmd", "cmd" to a.cmd, "cmds" to COMMANDS.joinToString(" ")), EXIT_USAGE)
+            a.opts["power"]?.let { if (it !in setOf("auto", "keep")) throw CliError("usage", Msg.t("args.power"), EXIT_USAGE) }
+            a.opts["color"]?.let { if (it !in setOf("auto", "always", "never")) throw CliError("usage", Msg.t("args.color"), EXIT_USAGE) }
+            a.opts["progress"]?.let { if (it !in setOf("auto", "none", "jsonl")) throw CliError("usage", Msg.t("args.progress"), EXIT_USAGE) }
             return when (a.cmd) {
                 "ports" -> cmdPorts(io, a)
                 "power" -> cmdPower(io, a)
@@ -57,7 +58,7 @@ object Cli {
             val (kind, code) = when (e.code) { 3 -> "no_cartridge" to EXIT_NO_CART; 10 -> "no_save" to EXIT_ERROR; else -> "device_error" to EXIT_ERROR }
             return fail(io, jsonWanted, colorMode = colorMode, e = CliError(kind, describeError(lang, e), code, extra = mapOf("device_code" to e.code)))
         } catch (e: TimeoutError) {
-            return fail(io, jsonWanted, colorMode = colorMode, e = CliError("timeout", describeError(lang, e), EXIT_ERROR, "the device stopped responding; check the cable and retry"))
+            return fail(io, jsonWanted, colorMode = colorMode, e = CliError("timeout", describeError(lang, e), EXIT_ERROR, Msg.t("err.timeout")))
         } catch (e: ProtocolError) {
             val open = e.fail == Fail.OPEN_PORT
             return fail(io, jsonWanted, colorMode = colorMode, e = CliError(if (open) "open_port" else "protocol", describeError(lang, e), if (open) EXIT_NO_DEVICE else EXIT_ERROR))

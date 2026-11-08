@@ -13,7 +13,7 @@ internal val EXT_SYSTEM = mapOf("sfc" to CartSystem.SNES, "smc" to CartSystem.SN
 
 internal fun cmdIdentify(io: CliIo, a: Args): Int {
     val db = loadDb(a, required = true)!!
-    if (a.positional.isEmpty()) throw CliError("usage", "identify needs at least one file", EXIT_USAGE)
+    if (a.positional.isEmpty()) throw CliError("usage", Msg.t("args.identify"), EXIT_USAGE)
     val results = a.positional.map { f ->
         val file = File(f); val data = file.readBytes()
         val sys = if (a.opts["system"] != null) system(a) else EXT_SYSTEM[file.extension.lowercase()] ?: CartSystem.MOCK
@@ -29,7 +29,7 @@ internal fun cmdIdentify(io: CliIo, a: Args): Int {
 
 internal fun cmdSearch(io: CliIo, a: Args): Int {
     val db = loadDb(a, required = true)!!
-    val q = a.positional.joinToString(" ").ifBlank { throw CliError("usage", "search needs a query", EXIT_USAGE) }
+    val q = a.positional.joinToString(" ").ifBlank { throw CliError("usage", Msg.t("args.search"), EXIT_USAGE) }
     val found = db.search(q, a.opts["limit"]?.let { a.int("limit") } ?: 20)
     emit(io, a, Json.obj("entries_in_database" to db.size, "results" to found.map { entryJson(it) }),
         found.map { e -> "${hex8(e.crc)}  ${e.name}" + (e.nesOptions()?.let { "  [mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB, RAM ${it.ramKb} KB]" } ?: "") }.ifEmpty { listOf("no results") })

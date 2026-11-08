@@ -136,3 +136,11 @@ def test_checksum_do_cabecalho_traduzido():
     assert str(c) == "header checksum (GBA) does NOT match: header 0012, computed 0034"
     messages.set_lang("zh-CN")
     assert "头部校验和（GBA）不一致" in str(c)
+
+
+def test_catalogo_da_cli_kotlin_esta_em_dia():
+    """A CLI Kotlin lê gui/.../oscr/cli-messages.tsv, gerado deste catálogo: rode `python3 tools/gen_cli_messages.py` depois de mexer em messages.py."""
+    import subprocess, sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    assert subprocess.run([sys.executable, str(root / "tools" / "gen_cli_messages.py"), "--check"]).returncode == 0

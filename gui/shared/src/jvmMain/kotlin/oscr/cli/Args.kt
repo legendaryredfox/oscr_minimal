@@ -8,7 +8,7 @@ internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: 
     val json get() = "json" in flags
     fun int(name: String): Int {
         val v = opts[name] ?: return 0
-        return v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", "--$name needs a non-negative integer, got '$v'", EXIT_USAGE)
+        return v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
     }
 }
 
@@ -31,20 +31,20 @@ internal fun parseArgs(argv: List<String>): Args {
                 val body = a.substring(2); val eq = body.indexOf('=')
                 val name = if (eq >= 0) body.substring(0, eq) else body
                 when {
-                    name in FLAGS -> { if (eq >= 0) throw CliError("usage", "--$name does not take a value", EXIT_USAGE); flags += name }
+                    name in FLAGS -> { if (eq >= 0) throw CliError("usage", Msg.t("args.no_value", "name" to name), EXIT_USAGE); flags += name }
                     name in LONG_VALUED -> {
-                        val v = if (eq >= 0) body.substring(eq + 1) else argv.getOrNull(i++) ?: throw CliError("usage", "--$name needs a value", EXIT_USAGE)
+                        val v = if (eq >= 0) body.substring(eq + 1) else argv.getOrNull(i++) ?: throw CliError("usage", Msg.t("args.needs_value", "name" to name), EXIT_USAGE)
                         opts[name] = if (name == "db" && name in opts) opts[name] + "\n" + v else v      // --db pode repetir
                     }
-                    else -> throw CliError("usage", "unknown option: --$name", EXIT_USAGE)
+                    else -> throw CliError("usage", Msg.t("args.unknown_opt", "opt" to "--$name"), EXIT_USAGE)
                 }
             }
             a.length == 2 && a[0] == '-' && a[1].toString() in VALUED ->
-                opts[VALUED.getValue(a[1].toString())] = argv.getOrNull(i++) ?: throw CliError("usage", "$a needs a value", EXIT_USAGE)
-            a.startsWith("-") && a.length > 1 -> throw CliError("usage", "unknown option: $a", EXIT_USAGE)
+                opts[VALUED.getValue(a[1].toString())] = argv.getOrNull(i++) ?: throw CliError("usage", Msg.t("args.short_needs_value", "opt" to a), EXIT_USAGE)
+            a.startsWith("-") && a.length > 1 -> throw CliError("usage", Msg.t("args.unknown_opt", "opt" to a), EXIT_USAGE)
             cmd == null -> cmd = a
             cmd == "identify" || cmd == "search" || cmd == "power" -> positional += a
-            else -> throw CliError("usage", "unexpected argument: $a", EXIT_USAGE)
+            else -> throw CliError("usage", Msg.t("args.unexpected", "arg" to a), EXIT_USAGE)
         }
     }
     return Args(cmd, opts, flags, positional)

@@ -17,6 +17,7 @@ Scripts de apoio ao hardware. Todos rodam a partir da raiz do repositório. Os g
 | `importar_base_oscr.py` | Copia para `database/oscr/` as bases de jogos do OSCR legado (`vendor/oscr/legacy/sd`) dos sistemas que o projeto lê, com `ORIGEM.txt` e `INDEX.txt` (D88). Rode de novo ao atualizar o clone. | Python 3.11, clone `vendor/oscr/` |
 | `export_fab.sh` | `tools/export_fab.sh <placa> <versão>`: gerbers, furos, `bom.csv` e os dois zips de `boards/<placa>/fab/` (`HWDIR`/`GDIR` exportam uma revisão guardada ao lado, D97). | `kicad-cli` 10, `zip` |
 | `gen_decisoes_index.py` | Regera o índice de `docs/decisoes.md`. | Python 3 |
+| `gen_cli_messages.py` | Gera `cli-messages.tsv` (catálogo da CLI Kotlin) a partir de `host/oscr_host/cli/messages.py`; `--check` confere se está em dia (D133). | Python 3 |
 | `pic/` | Gravação do PIC12F629 (PICkit 2 e Arduino Uno com ardpicprog, D90, D91). `pic/shield_uno/`: shield do Uno em KiCad, com guias de protoboard e placa perfurada (D102). | ver `pic/README.md` e `pic/shield_uno/README.md` |
 | `fill_zones.py` | Preenche as zonas de cobre pelo `pcbnew`. | Python do venv do KiCad MCP (`~/development/llms/KiCAD-MCP-Server`), KiCad 10 |
 

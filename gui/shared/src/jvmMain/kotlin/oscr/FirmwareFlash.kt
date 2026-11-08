@@ -4,7 +4,7 @@ package oscr
 import java.io.File
 
 /** Falha ao preparar ou gravar o firmware. `kind`: no_hex, no_avrdude (a GUI traduz pelo `kind`; `message` e `hint` são em inglês, para a CLI). */
-class FirmwareException(val kind: String, message: String, val hint: String? = null) : Exception(message)
+class FirmwareException(val kind: String, message: String, val hint: String? = null, val key: String = "fw.$kind", val args: Map<String, String> = emptyMap()) : Exception(message)
 
 /**
  * Gravação do firmware do fork (`firmware/oscr`) no Arduino Mega pela USB, com o avrdude (D131). Usada pela CLI (`firmware-flash`) e pela GUI.
@@ -25,7 +25,7 @@ object FirmwareFlash {
     fun findHex(given: String?, env: String = DEFAULT_ENV): File {
         val g = given ?: System.getenv("OSCR_FIRMWARE_HEX")
         val f = if (g != null) File(g.replaceFirst("~", System.getProperty("user.home") ?: "~")) else projectHex(env) ?: File("firmware/oscr/.pio/build/$env/firmware.hex")
-        if (!f.isFile) throw FirmwareException("no_hex", "firmware file not found: ${f.path}", "use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e $env`")
+        if (!f.isFile) throw FirmwareException("no_hex", "firmware file not found: ${f.path}", "use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e $env`", args = mapOf("path" to f.path, "env" to env))
         return f
     }
 
@@ -33,7 +33,7 @@ object FirmwareFlash {
         fun onPath(name: String): String? = System.getenv("PATH")?.split(File.pathSeparator)?.map { File(it, name) }?.firstOrNull { it.isFile && it.canExecute() }?.path
         (given ?: System.getenv("AVRDUDE"))?.let {
             if (File(it).isFile || onPath(it) != null) return it
-            throw FirmwareException("no_avrdude", "avrdude not found: $it", "check the path given in --avrdude")
+            throw FirmwareException("no_avrdude", "avrdude not found: $it", "check the path given in --avrdude", key = "fw.no_avrdude_given", args = mapOf("path" to it))
         }
         onPath("avrdude")?.let { return it }
         onPath("avrdude.exe")?.let { return it }

@@ -6,7 +6,7 @@ import oscr.*
 /** Comando detect e a identificação do chip de flash do Mega Drive. */
 internal fun cmdDetect(io: CliIo, a: Args): Int {
     val wantChip = "flash-id" in a.flags
-    if (wantChip && a.opts["system"] != "md") throw CliError("usage", "--flash-id applies to the Mega Drive only (-s md)", EXIT_USAGE)
+    if (wantChip && a.opts["system"] != "md") throw CliError("usage", Msg.t("detect.flash_id_md_only"), EXIT_USAGE)
     val c = connect(io, a)
     var chip: MdFlashChip? = null
     val r = try { c.client.detect(system(a)).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) } } finally { c.transport.close() }

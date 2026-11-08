@@ -22,11 +22,11 @@ internal fun loadDb(a: Args, required: Boolean): Database? {
     val paths = a.opts["db"]?.split("\n").orEmpty().ifEmpty { DatabaseLoader.pathsFromEnv() }
     val builtin = "no-builtin-db" !in a.flags && DatabaseLoader::class.java.classLoader.getResource("oscr/INDEX.txt") != null
     if (paths.isEmpty() && !builtin) {
-        if (required) throw CliError("no_database", "no database: use --db FILE_OR_FOLDER (No-Intro .dat or NES 2.0 XML) or the OSCR_DB environment variable", EXIT_USAGE)
+        if (required) throw CliError("no_database", Msg.t("db.none"), EXIT_USAGE)
         return null
     }
     try { return DatabaseLoader.loadAll(paths, builtin) }
-    catch (e: DatabaseError) { throw CliError("database", e.message ?: "database error", EXIT_ERROR, "check the path and that the file is a Logiqx .dat or nes20db.xml") }
+    catch (e: DatabaseError) { throw CliError("database", e.message ?: "database error", EXIT_ERROR, Msg.t("db.load_hint")) }
 }
 
 internal fun gameOptions(db: Database, query: String): DbEntry {
@@ -35,9 +35,8 @@ internal fun gameOptions(db: Database, query: String): DbEntry {
     if (exact.isNotEmpty()) found = exact
     val uniq = LinkedHashMap<List<Int?>, DbEntry>()
     for (e in found) uniq[listOf(e.mapper, e.prgKb, e.chrKb, e.ramKb)] = e
-    if (uniq.isEmpty()) throw CliError("game_not_found", "no game with mapper and sizes in the database for: $query", EXIT_USAGE,
-        "the database must be the NES 2.0 XML (nes20db.xml); No-Intro has no mapper. Use 'search' to look up names")
-    if (uniq.size > 1) throw CliError("game_ambiguous", "${found.size} games match '$query' with different configurations", EXIT_USAGE,
-        "be more specific. Examples: " + uniq.values.take(5).joinToString("; ") { "${it.name} (mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB)" })
+    if (uniq.isEmpty()) throw CliError("game_not_found", Msg.t("game.not_found", "query" to query), EXIT_USAGE, Msg.t("game.not_found.hint"))
+    if (uniq.size > 1) throw CliError("game_ambiguous", Msg.t("game.ambiguous", "n" to found.size, "query" to query), EXIT_USAGE,
+        Msg.t("game.ambiguous.hint", "examples" to uniq.values.take(5).joinToString("; ") { Msg.t("game.example", "name" to it.name, "mapper" to it.mapper, "prg" to it.prgKb, "chr" to it.chrKb) }))
     return uniq.values.first()
 }

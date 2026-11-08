@@ -25,7 +25,7 @@ private fun open(io: CliIo, a: Args): Conn {
         return Conn(c, t, c.info())
     }
     val port = a.opts["port"] ?: io.listPorts().firstOrNull { p -> listOf("ttyUSB", "ttyACM", "cu.usb", "COM").any { it in p } }
-        ?: throw CliError("no_port", "no serial port found", EXIT_NO_DEVICE, "connect the device, use --port, or --simulate without hardware (Linux: dialout group)")
+        ?: throw CliError("no_port", Msg.t("err.no_port"), EXIT_NO_DEVICE, Msg.t("err.no_port.hint"))
     val bauds = a.opts["baud"]?.let { listOf(a.int("baud")) } ?: listOf(1_000_000, 115_200)
     var last: Exception? = null
     for (b in bauds) {
@@ -33,12 +33,11 @@ private fun open(io: CliIo, a: Args): Conn {
         val c = OscrClient(t, 500, 10_000)
         try { return Conn(c, t, c.info()) } catch (e: TimeoutError) { last = e; t.close() }
     }
-    throw CliError("no_response", "no response from the device on $port (${bauds.joinToString(", ")} baud): ${last?.message}", EXIT_NO_DEVICE,
-        "check that the firmware is flashed, the port, and the baud (--baud 115200)")
+    throw CliError("no_response", Msg.t("err.no_response", "port" to port, "bauds" to bauds.joinToString(", "), "error" to last?.message), EXIT_NO_DEVICE, Msg.t("err.no_response.hint"))
 }
 
 internal fun system(a: Args): CartSystem {
     val n = (a.opts["system"] ?: "mock").lowercase()
     return CartSystem.entries.firstOrNull { it.name.lowercase() == n }
-        ?: throw CliError("usage", "unknown system: $n. Use: ${CartSystem.entries.joinToString(", ") { it.name.lowercase() }}", EXIT_USAGE)
+        ?: throw CliError("usage", Msg.t("sys.unknown", "name" to n, "systems" to CartSystem.entries.joinToString(", ") { it.name.lowercase() }), EXIT_USAGE)
 }
