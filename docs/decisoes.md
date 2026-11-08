@@ -1097,3 +1097,9 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Fora do escopo.** `nes-mappers.json` e os `*-mappers.json` de outros sistemas (faixas de PRG/CHR/RAM por mapper) não entraram: o PC já valida isso em `NesRules`. Nada foi testado em chip real.
 - **Testes.** Host 217; Gradle `FlashChipsTest` (4) e `flash-id` nos dois.
 
+
+### D136 — Placa `megadrive_sms`: Mega Drive e Master System (pedido do usuário, 2026-11-08)
+- **Pedido.** "Continue o desenvolvimento das placas." Entre as opções (`8_bits` como `famicom_nes` + slot MD com adaptador, slot SMS dedicado, outra tarefa), o usuário respondeu "mega drive + sms". Entendido como uma placa nova com slot Mega Drive e slot Master System; a pasta `8_bits` (NES, Famicom, Master System) fica como esqueleto, já que NES e Famicom têm `famicom_nes`.
+- **Fase 1 (referência).** `boards/megadrive_sms/docs/pinmap.md`: seção Mega Drive copiada da `16_and_8_bits`; seção Master System gerada por `tools/boards/megadrive_sms/gen_pinmap_sms.py` do `mastersystem_adapter` do OSCR (netlist via `kicad-cli`), cruzada com a coluna "Master System" do `pinout.ods` e com `SMS.cpp` (modos Raphnet/Retron). Endereço, dados, WR (D8), RD (D9), CE (D48), RESET (D17) e A15/M0-7 (D6) concordam nas três fontes.
+- **Divergência.** Pino 47 (Clock): esquemático do adaptador = `CLK0`, `pinout.ods` = `D16`; o firmware não usa clock. Marcado PENDENTE (proposta: sem ligação, placa sem Si5351).
+- **Parada.** Pendências para o usuário: Clock, medidas do slot SMS de 50p, Game Gear e SG-1000, com ou sem bloco de troca. Sem KiCad ainda.
