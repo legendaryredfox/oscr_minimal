@@ -61,6 +61,9 @@ private class WriteRequest(val file: File, val data: ByteArray)
 /** Programador de flash genérico à espera da confirmação: [file] null = apagar o chip. */
 private class FlashRequest(val file: File?, val job: FlashJob)
 
+/** Gravação do firmware do Arduino à espera da confirmação (substitui o programa da placa). */
+private class FirmwareRequest(val hex: File, val exe: String, val port: String)
+
 /** Gravação de ROM em flash à espera da confirmação (apaga o chip). */
 private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage)
 
@@ -129,6 +132,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var fpBus by remember { mutableStateOf("8") }                        // programador de flash genérico: tipo de chip
     var fpKb by remember { mutableStateOf("512") }
     var fpReq by remember { mutableStateOf<FlashRequest?>(null) }
+    var fwHex by remember { mutableStateOf<File?>(null) }                // firmware do Arduino: .hex escolhido; null = a compilação do projeto
+    var fwReq by remember { mutableStateOf<FirmwareRequest?>(null) }
     var block369 by remember { mutableStateOf("0") }                    // GBA 369-in-1: bloco de 4 MB onde a gravação começa
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
@@ -284,6 +289,26 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 catch (e: Exception) { tr?.close(); throw e }
             }
             throw last ?: TimeoutError()
+        }
+    }
+
+    /** Firmware do Arduino (D131): confere o .hex e o avrdude e pede a confirmação. */
+    fun actFwAsk() {
+        if (port.isEmpty()) { say(t(S.ERR_PREFIX) + ": " + t(S.FW_NO_PORT)); return }
+        try { fwReq = FirmwareRequest(FirmwareFlash.findHex(fwHex?.path), FirmwareFlash.findAvrdude(null), port) }
+        catch (e: FirmwareException) { say(t(S.ERR_PREFIX) + ": " + t(if (e.kind == "no_avrdude") S.FW_NO_AVRDUDE else S.FW_NO_HEX)) }
+    }
+
+    /** Fecha a conexão (a porta precisa estar livre) e roda o avrdude; o Mega reinicia no fim, então não reconecta sozinho. */
+    fun actFwConfirmed(req: FirmwareRequest) {
+        run(S.STAGE_FLASHING_FW, needsCart = false) {
+            dropConnection(null)
+            val (code, err) = withContext(Dispatchers.IO) {
+                FirmwareFlash.run(FirmwareFlash.command(req.exe, req.port, req.hex, true)) { label, pct ->
+                    stage = if (label == "writing") S.STAGE_FLASHING_FW else S.STAGE_VERIFYING_FW; progress = pct / 100f
+                }
+            }
+            say(if (code == 0) f(S.FW_DONE, req.port) else t(S.ERR_PREFIX) + ": " + f(S.FW_FAILED, err.ifEmpty { "código $code" }))
         }
     }
 
@@ -602,6 +627,19 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
+    // Cartão "Firmware": grava o firmware do projeto no Arduino pela USB (avrdude)
+    val firmwareCard: @Composable () -> Unit = {
+        SectionCard(t(S.FW_TITLE)) {
+            Text(t(S.FW_HINT), style = MaterialTheme.typography.bodyMedium)
+            Text(fwHex?.let { ".hex: ${it.name}" } ?: t(S.FW_HEX_AUTO), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(enabled = !busy, onClick = { pickFile(t(S.FW_HEX_CHOOSE), false)?.let { fwHex = it } }) { Text(t(S.FW_HEX_CHOOSE)) }
+                if (fwHex != null) TextButton(enabled = !busy, onClick = { fwHex = null }) { Text(t(S.FW_HEX_CLEAR)) }
+            }
+            Button(enabled = !busy && port.isNotEmpty(), onClick = { actFwAsk() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.FW_FLASH)) }
+        }
+    }
+
     // Cartão "Cartucho": sistema e as opções do sistema escolhido
     val cartridgeCard: @Composable () -> Unit = {
         SectionCard(t(S.CARTRIDGE_TITLE)) {
@@ -815,9 +853,9 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, fontPercent, onFontPercent, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
                     if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
                     if (wide) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard() }
+                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); firmwareCard() }
                         Column(Modifier.weight(0.62f), verticalArrangement = Arrangement.spacedBy(16.dp)) { pendingCard(); cartridgeCard(); readCard(); writeCard() }
-                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard() }
+                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard(); firmwareCard() }
                 }
             }
         }
@@ -866,6 +904,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             text = { Text(if (req.file == null) f(S.FP_CONFIRM_ERASE, req.job.prgKb) else f(S.FP_CONFIRM_WRITE, req.file.name, "${req.job.rom.size / 1024} KB")) },
             confirmButton = { Button(onClick = { fpReq = null; actFpConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(if (req.file == null) S.FP_ERASE else S.FP_WRITE)) } },
             dismissButton = { OutlinedButton(onClick = { fpReq = null }) { Text(t(S.CANCEL)) } },
+        )
+    }
+
+    fwReq?.let { req ->
+        AlertDialog(
+            onDismissRequest = { fwReq = null },
+            title = { Text(t(S.FW_CONFIRM_TITLE)) },
+            text = { Text(f(S.FW_CONFIRM_BODY, req.hex.name, req.port)) },
+            confirmButton = { Button(onClick = { fwReq = null; actFwConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.FW_FLASH)) } },
+            dismissButton = { OutlinedButton(onClick = { fwReq = null }) { Text(t(S.CANCEL)) } },
         )
     }
 

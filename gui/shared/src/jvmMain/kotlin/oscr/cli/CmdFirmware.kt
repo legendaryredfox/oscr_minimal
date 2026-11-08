@@ -9,53 +9,14 @@ import java.io.File
  * Mesmo contrato da CLI Python (docs/referencia/cli.md). O `.hex` vem de --hex, de OSCR_FIRMWARE_HEX ou da compilação do projeto
  * (`firmware/oscr/.pio/build/<--env>/firmware.hex`, procurada a partir da pasta atual para cima); o avrdude, de --avrdude, de AVRDUDE, do PATH ou do PlatformIO.
  */
-private const val DEFAULT_ENV = "SerialASCII"
-private val PCT = Regex("""(Writing|Reading)\s*\|[# ]*\|\s*(\d+)%""")
+private fun <T> prep(block: () -> T): T = try { block() } catch (e: FirmwareException) { throw CliError(e.kind, e.message ?: e.kind, EXIT_USAGE, e.hint) }
+internal fun findHex(a: Args): java.io.File = prep { FirmwareFlash.findHex(a.opts["hex"], a.opts["env"] ?: FirmwareFlash.DEFAULT_ENV) }
+internal fun findAvrdude(a: Args): String = prep { FirmwareFlash.findAvrdude(a.opts["avrdude"]) }
+internal fun avrdudeCmd(exe: String, port: String, hex: File, verify: Boolean): List<String> = FirmwareFlash.command(exe, port, hex, verify)
 
-internal fun findHex(a: Args): File {
-    val env = a.opts["env"] ?: DEFAULT_ENV
-    val given = a.opts["hex"] ?: System.getenv("OSCR_FIRMWARE_HEX")
-    val f = if (given != null) File(given.replaceFirst("~", System.getProperty("user.home") ?: "~")) else {
-        var d: File? = File(".").absoluteFile.normalize(); var found: File? = null
-        while (d != null && found == null) { File(d, "firmware/oscr/.pio/build/$env/firmware.hex").takeIf { it.isFile }?.let { found = it }; d = d.parentFile }
-        found ?: File("firmware/oscr/.pio/build/$env/firmware.hex")
-    }
-    if (!f.isFile) throw CliError("no_hex", "firmware file not found: ${f.path}", EXIT_USAGE, "use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e $env`")
-    return f
-}
-
-internal fun findAvrdude(a: Args): String {
-    fun onPath(name: String): String? = System.getenv("PATH")?.split(File.pathSeparator)?.map { File(it, name) }?.firstOrNull { it.isFile && it.canExecute() }?.path
-    (a.opts["avrdude"] ?: System.getenv("AVRDUDE"))?.let {
-        if (File(it).isFile || onPath(it) != null) return it
-        throw CliError("no_avrdude", "avrdude not found: $it", EXIT_USAGE, "check the path given in --avrdude")
-    }
-    onPath("avrdude")?.let { return it }
-    onPath("avrdude.exe")?.let { return it }
-    val pio = File(System.getProperty("user.home") ?: ".", ".platformio/packages").listFiles { f -> f.name.startsWith("tool-avrdude") }
-        ?.flatMap { d -> d.listFiles { f -> f.isFile && f.name.startsWith("avrdude") && !f.name.endsWith(".conf") && !f.name.endsWith(".txt") }?.toList() ?: emptyList() }
-    pio?.sortedBy { it.path }?.firstOrNull()?.let { return it.path }
-    throw CliError("no_avrdude", "avrdude not found", EXIT_USAGE,
-        "install avrdude (Linux: `sudo apt install avrdude`; macOS: `brew install avrdude`; Windows: winget or the Arduino package) or use --avrdude PATH")
-}
-
-internal fun avrdudeCmd(exe: String, port: String, hex: File, verify: Boolean): List<String> =
-    listOf(exe, "-p", "atmega2560", "-c", "wiring", "-P", port, "-b", "115200", "-D") + (if (verify) emptyList() else listOf("-V")) + listOf("-U", "flash:w:${hex.path}:i")
-
-/** Roda o avrdude e traduz as barras dele ("Writing | ### | 45%") em progresso. Devolve (código, últimas linhas de mensagem). */
 private fun runAvrdude(cmd: List<String>, progressFor: (String) -> Progress): Pair<Int, String> {
-    val proc = ProcessBuilder(cmd).redirectInput(ProcessBuilder.Redirect.from(File(if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null"))).start()
-    Thread { proc.inputStream.readBytes() }.apply { isDaemon = true }.start()                          // esvazia o stdout
-    val cbs = HashMap<String, Progress>(); val tail = ArrayList<String>(); val buf = StringBuilder()
-    fun line() {
-        val s = buf.toString(); buf.setLength(0)
-        val m = PCT.find(s)
-        if (m != null) { val label = if (m.groupValues[1] == "Writing") "writing" else "verifying"; cbs.getOrPut(label) { progressFor(label) }(m.groupValues[2].toLong(), 100L) }
-        else if (s.isNotBlank()) { tail += s.trim(); if (tail.size > 8) tail.removeAt(0) }
-    }
-    proc.errorStream.bufferedReader().use { r -> while (true) { val c = r.read(); if (c < 0) break; if (c == '\r'.code || c == '\n'.code) line() else buf.append(c.toChar()) } }
-    if (buf.isNotEmpty()) line()
-    return proc.waitFor() to tail.joinToString(" | ")
+    val cbs = HashMap<String, Progress>()
+    return FirmwareFlash.run(cmd) { label, pct -> cbs.getOrPut(label) { progressFor(label) }(pct.toLong(), 100L) }
 }
 
 private fun infoAfter(io: CliIo, a: Args, waitS: Double): DeviceInfo? {
