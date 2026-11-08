@@ -32,15 +32,15 @@ internal fun cmdFlashId(io: CliIo, a: Args): Int {
         val known = r.status == 0
         val cfi = !known && r.name.startsWith("CFI ")
         emit(io, a, Json.obj("ok" to known, "known" to known, "ids" to r.name, "chip" to (if (known) r.name.substringBeforeLast(' ') else null), "size" to (if (known || cfi) r.romSize else 0L), "cfi" to cfi, "status" to r.status),
-            listOf(if (known) "${FlashProg.LABEL.getValue(bus)}: ${r.name}  (${r.romSize / 1024} KB)"
-                else "${FlashProg.LABEL.getValue(bus)}: chip not in the table or no answer (${r.name}): mask ROM (no flash), cartridge not seated, or a chip the firmware does not know yet. " +
-                    (if (cfi) "The chip answered the CFI query and says it has ${r.romSize / 1024} KB, but only chips in the table are written. " else "") + "Nothing was written."))
+            listOf(if (known) Msg.t("fid.md_known", "label" to FlashProg.LABEL.getValue(bus), "name" to r.name, "kb" to r.romSize / 1024)
+                else Msg.t("fid.md_unknown", "label" to FlashProg.LABEL.getValue(bus), "ids" to r.name) +
+                    (if (cfi) Msg.t("fid.md_cfi", "kb" to r.romSize / 1024) else "") + Msg.t("fid.nothing_written")))
         return if (known) EXIT_OK else EXIT_ERROR
     }
     val ok = r.status == 0
-    val legend = if ('=' in r.name) " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 or FFFF = the chip did not answer that routine)" else ""
+    val legend = if ('=' in r.name) Msg.t("fid.legend") else ""
     emit(io, a, Json.obj("ok" to ok, "ids" to r.name, "size" to r.romSize, "status" to r.status),
-        listOf(if (ok) "${FlashProg.LABEL.getValue(bus)}: ${r.name}$legend" else "${FlashProg.LABEL.getValue(bus)}: no chip answered (ID 0000 or FFFF)"))
+        listOf(if (ok) Msg.t("fid.line", "label" to FlashProg.LABEL.getValue(bus), "ids" to r.name, "legend" to legend) else Msg.t("fid.none", "label" to FlashProg.LABEL.getValue(bus))))
     return if (ok) EXIT_OK else EXIT_NO_CART
 }
 

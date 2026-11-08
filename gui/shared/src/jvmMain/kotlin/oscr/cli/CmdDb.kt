@@ -22,7 +22,7 @@ internal fun cmdIdentify(io: CliIo, a: Args): Int {
     }
     emit(io, a, Json.obj("entries_in_database" to db.size, "results" to results), results.map { r ->
         val g = r["game"] as? Map<*, *>
-        "${r["file"]}  CRC32 ${r["crc32"]}  " + (g?.let { "${it["name"]} (${it["source"]}, ${it["match"]})" } ?: "not found in the database")
+        "${r["file"]}  CRC32 ${r["crc32"]}  " + (g?.let { "${it["name"]} (${it["source"]}, ${it["match"]})" } ?: Msg.t("db.not_found"))
     })
     return if (results.all { it["game"] != null }) EXIT_OK else EXIT_ERROR
 }
@@ -32,6 +32,6 @@ internal fun cmdSearch(io: CliIo, a: Args): Int {
     val q = a.positional.joinToString(" ").ifBlank { throw CliError("usage", Msg.t("args.search"), EXIT_USAGE) }
     val found = db.search(q, a.opts["limit"]?.let { a.int("limit") } ?: 20)
     emit(io, a, Json.obj("entries_in_database" to db.size, "results" to found.map { entryJson(it) }),
-        found.map { e -> "${hex8(e.crc)}  ${e.name}" + (e.nesOptions()?.let { "  [mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB, RAM ${it.ramKb} KB]" } ?: "") }.ifEmpty { listOf("no results") })
+        found.map { e -> "${hex8(e.crc)}  ${e.name}" + (e.nesOptions()?.let { "  [mapper ${it.mapper}, PRG ${it.prgKb} KB, CHR ${it.chrKb} KB, RAM ${it.ramKb} KB]" } ?: "") }.ifEmpty { listOf(Msg.t("search.none")) })
     return if (found.isNotEmpty()) EXIT_OK else EXIT_ERROR
 }

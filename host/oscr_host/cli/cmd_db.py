@@ -34,6 +34,6 @@ def cmd_search(args) -> int:
     found = db.search(args.query, args.limit)
     emit(args, {"entries_in_database": len(db), "results": [e.to_dict() for e in found]},
          [f"{e.crc:08X}  {e.name}" + (f"  [mapper {e.mapper}, PRG {e.prg_kb} KB, CHR {e.chr_kb} KB, RAM {e.ram_kb} KB]" if e.nes_options() else "") for e in found]
-         or ["nenhum resultado"])
+         or [tr("search.none")])
     return EXIT_OK if found else EXIT_ERROR
 

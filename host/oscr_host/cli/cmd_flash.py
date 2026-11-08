@@ -49,17 +49,16 @@ def cmd_flash_id(args) -> int:
         label = RI.FLASHPROG_LABEL["md"]
         if known:
             emit(args, {"ok": True, "known": True, "ids": r["name"], "chip": r["name"].rsplit(" ", 1)[0], "size": r["rom_size"], "status": 0},
-                 [f"{label}: {r['name']}  ({r['rom_size'] // 1024} KB)"])
+                 [tr("fid.md_known", label=label, name=r["name"], kb=r["rom_size"] // 1024)])
             return EXIT_OK
         cfi = r["name"].startswith("CFI ")
         emit(args, {"ok": False, "known": False, "ids": r["name"], "chip": None, "size": r["rom_size"] if cfi else 0, "cfi": cfi, "status": r["status"]},
-             [f"{label}: chip fora da tabela ou sem resposta ({r['name']}): sem flash (ROM de máscara), cartucho mal encaixado, ou um chip que o firmware ainda não conhece. "
-              + (f"O chip respondeu à consulta CFI e diz ter {r['rom_size'] // 1024} KB, mas só chips da tabela são gravados. " if cfi else "") + "Nada foi gravado."])
+             [tr("fid.md_unknown", label=label, ids=r["name"]) + (tr("fid.md_cfi", kb=r["rom_size"] // 1024) if cfi else "") + tr("fid.nothing_written")])
         return EXIT_ERROR
-    legend = " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 ou FFFF = o chip não respondeu a essa rotina)" if "=" in r["name"] else ""
+    legend = tr("fid.legend") if "=" in r["name"] else ""
     ok = r["status"] == 0
     emit(args, {"ok": ok, "ids": r["name"], "size": r["rom_size"], "status": r["status"]},
-         [f"{RI.FLASHPROG_LABEL[args.bus]}: {r['name']}{legend}" if ok else f"{RI.FLASHPROG_LABEL[args.bus]}: nenhum chip respondeu (ID 0000 ou FFFF)"])
+         [tr("fid.line", label=RI.FLASHPROG_LABEL[args.bus], ids=r["name"], legend=legend) if ok else tr("fid.none", label=RI.FLASHPROG_LABEL[args.bus])])
     return EXIT_OK if ok else EXIT_NO_CART
 
 
