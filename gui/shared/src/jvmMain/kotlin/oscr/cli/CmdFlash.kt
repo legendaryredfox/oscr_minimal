@@ -8,28 +8,15 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /** Comandos flash-* (programador de flash genérico, sistema 7). */
-internal fun fpError(e: RomImageException): CliError = CliError(if (e.problem in setOf(RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_DETECT_ONLY, RomImageProblem.FP_MD_OPTIONS)) "usage" else "bad_rom", when (e.problem) {
-    RomImageProblem.FP_BUS -> "unknown --bus (use ${FlashProg.BUS.keys.joinToString(", ")})"
-    RomImageProblem.FP_DETECT_ONLY -> "--bus md only identifies the chip (flash-id); to read a Mega Drive cartridge use `dump -s md` and to write it `rom-write -s md`"
-    RomImageProblem.FP_MD_OPTIONS -> "--bus md does not use --flash-kb, --flash-type, --sector-kb or --buffer: the chip is recognised by its ID"
-    RomImageProblem.FP_KB -> "give the chip size with --flash-kb (1 to 8192 KB)"
-    RomImageProblem.FP_NEEDS_TYPE -> "this command needs --flash-type (${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")}); the OSCR found it in the SD card database, check the chip's datasheet"
-    RomImageProblem.FP_SIZE -> "the file size must be a multiple of 512 bytes"
-    RomImageProblem.FP_NO_FIT -> "the file has ${e.a} KB and does not fit ${e.b} KB"
-    RomImageProblem.FP_PADDED_NO_FIT -> "the file padded to a whole number of sectors (${e.a} KB) does not fit ${e.b} KB"
-    RomImageProblem.GEN_TYPE -> "unknown --flash-type (use ${SnesLayouts.FLASH_TYPES.keys.joinToString(", ")})"
-    RomImageProblem.GEN_NEEDS_SECTOR -> "this flash type needs --sector-kb (sector size) and --buffer (write buffer bytes); see the chip's datasheet"
-    RomImageProblem.GEN_SECTOR -> "--sector-kb must be a power of 2 (1 to 16384)"
-    RomImageProblem.GEN_BUFFER -> "--buffer must be a power of 2 (2 to 128)"
-    else -> e.problem.name
-}, EXIT_USAGE)
+internal fun fpError(e: RomImageException, a: Args): CliError = CliError(if (e.problem in setOf(RomImageProblem.FP_BUS, RomImageProblem.FP_KB, RomImageProblem.FP_NEEDS_TYPE, RomImageProblem.FP_DETECT_ONLY, RomImageProblem.FP_MD_OPTIONS)) "usage" else "bad_rom",
+    imageMessage(e, a), EXIT_USAGE)
 
 internal fun fpInt(a: Args, k: String): Int? = a.opts[k]?.let { it.toIntOrNull() ?: throw CliError("usage", Msg.t("args.needs_number", "name" to k), EXIT_USAGE) }
 internal fun fpBus(a: Args): String = a.opts["bus"] ?: throw CliError("usage", "give --bus (${FlashProg.BUS.keys.joinToString(", ")})", EXIT_USAGE)
 internal fun fpSys(a: Args) = if (a.opts["system"] == "mock") CartSystem.MOCK else CartSystem.FLASH      // o simulador só entende o sistema MOCK
 
 internal fun fpJob(a: Args, needType: Boolean = false, detect: Boolean = false): FlashJob =
-    try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType, detect) } catch (e: RomImageException) { throw fpError(e) }
+    try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType, detect) } catch (e: RomImageException) { throw fpError(e, a) }
 
 internal fun fpNeed(c: Conn) {
     if (!c.info.flashProg) throw CliError("unsupported_firmware", Msg.t("flash.no_prog"), EXIT_ERROR, Msg.t("fw.unsupported.hint"))
@@ -93,7 +80,7 @@ internal fun cmdFlashErase(io: CliIo, a: Args): Int {
 internal fun cmdFlashWrite(io: CliIo, a: Args): Int {
     val input = a.opts["input"] ?: throw CliError("usage", Msg.t("args.needs_input", "cmd" to "flash-write"), EXIT_USAGE)
     val bus = fpBus(a)
-    val job = try { FlashProg.split(File(input).readBytes(), bus, fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer")) } catch (e: RomImageException) { throw fpError(e) }
+    val job = try { FlashProg.split(File(input).readBytes(), bus, fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer")) } catch (e: RomImageException) { throw fpError(e, a) }
     val what = Msg.t("flash.write_what", "chip" to FlashProg.LABEL.getValue(bus), "n" to job.rom.size, "kb" to job.prgKb)
     if ("yes" !in a.flags) {
         if (!io.interactive) throw CliError("refused", Msg.t("refused.write"), EXIT_REFUSED, Msg.t("refused.repeat"))

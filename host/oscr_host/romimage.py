@@ -8,6 +8,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+
+class ImageError(ValueError):
+    """Problema com o arquivo ou com as opções do chip. `str(e)` é o texto no idioma da CLI (catálogo `img.<key>`, D133); os testes e o código que captura ValueError continuam valendo."""
+
+    def __init__(self, key: str, **kw):
+        super().__init__(key)
+        self.key, self.kw = key, kw
+
+    def __str__(self) -> str:
+        from .cli.messages import tr          # import tardio: o pacote cli importa este módulo
+        return tr("img." + self.key, **self.kw)
+
 # Valor do campo "chip" do WRITE_ROM (firmware/oscr/include/dumper/NesFlash.h) e o mapper do cartucho de cada chip.
 # SNES (firmware/oscr/include/dumper/SnesFlash.h): flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR).
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip pelo ID (MX29F1610, S29GL064N, chips AMD de 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF).
@@ -62,19 +74,19 @@ def split_image(data: bytes, chip: str) -> RomImage:
     """Levanta ValueError (texto para o usuário) se o arquivo não serve para o chip."""
     if data[:4] == b"NES\x1a":
         if len(data) < 16:
-            raise ValueError("cabeçalho iNES incompleto")
+            raise ImageError("truncated")
         if data[6] & 4:
-            raise ValueError("o arquivo tem trainer de 512 bytes; remova o trainer antes de gravar")
+            raise ImageError("trainer")
         prg, chr_ = data[4] * 16, data[5] * 8
         mapper = (data[6] >> 4) | (data[7] & 0xF0)
         body = data[16:]
         if len(body) != (prg + chr_) * 1024:
-            raise ValueError(f"o arquivo tem {len(body)} bytes depois do cabeçalho, mas o cabeçalho diz PRG {prg} KB e CHR {chr_} KB")
+            raise ImageError("size_mismatch", n=len(body), prg=prg, chr=chr_)
         return RomImage(body, prg, chr_, mapper)
     if chip == "a29040b":
-        raise ValueError("o A29040B precisa de um arquivo .nes com cabeçalho iNES (PRG e CHR vêm do cabeçalho)")
+        raise ImageError("needs_header")
     if len(data) == 0 or len(data) % 16384:
-        raise ValueError("arquivo cru: o tamanho precisa ser múltiplo de 16 KB (use um .nes com cabeçalho, ou o PRG cru)")
+        raise ImageError("raw_size")
     return RomImage(data, len(data) // 1024, 0, None)
 
 
@@ -107,7 +119,7 @@ def _snes_strip_header(data: bytes) -> bytes:
     if len(data) % 1024 == 512:
         data = data[512:]
     if len(data) == 0 or len(data) % 1024:
-        raise ValueError("a ROM de SNES precisa ter tamanho múltiplo de 1 KB (com ou sem o cabeçalho de 512 bytes de copiadora)")
+        raise ImageError("snes_size")
     return data
 
 
@@ -116,7 +128,7 @@ def split_snes(data: bytes, capacity_kb: Optional[int] = None, layout: str = "1x
     senão a menor em que a ROM cabe), 2x2mb, 2x4mb, 4x2mb ou 1x8mb. O corpo devolvido é a ROM já reordenada nos trechos de cada chip, na ordem
     em que o firmware os grava. Levanta ValueError (texto para o usuário)."""
     if layout not in SNES_LAYOUTS:
-        raise ValueError(f"disposição desconhecida: {layout} (use {', '.join(SNES_LAYOUTS)})")
+        raise ImageError("snes_layout", layout=layout, layouts=", ".join(SNES_LAYOUTS))
     rom = _snes_strip_header(data)
     kb = len(rom) // 1024
     lay = SNES_LAYOUTS[layout]
@@ -124,18 +136,18 @@ def split_snes(data: bytes, capacity_kb: Optional[int] = None, layout: str = "1x
         if capacity_kb is None:
             capacity_kb = next((c for c in SNES_CAPACITIES_KB if kb <= c), None)
             if capacity_kb is None:
-                raise ValueError(f"a ROM tem {kb} KB; para mais de 4 MB use --layout 2x4mb, 4x2mb ou 1x8mb (ROM de 6 a 8 MB)")
+                raise ImageError("snes_too_big", kb=kb)
         elif capacity_kb not in SNES_CAPACITIES_KB:
-            raise ValueError("capacidade do flash: 2048 ou 4096 (KB)")
+            raise ImageError("snes_capacity")
         elif kb > capacity_kb:
-            raise ValueError(f"a ROM tem {kb} KB e não cabe em um flash de {capacity_kb} KB")
+            raise ImageError("snes_no_fit", kb=kb, cap=capacity_kb)
     else:
         if capacity_kb is not None:
-            raise ValueError("--capacity só vale na disposição de 1 chip (1x); as outras têm capacidade fixa")
+            raise ImageError("snes_capacity_fixed")
         capacity_kb = SNES_LAYOUT_TOTAL_KB[lay]
     segs = snes_plan(lay, len(rom), capacity_kb * 1024 if lay == 0 else 0)
     if not segs:
-        raise ValueError(f"a ROM de {kb} KB não serve para a disposição {layout} (o OSCR exige 6 a 8 MB nas de 8 MB, no máximo 4 MB em 2x2mb, e 1x8mb só aceita 6 ou 8 MB)")
+        raise ImageError("snes_bad_layout", kb=kb, layout=layout)
     body = b"".join(rom[off:off + n] for _c, _a, n, off in segs if n)
     return RomImage(body, kb, 0, None, capacity_kb, lay, 0, rom)
 
@@ -143,18 +155,18 @@ def split_snes(data: bytes, capacity_kb: Optional[int] = None, layout: str = "1x
 def _type_word(flash_type: str, sector_kb: Optional[int], buffer: Optional[int]) -> int:
     """Campo chr_kb do modo genérico de flash de 8 bits: tipo | (log2 do setor em bytes << 4) | (log2 do buffer << 9). Levanta ValueError."""
     if flash_type not in FLASH_TYPES:
-        raise ValueError(f"tipo de flash desconhecido: {flash_type} (use {', '.join(FLASH_TYPES)})")
+        raise ImageError("gen_type", type=flash_type, types=", ".join(FLASH_TYPES))
     if flash_type == "e28fxxxj3a":
         sector_kb = sector_kb or 128
         buffer = buffer or 32
     sec_exp = buf_exp = 0
     if flash_type in FLASH_TYPES_NEED_SECTOR:
         if not sector_kb or not buffer:
-            raise ValueError(f"o tipo {flash_type} precisa de --sector-kb (tamanho do setor) e --buffer (bytes do buffer de escrita); veja a folha de dados do chip")
+            raise ImageError("gen_needs_sector", type=flash_type)
         if sector_kb & (sector_kb - 1) or not 1 <= sector_kb <= 16384:
-            raise ValueError("--sector-kb precisa ser potência de 2 (1 a 16384)")
+            raise ImageError("gen_sector")
         if buffer & (buffer - 1) or not 2 <= buffer <= 128:
-            raise ValueError("--buffer precisa ser potência de 2 (2 a 128)")
+            raise ImageError("gen_buffer")
         sec_exp, buf_exp = (sector_kb * 1024).bit_length() - 1, buffer.bit_length() - 1
     return FLASH_TYPES[flash_type] | (sec_exp << 4) | (buf_exp << 9)
 
@@ -164,19 +176,19 @@ def split_snes_generic(data: bytes, flash_mb: int, flash_type: str, sector_kb: O
     Os tipos 29gl, lh28f0xx e e28fxxxj3a precisam de setor (KB) e buffer (bytes), potências de 2; e28fxxxj3a assume 128 KB e 32 bytes se faltarem.
     No 29gl o arquivo é completado com 0xFF até um múltiplo do setor (o OSCR grava setores inteiros). Levanta ValueError."""
     if flash_type not in FLASH_TYPES:
-        raise ValueError(f"tipo de flash desconhecido: {flash_type} (use {', '.join(FLASH_TYPES)})")
+        raise ImageError("gen_type", type=flash_type, types=", ".join(FLASH_TYPES))
     if not 1 <= flash_mb <= 8:
-        raise ValueError("tamanho do flash: 1 a 8 (MB)")
+        raise ImageError("gen_mb")
     rom = _snes_strip_header(data)
     if len(rom) > flash_mb * MB:
-        raise ValueError(f"a ROM tem {len(rom) // 1024} KB e não cabe em um flash de {flash_mb} MB")
+        raise ImageError("gen_no_fit", kb=len(rom) // 1024, mb=flash_mb)
     word = _type_word(flash_type, sector_kb, buffer)
     body = rom
     if flash_type == "29gl":
         sector = sector_kb * 1024
         body = rom + b"\xff" * (-len(rom) % sector)
         if len(body) > flash_mb * MB:
-            raise ValueError(f"a ROM completada até um múltiplo do setor ({len(body) // 1024} KB) não cabe em {flash_mb} MB")
+            raise ImageError("gen_padded_no_fit", kb=len(body) // 1024, mb=flash_mb)
     return RomImage(body, len(rom) // 1024, 0, None, flash_mb * 1024, SNES_GENERIC, word, rom)
 
 
@@ -185,12 +197,12 @@ def split_gba(data: bytes, block: int = 0) -> RomImage:
     ou até o fim da memória a partir do bloco N). `block` (0 a 63, de 4 MB) só vale no 369-in-1. `prg_kb` é o tamanho em KB (limitado a 65535).
     Levanta ValueError."""
     if not 0 <= block <= 63:
-        raise ValueError("o bloco do 369-in-1 vai de 0 a 63")
+        raise ImageError("gba_block")
     if len(data) == 0 or len(data) % 1024:
-        raise ValueError("a ROM de GBA precisa ter tamanho múltiplo de 1 KB")
+        raise ImageError("gba_size")
     limit = GBA_369_MAX_BYTES if block == 0 else 4 * 1024 * 1024 * (64 - block)
     if len(data) > limit:
-        raise ValueError(f"a ROM tem {len(data) // 1024} KB e passa do que cabe a partir do bloco {block}")
+        raise ImageError("gba_too_big", kb=len(data) // 1024, block=block)
     return RomImage(data, min(len(data) // 1024, 65535), 0, None, block=block)
 
 
@@ -198,11 +210,11 @@ def split_gb(data: bytes, chip: str) -> RomImage:
     """ROM de Game Boy para o flash repro: tamanho múltiplo de 16 KB (um banco), de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB.
     O número de bancos o firmware tira do tamanho. Levanta ValueError."""
     if len(data) < 32768 or len(data) % 16384:
-        raise ValueError("a ROM de Game Boy precisa ter tamanho múltiplo de 16 KB (um banco), de 32 KB para cima")
+        raise ImageError("gb_size")
     if len(data) > GB_MAX_BYTES:
-        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o gravador de Game Boy vai até 4 MB (256 bancos)")
+        raise ImageError("gb_too_big", kb=len(data) // 1024)
     if chip == "gb-orange-fm" and len(data) != 32768:
-        raise ValueError("o flash sem MBC (Orange FM) grava só 32 KB, como no OSCR")
+        raise ImageError("gb_orange")
     return RomImage(data, len(data) // 1024, 0, None)
 
 
@@ -217,11 +229,11 @@ def split_md(data: bytes) -> RomImage:
     """ROM de Mega Drive para o flash repro: arquivo binário (.md/.bin/.gen) de tamanho par, até 8 MB. ROM entrelaçada (.smd) não é aceita.
     `prg_kb` é o tamanho arredondado para cima (o firmware recebe o tamanho exato em bytes). Levanta ValueError."""
     if len(data) == 0 or len(data) % 2:
-        raise ValueError("a ROM de Mega Drive precisa ter tamanho par (arquivo binário .md/.bin/.gen)")
+        raise ImageError("md_size")
     if len(data) > MD_MAX_BYTES:
-        raise ValueError(f"a ROM tem {len(data) // 1024} KB; o flash repro do Mega Drive tem no máximo 8 MB (o firmware recusa ROM maior que o chip do cartucho)")
+        raise ImageError("md_too_big", kb=len(data) // 1024)
     if len(data) % 1024 == 512 and data[0x100:0x104] != b"SEGA" and data[512 + 0x100:512 + 0x104] == b"SEGA":
-        raise ValueError("o arquivo parece ter o cabeçalho de copiadora de 512 bytes (.smd); use a ROM binária sem cabeçalho")
+        raise ImageError("md_smd")
     return RomImage(data, (len(data) + 1023) // 1024, 0, None)
 
 
@@ -299,22 +311,22 @@ def flashprog_params(bus: str, flash_kb: Optional[int], flash_type: Optional[str
     `detect` = só identificar (flash-id): é o único caso em que o barramento "md" vale, e ele não leva tamanho nem tipo.
     Levanta ValueError (texto para o usuário)."""
     if bus not in FLASHPROG_BUS:
-        raise ValueError(f"barramento desconhecido: {bus} (use {', '.join(FLASHPROG_BUS)})")
+        raise ImageError("fp_bus", bus=bus, buses=", ".join(FLASHPROG_BUS))
     if bus in DETECT_ONLY_BUS:
         if not detect:
-            raise ValueError("--bus md só identifica o chip (flash-id); para ler o cartucho use `dump -s md` e para gravar `rom-write -s md`")
+            raise ImageError("fp_detect_only")
         if flash_kb or flash_type or sector_kb or buffer:
-            raise ValueError("--bus md não usa --flash-kb, --flash-type, --sector-kb nem --buffer: o chip é reconhecido pelo ID")
+            raise ImageError("fp_md_options")
         return FlashJob(FLASHPROG_BUS[bus], 0, 0)
     if bus == "eprom":
         return FlashJob(FLASHPROG_BUS[bus], EPROM_KB, 0)
     if not flash_kb or not 1 <= flash_kb <= 8192:
-        raise ValueError("informe o tamanho do chip com --flash-kb (1 a 8192 KB)")
+        raise ImageError("fp_kb")
     word = 0
     if bus in ("8", "plcc32"):
         if flash_type is None:
             if need_type:
-                raise ValueError("este comando precisa de --flash-type (" + ", ".join(FLASH_TYPES) + "); o OSCR achava isso no cartão SD, confira a folha de dados do chip")
+                raise ImageError("needs_flash_type", types=", ".join(FLASH_TYPES))
         else:
             word = _type_word(flash_type, sector_kb, buffer)
     return FlashJob(FLASHPROG_BUS[bus], flash_kb, word)
@@ -325,14 +337,14 @@ def split_flashprog(data: bytes, bus: str, flash_kb: Optional[int], flash_type: 
     """Arquivo cru (sem cabeçalho) para gravar no chip. Tamanho múltiplo de 512 e que cabe. No 29gl completa com 0xFF até um múltiplo do setor."""
     job = flashprog_params(bus, flash_kb, flash_type, sector_kb, buffer, need_type=bus in ("8", "plcc32"))
     if len(data) == 0 or len(data) % 512:
-        raise ValueError("o arquivo precisa ter tamanho múltiplo de 512 bytes")
+        raise ImageError("fp_size")
     if len(data) > job.prg_kb * 1024:
-        raise ValueError(f"o arquivo tem {len(data) // 1024} KB e não cabe em {job.prg_kb} KB")
+        raise ImageError("fp_no_fit", kb=len(data) // 1024, cap=job.prg_kb)
     body = data
     if flash_type == "29gl" and bus in ("8", "plcc32"):
         sector = sector_kb * 1024
         body = data + b"\xff" * (-len(data) % sector)
         if len(body) > job.prg_kb * 1024:
-            raise ValueError(f"o arquivo completado até um múltiplo do setor ({len(body) // 1024} KB) não cabe em {job.prg_kb} KB")
+            raise ImageError("fp_padded_no_fit", kb=len(body) // 1024, cap=job.prg_kb)
     job.body, job.rom = body, data
     return job

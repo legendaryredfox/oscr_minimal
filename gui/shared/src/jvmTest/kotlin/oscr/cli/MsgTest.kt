@@ -72,4 +72,12 @@ class MsgTest {
         val (c5, o5, _) = run(emptyMap(), "--lang", "pt", "--json", "--simulate", "save-write", "-s", "mock", "-i", tmp.path)
         assertEquals(4, c5); assertTrue("\"kind\":\"refused\"" in o5 && "recusado" in o5, o5)
     }
+
+    @Test fun problemaDeImagemTraduzido() {
+        val f = java.io.File.createTempFile("oscr", ".nes").also { it.writeBytes(byteArrayOf(0x4E, 0x45, 0x53, 0x1A, 1, 1, 4, 0) + ByteArray(8 + 512 + 24576)); it.deleteOnExit() }
+        val (c1, o1, _) = run(emptyMap(), "--lang", "en", "--json", "--simulate", "rom-write", "-s", "nes", "-i", f.path, "--yes")
+        assertEquals(64, c1); assertTrue("the file has a 512-byte trainer" in o1 && "\"kind\":\"bad_rom\"" in o1, o1)
+        val (_, o2, _) = run(emptyMap(), "--lang", "ru", "--json", "--simulate", "rom-write", "-s", "nes", "-i", f.path, "--yes")
+        assertTrue("trainer на 512 байт" in o2 && "\"kind\":\"bad_rom\"" in o2, o2)
+    }
 }

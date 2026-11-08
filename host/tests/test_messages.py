@@ -144,3 +144,11 @@ def test_catalogo_da_cli_kotlin_esta_em_dia():
     from pathlib import Path
     root = Path(__file__).resolve().parents[2]
     assert subprocess.run([sys.executable, str(root / "tools" / "gen_cli_messages.py"), "--check"]).returncode == 0
+
+
+def test_problema_de_imagem_traduzido(capsys, tmp_path):
+    f = tmp_path / "r.nes"; f.write_bytes(b"NES\x1a" + bytes([1, 1, 4, 0]) + bytes(8) + bytes(512 + 24576))     # flag de trainer
+    code, out, err = _run(capsys, "--lang", "en", "--simulate", "rom-write", "-s", "nes", "-i", str(f), "--yes")
+    assert code == 64 and "the file has a 512-byte trainer" in out + err
+    code, out, err = _run(capsys, "--lang", "zh", "--simulate", "rom-write", "-s", "nes", "-i", str(f), "--yes")
+    assert code == 64 and "trainer" in out + err and "文件含有" in out + err
