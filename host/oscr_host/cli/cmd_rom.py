@@ -24,45 +24,44 @@ def _layout_name(img) -> str:
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
     if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "mock"):
-        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (chips de flash identificados pelo ID: veja docs/planos/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/referencia/funcoes-oscr.md", EXIT_USAGE)
+        raise CliError("usage", tr("rom.usage.system"), EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
         snes_chip = chip in RI.SNES_CHIPS
         if args.system == "snes" or (args.system == "mock" and snes_chip):       # no simulador (mock) o chip decide
             if chip is None:
-                raise CliError("usage", "no SNES escolha o cartucho com --chip: snes-lorom ou snes-hirom (flash CFI, veja --layout), ou snes-lorom-p0, snes-hirom-p0, "
-                               "snes-exlorom-p1, snes-exhirom-p1 (flash de 8 bits, veja --flash-type); a ROM sozinha não diz como o cartucho foi montado", EXIT_USAGE)
+                raise CliError("usage", tr("rom.usage.snes_chip"), EXIT_USAGE)
             if not snes_chip:
-                raise CliError("usage", f"o chip {chip} não é de SNES", EXIT_USAGE)
+                raise CliError("usage", tr("rom.usage.not_snes", chip=chip), EXIT_USAGE)
             if chip in RI.SNES_GENERIC_CHIPS:
                 if not args.flash_type or not args.flash_mb:
-                    raise CliError("usage", f"o chip {chip} precisa de --flash-type e --flash-mb (o OSCR achava isso no banco do cartão SD; confira a folha de dados do chip)", EXIT_USAGE)
+                    raise CliError("usage", tr("rom.usage.generic_needs", chip=chip), EXIT_USAGE)
                 img = RI.split_snes_generic(data, args.flash_mb, args.flash_type, args.sector_kb, args.buffer)
             else:
                 img = RI.split_snes(data, args.capacity, args.layout)
         elif args.system == "md" or (args.system == "mock" and chip == "md-flash"):
             if chip not in (None, "md-flash"):
-                raise CliError("usage", f"o chip {chip} não é de Mega Drive (use --chip md-flash, ou nada)", EXIT_USAGE)
+                raise CliError("usage", tr("rom.usage.not_md", chip=chip), EXIT_USAGE)
             chip = "md-flash"
             img = RI.split_md(data)
         elif args.system == "gba" or (args.system == "mock" and chip == "gba-flash"):
             if chip not in (None, "gba-flash"):
-                raise CliError("usage", f"o chip {chip} não é de GBA (use --chip gba-flash, ou nada)", EXIT_USAGE)
+                raise CliError("usage", tr("rom.usage.not_gba", chip=chip), EXIT_USAGE)
             chip = "gba-flash"
             img = RI.split_gba(data, args.block369)
         elif args.system == "gb" or (args.system == "mock" and chip in RI.GB_CHIPS):
             if chip not in RI.GB_CHIPS:
-                raise CliError("usage", "no Game Boy escolha o cartucho com --chip: " + ", ".join(RI.GB_CHIPS) + " (a ROM sozinha não diz como o cartucho foi montado)", EXIT_USAGE)
+                raise CliError("usage", tr("rom.usage.gb_chip", chips=", ".join(RI.GB_CHIPS)), EXIT_USAGE)
             img = RI.split_gb(data, chip)
         elif snes_chip or chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
-            raise CliError("usage", f"o chip {chip} é só para o sistema dele (snes, md, gba ou gb)", EXIT_USAGE)
+            raise CliError("usage", tr("rom.usage.chip_other_system", chip=chip), EXIT_USAGE)
         else:
             img = RI.split_image(data, chip or "nesmaker")
             if chip is None:
                 chip = RI.infer_chip(img)
                 if chip is None:
-                    raise CliError("usage", "não deu para saber o chip: use --chip nesmaker (mapper 30) ou --chip a29040b (mapper 0)", EXIT_USAGE)
+                    raise CliError("usage", tr("rom.usage.infer"), EXIT_USAGE)
                 img = RI.split_image(data, chip)
     except ValueError as e:
         raise CliError("bad_rom", str(e), EXIT_USAGE) from e

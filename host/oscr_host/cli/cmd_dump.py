@@ -28,7 +28,7 @@ def cmd_dump(args) -> int:
         args.prg = args.prg or o["prg"]
         args.chr = args.chr or o["chr"]
         if not args.json:
-            print(f"jogo da base: {g.name}  mapper {o['mapper']}  PRG {o['prg']} KB  CHR {o['chr']} KB  ({g.source})", file=sys.stderr)
+            print(tr("dump.game_base", name=g.name, mapper=o["mapper"], prg=o["prg"], chr=o["chr"], source=g.source), file=sys.stderr)
     c, t, _ = common.connect(args)
     title = ""
     if not args.output:                                   # sem -o: nome do arquivo pelo título do cartucho
@@ -70,10 +70,10 @@ def cmd_dump(args) -> int:
         if hint:
             code, label, tag = hint
             extra["gba_save_type"] = code
-            more = " (se o save sair repetido a cada 512 bytes, use --mapper 1)" if code == 2 else ""
-            notes.append(f"save do GBA: {tag}, {label}: use --mapper {code} em save-read{more}")
+            more = tr("gba.save_hint.eeprom_more") if code == 2 else ""
+            notes.append(tr("gba.save_hint", tag=tag, label=tr("gba.label.eeprom") if code == 2 else label, code=code, more=more))
         else:
-            notes.append("save do GBA: nenhuma cadeia de biblioteca de save na ROM (sem save, ou tipo desconhecido)")
+            notes.append(tr("gba.save_none"))
     if getattr(args, "raw", False):
         return _save_nes_raw(args, res, safe_name(title, f"rom_{args.system}"), extra, notes)
     return save_result(args, res, ext, safe_name(title, f"rom_{args.system}"), extra, notes)

@@ -72,7 +72,7 @@ def _open(args) -> tuple[Client, Transport, dict]:
 
 def system_id(name: str) -> int:
     if name not in P.SYSTEMS:
-        raise CliError("usage", f"sistema desconhecido: {name}. Use: {', '.join(P.SYSTEMS)}", EXIT_USAGE)
+        raise CliError("usage", tr("sys.unknown", name=name, systems=", ".join(P.SYSTEMS)), EXIT_USAGE)
     return P.SYSTEMS[name][0]
 
 
@@ -84,13 +84,12 @@ def load_db(args, required: bool = False) -> DB.Database | None:
     builtin = not getattr(args, "no_builtin_db", False) and DB.BUILTIN_DIR.is_dir()
     if not paths and not builtin:
         if required:
-            raise CliError("no_database", "nenhuma base de dados: use --db ARQUIVO_OU_PASTA (No-Intro .dat ou NES 2.0 XML) ou a variável OSCR_DB",
-                           EXIT_USAGE)
+            raise CliError("no_database", tr("db.none"), EXIT_USAGE)
         return None
     try:
         return DB.load_databases(paths, builtin=builtin)
     except (ValueError, OSError) as e:
-        raise CliError("database", str(e), EXIT_ERROR, "confira o caminho e se o arquivo é um .dat (Logiqx) ou o nes20db.xml") from e
+        raise CliError("database", str(e), EXIT_ERROR, tr("db.load_hint")) from e
 
 
 def game_options(db: DB.Database, query: str) -> DB.Entry:
@@ -100,10 +99,9 @@ def game_options(db: DB.Database, query: str) -> DB.Entry:
     found = exact or found
     uniq = {(e.mapper, e.prg_kb, e.chr_kb, e.ram_kb): e for e in found}
     if not uniq:
-        raise CliError("game_not_found", f"nenhum jogo com mapper e tamanhos na base para: {query}", EXIT_USAGE,
-                       "a base precisa ser o NES 2.0 XML (nes20db.xml); o No-Intro não traz o mapper. Use `dumper search` para procurar")
+        raise CliError("game_not_found", tr("game.not_found", query=query), EXIT_USAGE, tr("game.not_found.hint"))
     if len(uniq) > 1:
-        raise CliError("game_ambiguous", f"{len(found)} jogos combinam com '{query}' e têm configurações diferentes", EXIT_USAGE,
-                       "seja mais específico. Exemplos: " + "; ".join(f"{e.name} (mapper {e.mapper}, PRG {e.prg_kb} KB, CHR {e.chr_kb} KB)" for e in list(uniq.values())[:5]))
+        raise CliError("game_ambiguous", tr("game.ambiguous", n=len(found), query=query), EXIT_USAGE,
+                       tr("game.ambiguous.hint", examples="; ".join(tr("game.example", name=e.name, mapper=e.mapper, prg=e.prg_kb, chr=e.chr_kb) for e in list(uniq.values())[:5])))
     return next(iter(uniq.values()))
 

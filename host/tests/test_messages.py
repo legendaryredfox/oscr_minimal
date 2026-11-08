@@ -119,3 +119,20 @@ def test_save_write_em_ingles(capsys, tmp_path):
     f = tmp_path / "s.sav"; f.write_bytes(bytes(range(256)) * 32)
     code, out, _ = _run(capsys, "--lang", "en", "--simulate", "save-write", "-s", "mock", "-i", str(f), "--yes", "--no-backup", "--no-verify")
     assert code == 0 and "save written: 8192 bytes" in out and "post-write verification: skipped (--no-verify)" in out
+
+
+def test_rom_write_erro_de_uso_traduzido(capsys, tmp_path):
+    f = tmp_path / "r.bin"; f.write_bytes(bytes(0x8000))
+    code, out, err = _run(capsys, "--lang", "en", "--simulate", "rom-write", "-s", "snes", "-i", str(f), "--yes")
+    assert code == 64 and "on SNES choose the cartridge with --chip" in out + err
+    code, out, err = _run(capsys, "--lang", "pt-BR", "--simulate", "rom-write", "-s", "snes", "-i", str(f), "--yes")
+    assert code == 64 and "no SNES escolha o cartucho com --chip" in out + err
+
+
+def test_checksum_do_cabecalho_traduzido():
+    from oscr_host.verify import Check
+    c = Check("mismatch", "GBA", 0x12, 0x34)
+    messages.set_lang("en")
+    assert str(c) == "header checksum (GBA) does NOT match: header 0012, computed 0034"
+    messages.set_lang("zh-CN")
+    assert "头部校验和（GBA）不一致" in str(c)

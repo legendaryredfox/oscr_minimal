@@ -20,10 +20,11 @@ class Check:
     computed: Optional[int] = None
 
     def __str__(self) -> str:
+        from .cli.messages import tr          # import tardio: o pacote cli importa este módulo
         if self.status == "ok":
-            return f"checksum do cabeçalho ({self.name}) confere: {self.expected:04X}"
+            return tr("check.ok", name=self.name, value=self.expected)
         if self.status == "mismatch":
-            return f"checksum do cabeçalho ({self.name}) NÃO confere: cabeçalho {self.expected:04X}, calculado {self.computed:04X}"
+            return tr("check.mismatch", name=self.name, expected=self.expected, computed=self.computed)
         return ""
 
 
