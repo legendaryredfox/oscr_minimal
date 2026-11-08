@@ -1,6 +1,6 @@
 # 16_bits — versões e o que muda entre elas (D128)
 
-Pedido do usuário em 2026-11-07: o botão de reset sai de todas as versões; a v1.2 não leva o circuito de desligar o 5V dos slots pelo Arduino; esse circuito (o bloco de troca de cartucho) fica na v1.3. Cada versão tem o seu projeto KiCad, os seus gerbers e dois PNGs grandes (cima e baixo).
+Pedido do usuário em 2026-11-07: o botão de reset sai de todas as versões; a v1.2 não leva o circuito de desligar o 5V dos slots pelo Arduino; esse circuito (o bloco de troca de cartucho) fica na v1.3. Cada versão tem o seu projeto KiCad, os seus gerbers e dois PNGs (cima e baixo) e um `README.md` dentro da pasta de hardware.
 
 | | v1.0 | v1.2 | v1.3 |
 |---|---|---|---|
@@ -32,5 +32,5 @@ python3 tools/check_netlist.py --board 16_bits                      # v1.3 (hard
 python3 tools/check_netlist.py --board 16_bits --sem-troca boards/16_bits/hardware-v1.2/dumper.kicad_sch   # v1.2
 HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2
 tools/export_fab.sh 16_bits v1.3
-~/development/llms/KiCAD-MCP-Server/.venv/bin/python tools/render_grande.py 16_bits v1.0 v1.2 v1.3
+tools/render_board.sh 16_bits v1.0 v1.2 v1.3
 ```

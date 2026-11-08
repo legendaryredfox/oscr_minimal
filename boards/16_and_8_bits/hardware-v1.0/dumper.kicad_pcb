@@ -9911,17 +9911,6 @@
 			)
 		)
 	)
-	(gr_text "ETIQUETA DO CARTUCHO PARA BAIXO"
-		(at 53 82 0)
-		(layer "F.SilkS")
-		(uuid "4e4f3769-1d2c-4480-91ec-d2bbf538fb05")
-		(effects
-			(font
-				(size 1.15 1.15)
-				(thickness 0.2)
-			)
-		)
-	)
 	(gr_text "Projeto original: github.com/sanni/cartreader"
 		(at 53 73.5 0)
 		(layer "F.SilkS")

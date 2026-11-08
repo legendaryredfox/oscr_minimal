@@ -17,11 +17,11 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
 | [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por todas as placas com projeto KiCad |
 
-Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima, da versão mais nova) e, em `renders/`, um par de PNGs grandes (cima e baixo) por versão; refazer com `tools/render_grande.py <placa> <versões...>` e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
+Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima, da versão mais nova) e, em `renders/`, um par de PNGs comuns (cima e baixo, 1768 × 1064, print do render 3D do KiCad) por versão; refazer com `tools/render_board.sh <placa> <versões...>` e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-As placas de um sistema e a `16_and_8_bits` ganharam, na v1.1, o bloco que liga e desliga o 5V dos slots por software (`POWER`), descarrega o rail e acende o LED amarelo de "seguro trocar": Q1, Q2, Q3, dois LEDs, resistores e os pinos D19 e D53 do Mega. Circuito, peças e testes: [`docs/bloco-troca.md`](../docs/bloco-troca.md). **D128:** o bloco é versão separada em todas as placas: as de um sistema e a `16_and_8_bits` têm a v1.0 (sem o bloco, `hardware-v1.0/`) e a v1.1 (com ele, `hardware/`); a `16_bits` tem a v1.0, a v1.2 (sem o bloco e sem o botão de reset) e a v1.3 (com o bloco, sem o botão). PNGs grandes de cima e de baixo de cada versão em `renders/`.
+As placas de um sistema e a `16_and_8_bits` ganharam, na v1.1, o bloco que liga e desliga o 5V dos slots por software (`POWER`), descarrega o rail e acende o LED amarelo de "seguro trocar": Q1, Q2, Q3, dois LEDs, resistores e os pinos D19 e D53 do Mega. Circuito, peças e testes: [`docs/bloco-troca.md`](../docs/bloco-troca.md). **D128:** o bloco é versão separada em todas as placas: as de um sistema e a `16_and_8_bits` têm a v1.0 (sem o bloco, `hardware-v1.0/`) e a v1.1 (com ele, `hardware/`); a `16_bits` tem a v1.0, a v1.2 (sem o bloco e sem o botão de reset) e a v1.3 (com o bloco, sem o botão). PNGs de cima e de baixo de cada versão em `renders/`; cada versão tem o próprio `README.md` dentro da pasta de hardware dela (gerado por `tools/gen_readme_versoes.py`).
 
 ## Como os esquemáticos são desenhados
 

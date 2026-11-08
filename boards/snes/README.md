@@ -2,6 +2,8 @@
 
 ![Render 3D da placa snes (KiCad, vista de cima)](render.png)
 
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware/README.md).
+
 Versão mínima de uma função: um slot **SNES/SFC** (62p, 2,5 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_bits`).
 
 **CIC:** PIC12F629 em soquete (D89/D91). O RP2040-Zero (`docs/placa-v1.3-rp2040.md`) só entra depois de validado.

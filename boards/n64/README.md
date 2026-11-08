@@ -2,6 +2,8 @@
 
 ![Render 3D da placa n64 (KiCad, vista de cima)](render.png)
 
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware/README.md).
+
 **Slots:** N64 (50 pinos, cartucho de 3,3 V; footprint `N64_Slot` do OSCR, a trazer para `_lib/`)
 
 **Estado:** v1.1, 110,1 × 65,1 mm. ERC com 1 aviso de biblioteca (U2, o mesmo das outras placas); DRC sem erros nem ligações abertas (só 4 avisos de biblioteca dos furos); netlist confere com `docs/pinmap.md` (30 nets, 96 ligações); gerbers em `fab/`. Roteada pelo Freerouting, **não revisada à mão no KiCad**; nada encomendado nem montado. Reproduzir: `tools/n64/build_pcb.sh` (PCB) e `tools/n64/make_sch.py` (esquemático). Aprovado pelo usuário em 2026-11-07 ("confere tudo e pode fazer no kicad"). **Fase 1 do `CLAUDE.md`:** `docs/pinmap.md` gerado por `tools/n64/gen_pinmap.py` cruzando `pinout.ods`, `n64_adapter` + `six_slot_adapter` e `N64.ino`: 50 pinos, 0 divergências entre as fontes. 
