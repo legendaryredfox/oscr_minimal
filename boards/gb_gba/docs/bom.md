@@ -1,6 +1,6 @@
 # BOM — placa gb_gba (GBA; GB e GBC por adaptador) v1.1
 
-Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot GBA; direção do cartucho (D28); adaptador de GB/GBC (D56).
 

@@ -5,8 +5,8 @@
 set -euo pipefail
 BOARD=${1:?placa (pasta em boards/)}; VER=${2:?versão, ex. v1.0}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-# HWDIR e GDIR permitem exportar uma revisão antiga guardada ao lado (ex.: HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh 16_bits v1.0)
-HWDIR=${HWDIR:-hardware}; GDIR=${GDIR:-gerbers}
+# Cada versão tem a sua pasta: boards/<placa>/hardware-<versão>/ (projeto), fab/gerbers-<versão>/, fab/bom-<versão>.csv e fab/dumper-<versão>-jlcpcb.zip
+HWDIR=${HWDIR:-hardware-$VER}; GDIR=${GDIR:-gerbers-$VER}
 PCB="$ROOT/boards/$BOARD/$HWDIR/dumper.kicad_pcb"
 SCH="$ROOT/boards/$BOARD/$HWDIR/dumper.kicad_sch"
 FAB="$ROOT/boards/$BOARD/fab"
@@ -15,8 +15,8 @@ mkdir -p "$G"; rm -f "$G"/*
 kicad-cli pcb export gerbers --no-x2 --layers "F.Cu,B.Cu,F.Mask,B.Mask,F.SilkS,B.SilkS,Edge.Cuts" -o "$G/" "$PCB"
 kicad-cli pcb export drill --format excellon --excellon-units mm --excellon-separate-th \
   --generate-map --map-format gerberx2 -o "$G/" "$PCB"
-[ "$HWDIR" = hardware ] && kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY}' --labels 'Ref,Valor,Footprint,Qtd' \
-  --group-by Value,Footprint --ref-range-delimiter '' -o "$FAB/bom.csv" "$SCH" || true
+kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY}' --labels 'Ref,Valor,Footprint,Qtd' \
+  --group-by Value,Footprint --ref-range-delimiter '' -o "$FAB/bom-$VER.csv" "$SCH" >/dev/null
 rm -f "$FAB/dumper-$VER-jlcpcb.zip" "$FAB/dumper-$VER-gerbers-jlcpcb.zip"   # a cópia -gerbers- saiu (D130)
 ( cd "$G" && zip -q -X "$FAB/dumper-$VER-jlcpcb.zip" ./*.gtl ./*.gbl ./*.gts ./*.gbs ./*.gto ./*.gbo ./*.gm1 ./*.drl )
 ls -l "$G" "$FAB"

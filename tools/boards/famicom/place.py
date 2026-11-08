@@ -3,7 +3,7 @@
 """Prepara o PCB da placa só-Famicom a partir da cópia da 16_and_8_bits: limpa trilhas e zonas, remove os outros slots,
 Si5351, PIC, R2, U3 e os capacitores que não são do Famicom (o Famicom não usa clock nem CIC), move o slot FC1 para o
 centro do Mega (como o Mega Drive na placa megadrive), refaz contorno e reposiciona peças e textos.
-Uso (Python do venv do KiCad MCP): python place.py boards/famicom/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): python place.py boards/famicom/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

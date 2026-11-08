@@ -4,7 +4,7 @@
 
 ![famicom_nes v1.0, vista de baixo (render 3D do KiCad)](../renders/famicom_nes-v1.0-baixo.png)
 
-Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão congelada, mantida ao lado da mais nova.
+Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão anterior, mantida ao lado da mais nova.
 
 | | |
 |---|---|
@@ -43,7 +43,7 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 python3 tools/check_netlist.py --board famicom_nes --sem-troca boards/famicom_nes/hardware-v1.0/dumper.kicad_sch
 kicad-cli sch erc boards/famicom_nes/hardware-v1.0/dumper.kicad_sch
 kicad-cli pcb drc boards/famicom_nes/hardware-v1.0/dumper.kicad_pcb
-HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh famicom_nes v1.0
+tools/export_fab.sh famicom_nes v1.0
 tools/render_board.sh famicom_nes v1.0 v1.1
 ```
 

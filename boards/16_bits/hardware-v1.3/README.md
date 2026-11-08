@@ -12,8 +12,8 @@ Versão **v1.3** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. Sem botão de reset em nenhuma versão (D128). |
 | Tamanho | 108,1 × 86,1 mm |
 | Desligar o 5V por software | **sim** |
-| Projeto KiCad | [`hardware/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
-| Fábrica (JLCPCB) | `../fab/gerbers/`, `../fab/dumper-v1.3-jlcpcb.zip` |
+| Projeto KiCad | [`hardware-v1.3/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
+| Fábrica (JLCPCB) | `../fab/gerbers-v1.3/`, `../fab/dumper-v1.3-jlcpcb.zip` |
 | Renders | `../renders/16_bits-v1.3-cima.png`, `../renders/16_bits-v1.3-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
@@ -72,8 +72,8 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 
 ```
 python3 tools/check_netlist.py --board 16_bits
-kicad-cli sch erc boards/16_bits/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/16_bits/hardware-v1.3/dumper.kicad_sch
+kicad-cli pcb drc boards/16_bits/hardware-v1.3/dumper.kicad_pcb
 tools/export_fab.sh 16_bits v1.3
 tools/render_board.sh 16_bits v1.0 v1.2 v1.3
 ```

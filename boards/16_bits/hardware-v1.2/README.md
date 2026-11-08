@@ -4,7 +4,7 @@
 
 ![16_bits v1.2, vista de baixo (render 3D do KiCad)](../renders/16_bits-v1.2-baixo.png)
 
-Versão **v1.2** da placa [`16_bits`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão congelada, mantida ao lado da mais nova.
+Versão **v1.2** da placa [`16_bits`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão anterior, mantida ao lado da mais nova.
 
 | | |
 |---|---|
@@ -59,7 +59,7 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 python3 tools/check_netlist.py --board 16_bits --sem-troca --sem-tvs boards/16_bits/hardware-v1.2/dumper.kicad_sch
 kicad-cli sch erc boards/16_bits/hardware-v1.2/dumper.kicad_sch
 kicad-cli pcb drc boards/16_bits/hardware-v1.2/dumper.kicad_pcb
-HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2
+tools/export_fab.sh 16_bits v1.2
 tools/render_board.sh 16_bits v1.0 v1.2 v1.3
 ```
 

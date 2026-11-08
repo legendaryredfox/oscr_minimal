@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Prepara o PCB da placa gb_gba (slot GBA; GB e GBC por adaptador) a partir da cópia da 16_and_8_bits: limpa trilhas, vias e zonas,
 remove os outros slots, Si5351, PIC, R2, C2 a C6 e os furos M2, move o slot GBA para a direita do Mega (boca para +x),
-refaz contorno e reposiciona peças e textos. Uso (Python do venv do KiCad MCP): place.py boards/gb_gba/hardware/dumper.kicad_pcb"""
+refaz contorno e reposiciona peças e textos. Uso (Python do venv do KiCad MCP): place.py boards/gb_gba/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

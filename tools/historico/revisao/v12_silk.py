@@ -5,7 +5,7 @@ e data da versão 2026-11-06. Idempotente. Uso: PYTHONPATH=/usr/lib/python3/dist
 import pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))
-path = __file__.rsplit("/tools/", 1)[0] + "/boards/16_bits/hardware/dumper.kicad_pcb"
+path = __file__.rsplit("/tools/", 1)[0] + "/boards/16_bits/hardware-v1.3/dumper.kicad_pcb"
 b = pcbnew.LoadBoard(path)
 X = 45.0
 AVISO = ("NÃO COLOQUE NEM RETIRE", "O CARTUCHO COM USB LIGADO")

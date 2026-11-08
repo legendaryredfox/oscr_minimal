@@ -12,8 +12,8 @@ Versão **v1.1** da placa [`famicom`](../README.md): shield 100% THT para Arduin
 | Circuitos | Sem Si5351 e sem PIC. |
 | Tamanho | 107,1 × 65,1 mm |
 | Desligar o 5V por software | **sim** |
-| Projeto KiCad | [`hardware/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
-| Fábrica (JLCPCB) | `../fab/gerbers/`, `../fab/dumper-v1.1-jlcpcb.zip` |
+| Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
+| Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
 | Renders | `../renders/famicom-v1.1-cima.png`, `../renders/famicom-v1.1-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
@@ -60,8 +60,8 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 
 ```
 python3 tools/check_netlist.py --board famicom
-kicad-cli sch erc boards/famicom/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/famicom/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/famicom/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/famicom/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh famicom v1.1
 tools/render_board.sh famicom v1.0 v1.1
 ```

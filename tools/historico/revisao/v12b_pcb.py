@@ -3,7 +3,7 @@
 """16_bits v. 1.2 final (D108), parte 2: leva o esquematico novo (v12b_sch.py) para o PCB.
 Cria as nets, liga os pads pela netlist, adiciona as pecas novas (resistores serie, TVS, pull-up, chave de 5V, LED, reset, 3 furos M3
 alinhados com o Mega), desloca U2/C4/C6/TPs, apaga trilhas e zonas (o roteamento e refeito por v12b_route.py).
-Uso (Python do venv do KiCad MCP): python v12b_pcb.py boards/16_bits/hardware"""
+Uso (Python do venv do KiCad MCP): python v12b_pcb.py boards/16_bits/hardware-v1.3"""
 import re, subprocess, sys, xml.etree.ElementTree as ET
 from pathlib import Path
 import pcbnew

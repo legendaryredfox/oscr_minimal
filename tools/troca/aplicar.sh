@@ -10,7 +10,7 @@ P() { python3 -c "import json,sys; c=json.load(open('tools/troca/boards.json'))[
 VER=$(P "c['version']"); AX=$(P "c['anchor'][0]"); AY=$(P "c['anchor'][1]"); REG=$(P "' '.join(str(v) for v in c['region'])")
 MOVES=$(P "' '.join('--move \"%s\"' % m for m in c.get('moves', []))")
 HIDE=$(P "' '.join('--hide %s' % h for h in c.get('hide', []))")
-HW=boards/$B/hardware
+HW=boards/$B/hardware-$VER
 if [ "$ETAPA" = prep ]; then
   python3 tools/troca/sch_block.py $HW/dumper.kicad_sch "$VER"
   $PY tools/troca/pcb_block.py $HW "$VER" $AX $AY $REG || { echo "FALHA: pcb_block (veja acima); a rota não deve rodar" >&2; exit 1; }

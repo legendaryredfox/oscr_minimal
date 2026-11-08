@@ -1,6 +1,6 @@
 # BOM — oscr_minimal v1.1
 
-Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_and_8_bits/fab/bom.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
+Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_and_8_bits/fab/bom-v1.1.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
 > **Pendências antes de comprar (conferir quando as peças chegarem):**
 > - Medidas reais dos slots e do módulo Si5351 (estimadas: `docs/decisoes.md` D17, D23).

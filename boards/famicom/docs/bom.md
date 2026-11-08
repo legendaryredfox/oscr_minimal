@@ -1,6 +1,6 @@
 # BOM — placa famicom (só Famicom) v1.1
 
-Montagem **manual**. Lista gerada de `boards/famicom/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/famicom/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot Famicom (D17, D23); direção da etiqueta (D27).
 

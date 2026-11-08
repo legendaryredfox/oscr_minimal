@@ -6,7 +6,7 @@
  - botao de reset (SW1) no RST1 do Mega;
  - chave de alimentacao dos slots: Q1 (P-MOSFET) liga o 5V (Mega) ao +5V_CART (slots, Si5351, PIC), comando no D19 (nivel baixo = liga),
    R16 mantem desligado, R17 em serie, LED verde D2 (R18) acende com o cartucho energizado.
-Uso: python3 tools/historico/revisao/v12b_sch.py boards/16_bits/hardware/dumper.kicad_sch   (nao roda duas vezes)"""
+Uso: python3 tools/historico/revisao/v12b_sch.py boards/16_bits/hardware-v1.3/dumper.kicad_sch   (nao roda duas vezes)"""
 import sys, re, uuid
 sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
 from schlib import *

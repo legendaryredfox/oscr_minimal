@@ -7,7 +7,7 @@ Uso (Python com pcbnew): PYTHONPATH=/usr/lib/python3/dist-packages python3 tools
 import pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))
-path = __file__.rsplit("/tools/", 1)[0] + "/boards/16_bits/hardware/dumper.kicad_pcb"
+path = __file__.rsplit("/tools/", 1)[0] + "/boards/16_bits/hardware-v1.3/dumper.kicad_pcb"
 b = pcbnew.LoadBoard(path)
 c4 = b.FindFootprintByReference("C4")
 p1 = [p for p in c4.Pads() if p.GetNumber() == "1"][0]

@@ -4,7 +4,7 @@
 # Uso (da raiz): tools/boards/famicom_nes/reroute.sh   (precisa do venv do KiCad MCP, Java e ~/.kicad-mcp/freerouting.jar)
 set -e
 PY=${PY:-$HOME/development/llms/KiCAD-MCP-Server/.venv/bin/python}
-PCB=boards/famicom_nes/hardware/dumper.kicad_pcb
+PCB=boards/famicom_nes/hardware-v1.1/dumper.kicad_pcb
 T=$(mktemp -d)
 $PY -c "import pcbnew; b=pcbnew.LoadBoard('$PCB'); pcbnew.ExportSpecctraDSN(b,'$T/b.dsn')"
 java -jar $HOME/.kicad-mcp/freerouting.jar -de $T/b.dsn -do $T/b.ses -mp 60 > $T/fr.log 2>&1 || true

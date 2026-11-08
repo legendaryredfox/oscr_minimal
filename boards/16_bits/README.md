@@ -2,7 +2,7 @@
 
 ![Render 3D da placa 16_bits v1.3 (KiCad, vista de cima)](render.png)
 
-**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.2](hardware-v1.2/README.md), [v1.3](hardware/README.md).
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.2](hardware-v1.2/README.md), [v1.3](hardware-v1.3/README.md).
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
@@ -18,7 +18,7 @@ Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não te
 |---|---|---|---|---|
 | v1.0 | `hardware-v1.0/` | não | não | `renders/16_bits-v1.0-cima.png`, `renders/16_bits-v1.0-baixo.png` |
 | v1.2 | `hardware-v1.2/` | **não** | **não** | `renders/16_bits-v1.2-cima.png`, `renders/16_bits-v1.2-baixo.png` |
-| v1.3 | `hardware/` | sim | **não** | `renders/16_bits-v1.3-cima.png`, `renders/16_bits-v1.3-baixo.png` (`render.png`) |
+| v1.3 | `hardware-v1.3/` | sim | **não** | `renders/16_bits-v1.3-cima.png`, `renders/16_bits-v1.3-baixo.png` (`render.png`) |
 
 Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, valem só para a v1.3 (chave) ou para nenhuma versão (reset).**
 
@@ -51,18 +51,18 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 sem Q1 e reset, mais o bloco de troca de cartucho, D128); pasta de trabalho |
+| `hardware-v1.3/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 sem Q1 e reset, mais o bloco de troca de cartucho, D128); pasta de trabalho |
 | `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-troca` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
-| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` |
+| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers-v1.3/` (da pasta de trabalho `hardware-v1.3/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom-v1.3.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):
 
 ```
 python3 tools/check_netlist.py --board 16_bits
-kicad-cli sch erc boards/16_bits/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/16_bits/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/16_bits/hardware-v1.3/dumper.kicad_sch
+kicad-cli pcb drc boards/16_bits/hardware-v1.3/dumper.kicad_pcb
 tools/export_fab.sh 16_bits v1.2
 ```
 

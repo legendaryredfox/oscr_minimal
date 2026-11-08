@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Prepara o PCB da placa só-SNES a partir da cópia da 16_bits: limpa trilhas e vias, remove MD1, C3, C5, C6 e TP3,
 refaz contorno e zonas (107 x 65 mm) e reposiciona peças e textos. O slot SNES não sai do lugar.
-Uso (Python do venv do KiCad MCP): python place.py boards/snes/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): python place.py boards/snes/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

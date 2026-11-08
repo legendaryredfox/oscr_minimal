@@ -20,6 +20,6 @@ Scripts de apoio ao hardware. Todos rodam a partir da raiz do repositório. Os g
 | `pic/` | Gravação do PIC12F629 (PICkit 2 e Arduino Uno com ardpicprog, D90, D91). `pic/shield_uno/`: shield do Uno em KiCad, com guias de protoboard e placa perfurada (D102). | ver `pic/README.md` e `pic/shield_uno/README.md` |
 | `fill_zones.py` | Preenche as zonas de cobre pelo `pcbnew`. | Python do venv do KiCad MCP (`~/development/llms/KiCAD-MCP-Server`), KiCad 10 |
 
-Atenção: o MCP do KiCad grava os arquivos sem atomicidade (um timeout já zerou um `.kicad_sch`). Copie `boards/16_and_8_bits/hardware/*.kicad_*` antes de rodar em lote.
+Atenção: o MCP do KiCad grava os arquivos sem atomicidade (um timeout já zerou um `.kicad_sch`). Copie `boards/16_and_8_bits/hardware-v1.1/*.kicad_*` antes de rodar em lote.
 
-Gerbers: `kicad-cli pcb export gerbers --no-x2 --layers "F.Cu,B.Cu,F.Mask,B.Mask,F.SilkS,B.SilkS,Edge.Cuts"` (o `--no-x2` reproduz os arquivos de `boards/16_and_8_bits/fab/gerbers`) e `kicad-cli pcb export drill`; depois atualize o zip.
+Gerbers: `kicad-cli pcb export gerbers --no-x2 --layers "F.Cu,B.Cu,F.Mask,B.Mask,F.SilkS,B.SilkS,Edge.Cuts"` (o `--no-x2` reproduz os arquivos de `boards/16_and_8_bits/fab/gerbers-v1.1`) e `kicad-cli pcb export drill`; depois atualize o zip.

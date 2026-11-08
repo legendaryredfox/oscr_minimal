@@ -3,7 +3,7 @@
 """Prepara o PCB da placa só-NES a partir da cópia da 16_and_8_bits: limpa trilhas e zonas, remove os outros slots,
 PIC, R2, U3 e os capacitores que não são do NES, move o slot NES para o centro do Mega (como o Mega Drive na
 placa megadrive), refaz contorno e reposiciona peças e textos.
-Uso (Python do venv do KiCad MCP): python place.py boards/nes/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): python place.py boards/nes/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

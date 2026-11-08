@@ -1,0 +1,29 @@
+{
+  "16_and_8_bits": {
+    "atual": "v1.1"
+  },
+  "megadrive": {
+    "atual": "v1.1"
+  },
+  "snes": {
+    "atual": "v1.1"
+  },
+  "nes": {
+    "atual": "v1.1"
+  },
+  "famicom": {
+    "atual": "v1.1"
+  },
+  "famicom_nes": {
+    "atual": "v1.1"
+  },
+  "gb_gba": {
+    "atual": "v1.1"
+  },
+  "n64": {
+    "atual": "v1.1"
+  },
+  "16_bits": {
+    "atual": "v1.3"
+  }
+}

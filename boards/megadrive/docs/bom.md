@@ -1,6 +1,6 @@
 # BOM — placa megadrive (só Mega Drive) v1.1
 
-Montagem **manual**. Lista gerada de `boards/megadrive/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/megadrive/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot Mega Drive (D17, D23); direção da etiqueta (D27).
 

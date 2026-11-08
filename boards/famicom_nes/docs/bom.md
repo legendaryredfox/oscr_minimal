@@ -1,6 +1,6 @@
 # BOM — placa famicom_nes (Famicom e NES) v1.1
 
-Montagem **manual**. Lista gerada de `boards/famicom_nes/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/famicom_nes/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais dos slots e do módulo Si5351 (D17, D23); direção da etiqueta (D27).
 

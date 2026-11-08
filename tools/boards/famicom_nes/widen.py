@@ -3,7 +3,7 @@
 """Alonga a placa Famicom + NES em 5 mm para a esquerda e desloca o slot NES (e o que acompanha: capacitor do VCC, furos de canto
 da esquerda, legenda) 5 mm para a esquerda, para dar folga ao soquete do Si5351 (U1) entre o slot e o header do Mega (D124).
 Apaga trilhas, vias e zonas (a placa é roteada de novo depois: tools/boards/famicom_nes/reroute.sh).
-Uso (Python do venv do KiCad MCP): widen.py boards/famicom_nes/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): widen.py boards/famicom_nes/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

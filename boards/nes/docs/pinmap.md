@@ -7,7 +7,7 @@
 Cruza três fontes do OSCR HW5 (repositório `sanni/cartreader`, clone em `vendor/oscr/legacy/`):
 
 - `ods` = `pinout.ods` (coluna do sistema)
-- `sch` = esquemático KiCad do adaptador (`hardware/nes_adapter`) + `main_pcb_hw5`
+- `sch` = esquemático KiCad do adaptador (`hardware-v1.1/nes_adapter`) + `main_pcb_hw5`
 - `six` = `hardware/six_slot_adapter` (mesma net no mesmo pino do header)
 - `fw`  = porta/bit AVR usado no `NES.ino`
 

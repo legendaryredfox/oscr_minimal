@@ -4,7 +4,7 @@
 
 Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). É a única com chave de 5 V (Q1), proteção das linhas de controle e botão de reset. Os fatos do SNES (PIC, Si5351, SA-1) são os de `boards/snes/docs/componentes-opcionais.md`.
 
-> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, `docs/referencia/troca-de-cartucho.md`, firmware.
+> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware-v1.3/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, `docs/referencia/troca-de-cartucho.md`, firmware.
 
 ## Peças do SNES (U1, U2, R2)
 

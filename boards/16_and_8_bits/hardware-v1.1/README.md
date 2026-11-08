@@ -12,8 +12,8 @@ Versão **v1.1** da placa [`16_and_8_bits`](../README.md): shield 100% THT para 
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. |
 | Tamanho | 144,1 × 108,0 mm |
 | Desligar o 5V por software | **sim** |
-| Projeto KiCad | [`hardware/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
-| Fábrica (JLCPCB) | `../fab/gerbers/`, `../fab/dumper-v1.1-jlcpcb.zip` |
+| Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
+| Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
 | Renders | `../renders/16_and_8_bits-v1.1-cima.png`, `../renders/16_and_8_bits-v1.1-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
@@ -69,8 +69,8 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 
 ```
 python3 tools/check_netlist.py --board 16_and_8_bits
-kicad-cli sch erc boards/16_and_8_bits/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/16_and_8_bits/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/16_and_8_bits/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh 16_and_8_bits v1.1
 tools/render_board.sh 16_and_8_bits v1.0 v1.1
 ```

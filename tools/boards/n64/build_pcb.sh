@@ -5,9 +5,9 @@
 set -e
 PY=${PY:-$HOME/development/llms/KiCAD-MCP-Server/.venv/bin/python}
 T=$(mktemp -d)
-B=boards/n64/hardware
+B=boards/n64/hardware-v1.1
 PCB=$B/dumper.kicad_pcb
-cp boards/16_and_8_bits/hardware/dumper.kicad_pcb $B/dumper.kicad_pcb
+cp boards/16_and_8_bits/hardware-v1.1/dumper.kicad_pcb $B/dumper.kicad_pcb
 $PY tools/boards/n64/place.py $B/dumper.kicad_pcb
 kicad-cli sch export netlist --format kicadsexpr -o $T/n64.net $B/dumper.kicad_sch
 $PY tools/boards/nes/sync_unconnected.py $B/dumper.kicad_pcb $T/n64.net

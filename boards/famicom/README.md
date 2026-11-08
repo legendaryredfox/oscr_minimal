@@ -2,7 +2,7 @@
 
 ![Render 3D da placa famicom (KiCad, vista de cima)](render.png)
 
-**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware/README.md).
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware-v1.1/README.md).
 
 Versão mínima de uma função: um slot **Famicom** (60p, 2,54 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`).
 
@@ -31,8 +31,8 @@ Mesma receita da `nes/` (`boards/nes/README.md`), com `tools/boards/famicom/plac
 
 ```
 python3 tools/check_netlist.py --board famicom
-kicad-cli sch erc boards/famicom/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/famicom/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/famicom/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/famicom/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh famicom v1.0
 ```
 
@@ -60,7 +60,7 @@ O desligamento do 5V dos slots por software (bloco de troca de cartucho, D126) �
 | Versão | Bloco de troca (Q1, Q2, Q3, LEDs, D19 e D53) | Projeto KiCad | Fábrica | Renders (cima e baixo) |
 |---|---|---|---|---|
 | v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `renders/famicom-v1.0-cima.png`, `renders/famicom-v1.0-baixo.png` |
-| v1.1 | sim | `hardware/` | `fab/gerbers/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom.csv` | `renders/famicom-v1.1-cima.png`, `renders/famicom-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
+| v1.1 | sim | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `renders/famicom-v1.1-cima.png`, `renders/famicom-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
 
 A v1.0 é o projeto de antes do D126, restaurado do histórico do git; os gerbers dela foram regerados da pasta `hardware-v1.0/`. Verificação: `python3 tools/check_netlist.py --board famicom --sem-troca boards/famicom/hardware-v1.0/dumper.kicad_sch` (v1.0) e `python3 tools/check_netlist.py --board famicom` (v1.1). Para refazer os gerbers da v1.0: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh famicom v1.0`. Nenhuma das duas foi encomendada, montada nem testada com cartucho.
 

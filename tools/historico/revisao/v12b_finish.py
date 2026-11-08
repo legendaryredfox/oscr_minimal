@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """16_bits v. 1.2 final (D108), parte 4: acabamento depois do Freerouting: textos e rotulos, pads de GND sem alivio termico onde o DRC
-reclama (starved_thermal), novo preenchimento (sem costura: o stitch.py removia vias de GND do Freerouting e as duas camadas ficavam sem ligacao). Uso (Python do venv do KiCad MCP): python v12b_finish.py boards/16_bits/hardware"""
+reclama (starved_thermal), novo preenchimento (sem costura: o stitch.py removia vias de GND do Freerouting e as duas camadas ficavam sem ligacao). Uso (Python do venv do KiCad MCP): python v12b_finish.py boards/16_bits/hardware-v1.3"""
 import subprocess, sys
 from pathlib import Path
 import pcbnew

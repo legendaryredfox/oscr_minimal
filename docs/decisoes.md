@@ -130,6 +130,7 @@
 - **D129** Um README por versão; renders comuns no lugar dos grandes; silk da 16_and_8_bits (pedido do usuário, 2026-11-08)
 - **D130** 16_bits v1.2 sem os TVS; limpeza e reorganização (pedido do usuário, 2026-11-08)
 - **D131** `firmware-flash`: gravar o firmware do fork no Mega pela CLI (2026-11-08)
+- **D132** Cada versão em uma pasta com o nome da versão (pedido do usuário, 2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -616,7 +617,7 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 
 ### D70 — Repositório passa a oferecer várias versões mínimas de hardware (decisão do usuário, 2026-11-03)
 - **Nova pasta `boards/`**, uma subpasta por variante, nomeada por geração: `16_bits/` (placa atual de 5 slots: SNES, NES, Famicom, Mega Drive, GBA; **renomeada para `16_and_8_bits/` na D71**), `8_bits/` (NES, Famicom, Master System), `gb_gba/` (GB, GBC, GBA), `completa/` (todos os slots do OSCR, sem SD e sem tela, só USB). As três últimas são **esqueletos** (README e pastas vazias).
-- **Movido** (`git mv`, histórico preservado): `hardware/` → `boards/16_and_8_bits/hardware/`, `hardware/fab/` → `boards/16_and_8_bits/fab/`, `hardware/lib/` → `boards/_lib/` (compartilhada), `docs/{pinmap,bom,montagem}.md` → `boards/16_and_8_bits/docs/`, zip da raiz → `boards/16_and_8_bits/fab/`.
+- **Movido** (`git mv`, histórico preservado): `hardware/` → `boards/16_and_8_bits/hardware-v1.1/`, `hardware/fab/` → `boards/16_and_8_bits/fab/`, `hardware/lib/` → `boards/_lib/` (compartilhada), `docs/{pinmap,bom,montagem}.md` → `boards/16_and_8_bits/docs/`, zip da raiz → `boards/16_and_8_bits/fab/`.
 - **Mantidos na raiz e comuns a todas as placas:** `firmware/`, `host/`, `gui/`, `tools/`, `docs/` (uso, protocolo, decisões, continuação, fork). Firmware não foi alterado.
 - `fp-lib-table` e `sym-lib-table` da `16_bits` apontam para `${KIPRJMOD}/../../_lib/`. Os scripts de `tools/` têm o caminho `boards/16_and_8_bits/` fixo no código, a generalizar quando existir a segunda placa com KiCad.
 - Verificado depois da mudança: `tools/check_netlist.py` OK (67 nets, 375 ligações); DRC `kicad-cli` 4 avisos, 0 ligações abertas (igual a antes).
@@ -1062,3 +1063,8 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Decisão.** Chamar o `avrdude` (`-p atmega2560 -c wiring -b 115200 -D`, o mesmo que o PlatformIO usa para o Mega 2560) em vez de falar STK500v2 direto: o avrdude já confere a gravação e existe nos três sistemas. `.hex` de `--hex`, `OSCR_FIRMWARE_HEX` ou da compilação do projeto; avrdude de `--avrdude`, `AVRDUDE`, `PATH` ou do PlatformIO. Lê a versão do firmware (INFO) antes e depois, sempre pede confirmação (`--yes` fora de terminal), barras do avrdude viram progresso (`gravando`, `conferindo`). `host/oscr_host/cli/cmd_firmware.py`, `host/tests/test_firmware_flash.py` (avrdude falso).
 - **Limites.** Só na CLI Python; CLI Kotlin e GUI ficam para depois. Não embute o `.hex` nem o avrdude no instalador. **Nada rodou em um Mega de verdade.** O INFO depois da gravação pode falhar se a porta mudar de nome (o comando avisa e não falha).
 
+### D132 — Cada versão em uma pasta com o nome da versão (pedido do usuário, 2026-11-08)
+- **Pedido.** "Veja se cada versão de placa está em uma pasta corretamente identificada. Exemplo: a placa versão 1.1 deve estar na pasta 1.1."
+- **Conferência.** O título do esquemático e do PCB (`rev`) e o silk batiam com a versão em todas as pastas; o que estava sem nome era a **versão mais nova**, que ficava em `hardware/`, `fab/gerbers/` e `fab/bom.csv`.
+- **Mudança.** `boards/<placa>/hardware/` virou `hardware-v1.1/` (16_bits: `hardware-v1.3/`), `fab/gerbers/` virou `gerbers-v1.1/` (16_bits: `gerbers-v1.3/`) e `fab/bom.csv` virou `bom-v1.1.csv` (16_bits: `bom-v1.3.csv`). `boards/versoes.json` guarda a versão atual de cada placa (usado pelo `check_netlist.py` quando não se dá o arquivo). `tools/export_fab.sh <placa> <versão>` e `tools/render_board.sh` derivam as pastas da versão; os scripts de `tools/troca/` e de `tools/boards/` e os docs foram atualizados. Os esqueletos `8_bits/` e `completa/` ainda não têm versão e mantêm `hardware/` vazia.
+- **Verificação.** `check_netlist.py` confere nas 9 placas; ERC e export de fábrica refeitos na `n64` sem mudança de conteúdo (restaurados para não mudar o SHA-256 dos zips); READMEs por versão regerados.

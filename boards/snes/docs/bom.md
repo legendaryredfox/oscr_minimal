@@ -1,6 +1,6 @@
 # BOM — placa snes (só SNES) v1.1
 
-Montagem **manual**. Lista gerada de `boards/snes/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/snes/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot SNES e do módulo Si5351 (D17, D23); direção da etiqueta (D27).
 

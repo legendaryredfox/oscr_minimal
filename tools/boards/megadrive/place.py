@@ -3,7 +3,7 @@
 """Prepara o PCB da placa só-Mega-Drive a partir da cópia da 16_bits.
 Remove trilhas, vias e as peças de SNES/PIC/Si5351, move o slot MD para dentro da área do Mega,
 redesenha o contorno e as zonas, reposiciona peças e textos. Uso (Python do venv do KiCad MCP):
-  python place.py boards/megadrive/hardware/dumper.kicad_pcb"""
+  python place.py boards/megadrive/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

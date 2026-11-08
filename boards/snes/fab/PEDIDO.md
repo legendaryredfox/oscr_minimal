@@ -1,6 +1,6 @@
 # Pedido da placa snes v1.1 (JLCPCB)
 
-Placa **só SNES**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só SNES**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
 
 Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `44ec11d22b28c3c309d27a3c3bb019b598c0a8296761c8cade3d378edfd03c19` (muda a cada exportação; confira com `sha256sum`).
 

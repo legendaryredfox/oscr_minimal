@@ -1,6 +1,6 @@
 # Pedido da placa famicom v1.1 (JLCPCB)
 
-Placa **só Famicom**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só Famicom**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
 
 Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `13ea1b2a7d215de22dc108a56c1e846cad05a7e7b44f0512a6d54bd1148fb057` (muda a cada exportação; confira com `sha256sum`).
 

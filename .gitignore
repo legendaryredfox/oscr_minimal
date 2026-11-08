@@ -40,3 +40,5 @@ AGENTS.md
 tools/pic/shield_uno/hardware/*.kicad_prl
 tools/pic/shield_uno/hardware/*-backups/
 tools/pic/shield_uno/hardware/fp-info-cache
+# Histórico local do KiCad
+boards/*/hardware*/.history/

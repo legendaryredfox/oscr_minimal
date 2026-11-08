@@ -26,7 +26,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `boards/` | **Variantes de hardware**, uma pasta cada (índice e estado em `boards/README.md`). Com projeto KiCad e gerbers: `16_and_8_bits/` (5 slots), `16_bits/` (SNES e Mega Drive) e as de um sistema só ou de dois: `megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `gb_gba/`. `8_bits/` e `completa/` são esqueletos |
 | `boards/<placa>/docs/pinmap.md` | **Fonte da verdade** de cada placa: pino do slot → pino do Mega (o da `16_and_8_bits` é gerado por `tools/gen_pinmap.py`; os das outras são recortes dele) |
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
-| `boards/<placa>/hardware/`, `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |
+| `boards/<placa>/hardware-<versão>/` (uma pasta por versão), `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |
 | `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
 | `docs/referencia/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
 | `docs/historico/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |

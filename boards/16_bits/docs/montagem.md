@@ -3,7 +3,7 @@
 > **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
 
 
-> **Versões (D128):** este guia foi escrito para a v1.2 de 2026-11-06. A v1.2 atual **não tem** Q1, R16 a R18, D2 nem SW1 (pule esses itens e o passo 4b); a v1.3 tem o bloco de troca (Q1, Q2, Q3, R16 a R22, D15 verde e D16 amarelo) e **também não tem o botão**. Lista de cada versão: `fab/bom-v1.2.csv` e `fab/bom.csv`; resumo em `versoes.md`.
+> **Versões (D128):** este guia foi escrito para a v1.2 de 2026-11-06. A v1.2 atual **não tem** Q1, R16 a R18, D2 nem SW1 (pule esses itens e o passo 4b); a v1.3 tem o bloco de troca (Q1, Q2, Q3, R16 a R22, D15 verde e D16 amarelo) e **também não tem o botão**. Lista de cada versão: `fab/bom-v1.2.csv` e `fab/bom-v1.3.csv`; resumo em `versoes.md`.
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 

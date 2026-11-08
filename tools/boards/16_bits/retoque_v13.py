@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """16_bits v1.3 (D128): acabamento do silkscreen depois de tools/troca/finish.py: versão "v. 1.3", textos do aviso menores
-(não encostam em "UM CARTUCHO POR VEZ").  Uso (python do venv do KiCad MCP): python retoque_v13.py boards/16_bits/hardware"""
+(não encostam em "UM CARTUCHO POR VEZ").  Uso (python do venv do KiCad MCP): python retoque_v13.py boards/16_bits/hardware-v1.3"""
 import re, sys
 from pathlib import Path
 import pcbnew

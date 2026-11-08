@@ -2,7 +2,7 @@
 
 ![Render 3D da placa 16_and_8_bits (KiCad, vista de cima)](render.png)
 
-**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware/README.md).
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware-v1.1/README.md).
 
 **Slots:** SNES (62p), NES (72p), Famicom (60p), Mega Drive (64p) e GBA (32p, SMD, 3,3 V). Um cartucho por vez.
 
@@ -10,16 +10,16 @@
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10) |
-| `fab/` | `gerbers/`, `bom.csv`, `dumper-v1.0-jlcpcb.zip`, `dumper-v1.1-jlcpcb.zip` |
+| `hardware-v1.1/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10) |
+| `fab/` | `gerbers-v1.1/`, `bom-v1.1.csv`, `dumper-v1.0-jlcpcb.zip`, `dumper-v1.1-jlcpcb.zip` |
 | `docs/` | `pinmap.md` (fonte da verdade), `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):
 
 ```
 python3 tools/check_netlist.py --board 16_and_8_bits
-kicad-cli sch erc boards/16_and_8_bits/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/16_and_8_bits/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/16_and_8_bits/hardware-v1.1/dumper.kicad_pcb
 ```
 
 **Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
@@ -46,7 +46,7 @@ O desligamento do 5V dos slots por software (bloco de troca de cartucho, D126) �
 | Versão | Bloco de troca (Q1, Q2, Q3, LEDs, D19 e D53) | Projeto KiCad | Fábrica | Renders (cima e baixo) |
 |---|---|---|---|---|
 | v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `renders/16_and_8_bits-v1.0-cima.png`, `renders/16_and_8_bits-v1.0-baixo.png` |
-| v1.1 | sim | `hardware/` | `fab/gerbers/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom.csv` | `renders/16_and_8_bits-v1.1-cima.png`, `renders/16_and_8_bits-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
+| v1.1 | sim | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `renders/16_and_8_bits-v1.1-cima.png`, `renders/16_and_8_bits-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
 
 A v1.0 é o projeto de antes do D126, restaurado do histórico do git; os gerbers dela foram regerados da pasta `hardware-v1.0/`. Verificação: `python3 tools/check_netlist.py --board 16_and_8_bits --sem-troca boards/16_and_8_bits/hardware-v1.0/dumper.kicad_sch` (v1.0) e `python3 tools/check_netlist.py --board 16_and_8_bits` (v1.1). Para refazer os gerbers da v1.0: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh 16_and_8_bits v1.0`. Nenhuma das duas foi encomendada, montada nem testada com cartucho.
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Gera o esquemático da placa n64 a partir da cópia da 16_and_8_bits (boards/n64/hardware/dumper.kicad_sch):
+"""Gera o esquemático da placa n64 a partir da cópia da 16_and_8_bits (boards/n64/hardware-v1.1/dumper.kicad_sch):
 acrescenta o slot N64 (símbolo dumper:N64_Slot, rótulos pelo pinmap.md), tira SNES1, NES1, FC1, MD1, GBA1, PIC (U2) e C2 a C6
 (tools/boards/megadrive/strip_sch.py), liga o pull-up R2 ao 3,3 V (EEPROM_DATA do N64) e renumera as referências (D109):
   U3 -> U2 (regulador), C7 -> C2, C8 -> C3, C9 -> C4 (VCC do slot).
-Depois, rode tools/sch/regen.py boards/n64/hardware/dumper.kicad_sch (fios diretos e símbolos de alimentação, D122).
+Depois, rode tools/sch/regen.py boards/n64/hardware-v1.1/dumper.kicad_sch (fios diretos e símbolos de alimentação, D122).
 Uso: make_sch.py   (da raiz do repositório; idempotência: rode sobre a cópia nova da 16_and_8_bits)"""
 import re, subprocess, sys, uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SCH = ROOT / "boards/n64/hardware/dumper.kicad_sch"
+SCH = ROOT / "boards/n64/hardware-v1.1/dumper.kicad_sch"
 PINMAP = ROOT / "boards/n64/docs/pinmap.md"
 LIBSYM = ROOT / "boards/_lib/dumper.kicad_sym"
 X0, Y0 = 900.43, 299.72                     # onde ficava o GBA1

@@ -29,7 +29,9 @@ if "--board" in _args:
 SEM_TROCA = "--sem-troca" in _args      # versão sem o bloco de troca de cartucho (D128): v1.0 das placas, v1.2 da 16_bits
 SEM_TVS = "--sem-tvs" in _args          # 16_bits v1.2 sem os TVS D3 a D14 (D130)
 _args = [a for a in _args if a not in ("--sem-troca", "--sem-tvs")]
-SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad_sch"
+import json as _j
+# versão atual de cada placa: boards/versoes.json; cada versão fica em boards/<placa>/hardware-<versão>/
+SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware-{_j.loads((ROOT / 'boards/versoes.json').read_text())[BOARD]['atual']}/dumper.kicad_sch"
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
 # Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa.
 # Referências sempre sequenciais por prefixo (C1, C2, ...): ao tirar peças de uma placa derivada, renumerar (D109)

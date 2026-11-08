@@ -1,6 +1,6 @@
 # Pedido da placa famicom_nes v1.1 (JLCPCB)
 
-Placa **Famicom + NES**, 2 camadas, 117,1 × 79,1 mm. Refeita em 2026-11-07 (D124) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **Famicom + NES**, 2 camadas, 117,1 × 79,1 mm. Refeita em 2026-11-07 (D124) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
 
 Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `62a12edc95a34283508c19c4b81015b4dc37fc9d3e0c1bb268a28bf655039bb1` (muda a cada exportação; confira com `sha256sum`).
 

@@ -3,7 +3,7 @@
 """Prepara o PCB da placa Famicom + NES a partir da cópia da 16_and_8_bits: limpa trilhas e zonas, remove SNES, Mega Drive, GBA,
 PIC, R2, U3 e os capacitores deles, deixa o slot NES no centro do Mega (como na placa nes) e põe o slot Famicom acima do
 cabeçalho do Mega (a placa cresce para cima), refaz o contorno e reposiciona peças e textos.
-Uso (Python do venv do KiCad MCP): python place.py boards/famicom_nes/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): python place.py boards/famicom_nes/hardware-v1.1/dumper.kicad_pcb"""
 import sys, pcbnew
 mm = pcbnew.FromMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

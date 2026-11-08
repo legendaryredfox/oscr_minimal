@@ -1,6 +1,6 @@
 # Pedido da placa gb_gba v1.1 (JLCPCB)
 
-Placa **GBA (GB e GBC por adaptador)**, 2 camadas, 138,1 × 67,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **GBA (GB e GBC por adaptador)**, 2 camadas, 138,1 × 67,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
 
 Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `f928bfc9c66193c3f9f3617f7fd18158ec6758d843b54fa75dc92d8316996333` (muda a cada exportação; confira com `sha256sum`).
 

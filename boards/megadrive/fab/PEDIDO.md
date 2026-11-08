@@ -1,6 +1,6 @@
 # Pedido da placa megadrive v1.1 (JLCPCB)
 
-Placa **só Mega Drive**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
+Placa **só Mega Drive**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
 
 Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `ddc28be2b5077ead31ffb825a9fe56c82a5b39985ca4316da6fa2f954fbc1f4c` (muda a cada exportação; confira com `sha256sum`).
 

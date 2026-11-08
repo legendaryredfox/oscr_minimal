@@ -32,8 +32,9 @@ Para leitura humana (D122): os circuitos locais (LED, resistores, capacitores, S
 ```
 boards/<variante>/
 ├── README.md        # slots, estado, decisões próprias
-├── hardware/        # projeto KiCad (<nome>.kicad_pro/_sch/_pcb, fp-lib-table, sym-lib-table)
-├── fab/             # gerbers, drill, bom.csv e zip da fábrica
+├── hardware-v1.0/   # uma pasta por versão (hardware-v1.1/ ...): projeto KiCad (dumper.kicad_pro/_sch/_pcb, fp-lib-table, sym-lib-table) e README.md da versão
+├── fab/             # por versão: gerbers-<versão>/, bom-<versão>.csv e dumper-<versão>-jlcpcb.zip
+├── renders/         # PNGs do render 3D (cima e baixo) de cada versão
 └── docs/            # pinmap.md, bom.md, montagem.md da variante
 ```
 

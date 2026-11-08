@@ -3,7 +3,7 @@
 """Prepara o PCB da placa n64 (slot N64, 3,3 V) a partir da cópia da 16_and_8_bits: limpa trilhas, vias e zonas,
 remove os outros slots, o PIC, C2 a C6 e os furos M2, acrescenta o N64_Slot (nets pelo pinmap.md), liga o R2 ao 3,3 V,
 renumera U3->U2, C7->C2, C8->C3, C9->C4 (como no esquemático), refaz contorno e reposiciona peças e textos.
-Uso (Python do venv do KiCad MCP): place.py boards/n64/hardware/dumper.kicad_pcb"""
+Uso (Python do venv do KiCad MCP): place.py boards/n64/hardware-v1.1/dumper.kicad_pcb"""
 import re, sys, pcbnew
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]

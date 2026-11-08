@@ -30,13 +30,13 @@ for brd in ("snes", "megadrive", "nes", "famicom", "gb_gba"):
                 d.SetPosition(pcbnew.VECTOR2I(mm(84.0), mm(77.8)))
     b.Save(path); print(brd, "aviso" if old else "sem texto antigo")
 V = pcbnew.VECTOR2I
-path = f"{ROOT}/boards/16_bits/hardware/dumper.kicad_pcb"
+path = f"{ROOT}/boards/16_bits/hardware-v1.3/dumper.kicad_pcb"
 b = pcbnew.LoadBoard(path)
 for ref, dy in (("C5", 3.6), ("C6", -2.6)):
     f = b.FindFootprintByReference(ref); r = f.Reference()
     r.SetVisible(True); r.SetPosition(V(f.GetX() + mm(2.5), f.GetY() + mm(dy)))
 b.Save(path); print("16_bits C5, C6 visíveis")
-path = f"{ROOT}/boards/16_and_8_bits/hardware/dumper.kicad_pcb"
+path = f"{ROOT}/boards/16_and_8_bits/hardware-v1.1/dumper.kicad_pcb"
 b = pcbnew.LoadBoard(path)
 b.FindFootprintByReference("D1").Reference().SetPosition(V(mm(121.2), mm(102.0)))
 b.Save(path); print("16_and_8_bits D1 movido")

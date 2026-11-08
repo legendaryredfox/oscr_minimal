@@ -12,8 +12,8 @@ Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino M
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC) em soquete. |
 | Tamanho | 107,1 × 65,1 mm |
 | Desligar o 5V por software | **sim** |
-| Projeto KiCad | [`hardware/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
-| Fábrica (JLCPCB) | `../fab/gerbers/`, `../fab/dumper-v1.1-jlcpcb.zip` |
+| Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
+| Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
 | Renders | `../renders/snes-v1.1-cima.png`, `../renders/snes-v1.1-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
@@ -63,8 +63,8 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 
 ```
 python3 tools/check_netlist.py --board snes
-kicad-cli sch erc boards/snes/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/snes/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/snes/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/snes/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh snes v1.1
 tools/render_board.sh snes v1.0 v1.1
 ```

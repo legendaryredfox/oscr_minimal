@@ -12,8 +12,8 @@ Versão **v1.1** da placa [`nes`](../README.md): shield 100% THT para Arduino Me
 | Circuitos | Si5351 (clock do slot), sem PIC. |
 | Tamanho | 110,1 × 65,1 mm |
 | Desligar o 5V por software | **sim** |
-| Projeto KiCad | [`hardware/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
-| Fábrica (JLCPCB) | `../fab/gerbers/`, `../fab/dumper-v1.1-jlcpcb.zip` |
+| Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
+| Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
 | Renders | `../renders/nes-v1.1-cima.png`, `../renders/nes-v1.1-baixo.png` |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
@@ -61,8 +61,8 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 
 ```
 python3 tools/check_netlist.py --board nes
-kicad-cli sch erc boards/nes/hardware/dumper.kicad_sch
-kicad-cli pcb drc boards/nes/hardware/dumper.kicad_pcb
+kicad-cli sch erc boards/nes/hardware-v1.1/dumper.kicad_sch
+kicad-cli pcb drc boards/nes/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh nes v1.1
 tools/render_board.sh nes v1.0 v1.1
 ```

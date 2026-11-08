@@ -1,6 +1,6 @@
 # BOM — placa n64 (só N64) v1.1
 
-Montagem **manual**. Lista gerada de `boards/n64/fab/bom.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/n64/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot N64 (50 pinos, 2,5 mm; o contorno do footprint é estimativa, D17/D120), do módulo Si5351 (D17, D23) e direção da etiqueta (D27).
 
