@@ -6,6 +6,7 @@
 "D1","LED 3mm","LED_THT:LED_D3.0mm","1"
 "D2","LED verde 3mm","LED_THT:LED_D3.0mm","1"
 "D3","LED amarelo 3mm","LED_THT:LED_D3.0mm","1"
+"F1","PTC 0,5 A","Fuse:Fuse_Bourns_MF-RHT050","1"
 "FLG1,FLG2","PWR_FLAG","","2"
 "GBA1","GBA_Slot","dumper:GBA_Slot","1"
 "Q1","IRF9540N","Package_TO_SOT_THT:TO-220-3_Vertical","1"

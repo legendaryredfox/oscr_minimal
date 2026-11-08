@@ -5213,6 +5213,175 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:Polyfuse"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "F"
+				(at -2.54 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Polyfuse"
+				(at 2.54 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 1.27 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Resettable fuse, polymeric positive temperature coefficient"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "resettable fuse PTC PPTC polyfuse polyswitch"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "*polyfuse* *PTC*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "Polyfuse_0_1"
+				(polyline
+					(pts
+						(xy -1.524 2.54)
+						(xy -1.524 1.524)
+						(xy 1.524 -1.524)
+						(xy 1.524 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -0.762 2.54)
+					(end 0.762 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54)
+						(xy 0 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Polyfuse_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 	)
 	(symbol
 		(lib_id "dumper:Mega2560_R3_Shield")
@@ -10591,11 +10760,11 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "b9ec0e5a-4297-4bda-8f67-e7edc1e7f76e")
+		(uuid "f0b398ae-8ec2-45b2-a87f-a3dca8349da7")
 	)
 	(symbol
-		(lib_id "dumper:Q_PMOS_GDS")
-		(at 27.94 425.45 0)
+		(lib_id "Device:Polyfuse")
+		(at 30.48 424.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10603,9 +10772,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "a31aa979-5c72-4e97-8d0c-b61786464a49")
-		(property "Reference" "Q1"
-			(at 31.98 421.37 0)
+		(uuid "6a27de00-ee1c-408d-8e0b-c91040c70b6b")
+		(property "Reference" "F1"
+			(at 32.68 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10615,8 +10784,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "IRF9540N"
-			(at 31.98 423.87 0)
+		(property "Value" "PTC 0,5 A"
+			(at 32.68 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10626,8 +10795,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_THT:TO-220-3_Vertical"
-			(at 27.94 425.45 0)
+		(property "Footprint" "Fuse:Fuse_Bourns_MF-RHT050"
+			(at 30.48 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10638,7 +10807,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 27.94 425.45 0)
+			(at 30.48 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10648,8 +10817,8 @@
 				)
 			)
 		)
-		(property "Description" "P-MOSFET: chave de alta do 5V dos slots"
-			(at 27.94 425.45 0)
+		(property "Description" "Fusivel rearmavel (PTC) de furo passante: 0,5 A de retencao, em serie com o 5 V da placa. Queda de 0,1 a 0,2 V a 200 mA"
+			(at 30.48 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10658,44 +10827,21 @@
 					(size 1.27 1.27)
 				)
 			)
-		)
-		(pin "2"
-			(uuid "6c172ca2-d8b2-45ad-a022-f0edc74cd681")
 		)
 		(pin "1"
-			(uuid "93813e27-eec8-4085-ba89-105efa16b6c4")
+			(uuid "186207e4-3cce-47b7-9a98-5bb462d72e17")
 		)
-		(pin "3"
-			(uuid "0766b821-bea0-4381-8783-95902470296e")
+		(pin "2"
+			(uuid "fbb07859-9080-4845-ab3d-b03bf1a5244d")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "Q1")
+					(reference "F1")
 					(unit 1)
 				)
 			)
 		)
-	)
-	(wire
-		(pts
-			(xy 22.86 425.45) (xy 17.78 425.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7293db5d-bc3b-4a0f-b251-fc1fd4d61ab1")
-	)
-	(label "PWR_G"
-		(at 17.78 425.45 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "78654634-249f-41f2-ae2b-ad74adb0c253")
 	)
 	(wire
 		(pts
@@ -10705,7 +10851,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "42dadeed-77c2-4c08-bc38-f897f1f4b240")
+		(uuid "91a55c44-733c-44fa-a27f-c0f644875dd6")
 	)
 	(symbol
 		(lib_id "power:+5V")
@@ -10717,7 +10863,7 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "7631523b-7fa5-4f8c-9fa8-49a7bdb7865f")
+		(uuid "03b2c10e-a0c2-4bc7-b5f4-6fc650810258")
 		(property "Reference" "#PWR901"
 			(at 30.48 415.29 0)
 			(hide yes)
@@ -10729,7 +10875,7 @@
 				)
 			)
 		)
-		(property "Value" "+5V_CART"
+		(property "Value" "+5V"
 			(at 30.48 411.49 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10773,7 +10919,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "3daf613c-58ca-406e-83e3-f9b5db0242e4")
+			(uuid "436e52c1-a148-474c-9a81-53aa24b6d7bd")
 		)
 		(instances
 			(project "dumper"
@@ -10786,17 +10932,17 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 430.53) (xy 30.48 435.61)
+			(xy 30.48 427.99) (xy 30.48 433.07)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "ac93ddb5-0bf7-41d8-af9c-90d24063dea7")
+		(uuid "451585b8-ad1a-4c29-8ce0-09da2cef9230")
 	)
 	(symbol
 		(lib_id "power:+5V")
-		(at 30.48 435.61 180)
+		(at 30.48 433.07 180)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10804,9 +10950,9 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "a1c0e29c-a397-417a-aa7f-14b032063a62")
+		(uuid "733e3924-9306-41af-90b4-bfade8ef5767")
 		(property "Reference" "#PWR902"
-			(at 30.48 435.61 0)
+			(at 30.48 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10816,8 +10962,8 @@
 				)
 			)
 		)
-		(property "Value" "+5V"
-			(at 30.48 439.81 0)
+		(property "Value" "+5V_F"
+			(at 30.48 437.27 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10827,7 +10973,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 30.48 435.61 0)
+			(at 30.48 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10838,7 +10984,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 30.48 435.61 0)
+			(at 30.48 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10849,7 +10995,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 30.48 435.61 0)
+			(at 30.48 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10860,7 +11006,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "3d016c09-4a83-4955-b708-f9bb744b7470")
+			(uuid "f7e2807d-0be3-4e7f-b4c7-bb9d05f7627c")
 		)
 		(instances
 			(project "dumper"
@@ -10871,9 +11017,19 @@
 			)
 		)
 	)
+	(wire
+		(pts
+			(xy 30.48 433.07) (xy 35.56 433.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bfd52d86-9291-4328-ab83-dce218bffef1")
+	)
 	(symbol
 		(lib_id "power:PWR_FLAG")
-		(at 35.56 415.29 0)
+		(at 35.56 433.07 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10881,9 +11037,9 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "2ca82553-8521-4aec-ae77-945700924d0e")
+		(uuid "c5684ca0-515d-466e-a097-0ee2486ee45e")
 		(property "Reference" "FLG3"
-			(at 35.56 421.29 0)
+			(at 35.56 439.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10894,7 +11050,7 @@
 			)
 		)
 		(property "Value" "PWR_FLAG"
-			(at 37.56 419.29 0)
+			(at 37.56 437.07 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10905,7 +11061,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 35.56 415.29 0)
+			(at 35.56 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10916,7 +11072,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 35.56 415.29 0)
+			(at 35.56 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10927,7 +11083,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 35.56 415.29 0)
+			(at 35.56 433.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10938,7 +11094,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "2f5daed0-039b-4323-884c-47493df30c2d")
+			(uuid "4940e073-c2c9-4cd4-8639-6d83bb13d742")
 		)
 		(instances
 			(project "dumper"
@@ -10949,19 +11105,9 @@
 			)
 		)
 	)
-	(wire
-		(pts
-			(xy 30.48 415.29) (xy 35.56 415.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "82baac09-5e44-4f40-93dc-9a2ebeca8a96")
-	)
 	(symbol
-		(lib_id "Device:R")
-		(at 53.34 424.18 0)
+		(lib_id "dumper:Q_PMOS_GDS")
+		(at 50.8 425.45 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10969,9 +11115,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "c4c6a084-e45d-4957-b5ba-c9ee8e4cc95e")
-		(property "Reference" "R3"
-			(at 55.54 423.18 0)
+		(uuid "9fde7999-73d1-4e76-ac33-1ed9212e177d")
+		(property "Reference" "Q1"
+			(at 54.84 421.37 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10981,8 +11127,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100k"
-			(at 55.54 425.18 0)
+		(property "Value" "IRF9540N"
+			(at 54.84 423.87 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10992,8 +11138,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 53.34 424.18 0)
+		(property "Footprint" "Package_TO_SOT_THT:TO-220-3_Vertical"
+			(at 50.8 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11004,7 +11150,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 53.34 424.18 0)
+			(at 50.8 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11014,8 +11160,8 @@
 				)
 			)
 		)
-		(property "Description" "Mantém o gate no 5V (chave desligada) com o Mega em reset"
-			(at 53.34 424.18 0)
+		(property "Description" "P-MOSFET: chave de alta do 5V dos slots"
+			(at 50.8 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11024,21 +11170,44 @@
 					(size 1.27 1.27)
 				)
 			)
-		)
-		(pin "1"
-			(uuid "481e0ac3-fa89-4196-b76d-716188142bfe")
 		)
 		(pin "2"
-			(uuid "8b8d4dd9-78aa-46cc-93ca-6a8d23b10a4c")
+			(uuid "49ded4d2-0fbc-4292-9d7b-716bd1f6f1a8")
+		)
+		(pin "1"
+			(uuid "e0bad404-de3a-460a-9f9a-872d4b96251b")
+		)
+		(pin "3"
+			(uuid "926406f0-39da-4207-8bb9-9ba2390f9d06")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R3")
+					(reference "Q1")
 					(unit 1)
 				)
 			)
 		)
+	)
+	(wire
+		(pts
+			(xy 45.72 425.45) (xy 40.64 425.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2b0acd40-d538-4948-80f0-b2041c86e009")
+	)
+	(label "PWR_G"
+		(at 40.64 425.45 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "85d10db5-e08a-49f0-aa82-d692a77de944")
 	)
 	(wire
 		(pts
@@ -11048,7 +11217,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b52b25c5-e341-4a96-bf0c-b13214c8bcd6")
+		(uuid "3cc8db7d-8f60-44e5-8882-8c168a5f13bc")
 	)
 	(symbol
 		(lib_id "power:+5V")
@@ -11060,7 +11229,7 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "dc94cc6a-7198-44c5-9ad6-81e21e20d261")
+		(uuid "470c2b6f-6678-4d2b-a33a-e470bb6109b8")
 		(property "Reference" "#PWR903"
 			(at 53.34 415.29 0)
 			(hide yes)
@@ -11072,7 +11241,7 @@
 				)
 			)
 		)
-		(property "Value" "+5V"
+		(property "Value" "+5V_CART"
 			(at 53.34 411.49 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11116,7 +11285,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "1515af47-dfbe-4a80-bc1a-fb4127920463")
+			(uuid "7cd8e49e-9891-418c-9296-78b9944af663")
 		)
 		(instances
 			(project "dumper"
@@ -11129,23 +11298,178 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 427.99) (xy 53.34 433.07)
+			(xy 53.34 430.53) (xy 53.34 435.61)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "02c3bffd-ff85-49aa-af04-47e629ff8be1")
+		(uuid "bc7bfc47-3e35-413f-a3a8-d4249d4c96c0")
 	)
-	(label "PWR_G"
-		(at 53.34 433.07 270)
-		(effects
-			(font
-				(size 1.27 1.27)
+	(symbol
+		(lib_id "power:+5V")
+		(at 53.34 435.61 180)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e563da02-eebb-4c41-9ab5-7369a5818fdc")
+		(property "Reference" "#PWR904"
+			(at 53.34 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
-			(justify right bottom)
 		)
-		(uuid "7db0b85a-f8e4-4e9c-8e92-279c1883c68a")
+		(property "Value" "+5V_F"
+			(at 53.34 439.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 53.34 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 53.34 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 53.34 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5d56709e-a37e-4a84-ac44-1f63bb151447")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR904")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 58.42 415.29 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e64f082c-c2ec-457f-a2b4-18328ed17aaf")
+		(property "Reference" "FLG4"
+			(at 58.42 421.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 60.42 419.29 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 58.42 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 58.42 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 58.42 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "654af5b5-70c9-4812-a948-4fee3a71f8eb")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "FLG4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 53.34 415.29) (xy 58.42 415.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9acbf60a-bcba-467a-8c11-d0b86755e54b")
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -11157,8 +11481,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "caa31543-5de5-46ec-96cd-59bfa4e67235")
-		(property "Reference" "R4"
+		(uuid "be201b94-2ffa-4e19-9e4a-ec92925b10c0")
+		(property "Reference" "R3"
 			(at 78.4 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11169,7 +11493,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100R"
+		(property "Value" "100k"
 			(at 78.4 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11202,7 +11526,7 @@
 				)
 			)
 		)
-		(property "Description" "Série do comando D19 da chave"
+		(property "Description" "Mantém o gate no 5V (chave desligada) com o Mega em reset"
 			(at 76.2 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -11214,15 +11538,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "33d5fc18-9440-4b8c-9d62-e0191236ad51")
+			(uuid "bb7b502a-22f2-437a-b325-60b606c1a9b7")
 		)
 		(pin "2"
-			(uuid "0b80c782-9909-402f-ac85-aa7d878f2376")
+			(uuid "c63558f4-ccb5-4c9a-8080-5881624ee04f")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R4")
+					(reference "R3")
 					(unit 1)
 				)
 			)
@@ -11236,17 +11560,84 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "1959665b-1435-490c-b5f4-7b7fe8b26bb5")
+		(uuid "c66377a9-2f99-4b85-9dea-b553c6134460")
 	)
-	(label "PWR_EN"
-		(at 76.2 415.29 90)
-		(effects
-			(font
-				(size 1.27 1.27)
+	(symbol
+		(lib_id "power:+5V")
+		(at 76.2 415.29 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "341e1d18-75a0-49d3-b554-22747eb550e5")
+		(property "Reference" "#PWR905"
+			(at 76.2 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
-			(justify left bottom)
 		)
-		(uuid "eeac1d9e-2891-4344-94ed-ac1ff75c466d")
+		(property "Value" "+5V"
+			(at 76.2 411.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 76.2 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 76.2 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 76.2 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f37939ee-4b2f-40e7-9792-d6698c898d0d")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR905")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(wire
 		(pts
@@ -11256,7 +11647,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "d6e48dfc-c4cd-41e4-933c-500e9c7f35e3")
+		(uuid "d7f292ee-2491-4eae-8efd-6539dc5ab912")
 	)
 	(label "PWR_G"
 		(at 76.2 433.07 270)
@@ -11266,7 +11657,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "a8af7ca5-2b26-4c39-b6d7-64916c4b1eba")
+		(uuid "e1cf9727-f6a8-4cbb-862e-8ed3cf6af5fa")
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -11278,8 +11669,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "d48be6c5-4032-4e4b-af92-b8f6a0110733")
-		(property "Reference" "R5"
+		(uuid "6ff2d5b6-0053-4699-9482-1d73664f9bf8")
+		(property "Reference" "R4"
 			(at 101.26 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11290,7 +11681,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1k"
+		(property "Value" "100R"
 			(at 101.26 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11323,7 +11714,7 @@
 				)
 			)
 		)
-		(property "Description" "Limita o LED verde do 5V dos slots"
+		(property "Description" "Série do comando D19 da chave"
 			(at 99.06 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -11335,15 +11726,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "e500930e-e93b-4ab4-a9bb-1012d3509dd6")
+			(uuid "7715a3d2-f522-434f-bf72-b31ef77439fa")
 		)
 		(pin "2"
-			(uuid "bec918ec-d8d1-4f69-9fe4-cf1ab9b68e55")
+			(uuid "2d3fbc18-8c8b-46c9-973c-36be8290b1e4")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R5")
+					(reference "R4")
 					(unit 1)
 				)
 			)
@@ -11357,411 +11748,73 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "7bf1e12c-c5fc-4624-b8dd-bcede0e3707a")
+		(uuid "23578782-76a5-4bf2-a4e9-ffea774ee047")
 	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 99.06 415.29 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "8ea29c3a-c497-41a9-959e-78062db2adc6")
-		(property "Reference" "#PWR904"
-			(at 99.06 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "PWR_EN"
+		(at 99.06 415.29 90)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Value" "+5V_CART"
-			(at 99.06 411.49 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 99.06 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 99.06 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 99.06 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "45c90425-9215-4b10-8a1e-47b9e381a825")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR904")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:LED")
-		(at 99.06 439.42 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "7877a870-a636-4b1c-b4dc-7d8b0470fc67")
-		(property "Reference" "D2"
-			(at 101.26 438.42 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "LED verde 3mm"
-			(at 101.26 440.42 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "LED_THT:LED_D3.0mm"
-			(at 99.06 439.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 99.06 439.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "LED verde: 5V dos slots ligado"
-			(at 99.06 439.42 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "db781c3e-f0d6-474c-b988-6acd5c842ad7")
-		)
-		(pin "2"
-			(uuid "19cb298a-fc6a-4004-942b-8f35c64017b9")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "D2")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "38a4e910-8192-41e9-a9a8-d573724a7c35")
 	)
 	(wire
 		(pts
-			(xy 99.06 427.99) (xy 99.06 435.61)
+			(xy 99.06 427.99) (xy 99.06 433.07)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "da56aa1c-497d-433c-9f8c-7e8fb25df919")
-	)
-	(wire
-		(pts
-			(xy 99.06 443.23) (xy 99.06 448.31)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d7cfd689-dfb7-4b43-a43a-64efaf2f1d10")
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 99.06 448.31 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "f140a193-64fb-4134-b556-9a17feec6f49")
-		(property "Reference" "#PWR905"
-			(at 99.06 448.31 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 99.06 452.51 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 99.06 448.31 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 99.06 448.31 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 99.06 448.31 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "5882fcd8-8b50-4d10-9020-b03ea81f03d5")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR905")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Transistor_FET:2N7000")
-		(at 119.38 425.45 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "140f8a85-fc5f-4acb-98d7-69d30274ddd8")
-		(property "Reference" "Q2"
-			(at 123.42 421.37 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "2N7000"
-			(at 123.42 423.87 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_THT:TO-92_Inline"
-			(at 119.38 425.45 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 119.38 425.45 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Descarga do rail dos slots quando a chave abre"
-			(at 119.38 425.45 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "f0fd52d7-9b02-43cc-8de1-144de7546ae0")
-		)
-		(pin "2"
-			(uuid "7fb47993-46c5-4486-9d50-d373dfc13deb")
-		)
-		(pin "3"
-			(uuid "7601b99e-a01e-49f5-aabb-00561b0ca93e")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "Q2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(wire
-		(pts
-			(xy 114.3 425.45) (xy 109.22 425.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d34026e5-b447-469b-9256-93c70debc2f6")
+		(uuid "67f98634-c345-4e41-b296-069ddfbaaf3c")
 	)
 	(label "PWR_G"
-		(at 109.22 425.45 180)
+		(at 99.06 433.07 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "bbaea11d-9fb4-4883-8b72-92ecc5eb559c")
-	)
-	(wire
-		(pts
-			(xy 121.92 430.53) (xy 121.92 435.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "113a108a-ea2d-4032-a339-80d44d7c6a26")
+		(uuid "5b9e95f7-ba0d-46a3-ae66-2fc9539e62c8")
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 121.92 435.61 0)
+		(lib_id "Device:R")
+		(at 121.92 424.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
+		(in_bom yes)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "9ad5a491-2a6a-4b00-88b5-3201a2fb278d")
-		(property "Reference" "#PWR906"
-			(at 121.92 435.61 0)
-			(hide yes)
+		(uuid "b806c609-092c-4130-9c0d-1d804ca83902")
+		(property "Reference" "R5"
+			(at 124.12 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 121.92 439.81 0)
+		(property "Value" "1k"
+			(at 124.12 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 121.92 435.61 0)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
+			(at 121.92 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11772,7 +11825,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 121.92 435.61 0)
+			(at 121.92 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11782,8 +11835,8 @@
 				)
 			)
 		)
-		(property "Description" ""
-			(at 121.92 435.61 0)
+		(property "Description" "Limita o LED verde do 5V dos slots"
+			(at 121.92 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11794,12 +11847,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "9c9e8a14-4f4d-4d55-9380-80107e8bc7fe")
+			(uuid "f783da4f-f041-4e26-b4e5-d2c0060ad9c4")
+		)
+		(pin "2"
+			(uuid "1d0debf8-7255-4d7e-8c68-7c4e64b0d9ae")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR906")
+					(reference "R5")
 					(unit 1)
 				)
 			)
@@ -11813,102 +11869,11 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "ebb38c85-5c9c-4a84-90ec-7d1d2bf21c70")
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 121.92 411.48 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "a184c3b5-edba-4d55-94cd-7fe0ca450e16")
-		(property "Reference" "R6"
-			(at 124.12 410.48 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "330R"
-			(at 124.12 412.48 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 121.92 411.48 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 411.48 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Descarga do +5V_CART pelo Q2"
-			(at 121.92 411.48 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "df018eab-da06-4798-8df1-7b91910b4382")
-		)
-		(pin "2"
-			(uuid "619d6313-744c-48c8-8d80-7cbd91a3113b")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R6")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(wire
-		(pts
-			(xy 121.92 407.67) (xy 121.92 402.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f1abcd20-09c9-4cf6-88d9-884bfd05ceb7")
+		(uuid "f6ef72b6-6e32-4068-ab38-488dae7370dd")
 	)
 	(symbol
 		(lib_id "power:+5V")
-		(at 121.92 402.59 0)
+		(at 121.92 415.29 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -11916,9 +11881,9 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "d4b83f9a-24b3-4a41-a0ab-638f8863ab71")
-		(property "Reference" "#PWR907"
-			(at 121.92 402.59 0)
+		(uuid "94364a13-4934-4a6b-bc3d-f4603da0afb1")
+		(property "Reference" "#PWR906"
+			(at 121.92 415.29 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11929,7 +11894,7 @@
 			)
 		)
 		(property "Value" "+5V_CART"
-			(at 121.92 398.79 0)
+			(at 121.92 411.49 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11939,7 +11904,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 121.92 402.59 0)
+			(at 121.92 415.29 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11950,7 +11915,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 121.92 402.59 0)
+			(at 121.92 415.29 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11961,7 +11926,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 121.92 402.59 0)
+			(at 121.92 415.29 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11972,7 +11937,185 @@
 			)
 		)
 		(pin "1"
-			(uuid "d37d8f7f-f1ec-40ff-a905-fdc31d352999")
+			(uuid "50ae1a9d-dd05-4fb4-9f75-e2c150525f89")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR906")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:LED")
+		(at 121.92 439.42 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f0d99ee8-72b7-4254-bc9c-b68301450fcd")
+		(property "Reference" "D2"
+			(at 124.12 438.42 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "LED verde 3mm"
+			(at 124.12 440.42 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "LED_THT:LED_D3.0mm"
+			(at 121.92 439.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 121.92 439.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "LED verde: 5V dos slots ligado"
+			(at 121.92 439.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4158511a-b818-4db9-8170-20ec4a186b5c")
+		)
+		(pin "2"
+			(uuid "c0a49b4d-cec9-415e-9411-5cb005d47e3e")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 121.92 427.99) (xy 121.92 435.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd916207-3d98-4127-98b0-fb4132e2d12e")
+	)
+	(wire
+		(pts
+			(xy 121.92 443.23) (xy 121.92 448.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c5f21bf3-0c8b-4a24-9081-1220502ce786")
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 121.92 448.31 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "715ef00e-393b-4a44-afa0-765534f23536")
+		(property "Reference" "#PWR907"
+			(at 121.92 448.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 121.92 452.51 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 121.92 448.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 121.92 448.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 121.92 448.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e73eda31-84cf-4757-9c25-e2e88e4b8a7e")
 		)
 		(instances
 			(project "dumper"
@@ -11985,7 +12128,7 @@
 	)
 	(symbol
 		(lib_id "Transistor_FET:2N7000")
-		(at 165.1 425.45 0)
+		(at 142.24 425.45 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -11993,9 +12136,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "9f98f1fa-d51b-4ce6-a91e-8e0dc7cc5566")
-		(property "Reference" "Q3"
-			(at 169.14 421.37 0)
+		(uuid "90353f3f-1d0a-447c-9e63-f92d79b71147")
+		(property "Reference" "Q2"
+			(at 146.28 421.37 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12006,7 +12149,7 @@
 			)
 		)
 		(property "Value" "2N7000"
-			(at 169.14 423.87 0)
+			(at 146.28 423.87 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12017,7 +12160,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_THT:TO-92_Inline"
-			(at 165.1 425.45 0)
+			(at 142.24 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12028,7 +12171,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 165.1 425.45 0)
+			(at 142.24 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12038,8 +12181,8 @@
 				)
 			)
 		)
-		(property "Description" "Detector de rail baixo (limiar de 1 a 2,5 V)"
-			(at 165.1 425.45 0)
+		(property "Description" "Descarga do rail dos slots quando a chave abre"
+			(at 142.24 425.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12050,18 +12193,18 @@
 			)
 		)
 		(pin "1"
-			(uuid "6131d3ed-ab2f-4f54-bc40-6efb9beaf1f1")
+			(uuid "78aa4799-abd3-42b3-b05e-63380653cc8c")
 		)
 		(pin "2"
-			(uuid "9f9eb1f8-58bf-4b17-8cfe-d463ace69aa1")
+			(uuid "589424bd-ea9a-46d2-9774-b2ae8277ca3d")
 		)
 		(pin "3"
-			(uuid "f01eaf7f-bbd1-43ce-92a3-3de9402f3ada")
+			(uuid "f66bee2b-9fea-4d27-a26a-09133577d5b0")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "Q3")
+					(reference "Q2")
 					(unit 1)
 				)
 			)
@@ -12069,27 +12212,37 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 425.45) (xy 154.94 425.45)
+			(xy 137.16 425.45) (xy 132.08 425.45)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "156aac35-788e-4eff-b02e-2787e66be89b")
+		(uuid "ce333d06-56c4-4e1c-9c3f-a43a2735f80f")
+	)
+	(label "PWR_G"
+		(at 132.08 425.45 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8261665a-ab82-4a08-b35d-e86b829c3443")
 	)
 	(wire
 		(pts
-			(xy 167.64 430.53) (xy 167.64 435.61)
+			(xy 144.78 430.53) (xy 144.78 435.61)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "d473b329-38a1-4df8-b4a9-cc5f33111c82")
+		(uuid "4913395f-1559-46f8-89a4-50241666473f")
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 167.64 435.61 0)
+		(at 144.78 435.61 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12097,9 +12250,9 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "f363e97b-60a4-446c-bd38-9c4404b4e1ac")
+		(uuid "be8f5998-ace3-44c6-ade9-ed3823e80783")
 		(property "Reference" "#PWR908"
-			(at 167.64 435.61 0)
+			(at 144.78 435.61 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12110,7 +12263,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 167.64 439.81 0)
+			(at 144.78 439.81 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12120,7 +12273,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 167.64 435.61 0)
+			(at 144.78 435.61 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12131,7 +12284,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 167.64 435.61 0)
+			(at 144.78 435.61 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12142,7 +12295,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 167.64 435.61 0)
+			(at 144.78 435.61 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12153,7 +12306,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "70baf7f6-c087-4818-95e5-10e7d4e38cd6")
+			(uuid "a7c2cf41-215a-4df4-affd-24d88c9573b8")
 		)
 		(instances
 			(project "dumper"
@@ -12166,27 +12319,17 @@
 	)
 	(wire
 		(pts
-			(xy 167.64 420.37) (xy 167.64 415.29)
+			(xy 144.78 420.37) (xy 144.78 415.29)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "a18b3c79-71dd-434c-bcdd-d6a4608962ab")
-	)
-	(label "SENSE"
-		(at 167.64 415.29 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "3f4d23e4-e085-427a-a04a-3360d9a4b250")
+		(uuid "a3645413-a8e4-46e3-90df-a404dcef7b5b")
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 147.32 434.34 0)
+		(at 144.78 411.48 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12194,9 +12337,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "a7cbd111-831b-4116-a314-e47900882e37")
-		(property "Reference" "R7"
-			(at 149.52 433.34 0)
+		(uuid "2cb10dc2-9839-4d23-b8fd-04adbff16d52")
+		(property "Reference" "R6"
+			(at 146.98 410.48 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12206,8 +12349,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100k"
-			(at 149.52 435.34 0)
+		(property "Value" "330R"
+			(at 146.98 412.48 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12218,7 +12361,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 147.32 434.34 0)
+			(at 144.78 411.48 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12229,7 +12372,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 147.32 434.34 0)
+			(at 144.78 411.48 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12239,8 +12382,8 @@
 				)
 			)
 		)
-		(property "Description" "Garante rail baixo com o rail flutuando"
-			(at 147.32 434.34 0)
+		(property "Description" "Descarga do +5V_CART pelo Q2"
+			(at 144.78 411.48 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12251,10 +12394,379 @@
 			)
 		)
 		(pin "1"
-			(uuid "710d3d24-86e9-4512-bc14-bdb0767fc268")
+			(uuid "e2d029c5-d9eb-43fa-b54c-1dfffcb96495")
 		)
 		(pin "2"
-			(uuid "5d9d302c-4d9b-4093-8153-5cd94746ba9d")
+			(uuid "3654de70-99a4-42b0-87cc-4c184f4a9c92")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "R6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 144.78 407.67) (xy 144.78 402.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0a58b413-158f-4a55-9604-10173f6f57b3")
+	)
+	(symbol
+		(lib_id "power:+5V")
+		(at 144.78 402.59 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "a6817679-1b28-4b37-a4e7-d7490944c9dc")
+		(property "Reference" "#PWR909"
+			(at 144.78 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+5V_CART"
+			(at 144.78 398.79 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 144.78 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 144.78 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 144.78 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fd7efce2-7c6f-4be7-991d-f3e8c1703916")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR909")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Transistor_FET:2N7000")
+		(at 187.96 425.45 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "4627eb68-0c71-472b-85be-74aa01ffef9d")
+		(property "Reference" "Q3"
+			(at 192 421.37 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "2N7000"
+			(at 192 423.87 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_TO_SOT_THT:TO-92_Inline"
+			(at 187.96 425.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 187.96 425.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Detector de rail baixo (limiar de 1 a 2,5 V)"
+			(at 187.96 425.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c9796199-6532-434b-8f9d-88ee0bb14d19")
+		)
+		(pin "2"
+			(uuid "cba069b2-1b80-4cb1-bd30-6304fa3e3ae1")
+		)
+		(pin "3"
+			(uuid "eaabe01b-bee0-4e83-aaae-9e0494111a77")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "Q3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 182.88 425.45) (xy 177.8 425.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "db1aef1d-841b-43a3-abc4-c1fa190584b8")
+	)
+	(wire
+		(pts
+			(xy 190.5 430.53) (xy 190.5 435.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f3473a79-377c-4416-9aac-8090f9a7e80a")
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 190.5 435.61 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "9fcdf11c-144f-4204-92c0-7caa85ed4e6f")
+		(property "Reference" "#PWR910"
+			(at 190.5 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 190.5 439.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 190.5 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 190.5 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 190.5 435.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4e8775a1-3f5b-4fd9-bf85-21418fc74c2c")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR910")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 190.5 420.37) (xy 190.5 415.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4ac16cee-9436-4c6b-bb95-6fc68d1e116a")
+	)
+	(label "SENSE"
+		(at 190.5 415.29 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "af1b574f-fb5c-4dcc-87eb-0d833f8a903d")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 170.18 434.34 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "3713d140-3808-414a-93dd-42b6e7850a13")
+		(property "Reference" "R7"
+			(at 172.38 433.34 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100k"
+			(at 172.38 435.34 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
+			(at 170.18 434.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 170.18 434.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Garante rail baixo com o rail flutuando"
+			(at 170.18 434.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "284a547f-0149-421a-aa56-ce50ac3cf3c6")
+		)
+		(pin "2"
+			(uuid "dfe1ee6a-d31f-4605-854c-a6ffecc47ada")
 		)
 		(instances
 			(project "dumper"
@@ -12267,43 +12779,43 @@
 	)
 	(wire
 		(pts
-			(xy 147.32 430.53) (xy 147.32 425.45)
+			(xy 170.18 430.53) (xy 170.18 425.45)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "6a6bbe64-85f3-49b8-85c2-e5f42911d6bc")
+		(uuid "2657c824-38d9-4fa2-982c-531175caf3fc")
 	)
 	(wire
 		(pts
-			(xy 147.32 425.45) (xy 154.94 425.45)
+			(xy 170.18 425.45) (xy 177.8 425.45)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0aa8e594-abbf-49ad-93bc-48c9e871a75d")
+		(uuid "484c8da1-0352-40b2-b40d-d3a2e5217217")
 	)
 	(junction
-		(at 154.94 425.45)
+		(at 177.8 425.45)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "2670b57d-c494-45d9-bb42-727e6997de41")
+		(uuid "f9e33b1c-6a52-45b2-a6a4-0b65a5af91ae")
 	)
 	(wire
 		(pts
-			(xy 154.94 425.45) (xy 154.94 420.37)
+			(xy 177.8 425.45) (xy 177.8 420.37)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "07389627-fabd-4958-b077-c9e5abf4eb0b")
+		(uuid "e51ce20e-bbd8-4deb-ae04-45dfe60f6eaa")
 	)
 	(symbol
 		(lib_id "power:+5V")
-		(at 154.94 420.37 0)
+		(at 177.8 420.37 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12311,9 +12823,9 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "682abb83-e1e2-4852-9f9c-c74ec64f6a59")
-		(property "Reference" "#PWR909"
-			(at 154.94 420.37 0)
+		(uuid "ce7e433e-fdfd-4f2d-bdf8-e5053878cd88")
+		(property "Reference" "#PWR911"
+			(at 177.8 420.37 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12324,7 +12836,7 @@
 			)
 		)
 		(property "Value" "+5V_CART"
-			(at 154.94 416.57 0)
+			(at 177.8 416.57 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12334,7 +12846,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 154.94 420.37 0)
+			(at 177.8 420.37 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12345,7 +12857,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 154.94 420.37 0)
+			(at 177.8 420.37 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12356,7 +12868,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 154.94 420.37 0)
+			(at 177.8 420.37 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12367,262 +12879,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "09a249e9-6f30-49a4-9024-a34e807e74df")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR909")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(wire
-		(pts
-			(xy 147.32 438.15) (xy 147.32 443.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2df31b4c-4eb8-443a-b342-55d25a9f419e")
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 147.32 443.23 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "9d4ff9a7-e0cf-40df-9db2-0d0b51d8e75c")
-		(property "Reference" "#PWR910"
-			(at 147.32 443.23 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 147.32 447.43 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 147.32 443.23 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 147.32 443.23 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 147.32 443.23 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "35a55dfb-cb19-48ab-a235-42d5588ee141")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR910")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 198.12 424.18 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2e35d4fa-1ccf-4f32-a11e-d02c2f8622ea")
-		(property "Reference" "R8"
-			(at 200.32 423.18 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "1k"
-			(at 200.32 425.18 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 198.12 424.18 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 198.12 424.18 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Pull-up do nó SENSE"
-			(at 198.12 424.18 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "659afd2a-1204-42bd-af1a-9ca5869e1257")
-		)
-		(pin "2"
-			(uuid "b6fc22c0-2c48-486c-ad59-51342195bf25")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(wire
-		(pts
-			(xy 198.12 420.37) (xy 198.12 415.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a5e5a367-ea86-4a34-bdc2-9e0958f4f23d")
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 198.12 415.29 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "1c035182-f946-4b90-b41b-f02f6144fe53")
-		(property "Reference" "#PWR911"
-			(at 198.12 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "+5V"
-			(at 198.12 411.49 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 198.12 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 198.12 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 198.12 415.29 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "8bc12867-b8a7-4089-9a10-330aa2054836")
+			(uuid "e498ee68-bd3a-4be1-a5dc-7f011c6772b5")
 		)
 		(instances
 			(project "dumper"
@@ -12635,23 +12892,90 @@
 	)
 	(wire
 		(pts
-			(xy 198.12 427.99) (xy 198.12 433.07)
+			(xy 170.18 438.15) (xy 170.18 443.23)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "8218cfea-6062-4b57-926d-4ad833cc6b44")
+		(uuid "37a93a4a-ff72-42a2-9060-67d1e1cc0fff")
 	)
-	(label "SENSE"
-		(at 198.12 433.07 270)
-		(effects
-			(font
-				(size 1.27 1.27)
+	(symbol
+		(lib_id "power:GND")
+		(at 170.18 443.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b230ef91-8b2f-4994-af7e-0c0f6690a1e0")
+		(property "Reference" "#PWR912"
+			(at 170.18 443.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
-			(justify right bottom)
 		)
-		(uuid "73fa6164-a49a-4983-81d6-7ac5a831f77b")
+		(property "Value" "GND"
+			(at 170.18 447.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 170.18 443.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 170.18 443.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 170.18 443.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "9ae8db77-ef37-4c90-a981-2cee5c34af6c")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR912")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -12663,8 +12987,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "297e42f4-0d01-4635-a671-81436353f23f")
-		(property "Reference" "R9"
+		(uuid "7c2b326b-261e-4807-9abf-25d51b13589e")
+		(property "Reference" "R8"
 			(at 223.18 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12708,7 +13032,7 @@
 				)
 			)
 		)
-		(property "Description" "Série do sensor ao D53"
+		(property "Description" "Pull-up do nó SENSE"
 			(at 220.98 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -12720,15 +13044,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "5640ca71-211e-4ac2-84f7-7ac7b7c7c12d")
+			(uuid "a661917a-fdf9-4aa1-9271-7f5d52fcd3cc")
 		)
 		(pin "2"
-			(uuid "a610c4ff-1c6f-4d87-93a7-ad871c95a8f1")
+			(uuid "c893c0a0-bc07-439c-9817-1e308610a8ef")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R9")
+					(reference "R8")
 					(unit 1)
 				)
 			)
@@ -12742,17 +13066,84 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "910da88b-82b2-4b53-ab36-1db2f9e6cb62")
+		(uuid "aa4a0118-7d8b-498c-b7d7-670472865054")
 	)
-	(label "SENSE"
-		(at 220.98 415.29 90)
-		(effects
-			(font
-				(size 1.27 1.27)
+	(symbol
+		(lib_id "power:+5V")
+		(at 220.98 415.29 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b0d3be24-c4a1-4001-8cc7-21c38bfe6e80")
+		(property "Reference" "#PWR913"
+			(at 220.98 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
-			(justify left bottom)
 		)
-		(uuid "d9d9cbe1-beea-494d-84d8-b7322914b315")
+		(property "Value" "+5V"
+			(at 220.98 411.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 220.98 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 220.98 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 220.98 415.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8f838361-409d-4a1c-8848-6490d2c20fb0")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR913")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(wire
 		(pts
@@ -12762,9 +13153,9 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "3fb33af9-b924-43af-b896-cab10523f134")
+		(uuid "ff47435a-a385-4847-b77a-b54b5af3ff94")
 	)
-	(label "SENSE_MCU"
+	(label "SENSE"
 		(at 220.98 433.07 270)
 		(effects
 			(font
@@ -12772,11 +13163,11 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "1aeb03d6-d65f-4bb3-89a2-e11373cc2890")
+		(uuid "0e31748c-b40e-40ea-b3bf-e669a6838c9b")
 	)
 	(symbol
-		(lib_id "Device:LED")
-		(at 243.84 424.18 90)
+		(lib_id "Device:R")
+		(at 243.84 424.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12784,8 +13175,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "12f04730-c1a3-4c80-bcef-083fdcd47eca")
-		(property "Reference" "D3"
+		(uuid "ebf014ff-2d1d-4de2-8c76-a3c7feefb32d")
+		(property "Reference" "R9"
 			(at 246.04 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12796,7 +13187,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "LED amarelo 3mm"
+		(property "Value" "1k"
 			(at 246.04 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12807,7 +13198,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "LED_THT:LED_D3.0mm"
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
 			(at 243.84 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -12829,7 +13220,7 @@
 				)
 			)
 		)
-		(property "Description" "Aceso = rail dos slots abaixo de ~2 V: seguro trocar o cartucho"
+		(property "Description" "Série do sensor ao D53"
 			(at 243.84 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -12841,15 +13232,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "a68bcd8a-c09d-45fc-9a4b-520849c455af")
+			(uuid "554b4154-bd31-4678-bc4a-dd9870651247")
 		)
 		(pin "2"
-			(uuid "561979fb-6ce5-4ebe-b66b-2c35b9e033a7")
+			(uuid "64320c7a-a370-4ac1-a8ce-c5dd6985c1a9")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "D3")
+					(reference "R9")
 					(unit 1)
 				)
 			)
@@ -12863,7 +13254,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "3e4b0be2-07fd-4ea5-8dfa-6b6d52591faf")
+		(uuid "7e84efc4-1283-4aea-b695-6157663c0026")
 	)
 	(label "SENSE"
 		(at 243.84 415.29 90)
@@ -12873,7 +13264,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "bc5ed11f-ed2c-413e-b4ff-c9ac2de635ac")
+		(uuid "b9d70c83-f91f-4a49-85c6-7bae7ec61694")
 	)
 	(wire
 		(pts
@@ -12883,42 +13274,53 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "39dfa0de-4b2d-44f5-b825-942419ef31a5")
+		(uuid "6b80bfa9-8d37-4bfc-82ec-84b97d5ffef3")
+	)
+	(label "SENSE_MCU"
+		(at 243.84 433.07 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "31fa14e9-f595-476a-a54b-172736501a7a")
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 243.84 433.07 0)
+		(lib_id "Device:LED")
+		(at 266.7 424.18 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
+		(in_bom yes)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "9c192b75-3dd8-4cc1-829d-c329be4861fb")
-		(property "Reference" "#PWR912"
-			(at 243.84 433.07 0)
-			(hide yes)
+		(uuid "73ad5658-1697-4892-a133-0a660133a3b1")
+		(property "Reference" "D3"
+			(at 268.9 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 243.84 437.27 0)
+		(property "Value" "LED amarelo 3mm"
+			(at 268.9 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 243.84 433.07 0)
+		(property "Footprint" "LED_THT:LED_D3.0mm"
+			(at 266.7 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12929,7 +13331,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 243.84 433.07 0)
+			(at 266.7 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12939,8 +13341,8 @@
 				)
 			)
 		)
-		(property "Description" ""
-			(at 243.84 433.07 0)
+		(property "Description" "Aceso = rail dos slots abaixo de ~2 V: seguro trocar o cartucho"
+			(at 266.7 424.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12951,12 +13353,122 @@
 			)
 		)
 		(pin "1"
-			(uuid "65dd96de-dbdc-43eb-8e92-2508fc0f4795")
+			(uuid "756d1fe6-ca9e-4495-8522-caccd9866e8c")
+		)
+		(pin "2"
+			(uuid "ea52c9e1-ed74-4434-aaad-df0c73617ac3")
 		)
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "#PWR912")
+					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 266.7 420.37) (xy 266.7 415.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "62068d0b-50cf-496a-b6f7-e8cd599cd491")
+	)
+	(label "SENSE"
+		(at 266.7 415.29 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "727ac366-fc0b-4e28-9983-8e31f5a8e13d")
+	)
+	(wire
+		(pts
+			(xy 266.7 427.99) (xy 266.7 433.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "119c901a-6c3f-4ef4-9b46-c7b71bf906e7")
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 266.7 433.07 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "eacb70dd-bcfe-4bff-a6b4-2fec3733ef4f")
+		(property "Reference" "#PWR914"
+			(at 266.7 433.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 266.7 437.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 266.7 433.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 266.7 433.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 266.7 433.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e4da520f-f8ad-4338-ae35-e3a88f997914")
+		)
+		(instances
+			(project "dumper"
+				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
+					(reference "#PWR914")
 					(unit 1)
 				)
 			)
@@ -12970,7 +13482,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "82285725-4788-43c2-a48e-745b3b7addb7")
+		(uuid "93d337a0-e3b3-457e-8119-998780cf1d9e")
 	)
 	(label "SENSE_MCU"
 		(at 132.08 220.98 0)
@@ -12980,7 +13492,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "3af0f554-8dda-428a-813a-bb7574e0f81a")
+		(uuid "821420c1-b7fe-4d51-b799-f3deaf023b68")
 	)
 	(sheet_instances
 		(path "/"
