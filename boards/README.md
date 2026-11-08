@@ -4,7 +4,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 
 | Pasta | Slots | Estado |
 |---|---|---|
-| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. Gerbers v. 1.2 (D87: `/CART` no D50, C5 e C6, pontos de teste a 2,54 mm, D99) e v1.0 (a antiga `rev2`: alimentação em 0,8 mm, D97; o zip da v1.0 original, com trilhas de 0,3 mm, saiu do repositório em D110) |
+| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. **Versões v1.0, v1.2 (sem Q1 e sem reset) e v1.3 (com o bloco de troca), D128.** Gerbers v. 1.2 (D87: `/CART` no D50, C5 e C6, pontos de teste a 2,54 mm, D99) e v1.0 (a antiga `rev2`: alimentação em 0,8 mm, D97; o zip da v1.0 original, com trilhas de 0,3 mm, saiu do repositório em D110) |
 | [`megadrive/`](megadrive/) | Mega Drive | Projeto KiCad criado de `16_bits` (D92), slot no centro, 107 × 65 mm, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
 | [`snes/`](snes/) | SNES | Projeto KiCad criado de `16_bits` (D93), PIC12F629 em soquete, 107 × 65 mm, gerbers v1.1 gerados. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
 | [`nes/`](nes/) | NES | Projeto KiCad criado da `16_and_8_bits` (D95), Si5351 sem PIC, 110 × 65 mm, gerbers v1.1 gerados. Famicom em `famicom/` ou `famicom_nes/`. **v1.1 com o bloco de troca de cartucho (D126).** Nada encomendado |
@@ -17,11 +17,11 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
 | [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por todas as placas com projeto KiCad |
 
-Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima; refazer com `kicad-cli pcb render` quando o layout mudar) e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
+Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima, da versão mais nova) e, em `renders/`, um par de PNGs grandes (cima e baixo) por versão; refazer com `tools/render_grande.py <placa> <versões...>` e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-As placas de um sistema e a `16_and_8_bits` ganharam, na v1.1, o bloco que liga e desliga o 5V dos slots por software (`POWER`), descarrega o rail e acende o LED amarelo de "seguro trocar": Q1, Q2, Q3, dois LEDs, resistores e os pinos D19 e D53 do Mega. Circuito, peças e testes: [`docs/bloco-troca.md`](../docs/bloco-troca.md). A `16_bits` v1.2 já tinha o Q1; o resto dela espera a v1.3.
+As placas de um sistema e a `16_and_8_bits` ganharam, na v1.1, o bloco que liga e desliga o 5V dos slots por software (`POWER`), descarrega o rail e acende o LED amarelo de "seguro trocar": Q1, Q2, Q3, dois LEDs, resistores e os pinos D19 e D53 do Mega. Circuito, peças e testes: [`docs/bloco-troca.md`](../docs/bloco-troca.md). **D128:** o bloco é versão separada em todas as placas: as de um sistema e a `16_and_8_bits` têm a v1.0 (sem o bloco, `hardware-v1.0/`) e a v1.1 (com ele, `hardware/`); a `16_bits` tem a v1.0, a v1.2 (sem o bloco e sem o botão de reset) e a v1.3 (com o bloco, sem o botão). PNGs grandes de cima e de baixo de cada versão em `renders/`.
 
 ## Como os esquemáticos são desenhados
 

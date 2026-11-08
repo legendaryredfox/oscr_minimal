@@ -144,9 +144,9 @@ for ref in ORDER:
 for d in b.GetDrawings():
     if d.GetClass() == "PCB_TEXT":
         t = d.GetText()
-        m = re.search(r"v\d+\.\d+", t)
+        m = re.search(r"v\d+\.\d+", t) or re.search(r"v\. \d+\.\d+", t)      # "v1.0" (placas de um sistema) ou "v. 1.2" (16_bits)
         if m and "   " in t:
-            d.SetText(t[:m.start()] + VERSAO + t[m.end():])
+            d.SetText(t[:m.start()] + (VERSAO.replace("v", "v. ") if m.group(0).startswith("v. ") else VERSAO) + t[m.end():])
 tb = b.GetTitleBlock(); tb.SetRevision(VERSAO); b.SetTitleBlock(tb)
 pcbnew.SaveBoard(str(HW / "dumper.kicad_pcb"), b)
 print("ok")

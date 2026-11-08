@@ -88,7 +88,7 @@ for d in b.GetDrawings():
         d.SetText("SÓ TROQUE O CARTUCHO COM")
     elif t == "O CARTUCHO COM USB LIGADO":
         d.SetText("O LED AMARELO ACESO")
-    m = re.search(r"v\d+\.\d+\s+\d{4}-\d{2}-\d{2}", t)
+    m = re.search(r"v\.? ?\d+\.\d+\s+\d{4}-\d{2}-\d{2}", t)
     if m:
         d.SetText(re.sub(r"\d{4}-\d{2}-\d{2}", a.date, t))
     for key, (x, y) in moves.items():

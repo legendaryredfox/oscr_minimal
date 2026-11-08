@@ -1,6 +1,6 @@
 # Bloco de troca de cartucho (hardware, D126)
 
-Todas as placas v1.1 (e a `16_bits` v1.2, que já tinha o Q1) ligam e desligam o 5V dos slots **por software** (`POWER`, D116), descarregam o rail e acendem um LED quando é seguro trocar o cartucho. **Não há chave física** (D123). O firmware que usa o bloco está em D116 e D119; o plano de origem é `docs/plano-chave-fisica.md`.
+Todas as placas v1.1 e a `16_bits` v1.3 (D128: o bloco é uma versão separada; as v1.0 e a `16_bits` v1.2 não o têm) ligam e desligam o 5V dos slots **por software** (`POWER`, D116), descarregam o rail e acendem um LED quando é seguro trocar o cartucho. **Não há chave física** (D123). O firmware que usa o bloco está em D116 e D119; o plano de origem é `docs/plano-chave-fisica.md`.
 
 ## Circuito
 

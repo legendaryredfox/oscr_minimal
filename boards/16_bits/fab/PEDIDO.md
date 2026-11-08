@@ -1,5 +1,7 @@
 # Pedido da placa 16_bits v. 1.2 (JLCPCB)
 
+> **Versões (D128):** o texto abaixo é do pedido da v1.2 de 2026-11-06. A v1.2 foi refeita em 2026-11-07 **sem** Q1, R16 a R18, D2 e SW1 (zip novo `dumper-v1.2-jlcpcb.zip`, gerbers em `gerbers-v1.2/`; confira o SHA-256 com `sha256sum`). A **v1.3** (`dumper-v1.3-jlcpcb.zip`, gerbers em `gerbers/`) leva o bloco de troca e continua sem o botão. Contagem de furos: v1.2 e v1.3 têm os mesmos 7 furos não metalizados; o número de furos metalizados e de vias mudou, **leia a pré-visualização da fábrica, não a tabela abaixo**. Ver `docs/versoes.md`.
+
 Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a partir de `../hardware/dumper.kicad_pcb`.
 
 ## Arquivo

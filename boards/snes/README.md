@@ -47,3 +47,15 @@ Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas
 | Q3, R7, R8, R9, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R9 leva o nó ao D53 |
 
 Os pinos de 5V dos slots, do Si5351 e do PIC e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
+
+## Versões: com e sem o desligamento por software (D128)
+
+O desligamento do 5V dos slots por software (bloco de troca de cartucho, D126) é uma versão **separada**; a placa existe também sem ele.
+
+| Versão | Bloco de troca (Q1, Q2, Q3, LEDs, D19 e D53) | Projeto KiCad | Fábrica | Renders (cima e baixo) |
+|---|---|---|---|---|
+| v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `renders/snes-v1.0-cima.png`, `renders/snes-v1.0-baixo.png` |
+| v1.1 | sim | `hardware/` | `fab/gerbers/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom.csv` | `renders/snes-v1.1-cima.png`, `renders/snes-v1.1-baixo.png` (`render.png` = v1.1, de cima) |
+
+A v1.0 é o projeto de antes do D126, restaurado do histórico do git; os gerbers dela foram regerados da pasta `hardware-v1.0/`. Verificação: `python3 tools/check_netlist.py --board snes --sem-troca boards/snes/hardware-v1.0/dumper.kicad_sch` (v1.0) e `python3 tools/check_netlist.py --board snes` (v1.1). Para refazer os gerbers da v1.0: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh snes v1.0`. Nenhuma das duas foi encomendada, montada nem testada com cartucho.
+

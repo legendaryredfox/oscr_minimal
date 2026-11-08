@@ -1,5 +1,7 @@
 # 16_bits — componentes que podem ser retirados e o que se perde
 
+> **Versões (D128):** a seção da chave de 5 V (Q1, R16 a R18, D2) e a linha do SW1 valem só como história da v1.2 de 2026-11-06. Hoje a **v1.2 não tem** essas peças nem o botão de reset; a **v1.3** tem o bloco de troca de `../../../docs/bloco-troca.md` (e também não tem o botão). Ver `versoes.md`.
+
 Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). É a única com chave de 5 V (Q1), proteção das linhas de controle e botão de reset. Os fatos do SNES (PIC, Si5351, SA-1) são os de `boards/snes/docs/componentes-opcionais.md`.
 
 > **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, `docs/troca-de-cartucho.md`, firmware.

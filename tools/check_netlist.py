@@ -26,6 +26,8 @@ if "--board" in _args:
     i = _args.index("--board")
     BOARD = _args[i + 1]
     del _args[i:i + 2]
+SEM_TROCA = "--sem-troca" in _args      # versão sem o bloco de troca de cartucho (D128): v1.0 das placas, v1.2 da 16_bits
+_args = [a for a in _args if a != "--sem-troca"]
 SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad_sch"
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
 # Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa.
@@ -55,7 +57,7 @@ BOARD_CFG = {
 CFG = BOARD_CFG[BOARD]
 V12B = CFG.get("v12b", False)
 import json as _json
-TROCA = _json.loads((ROOT / "tools/troca/boards.json").read_text()).get(BOARD)      # bloco de troca de cartucho (D126): dict(q0, r0, d0, f0, q1) com a primeira referência nova de cada tipo; ver troca_ajusta()
+TROCA = None if SEM_TROCA else _json.loads((ROOT / "tools/troca/boards.json").read_text()).get(BOARD)      # bloco de troca de cartucho (D126): dict(q0, r0, d0, f0, q1) com a primeira referência nova de cada tipo; ver troca_ajusta()
 CTRL = ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D14", "D15", "D16", "D17"]      # v12b: ordem de R3..R14 e D3..D14
 MDONLY = CFG.get("mdonly", False)
 NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
@@ -75,8 +77,6 @@ MEGA_GND = ("GND1", "GND2", "GND3", "GND5", "GND6")
 # D0/D1 = serial USB; nunca podem ir a um slot.
 MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50", "D51", "D52",
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
-if V12B:
-    MEGA_NC_OK -= {"D19", "RST1"}      # D19 = comando da chave de 5V, RST1 = reset
 if TROCA:
     MEGA_NC_OK -= {"D19", "D53"}       # D19 = comando do Q1 (PWR_EN), D53 = sensor do rail (SENSE_MCU)
 if BOARD in ("16_bits", "megadrive"):
@@ -200,7 +200,7 @@ def troca_ajusta(exp):
 
 
 def v12b_ajusta(exp):
-    """Resistores serie, TVS, pull-up, chave de 5V e reset (so a 16_bits v. 1.2 final)."""
+    """Resistores serie, TVS e pull-up (so a 16_bits v. 1.2 em diante). Desde D128 a v. 1.2 não tem chave de 5V, LED D2 nem reset; a v. 1.3 leva o bloco de troca (TROCA)."""
     for k, n in enumerate(CTRL):
         r, d = f"R{3 + k}", f"D{3 + k}"
         exp[n].discard((MEGA, n))
@@ -208,17 +208,7 @@ def v12b_ajusta(exp):
         exp[n + "_M"] = {(MEGA, n), (r, "1")}
         exp["GND"].add((d, "2"))
     exp["D17"].add(("R15", "2"))
-    # 5V: Mega -> Q1 (fonte) -> +5V_CART (slots, Si5351, PIC, capacitores, pull-ups)
-    cart = {(r, p) for r, p in exp["+5V"] if r in ("SNES1", "MD1", "U1", "U2", "R2") or (r.startswith("C") and r not in ("C1",))}
-    exp["+5V"] -= cart
-    exp["+5V"].update({("Q1", "3"), ("R16", "1")})
-    exp["+5V_CART"] = cart | {("Q1", "2"), ("R15", "1"), ("R18", "1"), ("FLG3", "1")}
-    exp["PWR_G"] = {("Q1", "1"), ("R16", "2"), ("R17", "1")}
-    exp["PWR_EN"] = {(MEGA, "D19"), ("R17", "2")}
-    exp["LED_CART"] = {("R18", "2"), ("D2", "2")}
-    exp["GND"].add(("D2", "1"))
-    exp["RESET"] = {(MEGA, "RST1"), ("SW1", "1")}
-    exp["GND"].add(("SW1", "2"))
+    exp["+5V"].add(("R15", "1"))        # pull-up de /VRES (com o bloco de troca vai para o +5V_CART, em troca_ajusta)
 
 
 def actual_nets():
@@ -272,7 +262,7 @@ def main():
             continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
-            if V12B or TROCA:
+            if TROCA:
                 if net is None or ("Q1", "2") not in act[net] or (MEGA, "5V1") in act[net]:
                     errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
             elif net is None or (MEGA, "5V1") not in act[net]:

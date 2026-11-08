@@ -1,10 +1,22 @@
 # 16_bits — SNES e Mega Drive
 
-![Render 3D da placa 16_bits (KiCad, vista de cima)](render.png)
+![Render 3D da placa 16_bits v1.3 (KiCad, vista de cima)](render.png)
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
-**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers v. 1.2 em `fab/`. A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
+**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 sem a chave de 5V e sem reset, v1.3 com o bloco de troca). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
+
+## Versões (D128, 2026-11-07)
+
+Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não tem** o circuito de desligar o 5V dos slots pelo Arduino; a **v1.3** tem o bloco de troca de cartucho. Um par de PNGs grandes (cima e baixo) por versão em `renders/`.
+
+| Versão | Projeto | Bloco de troca (Q1, Q2, Q3, LEDs, D19, D53) | Botão de reset | PNGs |
+|---|---|---|---|---|
+| v1.0 | `hardware-v1.0/` | não | não | `renders/16_bits-v1.0-cima.png`, `renders/16_bits-v1.0-baixo.png` |
+| v1.2 | `hardware-v1.2/` | **não** | **não** | `renders/16_bits-v1.2-cima.png`, `renders/16_bits-v1.2-baixo.png` |
+| v1.3 | `hardware/` | sim | **não** | `renders/16_bits-v1.3-cima.png`, `renders/16_bits-v1.3-baixo.png` (`render.png`) |
+
+Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, valem só para a v1.3 (chave) ou para nenhuma versão (reset).**
 
 ## v. 1.2 final: proteção, chave de 5V, reset e furos do Mega (2026-11-06, D108)
 
@@ -35,10 +47,10 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): pasta de trabalho, hoje igual à `hardware-v1.2/` (a v. 1.3 começa daqui) |
-| `hardware-v1.2/` | **a v. 1.2 final congelada** (2026-11-06, D108): esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (conferido: DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist` OK, mesmos gerbers). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
+| `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 sem Q1 e reset, mais o bloco de troca de cartucho, D128); pasta de trabalho |
+| `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-troca` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
-| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`), `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
+| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):

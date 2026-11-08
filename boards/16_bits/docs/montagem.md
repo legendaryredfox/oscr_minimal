@@ -1,5 +1,7 @@
 # Montagem — placa 16_bits (SNES e Mega Drive) v. 1.2
 
+> **Versões (D128):** este guia foi escrito para a v1.2 de 2026-11-06. A v1.2 atual **não tem** Q1, R16 a R18, D2 nem SW1 (pule esses itens e o passo 4b); a v1.3 tem o bloco de troca (Q1, Q2, Q3, R16 a R22, D15 verde e D16 amarelo) e **também não tem o botão**. Lista de cada versão: `fab/bom-v1.2.csv` e `fab/bom.csv`; resumo em `versoes.md`.
+
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 
 > **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". A chave de 5V (Q1) existe: com o firmware `SerialASCII_Power`, `dumper power off` corta o 5V para trocar o cartucho (veja `docs/v12-final.md`; sem sensor, confira com o multímetro que o 5V do cartucho caiu antes de trocar).
