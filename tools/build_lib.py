@@ -25,6 +25,7 @@ SLOTS = {  # símbolo OSCR, footprint OSCR, nome novo, rótulo de silkscreen
     "NES_Slot": ("NES_Slot.kicad_mod", "NES_Slot", "NES 72p"),
     "FC_Slot": ("FC_Slot.kicad_mod", "FC_Slot", "FAMICOM 60p"),
     "MD_Slot": ("MD_Slot.kicad_mod", "MD_Slot", "MEGA DRIVE 64p"),
+    "SMS_Slot": ("SMS_Slot.kicad_mod", "SMS_Slot", "MASTER SYSTEM 50p"),
     "N64_Slot": ("N64 Slot.kicad_mod", "N64_Slot", "N64 50p"),   # footprint próprio (build_n64_footprint): duas fileiras ao longo de x
 }
 

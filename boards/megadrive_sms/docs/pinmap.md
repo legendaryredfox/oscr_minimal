@@ -1,6 +1,6 @@
 # Mapa de pinos — placa `megadrive_sms` (Mega Drive + Master System)
 
-**Estado: fase 1, aguardando aprovação do usuário.** Gerado por `tools/boards/megadrive_sms/gen_pinmap_sms.py` (seção SMS) e copiado da seção Mega Drive de `boards/16_and_8_bits/docs/pinmap.md` (fonte da verdade do Mega Drive).
+**Estado: pinagem aprovada pelo usuário em 2026-11-08 (pendências resolvidas abaixo).** Gerado por `tools/boards/megadrive_sms/gen_pinmap_sms.py` (seção SMS) e copiado da seção Mega Drive de `boards/16_and_8_bits/docs/pinmap.md` (fonte da verdade do Mega Drive).
 
 Fontes do Master System (cruzadas):
 
@@ -10,12 +10,13 @@ Fontes do Master System (cruzadas):
 
 Os dois slots ficam em paralelo nos mesmos pinos do Mega, como no `six_slot_adapter`. **Um cartucho por vez.** Pinos compartilhados entre os dois slots: `A0..A14`, `D30..D37` (dados de 8 bits), `D6` (`/CE_0` no Mega Drive, A15/M0-7 no SMS), `D8`, `D9`, `D17`, `D48`. Só um slot tem cartucho, o outro fica em alta impedância.
 
-## Divergências e pendências
+## Divergências e decisões
 
-1. **Pino 47 do SMS (Clock).** O esquemático do adaptador liga ao `CLK0` (Si5351); o `pinout.ods` lista `D16` (PH1). Nem `SMS.cpp` (novo) nem `SMS.ino` (legado) usam clock. Proposta: **deixar sem ligação** (esta placa não tem Si5351, como a `megadrive`). **PENDENTE: confirmar.**
-2. **Pinos do slot SMS sem ligação no OSCR** (mantidos sem ligação): 3, 5, 34, 37 a 45, 48 a 50.
-3. **Slot SMS 50p a 2,54 mm (2 × 25):** o OSCR só tem o desenho de um adaptador com um slot de 50 pinos, não o modelo do slot comprado. **PENDENTE: medidas e modelo do slot que o usuário comprou** (`CLAUDE.md` seção 11).
-4. **Game Gear e SG-1000** ficam por adaptador (Retrode, Retron, Raphnet): fora desta placa até o usuário decidir.
+1. **Pino 47 do SMS (Clock): sem ligação** (decisão de 2026-11-08, depois de pesquisa). O esquemático do adaptador do OSCR liga ao `CLK0` e o `pinout.ods` diz `D16`, mas nem `SMS.cpp` (novo) nem `SMS.ino` (legado) usam clock. O smspower.org descreve o pino como saída do console ("Not clock", 3,5 MHz), opcional nos adaptadores. Esta placa não tem Si5351 (como a `megadrive`). Se algum cartucho precisar, é por jumper no adaptador, não na placa.
+2. **Pinos do slot SMS sem ligação no OSCR** (mantidos sem ligação): 3, 5, 34, 37 a 45, 47 a 50.
+3. **Slot SMS 50p, 2,54 mm, 2 × 25:** o wiki do OSCR (Parts-needed) lista "50 pin 2.54mm Master System slot (2x25)" e o link de compra é o mesmo item de AliExpress do slot Mega Drive de 64p e do Famicom de 60p. O footprint é o `SMS_Slot` do OSCR (CC BY 4.0, 50 pads de 1,524 mm, furo 0,762 mm, fileiras a 5,08 mm), em `boards/_lib/`. O corpo (courtyard 12 mm de largura) é estimado como nos outros slots (D17); **medir o slot recebido**.
+4. **Game Gear e SG-1000: por adaptador, fora desta placa.** Pesquisa (2026-11-08): o OSCR os suporta por adaptadores de terceiros (Retrode, Retron 3in1, Raphnet), comerciais; não achei adaptador com arquivos abertos (o `oscartreader/oscr-hardware` está vazio; o `sanni/cartreader` não tem pasta de Game Gear). Mark III usa o slot SMS (modo "SMS/MarkIII Raphnet" do firmware).
+5. **Versão 1.0: sem o bloco de troca de cartucho** (decisão do usuário): a v1.0 de qualquer placa é a mais barata que funciona; para trocar de cartucho, desligar o USB.
 
 ## Mega Drive (ref. `U1` em `megadrive_adapter`, 64 pinos)
 
@@ -136,7 +137,7 @@ Os dois slots ficam em paralelo nos mesmos pinos do Mega, como no `six_slot_adap
 | 44 | BusReq | NC (sem ligação) | - | sch |
 | 45 | BusAck | NC (sem ligação) | - | sch |
 | 46 | Reset | D17 | PH0 | sch ods fw |
-| 47 | Clock | **PENDENTE** (sch: CLK0; ods: D16/PH1) | - | sch ! ods |
+| 47 | Clock | NC (sem ligação; sch: CLK0, ods: D16, ver divergência 1) | - | sch ! ods |
 | 48 | JRead | NC (sem ligação) | - | sch |
 | 49 | MC-F | NC (sem ligação) | - | sch |
 | 50 | NMI | NC (sem ligação) | - | sch |
