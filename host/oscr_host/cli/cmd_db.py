@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .. import protocol as P
 from .common import load_db
+from .messages import tr
 from .errors import EXIT_ERROR, EXIT_OK
 from .output import emit
 
@@ -22,7 +23,7 @@ def cmd_identify(args) -> int:
         sid = P.SYSTEMS[args.system][0] if args.system != "mock" else _EXT_SYSTEM.get(Path(f).suffix.lower(), 0)
         m = db.identify(sid, data)
         results.append({"file": f, "bytes": len(data), "crc32": f"{zlib.crc32(data):08X}", "game": m.to_dict() if m else None})
-    lines = [f"{r['file']}  CRC32 {r['crc32']}  " + (f"{r['game']['name']} ({r['game']['source']}, {r['game']['match']})" if r["game"] else "não encontrado na base")
+    lines = [f"{r['file']}  CRC32 {r['crc32']}  " + (f"{r['game']['name']} ({r['game']['source']}, {r['game']['match']})" if r["game"] else tr("db.not_found"))
              for r in results]
     emit(args, {"entries_in_database": len(db), "results": results}, lines)
     return EXIT_OK if all(r["game"] for r in results) else EXIT_ERROR

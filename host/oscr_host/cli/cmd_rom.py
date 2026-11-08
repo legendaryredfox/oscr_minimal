@@ -67,25 +67,25 @@ def cmd_rom_write(args) -> int:
     except ValueError as e:
         raise CliError("bad_rom", str(e), EXIT_USAGE) from e
     if img.mapper is not None and img.mapper != RI.CHIP_MAPPER[chip] and not args.json:
-        print(f"aviso: o arquivo é do mapper {img.mapper}, mas o chip {chip} é de cartucho de mapper {RI.CHIP_MAPPER[chip]}", file=sys.stderr)
+        print(tr("rom.mapper_warn", file=img.mapper, chip=chip, chipmapper=RI.CHIP_MAPPER[chip]), file=sys.stderr)
     if img.flash_kb:
-        what = f"{RI.CHIP_LABEL[chip]}: ROM {img.prg_kb} KB em flash de {img.flash_kb} KB, {_layout_name(img)} ({len(img.body)} bytes enviados)"
+        what = tr("rom.what_flash", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, flash=img.flash_kb, layout=_layout_name(img), n=len(img.body))
     elif chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
-        what = f"{RI.CHIP_LABEL[chip]}: ROM {len(img.body)} bytes" + (f", bloco {img.block}" if img.block else "")
+        what = tr("rom.what_block" if img.block else "rom.what_plain", label=RI.CHIP_LABEL[chip], n=len(img.body), block=img.block)
     else:
-        what = f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)"
+        what = tr("rom.what_prgchr", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, chr=img.chr_kb, n=len(img.body))
     if not args.yes:
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.rom"), EXIT_REFUSED,
                            tr("refused.repeat"))
-        ans = input(f"Gravar {what}? Isso APAGA a ROM atual do cartucho. Continuar? [s/N] ")
+        ans = input(tr("rom.ask", what=what))
         if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
             print(tr("cancelled"))
             return 1
     c, t, info = common.connect(args)
     try:
         if not info.get("write_rom"):
-            raise CliError("unsupported_firmware", "este firmware não aceita WRITE_ROM", EXIT_ERROR, "atualize o firmware (docs/referencia/funcoes-oscr.md)")
+            raise CliError("unsupported_firmware", tr("fw.unsupported_write_rom"), EXIT_ERROR, tr("fw.unsupported.hint"))
         md_chip = md_flash_chip(c, info) if args.system == "md" else None          # mostra o chip que vai ser gravado antes de apagar
         if args.system == "md" and not args.json:
             print(md_chip_line(md_chip))
@@ -99,13 +99,13 @@ def cmd_rom_write(args) -> int:
         out["layout"] = _layout_name(img)
     if md_chip is not None:
         out["flash_chip"] = md_chip
-    lines = [f"ROM gravada: {what}  CRC32 {crc:08X}"]
+    lines = [tr("rom.written", what=what, crc=f"{crc:08X}")]
     gba_skip = chip == "gba-flash" and (img.block != 0 or len(img.body) > RI.GBA_VERIFY_MAX_BYTES)   # 369-in-1 em bloco N ou ROM > 64 MB: a leitura comum não alcança
     gb_skip = chip == "gb-cam-second"           # o 2º jogo do GB Camera fica em outra metade do flash; a leitura comum vê o 1º
     gba_skip = gba_skip or gb_skip
     if args.no_verify or args.system == "mock" or gba_skip:      # o simulador não guarda a ROM gravada para ler de volta
         out["verify"] = "skipped"
-        lines.append("conferência depois de gravar: pulada" + ((" (o 2º jogo do GB Camera não é visto pela leitura comum)" if gb_skip else " (a leitura do GBA não alcança o bloco N do 369-in-1, nem mais de 64 MB)") if gba_skip else ""))
+        lines.append(tr("verify.skipped") + ((" " + tr("rom.skip_gbcam" if gb_skip else "rom.skip_gba")) if gba_skip else ""))
     else:
         c2, t2, _ = common.connect(args)
         try:
@@ -114,10 +114,10 @@ def cmd_rom_write(args) -> int:
             t2.close()
         out["verify"] = v.to_dict()
         if not v.ok:
-            raise CliError("verify_failed", f"a ROM lida de volta NÃO confere com a gravada (primeiro byte diferente no offset {v.first_diff}; lido {v.read_crc32:08X}, esperado {v.expected_crc32:08X})",
-                           EXIT_ERROR, "limpe os contatos, confira se o chip é o escolhido e grave de novo; o chip pode estar apagado ou pela metade",
+            raise CliError("verify_failed", tr("rom.verify_failed", first=v.first_diff, read=f"{v.read_crc32:08X}", exp=f"{v.expected_crc32:08X}"),
+                           EXIT_ERROR, tr("rom.verify_failed.hint"),
                            written=out, first_diff=v.first_diff)
-        lines.append(f"conferência depois de gravar: OK (leu {v.read_bytes} bytes, CRC32 {v.read_crc32:08X})")
+        lines.append(tr("verify.ok", n=v.read_bytes, crc=f"{v.read_crc32:08X}"))
     emit(args, out, lines)
     return 0
 

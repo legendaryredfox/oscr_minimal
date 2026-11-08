@@ -2,6 +2,7 @@
 """Identificação do chip de flash de um cartucho de Mega Drive (usada por detect e rom-write)."""
 from __future__ import annotations
 
+from .messages import tr
 from .. import romimage as RI
 
 
@@ -18,8 +19,8 @@ def md_flash_chip(c, info: dict) -> dict | None:
 
 def md_chip_line(chip: dict | None) -> str:
     if chip is None:
-        return "chip de flash: este firmware não identifica o chip"
+        return tr("chip.no_id")
     if chip["known"]:
-        return f"chip de flash: {chip['chip']}  ({chip['size'] // 1024} KB)"
-    return f"chip de flash: fora da tabela ou sem resposta ({chip['ids']})" + (f"; a consulta CFI diz {chip['size'] // 1024} KB" if chip["size"] else "")
+        return tr("chip.known", chip=chip["chip"], kb=chip["size"] // 1024)
+    return tr("chip.unknown", ids=chip["ids"]) + (tr("chip.cfi_size", kb=chip["size"] // 1024) if chip["size"] else "")
 

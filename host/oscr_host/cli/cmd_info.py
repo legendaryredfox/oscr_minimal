@@ -27,8 +27,8 @@ def cmd_systems(args) -> int:
             for n, v in P.SYSTEMS.items()]
     planned = [{"name": k, "label": l, "supported": False} for k, l in PLANNED]
     emit(args, {"systems": rows, "planned": planned},
-         [f"{r['name']:8} id {r['id']:3}  {r['extension']:5} opções: {', '.join(r['options']) or '-'}" for r in rows]
-         + ["", "em breve (outros cartuchos do OSCR, ainda sem hardware, firmware nem id no protocolo):"] + [f"  {p['name']:13} {p['label']}" for p in planned])
+         [f"{r['name']:8} id {r['id']:3}  {r['extension']:5} {tr('systems.options')}: {', '.join(r['options']) or '-'}" for r in rows]
+         + ["", tr("systems.planned")] + [f"  {p['name']:13} {p['label']}" for p in planned])
     return 0
 
 
@@ -49,8 +49,8 @@ def cmd_info(args) -> int:
         return 0
     if ui.fancy():
         print(ui.banner(__version__) + "\n")
-    print(f"protocolo {info['proto']}  firmware {info['firmware']}  MOCK={'sim' if info['mock'] else 'não'}"
-          f"  Si5351={'sim' if info['si5351'] else 'não'}  sistemas: {', '.join(info['systems']) or '-'}  payload máx. {info['max_payload']}")
+    print(tr("info.line", proto=info["proto"], fw=info["firmware"], mock=tr("yes" if info["mock"] else "no"), si=tr("yes" if info["si5351"] else "no"),
+             systems=", ".join(info["systems"]) or "-", maxp=info["max_payload"]))
     t.close()
     return 0
 

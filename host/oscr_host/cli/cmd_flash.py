@@ -27,7 +27,7 @@ def _fp_sid(args) -> int:
 
 def _fp_need(c, info: dict) -> None:
     if not info.get("flash_prog"):
-        raise CliError("unsupported_firmware", "este firmware não tem o programador de flash genérico", EXIT_ERROR, "atualize o firmware (docs/referencia/funcoes-oscr.md)")
+        raise CliError("unsupported_firmware", tr("flash.no_prog"), EXIT_ERROR, tr("fw.unsupported.hint"))
 
 
 def _fp_read(args, c, job) -> bytes:
@@ -85,19 +85,19 @@ def cmd_flash_blank(args) -> int:
         t.close()
     first = next((i for i, b in enumerate(data) if b != 0xFF), None)
     emit(args, {"ok": first is None, "blank": first is None, "bytes": len(data), "first_non_blank": first},
-         ["em branco" if first is None else f"NÃO está em branco (primeiro byte diferente de FF no offset {first})"])
+         [tr("flash.blank_yes") if first is None else tr("flash.blank_no", first=first)])
     return EXIT_OK if first is None else EXIT_ERROR
 
 
 def cmd_flash_erase(args) -> int:
     """Apaga o chip inteiro. EPROM não se apaga. Sempre confirma."""
     if args.bus == "eprom":
-        raise CliError("usage", "EPROM não se apaga (a 27C322 só apaga com luz ultravioleta); use flash-blank para conferir se está em branco", EXIT_USAGE)
+        raise CliError("usage", tr("flash.eprom_no_erase"), EXIT_USAGE)
     job = _fp_job(args, need_type=args.bus in ("8", "plcc32"))
     if not args.yes:
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.erase"), EXIT_REFUSED, tr("refused.repeat"))
-        ans = input(f"Apagar {RI.FLASHPROG_LABEL[args.bus]} de {job.prg_kb} KB? Isso PERDE o conteúdo. Continuar? [s/N] ")
+        ans = input(tr("flash.erase_ask", chip=RI.FLASHPROG_LABEL[args.bus], kb=job.prg_kb))
         if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
             print(tr("cancelled"))
             return 1
@@ -117,11 +117,11 @@ def cmd_flash_write(args) -> int:
         job = RI.split_flashprog(Path(args.input).read_bytes(), args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer)
     except ValueError as e:
         raise CliError("bad_rom", str(e), EXIT_USAGE) from e
-    what = f"{RI.FLASHPROG_LABEL[args.bus]}: {len(job.rom)} bytes em um chip de {job.prg_kb} KB"
+    what = tr("flash.write_what", chip=RI.FLASHPROG_LABEL[args.bus], n=len(job.rom), kb=job.prg_kb)
     if not args.yes:
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.write"), EXIT_REFUSED, tr("refused.repeat"))
-        ans = input(f"Gravar {what}? Isso APAGA o conteúdo atual do chip. Continuar? [s/N] ")
+        ans = input(tr("flash.write_ask", what=what))
         if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
             print(tr("cancelled"))
             return 1
@@ -133,10 +133,10 @@ def cmd_flash_write(args) -> int:
     finally:
         t.close()
     out = {"bus": args.bus, "flash_kb": job.prg_kb, "bytes": len(job.body), "crc32": f"{crc:08X}"}
-    lines = [f"gravado: {what}  CRC32 {crc:08X}"]
+    lines = [tr("flash.written", what=what, crc=f"{crc:08X}")]
     if args.no_verify or args.system == "mock":
         out["verify"] = "skipped"
-        lines.append("conferência depois de gravar: pulada")
+        lines.append(tr("verify.skipped"))
     else:
         c2, t2, _ = common.connect(args)
         try:
@@ -147,9 +147,9 @@ def cmd_flash_write(args) -> int:
         diff = next((i for i in range(min(len(back), n)) if back[i] != job.rom[i]), None if len(back) >= n else len(back))
         out["verify"] = {"ok": diff is None, "read_bytes": len(back), "first_diff": diff}
         if diff is not None:
-            raise CliError("verify_failed", f"o chip lido de volta NÃO confere com o arquivo (primeiro byte diferente no offset {diff})", EXIT_ERROR,
-                           "confira o tipo do flash, limpe os contatos e grave de novo; o chip pode estar apagado ou pela metade", written=out, first_diff=diff)
-        lines.append(f"conferência depois de gravar: OK (leu {len(back)} bytes do chip)")
+            raise CliError("verify_failed", tr("flash.verify_failed", first=diff), EXIT_ERROR,
+                           tr("flash.verify_failed.hint"), written=out, first_diff=diff)
+        lines.append(tr("verify.ok_chip", n=len(back)))
     emit(args, out, lines)
     return EXIT_OK
 

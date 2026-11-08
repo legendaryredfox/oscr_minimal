@@ -97,3 +97,25 @@ def test_recusa_em_russo(capsys):
     code, out, _ = _run(capsys, "--json", "--lang", "ru", "-p", "/dev/x", "firmware-flash", "--hex", __file__, "--avrdude", __file__)
     e = json.loads(out)["error"]
     assert code == 4 and e["kind"] == "refused" and "отказано" in e["message"] and "--yes" in e["hint"]
+
+
+def test_dump_duplo_e_info_em_outros_idiomas(capsys, tmp_path):
+    code, out, _ = _run(capsys, "--lang", "en", "--simulate", "dump", "-s", "mock", "--twice", "-o", str(tmp_path / "x"))
+    assert code == 0 and "double read: both reads are identical" in out
+    code, out, _ = _run(capsys, "--lang", "pt-BR", "--simulate", "dump", "-s", "mock", "--twice", "-o", str(tmp_path / "y"))
+    assert "leitura dupla: as duas leituras são idênticas" in out
+    _, out, _ = _run(capsys, "--lang", "zh", "--simulate", "info")
+    assert out.startswith("协议 ") and "MOCK=是" in out
+    _, out, _ = _run(capsys, "--lang", "ru", "--simulate", "info")
+    assert "прошивка" in out and "MOCK=да" in out
+
+
+def test_systems_em_ingles(capsys):
+    _, out, _ = _run(capsys, "--lang", "en", "systems")
+    assert "options:" in out and "coming soon" in out
+
+
+def test_save_write_em_ingles(capsys, tmp_path):
+    f = tmp_path / "s.sav"; f.write_bytes(bytes(range(256)) * 32)
+    code, out, _ = _run(capsys, "--lang", "en", "--simulate", "save-write", "-s", "mock", "-i", str(f), "--yes", "--no-backup", "--no-verify")
+    assert code == 0 and "save written: 8192 bytes" in out and "post-write verification: skipped (--no-verify)" in out

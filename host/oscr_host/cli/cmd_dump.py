@@ -11,6 +11,7 @@ from ..client import TimeoutError_
 from ..verify import gba_save_hint, verify_rom
 from . import common
 from .common import game_options, load_db, system_id
+from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_USAGE
 from .output import diff_summary, emit, out_path, progress, safe_name, save_result
 
@@ -20,7 +21,7 @@ def cmd_dump(args) -> int:
     db = load_db(args, required=bool(args.game))
     if args.game:
         if sid not in DB.NES_SYSTEMS:
-            raise CliError("usage", "--game vale só para NES e Famicom", EXIT_USAGE)
+            raise CliError("usage", tr("dump.game_only_nes"), EXIT_USAGE)
         g = game_options(db, args.game)
         o = g.nes_options()
         args.mapper = args.mapper or o["mapper"]
@@ -37,7 +38,7 @@ def cmd_dump(args) -> int:
             title = ""
     if getattr(args, "raw", False) and sid not in DB.NES_SYSTEMS:
         t.close()
-        raise CliError("usage", "--raw vale só para NES e Famicom", EXIT_USAGE)
+        raise CliError("usage", tr("dump.raw_only_nes"), EXIT_USAGE)
     try:
         res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, args.chr)
         res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, args.chr) if getattr(args, "twice", False) else None
@@ -53,17 +54,17 @@ def cmd_dump(args) -> int:
     extra: dict = {"checksum": chk.status}
     if res2 is not None:
         extra["twice"] = True
-        notes.append(f"leitura dupla: as duas leituras são idênticas (CRC32 {res.crc32:08X})")
+        notes.append(tr("dump.twice_ok", crc=f"{res.crc32:08X}"))
     if chk.status != "na":
-        notes.append(("aviso: " if chk.status == "mismatch" else "") + str(chk))
+        notes.append((tr("dump.warning") if chk.status == "mismatch" else "") + str(chk))
     if db is not None:
         m = db.identify(sid, res.data)
         extra["game"] = m.to_dict() if m else None
         if m:
             title = m.entry.name
-            notes.append(f"jogo: {m.entry.name} ({m.entry.source}, {m.how}" + (f", mais {m.others} idêntica(s)" if m.others else "") + ")")
+            notes.append(tr("dump.game_more" if m.others else "dump.game", name=m.entry.name, source=m.entry.source, how=m.how, others=m.others))
         else:
-            notes.append(f"jogo: não encontrado na base ({len(db)} entradas): dump novo, variante, ou erro de leitura se o CRC32 devia estar lá")
+            notes.append(tr("dump.game_missing", n=len(db)))
     if sid == 5:
         hint = gba_save_hint(res.data)
         if hint:
@@ -83,10 +84,10 @@ def _save_nes_raw(args, res, default: str, extra: dict, notes: list[str]) -> int
     O firmware já devolve o iNES; o PC só corta (o cabeçalho sintético tem 16 bytes, sem trainer)."""
     d = res.data
     if len(d) < 16 or d[:4] != b"NES\x1a":
-        raise CliError("usage", "--raw: o firmware não devolveu um cabeçalho iNES para separar PRG e CHR", EXIT_ERROR)
+        raise CliError("usage", tr("dump.raw_no_header"), EXIT_ERROR)
     prg_n, chr_n = d[4] * 16384, d[5] * 8192
     if len(d) < 16 + prg_n + chr_n:
-        raise CliError("protocol", "--raw: cabeçalho iNES maior que os dados lidos", EXIT_ERROR)
+        raise CliError("protocol", tr("dump.raw_header_big"), EXIT_ERROR)
     prg, chr_ = d[16:16 + prg_n], d[16 + prg_n:16 + prg_n + chr_n]
     base = out_path(args, ".prg", default)
     base = base.with_suffix("")
@@ -101,8 +102,8 @@ def _save_nes_raw(args, res, default: str, extra: dict, notes: list[str]) -> int
         obj["chr_bytes"], obj["chr_crc32"] = len(chr_), f"{zlib.crc32(chr_):08X}"
         lines.append(f"{files['chr']}  CHR {len(chr_)} bytes  CRC32 {zlib.crc32(chr_):08X}")
     else:
-        lines.append("sem CHR-ROM (o cartucho usa CHR-RAM)")
-    lines.append(f"iNES completo (PRG + CHR com cabeçalho): CRC32 {res.crc32:08X}")
+        lines.append(tr("dump.no_chr"))
+    lines.append(tr("dump.ines_full", crc=f"{res.crc32:08X}"))
     obj.update(extra)
     emit(args, obj, lines + notes)
     return 0
@@ -116,6 +117,6 @@ def _twice_mismatch(args, res, res2, ext: str, default: str) -> None:
     f1, f2 = base.with_suffix(f".leitura1{base.suffix}"), base.with_suffix(f".leitura2{base.suffix}")
     f1.write_bytes(res.data)
     f2.write_bytes(res2.data)
-    raise CliError("mismatch", f"as duas leituras diferem ({diff} byte(s); primeira diferença no byte {first:#x}; CRC32 {res.crc32:08X} e {res2.crc32:08X})", EXIT_ERROR,
-                   hint="limpe os contatos do cartucho e do slot e leia de novo; compare os dois arquivos gravados",
+    raise CliError("mismatch", tr("dump.mismatch", diff=diff, first=f"{first:#x}", crc1=f"{res.crc32:08X}", crc2=f"{res2.crc32:08X}"), EXIT_ERROR,
+                   hint=tr("dump.mismatch.hint"),
                    files=[str(f1), str(f2)], diff_bytes=diff, first_diff=first)

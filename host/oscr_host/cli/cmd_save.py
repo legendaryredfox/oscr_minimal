@@ -22,7 +22,7 @@ def cmd_save_read(args) -> int:
     t.close()
     notes = []
     if system_id(args.system) == 5 and args.mapper == 2 and eeprom_is_4k(res.data):
-        notes.append("aviso: o conteúdo se repete a cada 512 bytes: é uma EEPROM de 512 bytes. Refaça com --mapper 1.")
+        notes.append(tr("save.eeprom_warn"))
     return save_result(args, res, ".sav", f"save_{args.system}", None, notes)
 
 
@@ -33,7 +33,7 @@ def cmd_save_write(args) -> int:
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.save"),
                            EXIT_REFUSED, tr("refused.save.hint"))
-        ans = input(f"Gravar {len(data)} bytes no save de {args.system}? Isso sobrescreve o save do cartucho. Continuar? [s/N] ")
+        ans = input(tr("save.ask", n=len(data), system=args.system))
         if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
             print(tr("cancelled"))
             return 1
@@ -56,17 +56,17 @@ def cmd_save_write(args) -> int:
     finally:
         t.close()
     extra.update({"bytes": len(data), "crc32": f"{crc:08X}"})
-    lines = [f"save gravado: {len(data)} bytes  CRC32 {crc:08X}"]
+    lines = [tr("save.written", n=len(data), crc=f"{crc:08X}")]
     if v is None:
         extra["verify"] = "skipped"
-        lines.append("conferência depois de gravar: pulada (--no-verify)")
+        lines.append(tr("verify.skipped_flag"))
     else:
         extra["verify"] = v.to_dict()
         if not v.ok:
-            raise CliError("verify_failed", f"o save lido de volta NÃO confere com o gravado (primeiro byte diferente no offset {v.first_diff}; lido {v.read_crc32:08X}, esperado {v.expected_crc32:08X}, {v.read_bytes} bytes lidos de {len(data)})",
-                           EXIT_ERROR, "limpe os contatos, confira o tipo de save (--mapper/--ram) e grave de novo; o backup do save anterior está em --backup-dir",
+            raise CliError("verify_failed", tr("save.verify_failed", first=v.first_diff, read=f"{v.read_crc32:08X}", exp=f"{v.expected_crc32:08X}", n=v.read_bytes, total=len(data)),
+                           EXIT_ERROR, tr("save.verify_failed.hint"),
                            written=extra, first_diff=v.first_diff)
-        lines.append(f"conferência depois de gravar: OK (leu {v.read_bytes} bytes, CRC32 {v.read_crc32:08X})")
+        lines.append(tr("verify.ok", n=v.read_bytes, crc=f"{v.read_crc32:08X}"))
     emit(args, extra, lines)
     return 0
 
