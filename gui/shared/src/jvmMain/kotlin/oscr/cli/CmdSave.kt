@@ -16,14 +16,13 @@ internal fun cmdSaveRead(io: CliIo, a: Args): Int {
 }
 
 internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
-    val input = a.opts["input"] ?: throw CliError("usage", "save-write needs -i/--input FILE", EXIT_USAGE)
+    val input = a.opts["input"] ?: throw CliError("usage", Msg.t("args.needs_input", "cmd" to "save-write"), EXIT_USAGE)
     val data = File(input).readBytes()
     val sys = system(a)
     if ("yes" !in a.flags) {
-        if (!io.interactive) throw CliError("refused", "refused: writing the save overwrites the cartridge memory. Outside a terminal confirm with --yes.", EXIT_REFUSED,
-            "repeat the command with --yes (the current save is backed up to --backup-dir first, unless --no-backup)")
-        io.err("Write ${data.size} bytes to the ${sys.name.lowercase()} save? This overwrites the cartridge save. Continue? [y/N] ")
-        if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim")) { io.out("cancelled"); return EXIT_ERROR }
+        if (!io.interactive) throw CliError("refused", Msg.t("refused.save"), EXIT_REFUSED, Msg.t("refused.save.hint"))
+        io.err(Msg.t("save.ask", "n" to data.size, "system" to sys.name.lowercase()))
+        if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim", "да", "д", "是", "是的")) { io.out(Msg.t("cancelled")); return EXIT_ERROR }
     }
     val c = connect(io, a)
     val extra = linkedMapOf<String, Any?>()
@@ -37,20 +36,20 @@ internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
             val f = File(dir, "${sys.name.lowercase()}_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.sav")
             f.writeBytes(cur.data)
             extra["backup"] = f.path
-            if (!a.json) io.out("backup of the current save: ${f.path}  CRC32 ${cur.crcHex}")
+            if (!a.json) io.out(Msg.t("save.backup", "path" to f.path, "crc" to cur.crcHex))
         }
         crc = c.client.writeSave(sys, data, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, a.int("mapper"), a.int("ram"), progress(io, a, "write"))
         if ("no-verify" !in a.flags) v = verifySaveWritten(c.client, sys, data, a.int("mapper"), a.int("ram"), progress(io, a, "verify"))     // o WRITE_SAVE não relê: o PC lê de volta e compara
     } finally { c.transport.close() }
     val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
     extra["bytes"] = data.size; extra["crc32"] = hex
-    val lines = mutableListOf("save written: ${data.size} bytes  CRC32 $hex")
-    if (v == null) { extra["verify"] = "skipped"; lines += "verification after writing: skipped (--no-verify)" }
+    val lines = mutableListOf(Msg.t("save.written", "n" to data.size, "crc" to hex))
+    if (v == null) { extra["verify"] = "skipped"; lines += Msg.t("verify.skipped_flag") }
     else {
         extra["verify"] = Json.obj("ok" to v.ok, "read_crc32" to hex8(v.readCrc), "expected_crc32" to hex8(v.expectedCrc), "first_diff" to v.firstDiff, "read_bytes" to v.readBytes)
-        if (!v.ok) throw CliError("verify_failed", "the save read back does NOT match what was written (first differing byte at offset ${v.firstDiff}; read ${hex8(v.readCrc)}, expected ${hex8(v.expectedCrc)}, ${v.readBytes} bytes read of ${data.size})",
-            EXIT_ERROR, "clean the contacts, check the save type (--mapper/--ram) and write again; the backup of the previous save is in --backup-dir", mapOf("written" to extra, "first_diff" to v.firstDiff))
-        lines += "verification after writing: OK (read ${v.readBytes} bytes, CRC32 ${hex8(v.readCrc)})"
+        if (!v.ok) throw CliError("verify_failed", Msg.t("save.verify_failed", "first" to v.firstDiff, "read" to hex8(v.readCrc), "exp" to hex8(v.expectedCrc), "n" to v.readBytes, "total" to data.size),
+            EXIT_ERROR, Msg.t("save.verify_failed.hint"), mapOf("written" to extra, "first_diff" to v.firstDiff))
+        lines += Msg.t("verify.ok", "n" to v.readBytes, "crc" to hex8(v.readCrc))
     }
     emit(io, a, extra, lines)
     return EXIT_OK

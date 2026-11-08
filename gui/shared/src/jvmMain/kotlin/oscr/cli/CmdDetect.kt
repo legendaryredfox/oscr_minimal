@@ -10,19 +10,19 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
     val c = connect(io, a)
     var chip: MdFlashChip? = null
     val r = try { c.client.detect(system(a)).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) } } finally { c.transport.close() }
-    val text = STATUS[r.status] ?: r.status.toString()
+    val text = statusText(r.status)
     val lines = mutableListOf("${CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system}: $text")
-    if (r.status == 0) lines += "  title: ${r.name.ifEmpty { "(unknown)" }}  ROM: ${r.romSize} bytes  save: ${r.saveSize} bytes"
+    if (r.status == 0) lines += Msg.t("detect.title_line", "name" to r.name.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to r.romSize, "save" to r.saveSize)
     if (wantChip) lines += "  " + mdChipLine(chip)
-    if (r.attempts > 1) lines += "  ${r.attempts} header read attempts (SA-1 power cycle)"
+    if (r.attempts > 1) lines += Msg.t("detect.attempts", "n" to r.attempts)
     val json = linkedMapOf<String, Any?>("ok" to (r.status == 0), "system" to r.system, "status" to r.status, "rom_size" to r.romSize, "save_size" to r.saveSize,
         "save_type" to r.saveType, "name" to r.name, "attempts" to r.attempts, "status_text" to text)
     if (wantChip) json["flash_chip"] = mdChipJson(chip)
     if (!a.json && colorOn(io, a)) {                      // terminal: o cartucho desenhado ao lado dos dados
         val fields = mutableListOf<Pair<String, String>>()
-        if (r.status == 0) { fields += "title" to r.name.ifEmpty { "(unknown)" }; fields += "ROM" to "${r.romSize} bytes"; fields += "save" to "${r.saveSize} bytes" }
-        if (wantChip) fields += "chip" to mdChipLine(chip).removePrefix("flash chip: ")
-        if (r.attempts > 1) fields += "attempts" to "${r.attempts} (SA-1 power cycle)"
+        if (r.status == 0) { fields += Msg.t("detect.field_title") to r.name.ifEmpty { Msg.t("detect.unknown_title") }; fields += "ROM" to "${r.romSize} bytes"; fields += Msg.t("detect.field_save") to "${r.saveSize} bytes" }
+        if (wantChip) fields += Msg.t("detect.field_chip") to mdChipLine(chip).substringAfter(": ")
+        if (r.attempts > 1) fields += Msg.t("detect.field_tries") to Msg.t("detect.field_tries_val", "n" to r.attempts)
         val name = CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system.toString()
         val art = mapOf("snes" to 1, "nes" to 2, "famicom" to 3, "md" to 4, "gba" to 5, "gb" to 6)[name] ?: 1
         Ui.detectCard(true, art, "$name: ${text.substringBefore(" (")}", r.status == 0, fields).forEach(io.out)
@@ -31,9 +31,9 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
 }
 
 internal fun mdChipLine(c: MdFlashChip?): String = when {
-    c == null -> "flash chip: this firmware does not identify the chip"
-    c.known -> "flash chip: ${c.chip}  (${c.sizeBytes / 1024} KB)"
-    else -> "flash chip: not in the table or no answer (${c.ids})" + (if (c.sizeBytes > 0) "; the CFI query says ${c.sizeBytes / 1024} KB" else "")
+    c == null -> Msg.t("chip.no_id")
+    c.known -> Msg.t("chip.known", "chip" to c.chip, "kb" to c.sizeBytes / 1024)
+    else -> Msg.t("chip.unknown", "ids" to c.ids) + (if (c.sizeBytes > 0) Msg.t("chip.cfi_size", "kb" to c.sizeBytes / 1024) else "")
 }
 
 internal fun mdChipJson(c: MdFlashChip?): Any? = c?.let { Json.obj("known" to it.known, "ids" to it.ids, "chip" to it.chip, "size" to it.sizeBytes) }

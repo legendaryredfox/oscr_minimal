@@ -48,7 +48,7 @@ def cmd_save_write(args) -> int:
             bpath.write_bytes(cur.data)
             extra["backup"] = str(bpath)
             if not args.json:
-                print(f"backup do save atual: {bpath}  CRC32 {cur.crc32:08X}")
+                print(tr("save.backup", path=bpath, crc=f"{cur.crc32:08X}"))
         crc = c.write_save(sid, data, args.block or P.DEFAULT_BLOCK, progress("write", args.progress), args.mapper, args.ram)
         v = None
         if not args.no_verify:                            # o WRITE_SAVE não relê: o PC lê o save de volta e compara

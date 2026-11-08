@@ -107,7 +107,7 @@ def cmd_flash_erase(args) -> int:
         c.erase(_fp_sid(args), job.chip, job.prg_kb, job.chr_word, args.begin_timeout)
     finally:
         t.close()
-    emit(args, {"erased": True, "bus": args.bus, "flash_kb": job.prg_kb}, ["chip apagado"])
+    emit(args, {"erased": True, "bus": args.bus, "flash_kb": job.prg_kb}, [tr("flash.erased")])
     return EXIT_OK
 
 

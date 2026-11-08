@@ -187,3 +187,11 @@ args.progress	--progress deve ser auto, none ou jsonl	--progress must be auto, n
 args.power_action	power precisa de uma ação: on, off ou status	power needs one action: on, off or status	power требует одно действие: on, off или status	power 需要一个动作：on、off 或 status
 args.identify	identify precisa de pelo menos um arquivo	identify needs at least one file	identify требует хотя бы один файл	identify 至少需要一个文件
 args.search	search precisa de uma consulta	search needs a query	search требует запрос	search 需要一个查询
+save.backup	backup do save atual: {path}  CRC32 {crc}	backup of the current save: {path}  CRC32 {crc}	резервная копия текущего сохранения: {path}  CRC32 {crc}	当前存档的备份：{path}  CRC32 {crc}
+args.needs_input	{cmd} precisa de -i/--input ARQUIVO	{cmd} needs -i/--input FILE	{cmd} требует -i/--input ФАЙЛ	{cmd} 需要 -i/--input 文件
+args.chip_unknown	--chip desconhecido: {chip}. Use: {chips}	unknown --chip: {chip}. Use: {chips}	неизвестный --chip: {chip}. Используйте: {chips}	未知的 --chip：{chip}。可用：{chips}
+args.capacity	--capacity precisa de um número de KB (2048 ou 4096)	--capacity needs a number of KB (2048 or 4096)	--capacity требует число в КБ (2048 или 4096)	--capacity 需要以 KB 为单位的数字（2048 或 4096）
+args.needs_number	--{name} precisa de um número	--{name} needs a number	--{name} требует число	--{name} 需要一个数字
+rom.usage.chip_not_system	o chip {chip} não pertence ao sistema {system}	chip {chip} does not belong to system {system}	чип {chip} не относится к системе {system}	芯片 {chip} 不属于系统 {system}
+rom.usage.snes_wiring	no SNES escolha a ligação da flash com --chip snes-lorom ou --chip snes-hirom (a ROM sozinha não diz como o cartucho foi montado)	on the SNES choose the flash wiring with --chip snes-lorom or --chip snes-hirom (the ROM alone does not say how the cartridge was built)	для SNES выберите подключение флеша через --chip snes-lorom или --chip snes-hirom (по одному ROM не видно, как собран картридж)	SNES 请用 --chip snes-lorom 或 --chip snes-hirom 选择闪存接线（仅凭 ROM 无法得知卡带的构造）
+flash.erased	chip apagado	chip erased	чип стёрт	芯片已擦除

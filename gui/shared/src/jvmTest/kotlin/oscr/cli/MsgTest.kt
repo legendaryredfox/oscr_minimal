@@ -58,4 +58,18 @@ class MsgTest {
         val (c, o, _) = run(emptyMap(), "--json", "--lang", "xx", "info")
         assertEquals(64, c); assertTrue("unknown --lang: xx" in o, o)
     }
+
+    @Test fun comandosDeLeituraEGravacaoEmOutrosIdiomas() {
+        val tmp = java.io.File.createTempFile("oscr", ".sav").also { it.writeBytes(ByteArray(8192) { b -> b.toByte() }); it.deleteOnExit() }
+        val (c1, o1, _) = run(emptyMap(), "--lang", "en", "--simulate", "save-write", "-s", "mock", "-i", tmp.path, "--yes", "--no-backup", "--no-verify")
+        assertEquals(0, c1); assertTrue("save written: 8192 bytes" in o1 && "post-write verification: skipped (--no-verify)" in o1, o1)
+        val (_, o2, _) = run(emptyMap(), "--lang", "ru", "--simulate", "save-write", "-s", "mock", "-i", tmp.path, "--yes", "--no-backup", "--no-verify")
+        assertTrue("сохранение записано: 8192" in o2, o2)
+        val (_, o3, _) = run(emptyMap(), "--lang", "pt-BR", "--simulate", "info")
+        assertTrue(o3.startsWith("protocolo "), o3)
+        val (_, o4, _) = run(emptyMap(), "--lang", "zh", "--simulate", "systems")
+        assertTrue("选项" in o4 && "即将支持" in o4, o4)
+        val (c5, o5, _) = run(emptyMap(), "--lang", "pt", "--json", "--simulate", "save-write", "-s", "mock", "-i", tmp.path)
+        assertEquals(4, c5); assertTrue("\"kind\":\"refused\"" in o5 && "recusado" in o5, o5)
+    }
 }

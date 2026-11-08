@@ -4,8 +4,7 @@ package oscr.cli
 import oscr.*
 
 /** Texto de ajuda e rótulos fixos. */
-internal val STATUS = mapOf(0 to "cartridge detected", 1 to "no cartridge", 2 to "not supported", 3 to "hardware error",
-    4 to "invalid header (data present but the header checksum fails: clean the contacts and reseat)")
+internal fun statusText(status: Int): String = if (status in 0..4) Msg.t("detect.status.$status") else status.toString()
 
 internal val HELP = """
 usage: dumper [options] <command> [options]
