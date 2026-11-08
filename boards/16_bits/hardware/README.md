@@ -19,7 +19,7 @@ Versão **v1.3** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 
 ## Troca de cartucho
 
-**Com desligamento por software** (bloco de troca de cartucho, D126): o comando `POWER` liga e desliga o 5V dos slots, o rail é descarregado e o LED amarelo "SEGURO TROCAR" acende quando dá para tirar o cartucho. Circuito, peças e testes: [`docs/bloco-troca.md`](../../../docs/bloco-troca.md).
+**Com desligamento por software** (bloco de troca de cartucho, D126): o comando `POWER` liga e desliga o 5V dos slots, o rail é descarregado e o LED amarelo "SEGURO TROCAR" acende quando dá para tirar o cartucho. Circuito, peças e testes: [`docs/referencia/bloco-troca.md`](../../../docs/referencia/bloco-troca.md).
 
 ## Particularidades desta versão
 

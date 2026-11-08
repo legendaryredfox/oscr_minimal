@@ -19,7 +19,7 @@ SEM_BLOCO = ("**Sem desligamento por software.** O 5V vai direto do Mega aos slo
              "tirando o cabo USB** do Mega; nunca com a USB ligada.")
 COM_BLOCO = ("**Com desligamento por software** (bloco de troca de cartucho, D126): o comando `POWER` liga e desliga o 5V dos slots, "
              "o rail é descarregado e o LED amarelo \"SEGURO TROCAR\" acende quando dá para tirar o cartucho. Circuito, peças e testes: "
-             "[`docs/bloco-troca.md`](../../../docs/bloco-troca.md).")
+             "[`docs/referencia/bloco-troca.md`](../../../docs/referencia/bloco-troca.md).")
 
 PLACAS = {
     "16_and_8_bits": dict(

@@ -27,7 +27,7 @@ Ficam sem ligação no Mega: tudo que só os outros sistemas usam (`D2..D9`, `D1
 
 ## Como foi feita
 
-Mesma receita da `nes/` (`boards/nes/README.md`), com `tools/famicom/place.py`: `strip_sch.py` (SNES1, NES1, MD1, GBA1, U1, U2, R2, U3, C2, C3, C5 a C9), `place.py`, `tools/nes/sync_unconnected.py`, `autoroute` do KiCad MCP com o GND como trilha, depois `add_zones.py`, `stitch.py`, `tools/revisao/widen_power.py` (sem efeito aqui: o 5V já saiu com 0,8 mm) e `fill_zones.py`.
+Mesma receita da `nes/` (`boards/nes/README.md`), com `tools/boards/famicom/place.py`: `strip_sch.py` (SNES1, NES1, MD1, GBA1, U1, U2, R2, U3, C2, C3, C5 a C9), `place.py`, `tools/boards/nes/sync_unconnected.py`, `autoroute` do KiCad MCP com o GND como trilha, depois `add_zones.py`, `stitch.py`, `tools/historico/revisao/widen_power.py` (sem efeito aqui: o 5V já saiu com 0,8 mm) e `fill_zones.py`.
 
 ```
 python3 tools/check_netlist.py --board famicom
@@ -40,7 +40,7 @@ tools/export_fab.sh famicom v1.0
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

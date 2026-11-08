@@ -4,7 +4,7 @@ package oscr.cli
 /**
  * Cores, barra de progresso, banner e arte ASCII da CLI. Igual a host/oscr_host/cli/ui.py.
  * Só aparecem num terminal (ou com `--color always`); com `--json`, saída redirecionada, NO_COLOR ou `--color never`
- * a CLI continua em texto puro, como os scripts e os agentes esperam (docs/cli.md).
+ * a CLI continua em texto puro, como os scripts e os agentes esperam (docs/referencia/cli.md).
  */
 internal object Ui {
     private const val RESET = "\u001b[0m"

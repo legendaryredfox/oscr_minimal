@@ -61,7 +61,7 @@ exemplos:
   dumper save-write -s snes -i jogo.sav --yes --json
   dumper power off            # antes de trocar o cartucho (placa com chave de 5V); depois: dumper power on
   dumper --simulate --json systems
-Guia completo para agentes: docs/cli.md"""
+Guia completo para agentes: docs/referencia/cli.md"""
 
 
 def build_parser() -> argparse.ArgumentParser:

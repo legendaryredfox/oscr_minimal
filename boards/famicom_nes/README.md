@@ -25,7 +25,7 @@ Versão mínima de duas funções: um slot **Famicom** (60p, 2,54 mm) e um slot 
 
 ## Como foi feita
 
-`tools/famicom_nes/place.py` sobre a cópia da `16_and_8_bits`, depois `tools/nes/sync_unconnected.py`, `autoroute` do KiCad MCP com o GND como trilha, `add_zones.py`, `stitch.py`, `widen_power.py` e `fill_zones.py` (receita da `nes/` e da D96).
+`tools/boards/famicom_nes/place.py` sobre a cópia da `16_and_8_bits`, depois `tools/boards/nes/sync_unconnected.py`, `autoroute` do KiCad MCP com o GND como trilha, `add_zones.py`, `stitch.py`, `widen_power.py` e `fill_zones.py` (receita da `nes/` e da D96).
 
 ```
 python3 tools/check_netlist.py --board famicom_nes
@@ -38,7 +38,7 @@ tools/export_fab.sh famicom_nes v1.0
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

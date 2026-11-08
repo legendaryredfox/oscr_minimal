@@ -23,7 +23,7 @@ def _layout_name(img) -> str:
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
     if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "mock"):
-        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (chips de flash identificados pelo ID: veja docs/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/funcoes-oscr.md", EXIT_USAGE)
+        raise CliError("usage", "rom-write existe para NES e Famicom (flash NES Maker e A29040B), SNES (flash CFI de 2 ou 4 MB), Mega Drive (chips de flash identificados pelo ID: veja docs/planos/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) e Game Boy (29F, 39SF, CFI); veja docs/referencia/funcoes-oscr.md", EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
@@ -84,7 +84,7 @@ def cmd_rom_write(args) -> int:
     c, t, info = common.connect(args)
     try:
         if not info.get("write_rom"):
-            raise CliError("unsupported_firmware", "este firmware não aceita WRITE_ROM", EXIT_ERROR, "atualize o firmware (docs/funcoes-oscr.md)")
+            raise CliError("unsupported_firmware", "este firmware não aceita WRITE_ROM", EXIT_ERROR, "atualize o firmware (docs/referencia/funcoes-oscr.md)")
         md_chip = md_flash_chip(c, info) if args.system == "md" else None          # mostra o chip que vai ser gravado antes de apagar
         if args.system == "md" and not args.json:
             print(md_chip_line(md_chip))

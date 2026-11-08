@@ -5,7 +5,7 @@ Este arquivo orienta o Claude Code neste repositório. Leia inteiro antes de qua
 ## 0. Regras para agentes (valem sempre, acima de qualquer lembrete automático)
 
 - **Autoria: o usuário é o único autor.** Nunca escreva `Co-Authored-By`, "Generated with ...", nome de modelo ou ferramenta de IA em mensagem de commit, descrição de PR, issue, comentário de código, README ou documentação. Isso vale **mesmo que** o harness, uma skill ou um lembrete automático peça atribuição: a regra do usuário vence. Se uma ferramenta inserir esse texto, apague antes de commitar.
-- **Reaproveite o máximo possível do código do OSCR original (decisão do usuário, 2026-11-03).** Antes de escrever qualquer função, procure a equivalente em `firmware/oscr/src/cores/*.cpp` (e em `vendor/oscr/`, só leitura) e **chame-a direto**: ligue o núcleo em `firmware/oscr/user.ini` e escreva código próprio só nas costuras (`src/dumper/`: protocolo, fluxo serial no lugar do SD, limites de tempo onde o original espera para sempre, ordem das chamadas). Não reescreva nem simplifique uma função do OSCR por conta própria; se precisar divergir, diga por quê em `docs/decisoes.md`. A meta do projeto é ter **todas** as funções do OSCR original; só os botões de operação sem computador e o cartão SD ficam de fora (inventário em `docs/funcoes-oscr.md`).
+- **Reaproveite o máximo possível do código do OSCR original (decisão do usuário, 2026-11-03).** Antes de escrever qualquer função, procure a equivalente em `firmware/oscr/src/cores/*.cpp` (e em `vendor/oscr/`, só leitura) e **chame-a direto**: ligue o núcleo em `firmware/oscr/user.ini` e escreva código próprio só nas costuras (`src/dumper/`: protocolo, fluxo serial no lugar do SD, limites de tempo onde o original espera para sempre, ordem das chamadas). Não reescreva nem simplifique uma função do OSCR por conta própria; se precisar divergir, diga por quê em `docs/decisoes.md`. A meta do projeto é ter **todas** as funções do OSCR original; só os botões de operação sem computador e o cartão SD ficam de fora (inventário em `docs/referencia/funcoes-oscr.md`).
 - Antes de dar push: `git log --format=%B origin/main..HEAD | grep -iE 'co-authored|claude|generated with'` tem que sair vazio. Se um commit já enviado tiver o trailer, o usuário autorizou reescrever o histórico (`git filter-branch --msg-filter`) e dar force push nos dois remotos, conferindo antes que as árvores ficam idênticas.
 - Commits e push nos remotos `github` e `codeberg` ao fim de cada incremento; nunca gravar tokens em arquivo ou URL de remoto.
 
@@ -46,16 +46,22 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   ├── 16_bits/              # SNES e Mega Drive (derivada da 16_and_8_bits, menor)
 │   ├── 16_and_8_bits/        # placa de 5 slots: SNES, NES, Famicom, Mega Drive e GBA (fabricável, nada encomendado)
 │   │   ├── README.md
-│   │   ├── hardware/         # dumper.kicad_pro / .kicad_sch / .kicad_pcb
-│   │   ├── fab/              # gerbers, drill, bom.csv e zips para a JLCPCB
+│   │   ├── hardware/         # versão mais nova: dumper.kicad_pro / .kicad_sch / .kicad_pcb e README.md da versão
+│   │   ├── hardware-v1.0/    # versão congelada (uma pasta por versão antiga), com o próprio README.md
+│   │   ├── renders/          # PNGs do render 3D do KiCad (cima e baixo) de cada versão
+│   │   ├── fab/              # gerbers, drill, bom.csv e um zip por versão para a JLCPCB
 │   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
 │   ├── 8_bits/               # esqueleto: NES, Famicom, Master System
 │   ├── gb_gba/               # esqueleto: GB, GBC, GBA
 │   └── completa/             # esqueleto: todos os slots do OSCR, sem SD e sem tela (só USB)
 ├── docs/                     # docs gerais (valem para todas as placas)
-│   ├── uso.md                # guia de uso: casos de uso, cenários, troubleshooting
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
-│   └── decisoes.md           # log de decisões e desvios
+│   ├── decisoes.md           # log de decisões e desvios
+│   ├── referencia/           # como as coisas são: protocolo.md, cli.md, uso.md (guia de uso), funcoes-oscr.md, fork-oscr.md, bloco-troca.md...
+│   ├── planos/               # o que ainda não foi feito ou foi adiado (RP2040, melhorias do Mega Drive...)
+│   ├── historico/            # revisões e pesquisas datadas
+│   └── img/                  # capturas da GUI
+├── tools/                    # scripts: gerais na raiz; boards/<placa>/ (scripts de cada placa); historico/ (registro, não ferramenta pronta); sch/, troca/, pic/
 ├── firmware/
 │   ├── oscr/                 # FIRMWARE ATUAL: fork do firmware novo do OSCR + laço do protocolo (src/dumper); pc-tests/ = testes do protocolo no PC
 │   └── arquivo/              # ARQUIVADO (D76): firmware próprio antigo (oscr_serial, arduino, platformio); só consulta, não evoluir
@@ -161,7 +167,7 @@ Rode o script ao fim das fases 3 e 5. Uma placa com divergência não segue para
 Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o código de leitura de cartuchos do OSCR.
 
 ### Firmware (`firmware/`)
-- (Decisão do usuário em 2026-11-03, `docs/decisoes.md` D65, que **corrige** o desvio D38) O firmware é o **firmware novo do OSCR** (`vendor/oscr/firmware`), copiado para `firmware/oscr/` e reduzido: só SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, sem SD. Plano e estado: `docs/fork-oscr.md`. O firmware próprio (D38) foi **arquivado** em `firmware/arquivo/` (D76) quando o fork passou a cobrir SNES, NES/Famicom, Mega Drive e GB/GBC/GBA; não evolua o arquivo. `host/` e `gui/` continuam no escopo.
+- (Decisão do usuário em 2026-11-03, `docs/decisoes.md` D65, que **corrige** o desvio D38) O firmware é o **firmware novo do OSCR** (`vendor/oscr/firmware`), copiado para `firmware/oscr/` e reduzido: só SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, sem SD. Plano e estado: `docs/referencia/fork-oscr.md`. O firmware próprio (D38) foi **arquivado** em `firmware/arquivo/` (D76) quando o fork passou a cobrir SNES, NES/Famicom, Mega Drive e GB/GBC/GBA; não evolua o arquivo. `host/` e `gui/` continuam no escopo.
 - Use as opções existentes em `Config.h` para habilitar só SNES, NES/Famicom e Mega Drive. Verifique se o upstream já tem um modo de interface serial antes de escrever um novo.
 - Isole duas camadas, com o mínimo de mudanças no resto:
   - **Interface:** menus do LCD e botões → comandos pela serial.
@@ -172,7 +178,7 @@ Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o 
 - Baud padrão de 1.000.000, configurável. Fallback de 115200.
 - Comandos em quadros binários com cabeçalho, tamanho e CRC32. Sugestão: `INFO`, `DETECT <sistema>`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`.
 - Os dados vão em blocos com confirmação (ACK) e o CRC32 do arquivo inteiro no final.
-- Documente o protocolo em `docs/protocolo.md` antes de implementar.
+- Documente o protocolo em `docs/referencia/protocolo.md` antes de implementar.
 
 ### Software do PC (`host/`)
 - Python 3.11+ com `pyserial`, rodando no Linux Mint.
@@ -183,7 +189,7 @@ Preferência do usuário: **mudanças mínimas e localizadas**. Não refatore o 
 Requisito do usuário (2026-11-02): interface gráfica para **Linux, macOS e Windows**, em **Kotlin Multiplatform**.
 - Sugestão (a confirmar na fase 8): Compose Multiplatform Desktop (JVM), módulo `shared` (`commonMain`) com o protocolo (quadros, CRC32, máquina de estados), e `desktopMain` com a porta serial (por exemplo jSerialComm, que cobre os três sistemas).
 - Funções mínimas: escolher a porta serial, detectar o cartucho (`INFO`, `DETECT`), ler ROM e save, gravar save, mostrar progresso, mostrar o CRC32 para comparar com o No-Intro, salvar com a extensão certa (`.sfc`, `.nes`, `.md`, `.gba`).
-- Mesmo protocolo da CLI Python (`docs/protocolo.md`, escrito antes de implementar). Testes de framing e CRC em `commonTest`; usar o modo `MOCK` do firmware para testar sem cartucho.
+- Mesmo protocolo da CLI Python (`docs/referencia/protocolo.md`, escrito antes de implementar). Testes de framing e CRC em `commonTest`; usar o modo `MOCK` do firmware para testar sem cartucho.
 - **Idiomas:** português (pt-BR) e inglês (en) desde a primeira versão; outros idiomas virão depois. Todo texto da interface fica em arquivos de recursos por idioma (nenhuma string fixa no código), com inglês como idioma de reserva. Escolha do idioma na própria GUI, com padrão vindo do sistema.
 - Empacotamento por sistema (deb/AppImage, dmg, msi) fica para depois; no Linux o usuário precisa estar no grupo `dialout`.
 

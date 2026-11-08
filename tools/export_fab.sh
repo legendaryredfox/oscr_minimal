@@ -17,7 +17,6 @@ kicad-cli pcb export drill --format excellon --excellon-units mm --excellon-sepa
   --generate-map --map-format gerberx2 -o "$G/" "$PCB"
 [ "$HWDIR" = hardware ] && kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY}' --labels 'Ref,Valor,Footprint,Qtd' \
   --group-by Value,Footprint --ref-range-delimiter '' -o "$FAB/bom.csv" "$SCH" || true
-rm -f "$FAB/dumper-$VER-jlcpcb.zip" "$FAB/dumper-$VER-gerbers-jlcpcb.zip"
+rm -f "$FAB/dumper-$VER-jlcpcb.zip" "$FAB/dumper-$VER-gerbers-jlcpcb.zip"   # a cópia -gerbers- saiu (D130)
 ( cd "$G" && zip -q -X "$FAB/dumper-$VER-jlcpcb.zip" ./*.gtl ./*.gbl ./*.gts ./*.gbs ./*.gto ./*.gbo ./*.gm1 ./*.drl )
-cp "$FAB/dumper-$VER-jlcpcb.zip" "$FAB/dumper-$VER-gerbers-jlcpcb.zip"
 ls -l "$G" "$FAB"

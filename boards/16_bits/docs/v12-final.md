@@ -2,7 +2,7 @@
 
 > **Atualização D128 (2026-11-07):** este texto descreve a v1.2 de 2026-11-06. Por pedido do usuário, o **botão de reset (SW1)** saiu de todas as versões e a **v1.2 ficou sem o circuito de desligar o 5V dos slots** (Q1, R16, R17, R18 e LED D2; o 5V vai direto aos slots). Esse circuito, completo (com descarga e LED "seguro trocar"), está só na **v1.3**. Onde este documento fala de SW1, Q1, R16 a R18, D2, `+5V_CART` ou do comando no D19, vale só para a v1.3. Ver `versoes.md`.
 
-Em 2026-11-06 o usuário pediu para levar para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040**, que fica sozinho na v. 1.3 (se der certo; `docs/placa-v1.3-rp2040.md`). Esta página descreve o que mudou, como montar e o que ainda **não foi testado** (nada foi montado nem medido).
+Em 2026-11-06 o usuário pediu para levar para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040**, que fica sozinho na v. 1.3 (se der certo; `docs/planos/placa-v1.3-rp2040.md`). Esta página descreve o que mudou, como montar e o que ainda **não foi testado** (nada foi montado nem medido).
 
 > **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
 
@@ -21,7 +21,7 @@ Também mudaram de lugar (a placa foi roteada de novo): o PIC (U2) e o C4, os po
 
 ## Como o comando D19 funciona
 
-`firmware/oscr/src/dumper/Dumper.cpp` liga o 5V dos slots no `setup()` (`cartPower(true)`: D19 saída em nível baixo, 50 ms de espera), então com o firmware desta árvore a placa se comporta como as anteriores. **Comando `POWER` (D116, só software):** grave o firmware com `pio run -e SerialASCII_Power -t upload` (em `firmware/oscr`); ele começa com o 5V **desligado** e o programa liga (a CLI e a GUI ligam sozinhas). `dumper power off` solta todos os pinos, abre o Q1 e espera 2 s (sem o transistor de descarga da v. 1.3 não há como confirmar que o rail caiu: meça com o multímetro antes de trocar o cartucho); `dumper power on` liga de novo. Com o firmware padrão (`SerialASCII`) nada muda: o 5V liga no `setup()`. A chave física, o LED "seguro trocar" e a descarga forçada ficam para a v. 1.3 (`docs/troca-de-cartucho.md`, D115).
+`firmware/oscr/src/dumper/Dumper.cpp` liga o 5V dos slots no `setup()` (`cartPower(true)`: D19 saída em nível baixo, 50 ms de espera), então com o firmware desta árvore a placa se comporta como as anteriores. **Comando `POWER` (D116, só software):** grave o firmware com `pio run -e SerialASCII_Power -t upload` (em `firmware/oscr`); ele começa com o 5V **desligado** e o programa liga (a CLI e a GUI ligam sozinhas). `dumper power off` solta todos os pinos, abre o Q1 e espera 2 s (sem o transistor de descarga da v. 1.3 não há como confirmar que o rail caiu: meça com o multímetro antes de trocar o cartucho); `dumper power on` liga de novo. Com o firmware padrão (`SerialASCII`) nada muda: o 5V liga no `setup()`. A chave física, o LED "seguro trocar" e a descarga forçada ficam para a v. 1.3 (`docs/referencia/troca-de-cartucho.md`, D115).
 
 ## Antes de ligar um cartucho (testes de bancada, nada foi feito)
 

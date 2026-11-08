@@ -96,7 +96,7 @@ Sem cartucho, sem PIC e sem módulo Si5351. Conecte o Mega ao PC pelo USB-C.
 
 ## 8. Gravar o firmware e testar
 
-Ver `docs/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
+Ver `docs/referencia/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
 
 1. Rode o modo `MOCK` (sem cartucho): a CLI ou a GUI deve receber um padrão conhecido e o CRC32 deve bater.
 2. Se não aparecer a porta serial: veja a seção 10.

@@ -2,7 +2,7 @@
 """Cores, barra de progresso, banner e arte ASCII da CLI.
 
 Só aparecem num terminal (ou com `--color always`). Com `--json`, saída redirecionada, `NO_COLOR` ou `--color never`
-a CLI continua em texto puro, como os scripts e os agentes esperam (docs/cli.md)."""
+a CLI continua em texto puro, como os scripts e os agentes esperam (docs/referencia/cli.md)."""
 from __future__ import annotations
 
 import os

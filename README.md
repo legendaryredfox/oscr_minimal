@@ -28,11 +28,11 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
 | `boards/<placa>/hardware/`, `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |
 | `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
-| `docs/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
-| `docs/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
-| `docs/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
-| `docs/protocolo.md`, `docs/cli.md`, `docs/fork-oscr.md`, `docs/funcoes-oscr.md` | Protocolo serial, guia da CLI, plano do fork do firmware e inventário das funções do OSCR |
-| `docs/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/` | CIC do SNES com RP2040-Zero no lugar do PIC (ainda não validado; as placas atuais usam o PIC12F629) |
+| `docs/referencia/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
+| `docs/historico/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
+| `docs/historico/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
+| `docs/referencia/protocolo.md`, `docs/referencia/cli.md`, `docs/referencia/fork-oscr.md`, `docs/referencia/funcoes-oscr.md` | Protocolo serial, guia da CLI, plano do fork do firmware e inventário das funções do OSCR |
+| `docs/planos/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/` | CIC do SNES com RP2040-Zero no lugar do PIC (ainda não validado; as placas atuais usam o PIC12F629) |
 | `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |
 | `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3, mais `json/` (bases do `oscr-databases`, 4,9 mil CRC32 novos; o repositório de origem não declara licença, D127); carregada sozinha pelo host e pela GUI (D88, D127) |
 | `tools/` | Scripts de hardware: `check_netlist.py` (`--board <placa>`), `export_fab.sh`, `gen_pinmap.py`, `build_lib.py`, `fill_zones.py` e os de cada placa (`megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `gb_gba/`, `revisao/`); ver `tools/README.md` |
@@ -41,7 +41,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 
 - **Use por sua conta e risco.** Hardware e software saem sem garantia (CC BY 4.0 e GPL v3). Placas e firmware são experimentais.
 - **Um cartucho por vez.** As placas levam 5 V aos slots de SNES, NES, Famicom e Mega Drive; só o slot GBA é 3,3 V (regulador próprio). Desligue o USB antes de trocar de cartucho e **não use adaptador de GB/GBA** em placa sem o slot GBA.
-- **Gravar ROM apaga o chip**, e abortar no meio deixa o chip pela metade. Faça backup do save antes de gravar e comece por cartuchos sem valor (`docs/uso.md`, seção 7).
+- **Gravar ROM apaga o chip**, e abortar no meio deixa o chip pela metade. Faça backup do save antes de gravar e comece por cartuchos sem valor (`docs/referencia/uso.md`, seção 7).
 - **Uso legal.** A ferramenta serve para fazer cópia de segurança dos cartuchos que você possui. Este repositório não distribui ROMs, BIOS nem chaves; `database/oscr/` só tem listas de nomes e CRC32 do OSCR.
 - Nintendo, Super Nintendo, Famicom, Game Boy, Sega, Mega Drive e outros nomes são marcas dos seus donos, citadas só para dizer com o que o projeto é compatível. Sem vínculo com essas empresas nem com o projeto OSCR.
 
@@ -66,14 +66,14 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
   - Conferir com as peças reais as medidas dos slots e do módulo Si5351 (D17, D23), o lado da etiqueta (D27, D28) e a altura dos espaçadores (D25).
   - Revisar à mão, no KiCad, os layouts feitos por autoroteador (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`).
   - A única placa encomendada até agora é a `16_bits` v1.0 original (trilhas de alimentação em 0,3 mm); o repositório guarda no lugar dela a v1.0 revisada, a antiga `rev2` (D110).
-- **Firmware.** Os núcleos do OSCR só rodam no AVR, então nenhum teste os cobre. Pontos prováveis de ajuste: tempos de leitura do NES, 1.000.000 baud, `Power::setVoltage` sem VSELECT e o laço de gravação de flash. Roteiro e ordem de risco das gravações em `docs/uso.md`, seção 7.
+- **Firmware.** Os núcleos do OSCR só rodam no AVR, então nenhum teste os cobre. Pontos prováveis de ajuste: tempos de leitura do NES, 1.000.000 baud, `Power::setVoltage` sem VSELECT e o laço de gravação de flash. Roteiro e ordem de risco das gravações em `docs/referencia/uso.md`, seção 7.
 - **GUI e CLI.** Serial a 1.000.000 baud em Linux, macOS e Windows, janela estreita, revisão das traduções ru e zh por falantes nativos, empacotamento (deb/AppImage, dmg, msi). `save-write` ainda não relê o save depois de gravar.
-- **Funções do OSCR que faltam** (SF Memory, Satellaview, mais mappers do NES, outros sistemas etc.): `docs/funcoes-oscr.md`.
+- **Funções do OSCR que faltam** (SF Memory, Satellaview, mais mappers do NES, outros sistemas etc.): `docs/referencia/funcoes-oscr.md`.
 - **Próximas sessões:** revisão do código, gravar o firmware no Arduino pelo programa desktop e pela CLI (hoje é com o PlatformIO), e testes com as placas.
 
 ## CIC do SNES: alternativas ao chip de 8 pinos
 
-As placas com SNES usam hoje o **PIC12F629** (DIP-8, em soquete, gravado com o `snescic-lock-resync.hex` do OSCR). Estamos **estudando alternativas ao CIC de 8 pinos**; a mais avançada é um RP2040-Zero que roda o mesmo programa num interpretador (`docs/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/`, D89). Nada disso foi validado em hardware, e o PIC continua sendo o caminho suportado.
+As placas com SNES usam hoje o **PIC12F629** (DIP-8, em soquete, gravado com o `snescic-lock-resync.hex` do OSCR). Estamos **estudando alternativas ao CIC de 8 pinos**; a mais avançada é um RP2040-Zero que roda o mesmo programa num interpretador (`docs/planos/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/`, D89). Nada disso foi validado em hardware, e o PIC continua sendo o caminho suportado.
 
 ## Verificação
 

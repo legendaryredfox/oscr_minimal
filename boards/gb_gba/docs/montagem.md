@@ -90,7 +90,7 @@ Sem cartucho. Conecte o Mega ao PC pelo USB-C.
 
 ## 7. Gravar o firmware e testar
 
-Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII -t upload`. Protocolo: `docs/protocolo.md`. Depois:
+Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII -t upload`. Protocolo: `docs/referencia/protocolo.md`. Depois:
 
 1. Rode o modo `MOCK` (sem cartucho): a CLI ou a GUI deve receber um padrão conhecido e o CRC32 deve bater.
 2. `INFO` deve responder. Se não aparecer a porta serial: veja a seção 9.
@@ -99,7 +99,7 @@ Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e
 
 Use um cartucho de GBA comum e **sem valor** de coleção, de ROM mascarada (sem flash), e leia só a ROM. Escolha o sistema GBA, rode `detect` (o cabeçalho deve ser lido) e depois `dump`. Compare o CRC32 com o do No-Intro e repita 3 vezes (os três têm que ser iguais). Cartuchos GB e GBC: só pelo adaptador (D56), depois do GBA funcionar.
 
-Só depois, e na ordem de risco de `docs/uso.md` seção 7, teste saves (SRAM com backup) e, por último, a gravação (`WRITE_ROM`), em cartucho repro **sem valor**.
+Só depois, e na ordem de risco de `docs/referencia/uso.md` seção 7, teste saves (SRAM com backup) e, por último, a gravação (`WRITE_ROM`), em cartucho repro **sem valor**.
 
 ## 9. Solução de problemas
 

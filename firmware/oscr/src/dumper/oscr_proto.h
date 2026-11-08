@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Camada de protocolo serial v1 (docs/protocolo.md). Sem dependência do Arduino:
+// Camada de protocolo serial v1 (docs/referencia/protocolo.md). Sem dependência do Arduino:
 // compila no AVR e no PC (testes). C++11.
 #pragma once
 #include <stddef.h>
@@ -29,7 +29,7 @@ enum : uint8_t {  // host -> dispositivo
 
 enum : uint8_t { KIND_ROM = 1, KIND_SAVE = 2 };
 
-enum : uint8_t { POWER_OFF = 0, POWER_ON = 1, POWER_STATUS = 2 };   // ação do POWER (docs/protocolo.md)
+enum : uint8_t { POWER_OFF = 0, POWER_ON = 1, POWER_STATUS = 2 };   // ação do POWER (docs/referencia/protocolo.md)
 
 enum : uint16_t {  // códigos de ERRO
   E_COMANDO = 1, E_SISTEMA = 2, E_SEM_CARTUCHO = 3, E_ARGUMENTO = 4, E_REENVIOS = 5,

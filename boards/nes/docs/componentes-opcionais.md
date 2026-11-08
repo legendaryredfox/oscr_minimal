@@ -11,7 +11,7 @@ Placa só NES (`boards/nes/`, 72 pinos). Tem Si5351; não tem PIC, R2 nem regula
 | **C2** 100 nF (VCC do slot, pino 36) | Não recomendado | Desacoplamento do cartucho. Sem ele, leituras podem sair erradas | Mappers que consomem mais (MMC5, FME-7) e os com bateria. Inferência |
 | **C1** 470 µF | Não recomendado | Reserva do 5 V | Todos |
 
-Como o Si5351 é a peça mais cara e mais difícil de achar certa, **a placa funciona para NES sem ele**. Se a meta for só NES, `boards/famicom/` (sem Si5351) é a versão sem nada opcional. As limitações de mappers estão em `docs/limites-nes.md` e valem para qualquer montagem.
+Como o Si5351 é a peça mais cara e mais difícil de achar certa, **a placa funciona para NES sem ele**. Se a meta for só NES, `boards/famicom/` (sem Si5351) é a versão sem nada opcional. As limitações de mappers estão em `docs/referencia/limites-nes.md` e valem para qualquer montagem.
 
 ## Bloco de troca de cartucho (v1.1)
 

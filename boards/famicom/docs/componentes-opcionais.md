@@ -10,7 +10,7 @@ Placa só Famicom (`boards/famicom/`, 60 pinos): slot, LED e dois capacitores. S
 | **C2** 100 nF (VCC do slot, pinos 30 e 31) | Não recomendado | Desacoplamento do cartucho; leituras podem sair erradas | Mappers que consomem mais e os com bateria. Inferência |
 | **C1** 470 µF | Não recomendado | Reserva do 5 V | Todos |
 
-Não há chip opcional. Cartuchos Famicom com chip de áudio extra (VRC6, VRC7, Namco 163, Sunsoft 5B) leem como os outros: o áudio não passa pelo dumper. Limites de mappers: `docs/limites-nes.md`.
+Não há chip opcional. Cartuchos Famicom com chip de áudio extra (VRC6, VRC7, Namco 163, Sunsoft 5B) leem como os outros: o áudio não passa pelo dumper. Limites de mappers: `docs/referencia/limites-nes.md`.
 
 ## Bloco de troca de cartucho (v1.1)
 

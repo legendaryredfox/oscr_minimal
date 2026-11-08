@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Identificação do jogo no PC por CRC32 (decisão do usuário, 2026-11-03; docs/fork-oscr.md seção 3.2).
+"""Identificação do jogo no PC por CRC32 (decisão do usuário, 2026-11-03; docs/referencia/fork-oscr.md seção 3.2).
 
 O firmware não carrega base de dados. O PC lê arquivos que o usuário traz:
   - No-Intro / Redump (Logiqx XML, extensão .dat ou .xml): <game name=...><rom name size crc .../></game>;

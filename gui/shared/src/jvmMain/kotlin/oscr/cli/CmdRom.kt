@@ -12,7 +12,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val input = a.opts["input"] ?: throw CliError("usage", "rom-write needs -i/--input FILE", EXIT_USAGE)
     val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
     if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.GB && sys != CartSystem.MOCK)
-        throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (flash chips identified by ID: see docs/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) and Game Boy (29F, 39SF, CFI); see docs/funcoes-oscr.md", EXIT_USAGE)
+        throw CliError("usage", "rom-write exists for NES and Famicom (NES Maker and A29040B flash), SNES (flash CFI and 8-bit), Mega Drive (flash chips identified by ID: see docs/planos/melhorias-megadrive.md) GBA (Intel, MX29GL128E, MSP55LV128, 369-in-1) and Game Boy (29F, 39SF, CFI); see docs/referencia/funcoes-oscr.md", EXIT_USAGE)
     val chipOpt0 = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", "unknown --chip: $it. Use: ${FlashChip.entries.joinToString(", ") { c -> c.key }}", EXIT_USAGE) }
     val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else if (sys == CartSystem.GBA && chipOpt0 == null) FlashChip.GBA_FLASH else chipOpt0
     if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", "chip ${chipOpt.key} does not belong to system ${a.opts["system"] ?: "nes"}", EXIT_USAGE)
@@ -74,7 +74,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val crc: Int
     var mdChip: MdFlashChip? = null
     try {
-        if (!c.info.writeRom) throw CliError("unsupported_firmware", "this firmware does not support WRITE_ROM", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
+        if (!c.info.writeRom) throw CliError("unsupported_firmware", "this firmware does not support WRITE_ROM", EXIT_ERROR, "update the firmware (docs/referencia/funcoes-oscr.md)")
         val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()
         if (sys == CartSystem.MD) {                       // mostra o chip que vai ser gravado antes de apagar
             mdChip = identifyMdFlash(c.client, c.info)

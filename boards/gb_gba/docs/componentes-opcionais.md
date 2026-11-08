@@ -2,7 +2,7 @@
 
 Placa só GBA (`boards/gb_gba/`); GB e GBC entram pelo mesmo slot, com adaptador. O VCC do slot é **3,3 V**, vindo do regulador. Sem Si5351, PIC nem R2.
 
-> **Nada aqui foi testado em hardware.** Conclusões vêm de `pinmap.md`, do esquemático e de `docs/limites-gb.md`.
+> **Nada aqui foi testado em hardware.** Conclusões vêm de `pinmap.md`, do esquemático e de `docs/referencia/limites-gb.md`.
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
@@ -14,7 +14,7 @@ Placa só GBA (`boards/gb_gba/`); GB e GBC entram pelo mesmo slot, com adaptador
 
 ## Efeito de 3,3 V nos cartuchos antigos (não é peça, mas limita)
 
-O OSCR lê GB a 5 V; aqui todos saem do regulador a 3,3 V. A maioria dos cartuchos GB lê bem, mas **alguns GB antigos podem falhar** (bits trocados, CRC diferente a cada tentativa). A saída prevista é um jumper de solda do VCC do slot ao 5 V (`docs/limites-gb.md`, seção 2), que **só vale para GB/GBC**: nunca para GBA, que se danifica com 5 V.
+O OSCR lê GB a 5 V; aqui todos saem do regulador a 3,3 V. A maioria dos cartuchos GB lê bem, mas **alguns GB antigos podem falhar** (bits trocados, CRC diferente a cada tentativa). A saída prevista é um jumper de solda do VCC do slot ao 5 V (`docs/referencia/limites-gb.md`, seção 2), que **só vale para GB/GBC**: nunca para GBA, que se danifica com 5 V.
 
 ## Bloco de troca de cartucho (v1.1)
 

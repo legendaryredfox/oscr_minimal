@@ -13,7 +13,7 @@ Baseado no **Open Source Cartridge Reader** de sanni e comunidade
 (<https://github.com/sanni/cartreader>; atual: <https://github.com/oscartreader>).
 Este projeto: <https://github.com/legendaryredfox/oscr_minimal> (adaptado por Legendary Redfox).
 
-Alterações em relação ao OSCR: shield único para Arduino Mega 2560 R3 com slots de SNES, NES, Famicom, Mega Drive e GBA; sem LCD, SD e RTC; interface serial USB com protocolo próprio (`docs/protocolo.md`); footprints dos slots do OSCR com courtyard e silkscreen acrescentados; símbolo do slot GBA recriado. O hardware usa, em parte, símbolos e footprints do OSCR (`boards/_lib/README.md`).
+Alterações em relação ao OSCR: shield único para Arduino Mega 2560 R3 com slots de SNES, NES, Famicom, Mega Drive e GBA; sem LCD, SD e RTC; interface serial USB com protocolo próprio (`docs/referencia/protocolo.md`); footprints dos slots do OSCR com courtyard e silkscreen acrescentados; símbolo do slot GBA recriado. O hardware usa, em parte, símbolos e footprints do OSCR (`boards/_lib/README.md`).
 
 O texto da atribuição também está no silkscreen da placa.
 

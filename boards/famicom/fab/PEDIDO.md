@@ -2,7 +2,7 @@
 
 Placa **só Famicom**, 2 camadas, 107,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `13ea1b2a7d215de22dc108a56c1e846cad05a7e7b44f0512a6d54bd1148fb057` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `13ea1b2a7d215de22dc108a56c1e846cad05a7e7b44f0512a6d54bd1148fb057` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

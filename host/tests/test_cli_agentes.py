@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Contrato da CLI para agentes de IA (docs/cli.md): JSON, erros estruturados, códigos de saída."""
+"""Contrato da CLI para agentes de IA (docs/referencia/cli.md): JSON, erros estruturados, códigos de saída."""
 import json
 
 from oscr_host import protocol as P

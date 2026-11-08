@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Gravação de ROM em cartuchos repro de Mega Drive com flash (WRITE_ROM, docs/protocolo.md). Fluxo do menu "Flash Repro" do OSCR (MegaDrive.cpp).
+// Gravação de ROM em cartuchos repro de Mega Drive com flash (WRITE_ROM, docs/referencia/protocolo.md). Fluxo do menu "Flash Repro" do OSCR (MegaDrive.cpp).
 #pragma once
 #include "syslibinc.h"
 #include "dumper/oscr_session.h"

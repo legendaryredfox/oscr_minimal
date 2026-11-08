@@ -81,14 +81,14 @@ Sem cartucho e sem módulo Si5351. Conecte o Mega ao PC pelo USB-C.
 
 ## 8. Gravar o firmware e testar
 
-Ver `docs/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
+Ver `docs/referencia/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
 
 1. Rode o modo `MOCK` (sem cartucho): a CLI ou a GUI deve receber um padrão conhecido e o CRC32 deve bater.
 2. Se não aparecer a porta serial: veja a seção 10.
 
 ## 9. Primeiro dump real
 
-Use um cartucho simples: NES mapper 0 (NROM), de pouco valor. Escolha o sistema, faça `detect` e depois `dump`. Compare o CRC32 com o do No-Intro e repita o dump 3 vezes (os CRC32 têm que ser iguais). Só depois teste mapeadores maiores, saves e gravação, na ordem de risco de `docs/uso.md` seção 7.
+Use um cartucho simples: NES mapper 0 (NROM), de pouco valor. Escolha o sistema, faça `detect` e depois `dump`. Compare o CRC32 com o do No-Intro e repita o dump 3 vezes (os CRC32 têm que ser iguais). Só depois teste mapeadores maiores, saves e gravação, na ordem de risco de `docs/referencia/uso.md` seção 7.
 
 ## 10. Solução de problemas
 
@@ -96,7 +96,7 @@ Use um cartucho simples: NES mapper 0 (NROM), de pouco valor. Escolha o sistema,
 |---|---|
 | Cartucho não detectado | Cartucho todo encaixado; um cartucho por vez; limpeza dos contatos; slot reto; pinos 1 e 2 do slot; VCC do slot (5 V). |
 | CRC diverge | Contato oxidado (limpe com álcool isopropílico); sistema/mapper errado; refaça o dump 3 vezes; compare com o banco. |
-| Mapper não lê | Módulo Si5351 instalado e na ordem certa; pino 37 do slot com o CLK0; mapper listado em `docs/funcoes-oscr.md`. |
+| Mapper não lê | Módulo Si5351 instalado e na ordem certa; pino 37 do slot com o CLK0; mapper listado em `docs/referencia/funcoes-oscr.md`. |
 | Porta serial não aparece | Cabo USB-C só de carga (troque); no Linux, adicione-se ao grupo `dialout` (`sudo usermod -aG dialout $USER` e reinicie a sessão); clone com CH340 aparece como `/dev/ttyUSB0`; no Windows/macOS instale o driver CH340. |
 | LED não acende | Polaridade (ânodo no 5V); resistor R1; o LED é ativo em nível baixo (D38). |
 

@@ -12,4 +12,4 @@ Para que serve ainda:
 - **Referência de lógica**: as tabelas de mappers do NES, cabeçalhos, tamanhos e protocolos seriais do Mega Drive e do GBA estão em `oscr_serial/oscr_carts_*.cpp`, com testes por cartucho simulado. Úteis para conferir o que o fork faz.
 - **Comparação em hardware**: se o fork falhar num cartucho, dá para gravar este firmware (`arduino-cli compile --fqbn arduino:avr:mega --library firmware/arquivo/oscr_serial firmware/arquivo/arduino/oscr_dumper`) e ver se o problema é do fork ou da placa.
 
-O protocolo serial é o mesmo (`docs/protocolo.md`); o `host/` e a `gui/` falam com os dois.
+O protocolo serial é o mesmo (`docs/referencia/protocolo.md`); o `host/` e a `gui/` falam com os dois.

@@ -21,6 +21,6 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 
 Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardware 5, E/S por serial, sem tela nem botões). Medida em 2026-11-03 com o laço de comandos: flash 118.572 bytes (46,7%), RAM 3.147 bytes (38,4%). O upstream puro ocupa 141.824 bytes.
 
-**Estado (ver `docs/fork-oscr.md`):** SNES, Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). NES/Famicom ainda não.
+**Estado (ver `docs/referencia/fork-oscr.md`):** SNES, Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). NES/Famicom ainda não.
 - `user.ini`: `flash = true` (D77) liga o núcleo de flash do OSCR; `src/dumper/NesFlash.cpp` + `include/dumper/NesFlash.h` gravam ROM em NES Maker e A29040B chamando as funções do `NES.cpp` original (`WRITE_ROM`).
 

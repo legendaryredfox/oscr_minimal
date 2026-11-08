@@ -5,7 +5,7 @@ package oscr
 data class Problem(val key: S, val arg: Int? = null)
 
 /**
- * Regras do firmware para os campos de tamanho e mapper (iguais a oscr_carts_nes.cpp e docs/protocolo.md), para avisar enquanto o usuário
+ * Regras do firmware para os campos de tamanho e mapper (iguais a oscr_carts_nes.cpp e docs/referencia/protocolo.md), para avisar enquanto o usuário
  * digita em vez de só depois do envio. O firmware continua sendo a palavra final (erro 0x0002 ou 0x0004).
  */
 /** Uma placa comum do NES: o nome técnico (igual em todos os idiomas) e os campos que ela preenche. */

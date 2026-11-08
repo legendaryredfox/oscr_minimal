@@ -17,7 +17,7 @@
 # define OSCR_FLAGS_H_
 
 /**
- * Fork oscr_minimal (docs/fork-oscr.md): sem cartão SD; os dumps saem pela serial no protocolo de docs/protocolo.md.
+ * Fork oscr_minimal (docs/referencia/fork-oscr.md): sem cartão SD; os dumps saem pela serial no protocolo de docs/referencia/protocolo.md.
  */
 #ifndef OSCR_DUMPER
 # define OSCR_DUMPER 1

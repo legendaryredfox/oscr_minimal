@@ -8,7 +8,7 @@ Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom.csv` mais as peças 
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/gb_gba/fab/dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`) |
+| Arquivo | `boards/gb_gba/fab/dumper-v1.1-jlcpcb.zip` |
 | Camadas | 2 |
 | Dimensões | 138,1 × 67,1 mm (acima de 100 mm de largura: faixa de preço maior) |
 | Espessura / acabamento | 1,6 mm, HASL |
@@ -42,7 +42,7 @@ Sem Si5351, PIC, R2 e pontos de teste.
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

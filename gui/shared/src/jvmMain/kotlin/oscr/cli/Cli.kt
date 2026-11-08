@@ -5,7 +5,7 @@ import oscr.*
 import java.io.IOException
 
 /**
- * CLI em Kotlin, com o mesmo contrato da CLI Python (docs/cli.md): comandos, opções, saída --json e códigos de saída.
+ * CLI em Kotlin, com o mesmo contrato da CLI Python (docs/referencia/cli.md): comandos, opções, saída --json e códigos de saída.
  * Textos desta CLI (ajuda, dicas) são em inglês; erros do dispositivo e do protocolo vêm do I18n da GUI (--lang).
  * Agentes devem usar `ok`, `error.kind` e o código de saída, não o texto.
  *

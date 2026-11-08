@@ -16,7 +16,7 @@ All slots are wired to the same Arduino pins as the OSCR HW5, so the OSCR cartri
 
 ## SNES CIC
 
-The SNES boards use a **PIC12F629** (8-pin DIP, socketed). We are studying alternatives to the 8-pin CIC, e.g. an RP2040-Zero running the same program in an interpreter (`docs/placa-v1.3-rp2040.md`); none of it is validated in hardware.
+The SNES boards use a **PIC12F629** (8-pin DIP, socketed). We are studying alternatives to the 8-pin CIC, e.g. an RP2040-Zero running the same program in an interpreter (`docs/planos/placa-v1.3-rp2040.md`); none of it is validated in hardware.
 
 ## Build and test
 

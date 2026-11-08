@@ -32,7 +32,7 @@ Estudo final em `docs/estudo-final-v1.2.md`. Aplicado: **C4 junto do PIC** (de 2
 
 ## Revisão v. 1.2 (2026-11-04)
 
-Além do silk `v. 1.2`: `/CART` (B32 do slot Mega Drive) ligado ao D50 do Mega para detectar cartucho; capacitores extras C5 (junto ao A31) e C6 (junto ao A2); seis pontos de teste (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`) numa fileira acima do cabeçalho do Mega. Ficaram de fora, por falta de espaço sem refazer o roteamento: resistores série e TVS nas linhas do cartucho. Detalhe: `docs/melhorias-megadrive-hardware.md` e `docs/decisoes.md` D87. O firmware ainda **não lê** `/CART`.
+Além do silk `v. 1.2`: `/CART` (B32 do slot Mega Drive) ligado ao D50 do Mega para detectar cartucho; capacitores extras C5 (junto ao A31) e C6 (junto ao A2); seis pontos de teste (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`) numa fileira acima do cabeçalho do Mega. Ficaram de fora, por falta de espaço sem refazer o roteamento: resistores série e TVS nas linhas do cartucho. Detalhe: `docs/planos/melhorias-megadrive-hardware.md` e `docs/decisoes.md` D87. O firmware ainda **não lê** `/CART`.
 
 ## Diferenças em relação à `16_and_8_bits`
 
@@ -54,7 +54,7 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 | `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 sem Q1 e reset, mais o bloco de troca de cartucho, D128); pasta de trabalho |
 | `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-troca` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
-| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` (+ cópia `-gerbers-`), `previa-cima.png`, `previa-baixo.png` |
+| `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers/` (da pasta de trabalho `hardware/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):

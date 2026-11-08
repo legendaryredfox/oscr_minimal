@@ -11,7 +11,7 @@
 | Pasta | Conteúdo |
 |---|---|
 | `hardware/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10) |
-| `fab/` | `gerbers/`, `bom.csv`, `dumper-v1.0-jlcpcb.zip`, `dumper-v1.0-gerbers-jlcpcb.zip` |
+| `fab/` | `gerbers/`, `bom.csv`, `dumper-v1.0-jlcpcb.zip`, `dumper-v1.1-jlcpcb.zip` |
 | `docs/` | `pinmap.md` (fonte da verdade), `bom.md`, `montagem.md` |
 
 Verificação (da raiz do repositório):
@@ -26,7 +26,7 @@ kicad-cli pcb drc boards/16_and_8_bits/hardware/dumper.kicad_pcb
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

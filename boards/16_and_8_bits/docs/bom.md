@@ -60,7 +60,7 @@ Ver `boards/16_and_8_bits/docs/montagem.md`.
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

@@ -5,7 +5,7 @@ import oscr.*
 import java.io.File
 import kotlin.test.*
 
-/** Contrato da CLI para agentes (docs/cli.md), igual a host/tests/test_cli_agentes.py. */
+/** Contrato da CLI para agentes (docs/referencia/cli.md), igual a host/tests/test_cli_agentes.py. */
 class CliTest {
     private class Run(val code: Int, val out: String, val err: String) {
         fun json(): Map<String, String> = Regex("\"(\\w+)\":(\"(?:[^\"\\\\]|\\\\.)*\"|[^,}\\]{]+)").findAll(out).associate { it.groupValues[1] to it.groupValues[2].trim('"') }

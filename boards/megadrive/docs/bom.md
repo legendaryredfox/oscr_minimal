@@ -8,7 +8,7 @@ Montagem **manual**. Lista gerada de `boards/megadrive/fab/bom.csv` mais as peç
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/megadrive/fab/dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`) |
+| Arquivo | `boards/megadrive/fab/dumper-v1.1-jlcpcb.zip` |
 | Camadas | 2 |
 | Dimensões | 107,1 × 65,1 mm (acima de 100 mm de largura: faixa de preço maior) |
 | Espessura / acabamento | 1,6 mm, HASL |
@@ -40,7 +40,7 @@ Sem Si5351, sem PIC, sem soquete DIP-8, sem R2.
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

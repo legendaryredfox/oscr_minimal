@@ -69,5 +69,5 @@ options (accepted before or after the command):
   --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)
 
 exit codes: 0 ok | 1 error | 2 no cartridge | 3 no port/device | 4 refused (needs --yes) | 64 usage | 130 Ctrl+C
-Full contract: docs/cli.md
+Full contract: docs/referencia/cli.md
 """.trim()

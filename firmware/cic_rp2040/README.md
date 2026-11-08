@@ -1,6 +1,6 @@
 # CIC lock do SNES no RP2040 (substitui o PIC12F629)
 
-Decisão D89 (`docs/decisoes.md`), plano da placa em `docs/placa-v1.3-rp2040.md`.
+Decisão D89 (`docs/decisoes.md`), plano da placa em `docs/planos/placa-v1.3-rp2040.md`.
 
 O SA-1 só libera a ROM quando um CIC "lock" autentica o CIC do cartucho. O OSCR usa um PIC12F629 com
 `snescic-lock-resync.hex`. Aqui o RP2040 roda **esse mesmo programa**, sem reescrevê-lo:

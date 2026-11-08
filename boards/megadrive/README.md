@@ -6,7 +6,7 @@
 
 Versão mínima de uma função: um slot **Mega Drive** (64p, 2,54 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_bits`).
 
-**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (os 2 `starved_thermal` da B.Cu, nos pads GND3 do Mega e A18 do slot, foram resolvidos ligando esses pads sem alívio térmico, D96); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar** (trilhas não foram conferidas à mão). Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
+**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (os 2 `starved_thermal` da B.Cu, nos pads GND3 do Mega e A18 do slot, foram resolvidos ligando esses pads sem alívio térmico, D96); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar** (trilhas não foram conferidas à mão). Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/historico/revisao/widen_power.py`, D96).
 
 ## Diferenças em relação à `16_bits`
 
@@ -23,7 +23,7 @@ Ficam sem ligação no Mega: `D20`, `D21`, `D40`, `D41` (I²C do Si5351 e reset 
 
 ## Como foi feita
 
-Scripts em `tools/megadrive/` (da raiz do repositório):
+Scripts em `tools/boards/megadrive/` (da raiz do repositório):
 
 1. `strip_sch.py` tira do esquemático da `16_bits` SNES1, U1, U2, R2, C2, C4 e os rótulos dos pinos deles.
 2. `place.py` (Python do venv do KiCad MCP) limpa as trilhas, remove as peças, move o slot, refaz contorno e zonas.
@@ -43,7 +43,7 @@ tools/export_fab.sh megadrive v1.0
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

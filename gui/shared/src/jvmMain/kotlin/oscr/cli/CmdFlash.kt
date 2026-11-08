@@ -32,7 +32,7 @@ internal fun fpJob(a: Args, needType: Boolean = false, detect: Boolean = false):
     try { FlashProg.params(fpBus(a), fpInt(a, "flash-kb"), a.opts["flash-type"], fpInt(a, "sector-kb"), fpInt(a, "buffer"), needType, detect) } catch (e: RomImageException) { throw fpError(e) }
 
 internal fun fpNeed(c: Conn) {
-    if (!c.info.flashProg) throw CliError("unsupported_firmware", "this firmware has no generic flash programmer", EXIT_ERROR, "update the firmware (docs/funcoes-oscr.md)")
+    if (!c.info.flashProg) throw CliError("unsupported_firmware", "this firmware has no generic flash programmer", EXIT_ERROR, "update the firmware (docs/referencia/funcoes-oscr.md)")
 }
 
 internal fun fpRead(io: CliIo, a: Args, c: Conn, job: FlashJob): DumpResult = c.client.dumpRom(fpSys(a), a.int("block"), job.chip, job.prgKb, job.chrWord, progress(io, a, "flash-read"))

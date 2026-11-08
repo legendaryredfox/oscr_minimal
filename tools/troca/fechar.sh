@@ -14,8 +14,5 @@ if grep -E "^\[(clearance|shorting_items|unconnected_items|via_dangling|tracks_c
 # a versão anterior (v1.0) sai da pasta fab/ (nada foi encomendado)
 git rm -q --ignore-unmatch -f "boards/$B/fab/dumper-v1.0-jlcpcb.zip" "boards/$B/fab/dumper-v1.0-gerbers-jlcpcb.zip" 2>/dev/null || true
 tools/export_fab.sh "$B" "$VER" >/dev/null
-for S in top:cima bottom:baixo; do
-  kicad-cli pcb render --side "${S%%:*}" --quality basic --background default --width 1680 --height 896 -o "boards/$B/fab/previa-${S##*:}.png" "boards/$B/hardware/dumper.kicad_pcb" >/dev/null 2>&1
-done
-tools/render_board.sh "$B" >/dev/null
+tools/render_board.sh "$B" v1.0 "$VER" >/dev/null
 python3 tools/troca/docs.py "$B" --nets "$NETS" --links "$LINKS"

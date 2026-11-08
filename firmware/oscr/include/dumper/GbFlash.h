@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Gravação de ROM em cartuchos repro de Game Boy com flash (WRITE_ROM, docs/protocolo.md). Menus "GB 29F/39SF Repro" e "GB CFI Repro" do OSCR (GameBoy.cpp).
+// Gravação de ROM em cartuchos repro de Game Boy com flash (WRITE_ROM, docs/referencia/protocolo.md). Menus "GB 29F/39SF Repro" e "GB CFI Repro" do OSCR (GameBoy.cpp).
 #pragma once
 #include "syslibinc.h"
 #include "dumper/oscr_session.h"

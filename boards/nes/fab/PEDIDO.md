@@ -2,7 +2,7 @@
 
 Placa **só NES**, 2 camadas, 110,1 × 65,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `4734e185b01fdd3672b79ffb2ab80cb69a9cb43745c9ef81bb92d78531d87c48` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `4734e185b01fdd3672b79ffb2ab80cb69a9cb43745c9ef81bb92d78531d87c48` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

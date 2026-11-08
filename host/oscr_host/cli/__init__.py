@@ -2,7 +2,7 @@
 """CLI do dumper: detect, dump, save-read, save-write, identify, search, info, ports, systems, errors, rom-write, flash-*.
 
 Feita para pessoas e para agentes de IA: --json (saída e erros), código de saída estável, progresso em JSON lines,
-nenhum prompt fora de um terminal. Referência: docs/cli.md.
+nenhum prompt fora de um terminal. Referência: docs/referencia/cli.md.
 
 Organização (um assunto por arquivo):
   errors.py      códigos de saída, CliError e a tradução de erro em saída

@@ -1,10 +1,10 @@
 # 16_bits — componentes que podem ser retirados e o que se perde
 
-> **Versões (D128):** a seção da chave de 5 V (Q1, R16 a R18, D2) e a linha do SW1 valem só como história da v1.2 de 2026-11-06. Hoje a **v1.2 não tem** essas peças nem o botão de reset; a **v1.3** tem o bloco de troca de `../../../docs/bloco-troca.md` (e também não tem o botão). Ver `versoes.md`.
+> **Versões (D128):** a seção da chave de 5 V (Q1, R16 a R18, D2) e a linha do SW1 valem só como história da v1.2 de 2026-11-06. Hoje a **v1.2 não tem** essas peças nem o botão de reset; a **v1.3** tem o bloco de troca de `../../../docs/referencia/bloco-troca.md` (e também não tem o botão). Ver `versoes.md`.
 
 Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). É a única com chave de 5 V (Q1), proteção das linhas de controle e botão de reset. Os fatos do SNES (PIC, Si5351, SA-1) são os de `boards/snes/docs/componentes-opcionais.md`.
 
-> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, `docs/troca-de-cartucho.md`, firmware.
+> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, `docs/referencia/troca-de-cartucho.md`, firmware.
 
 ## Peças do SNES (U1, U2, R2)
 
@@ -20,7 +20,7 @@ A rede `+5V_CART` (SNES, Mega Drive, Si5351, PIC, C2 a C6, R2, R15) vem do 5 V d
 
 | Peça | Retirar? | O que deixa de funcionar |
 |---|---|---|
-| **Q1** | **Só com ponte** | Sem Q1 e sem ponte, **nenhum slot, Si5351 nem PIC recebe 5 V**. Com um fio entre dreno e fonte (pads 2 e 3), a placa funciona, mas fica **sempre ligada**: perde o comando `POWER` de trocar o cartucho sem tirar o USB (D116, `docs/troca-de-cartucho.md`) e o aviso "não troque com USB ligado" volta a valer em tempo integral |
+| **Q1** | **Só com ponte** | Sem Q1 e sem ponte, **nenhum slot, Si5351 nem PIC recebe 5 V**. Com um fio entre dreno e fonte (pads 2 e 3), a placa funciona, mas fica **sempre ligada**: perde o comando `POWER` de trocar o cartucho sem tirar o USB (D116, `docs/referencia/troca-de-cartucho.md`) e o aviso "não troque com USB ligado" volta a valer em tempo integral |
 | **R16** 100 kΩ | Não | Sem o pull-up a porta flutua e Q1 pode ligar por conta própria no boot (cartucho energizado sem o firmware mandar) |
 | **R17** 100 Ω | Não | Série do comando D19; sem ele um curto na porta chega direto ao pino do Mega |
 | **R18** 1 kΩ + **D2** LED verde | Sim | Só o indicador de 5 V dos slots. Nenhum jogo afetado |

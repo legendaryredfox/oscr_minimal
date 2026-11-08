@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Fork oscr_minimal: laço de comandos do protocolo serial ligado aos núcleos do OSCR (docs/fork-oscr.md).
+// Fork oscr_minimal: laço de comandos do protocolo serial ligado aos núcleos do OSCR (docs/referencia/fork-oscr.md).
 #pragma once
 #include "syslibinc.h"
 #include "dumper/oscr_session.h"

@@ -42,9 +42,9 @@ def test_gui_lista_todos_os_mappers_nos_quatro_idiomas():
 
 def test_docs_listam_todos_os_mappers():
     nums = firmware_mappers()
-    uso = (ROOT / "docs/uso.md").read_text()
+    uso = (ROOT / "docs/referencia/uso.md").read_text()
     row = next(l for l in uso.splitlines() if l.startswith("| NES |"))
     assert has_all(row, nums) == []
-    proto = (ROOT / "docs/protocolo.md").read_text()
+    proto = (ROOT / "docs/referencia/protocolo.md").read_text()
     line = next(l for l in proto.splitlines() if "Mappers aceitos:" in l)
     assert has_all(line, nums) == []

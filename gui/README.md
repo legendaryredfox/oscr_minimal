@@ -4,8 +4,8 @@ Linux, macOS e Windows. Idiomas: **português (pt-BR), inglês, russo e chinês*
 
 | Módulo | Conteúdo |
 |---|---|
-| `shared/` | Protocolo v1 (`docs/protocolo.md`): quadros, CRC32, `OscrClient` (info, detect, dump, save-read, save-write), textos da interface. Código comum, com testes (`gradle :shared:jvmTest`). |
-| `cliApp/` | CLI `dumper` (JVM, sem janela) para agentes de IA e scripts. Núcleo em `shared/src/jvmMain/kotlin/oscr/cli/`; mesmo contrato da CLI Python (`docs/cli.md`). |
+| `shared/` | Protocolo v1 (`docs/referencia/protocolo.md`): quadros, CRC32, `OscrClient` (info, detect, dump, save-read, save-write), textos da interface. Código comum, com testes (`gradle :shared:jvmTest`). |
+| `cliApp/` | CLI `dumper` (JVM, sem janela) para agentes de IA e scripts. Núcleo em `shared/src/jvmMain/kotlin/oscr/cli/`; mesmo contrato da CLI Python (`docs/referencia/cli.md`). |
 | `desktopApp/` | Aplicativo Compose Multiplatform Desktop + porta serial via jSerialComm. |
 
 ```

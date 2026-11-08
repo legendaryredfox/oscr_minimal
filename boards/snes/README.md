@@ -6,9 +6,9 @@
 
 Versão mínima de uma função: um slot **SNES/SFC** (62p, 2,5 mm) em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo. Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_bits`).
 
-**CIC:** PIC12F629 em soquete (D89/D91). O RP2040-Zero (`docs/placa-v1.3-rp2040.md`) só entra depois de validado.
+**CIC:** PIC12F629 em soquete (D89/D91). O RP2040-Zero (`docs/planos/placa-v1.3-rp2040.md`) só entra depois de validado.
 
-**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, os mesmos da `16_bits`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP), com GND roteado junto e costurado com vias: **revisar o layout no KiCad antes de encomendar**. Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/revisao/widen_power.py`, D96).
+**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, os mesmos da `16_bits`); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP), com GND roteado junto e costurado com vias: **revisar o layout no KiCad antes de encomendar**. Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/historico/revisao/widen_power.py`, D96).
 
 ## Diferenças em relação à `16_bits`
 
@@ -24,7 +24,7 @@ O slot SNES fica no mesmo lugar (dentro da área do Mega); a placa encolheu porq
 
 ## Como foi feita
 
-Mesma receita da `megadrive/` (`boards/megadrive/README.md`), com `tools/snes/place.py` no lugar de `tools/megadrive/place.py`. Roteamento: `autoroute` do KiCad MCP **com o GND como trilha** (sem zonas), depois `add_zones.py`, `fix_nets.py` (D5, D16, D50), `stitch.py`. Roteando o GND como plano, dois pinos GND do Mega ficaram num grupo de cobre sem saída; roteando o GND junto, o Freerouting resolveu.
+Mesma receita da `megadrive/` (`boards/megadrive/README.md`), com `tools/boards/snes/place.py` no lugar de `tools/boards/megadrive/place.py`. Roteamento: `autoroute` do KiCad MCP **com o GND como trilha** (sem zonas), depois `add_zones.py`, `fix_nets.py` (D5, D16, D50), `stitch.py`. Roteando o GND como plano, dois pinos GND do Mega ficaram num grupo de cobre sem saída; roteando o GND junto, o Freerouting resolveu.
 
 ```
 python3 tools/check_netlist.py --board snes
@@ -37,7 +37,7 @@ tools/export_fab.sh snes v1.0
 
 ## Bloco de troca de cartucho (v1.1, D126)
 
-Circuito e motivo: `docs/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
+Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
 
 | Ref. | Valor | Função |
 |---|---|---|

@@ -12,7 +12,7 @@ from .errors import CliError, EXIT_ERROR, EXIT_NO_CART, EXIT_OK, EXIT_REFUSED, E
 from .output import emit, progress, save_result
 
 
-# ---------------------------------------------------------------- programador de flash genérico (sistema 7; docs/funcoes-oscr.md)
+# ---------------------------------------------------------------- programador de flash genérico (sistema 7; docs/referencia/funcoes-oscr.md)
 def _fp_job(args, need_type: bool = False, detect: bool = False):
     try:
         return RI.flashprog_params(args.bus, args.flash_kb, args.flash_type, args.sector_kb, args.buffer, need_type, detect)
@@ -26,7 +26,7 @@ def _fp_sid(args) -> int:
 
 def _fp_need(c, info: dict) -> None:
     if not info.get("flash_prog"):
-        raise CliError("unsupported_firmware", "este firmware não tem o programador de flash genérico", EXIT_ERROR, "atualize o firmware (docs/funcoes-oscr.md)")
+        raise CliError("unsupported_firmware", "este firmware não tem o programador de flash genérico", EXIT_ERROR, "atualize o firmware (docs/referencia/funcoes-oscr.md)")
 
 
 def _fp_read(args, c, job) -> bytes:

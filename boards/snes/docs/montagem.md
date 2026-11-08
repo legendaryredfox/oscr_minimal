@@ -6,7 +6,7 @@ Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais a
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão. Se algo dos testes das seções 5 e 6 falhar, pare e avise antes de seguir.
 >
-> **CIC:** esta versão usa o **PIC12F629** em soquete (D89/D91). O RP2040-Zero que o substituiria (`docs/placa-v1.3-rp2040.md`) ainda não foi validado e não está nesta placa.
+> **CIC:** esta versão usa o **PIC12F629** em soquete (D89/D91). O RP2040-Zero que o substituiria (`docs/planos/placa-v1.3-rp2040.md`) ainda não foi validado e não está nesta placa.
 
 ## 1. Lista de peças
 
@@ -87,14 +87,14 @@ Sem cartucho, sem PIC e sem módulo Si5351. Conecte o Mega ao PC pelo USB-C.
 
 ## 8. Gravar o firmware e testar
 
-Ver `docs/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
+Ver `docs/referencia/protocolo.md` e `firmware/README.md` para compilar e gravar. Depois:
 
 1. Rode o modo `MOCK` (sem cartucho): a CLI ou a GUI deve receber um padrão conhecido e o CRC32 deve bater.
 2. Se não aparecer a porta serial: veja a seção 10.
 
 ## 9. Primeiro dump real
 
-Use um cartucho simples: SNES LoROM, sem coprocessador, de pouco valor. Escolha o sistema, faça `detect` e depois `dump`. Compare o CRC32 com o do No-Intro e repita o dump 3 vezes (os CRC32 têm que ser iguais). Só depois teste cartuchos com SA-1 (precisam do PIC e do Si5351), saves e gravação de flash, na ordem de risco de `docs/uso.md` seção 7.
+Use um cartucho simples: SNES LoROM, sem coprocessador, de pouco valor. Escolha o sistema, faça `detect` e depois `dump`. Compare o CRC32 com o do No-Intro e repita o dump 3 vezes (os CRC32 têm que ser iguais). Só depois teste cartuchos com SA-1 (precisam do PIC e do Si5351), saves e gravação de flash, na ordem de risco de `docs/referencia/uso.md` seção 7.
 
 ## 10. Solução de problemas
 

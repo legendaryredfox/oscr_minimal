@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Leitor e escritor mínimo de S-expressions do KiCad (mesmo formato de tools/megadrive/strip_sch.py)."""
+"""Leitor e escritor mínimo de S-expressions do KiCad (mesmo formato de tools/boards/megadrive/strip_sch.py)."""
 def parse(s):
     i = 0
     def node():

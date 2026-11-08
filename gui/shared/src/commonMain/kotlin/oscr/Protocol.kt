@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package oscr
 
-/** Protocolo serial v1 (docs/protocolo.md). Código comum a todas as plataformas. */
+/** Protocolo serial v1 (docs/referencia/protocolo.md). Código comum a todas as plataformas. */
 object Proto {
     const val VERSION = 1
     const val MAX_PAYLOAD = 1024
@@ -25,7 +25,7 @@ enum class CartSystem(val id: Int, val ext: String) {
 /** Motivos de falha do lado do programa. O texto para o usuário vem de `describeError` (traduzido); nenhuma mensagem fixa aqui. */
 enum class Fail { NO_RESPONSE, STALLED, OPEN_PORT, SHORT_REPLY, BAD_END, BAD_PAYLOAD, BAD_KIND, BAD_SIZE, PARTIAL_WRITE, DISCONNECTED }
 
-/** O dispositivo respondeu ERRO com este código (docs/protocolo.md, seção de erros). */
+/** O dispositivo respondeu ERRO com este código (docs/referencia/protocolo.md, seção de erros). */
 class DeviceError(val code: Int, val text: String = "") : Exception("0x${code.toString(16).padStart(4, '0')}${if (text.isNotEmpty()) " ($text)" else ""}")
 class ProtocolError(val fail: Fail, val detail: String = "") : Exception("${fail.name}${if (detail.isNotEmpty()) ": $detail" else ""}")
 class TimeoutError(val fail: Fail = Fail.NO_RESPONSE, val detail: String = "") : Exception("${fail.name}${if (detail.isNotEmpty()) ": $detail" else ""}")
@@ -110,5 +110,5 @@ class DumpResult(val data: ByteArray, val crc32: Int, val kind: Int) {
     val crcHex get() = (crc32.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
 }
 
-/** Padrão do modo MOCK (docs/protocolo.md, seção 9). */
+/** Padrão do modo MOCK (docs/referencia/protocolo.md, seção 9). */
 fun mockData(size: Int = 32768) = ByteArray(size) { i -> (i * 7 + (i shr 8)).toByte() }

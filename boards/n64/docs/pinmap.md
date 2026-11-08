@@ -1,6 +1,6 @@
 # Mapa de pinos — slot N64 → pino do Arduino Mega 2560
 
-**FONTE DA VERDADE.** Gerado por `tools/n64/gen_pinmap.py` (não edite à mão). Mesmas fontes e convenções de `boards/16_and_8_bits/docs/pinmap.md`:
+**FONTE DA VERDADE.** Gerado por `tools/boards/n64/gen_pinmap.py` (não edite à mão). Mesmas fontes e convenções de `boards/16_and_8_bits/docs/pinmap.md`:
 
 - `ods` = `pinout.ods` (colunas `N64 ROM` e `N64 EEP`)
 - `sch` = `hardware/n64_adapter` (ref. `J1`)

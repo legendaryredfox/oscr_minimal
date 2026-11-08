@@ -82,7 +82,7 @@ Sem cartucho. Conecte o Mega ao PC pelo USB-C.
 
 ## 7. Gravar o firmware e testar
 
-Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII -t upload`. Protocolo: `docs/protocolo.md`. Depois:
+Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e SerialASCII -t upload`. Protocolo: `docs/referencia/protocolo.md`. Depois:
 
 1. Rode o modo `MOCK` (sem cartucho): a CLI ou a GUI deve receber um padrão conhecido e o CRC32 deve bater.
 2. `INFO` deve responder. Se não aparecer a porta serial: veja a seção 9.
@@ -92,7 +92,7 @@ Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e
 
 Use um cartucho de Mega Drive comum, de ROM mascarada de 512 KB a 1 MB e **sem valor** de coleção. Escolha o sistema Mega Drive, rode `detect` (o cabeçalho `SEGA MEGA DRIVE`/`SEGA GENESIS` deve ser lido e o D50 deve indicar cartucho presente) e depois `dump`. Compare o CRC32 com o do No-Intro (ou com a base de dados do projeto, `identify`). Repita o dump 3 vezes: os três CRC32 têm que ser iguais.
 
-Só depois disso, e na ordem de risco de `docs/uso.md` seção 7, teste saves (SRAM com backup) e, por último, a gravação de flash (`WRITE_ROM`), em cartucho repro **sem valor**.
+Só depois disso, e na ordem de risco de `docs/referencia/uso.md` seção 7, teste saves (SRAM com backup) e, por último, a gravação de flash (`WRITE_ROM`), em cartucho repro **sem valor**.
 
 ## 9. Solução de problemas
 

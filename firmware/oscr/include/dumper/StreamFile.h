@@ -2,7 +2,7 @@
 // Fork oscr_minimal: no lugar do cartão SD, o "arquivo" do OSCR é um fluxo do protocolo serial.
 //  - aberto para escrita (O_CREAT/O_WRITE/O_RDWR): cada `write` vai ao PC em quadros DATA (src/dumper/oscr_session.cpp);
 //  - aberto só para leitura: cada `read` pede ao PC o próximo trecho do arquivo (WRITE_SAVE).
-// Sem SD não há `seek` de verdade: só o que os núcleos fazem na prática está coberto (ver docs/fork-oscr.md).
+// Sem SD não há `seek` de verdade: só o que os núcleos fazem na prática está coberto (ver docs/referencia/fork-oscr.md).
 #pragma once
 #include "syslibinc.h"
 

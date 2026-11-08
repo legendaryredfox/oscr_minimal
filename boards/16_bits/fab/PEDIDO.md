@@ -2,11 +2,13 @@
 
 > **Versões (D128):** o texto abaixo é do pedido da v1.2 de 2026-11-06. A v1.2 foi refeita em 2026-11-07 **sem** Q1, R16 a R18, D2 e SW1 (zip novo `dumper-v1.2-jlcpcb.zip`, gerbers em `gerbers-v1.2/`; confira o SHA-256 com `sha256sum`). A **v1.3** (`dumper-v1.3-jlcpcb.zip`, gerbers em `gerbers/`) leva o bloco de troca e continua sem o botão. Contagem de furos: v1.2 e v1.3 têm os mesmos 7 furos não metalizados; o número de furos metalizados e de vias mudou, **leia a pré-visualização da fábrica, não a tabela abaixo**. Ver `docs/versoes.md`.
 
+> **D130 (2026-11-08):** a v1.2 foi refeita **sem os 12 TVS (D3 a D14)**; o zip e o SHA-256 abaixo são os novos, e as linhas sobre TVS no texto são da v1.3. A v1.3 não mudou.
+
 Placa **SNES + Mega Drive**, 2 camadas, 108,1 × 86,1 mm. Feita em 2026-11-04 a partir de `../hardware/dumper.kicad_pcb`.
 
 ## Arquivo
 
-Envie `dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`). SHA-256: `564675f44429591462b48ce2005fdbcae995e69293a390e58ed9c5585113447a`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
+Envie `dumper-v1.2-jlcpcb.zip`. SHA-256: `aee22f2c885a84f732ba62a4675615c2752872510255a19cf38f8e8f922ca59b`. Revisada em 2026-11-06 (D97): trilhas de alimentação alargadas até 0,8 mm onde cabe e alívio térmico dos 3 pads de GND que davam `starved_thermal` trocado por conexão sólida; mesmo silk, mesmos furos e mesma netlist. Os `dumper-v1.0-*.zip` que ainda estão nesta pasta são da revisão anterior e **não** devem ser usados.
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`. A pasta `gerbers/` tem os mesmos arquivos mais o `.gbrjob` e os mapas de furos (não vão no zip).
 
@@ -60,7 +62,7 @@ O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos 
 
 ## Antes de pagar
 
-1. Veja a prévia de cima e de baixo na página da JLCPCB e compare com `previa-cima.png` e `previa-baixo.png` desta pasta (a de baixo está espelhada, como se vira a placa).
+1. Veja a prévia de cima e de baixo na página da JLCPCB e compare com `../renders/16_bits-v1.2-cima.png` e `../renders/16_bits-v1.2-baixo.png` (a de baixo está espelhada, como se vira a placa).
 2. A largura de 108 mm passa de 100 mm, então cai na faixa de preço maior.
 3. O silk de baixo tem 3 linhas de crédito (OSCR, sanni, github): conferir que não ficou cortado.
 
@@ -91,6 +93,6 @@ Lista completa e observações: `../docs/bom.md`. Resumo:
 
 ## v1.0 (`dumper-v1.0`, a antiga `rev2`)
 
-O `dumper-v1.0-jlcpcb.zip` (cópia: `-gerbers-`) é a v1.0 revisada em D97 e **substitui a v1.0 original** (a que foi encomendada, com todas as trilhas de alimentação em 0,3 mm; D110 tirou os gerbers dela do repositório, o histórico do git os guarda). É a **mesma v1.0, sem `/CART`, sem C5 e C6 e sem pontos de teste**, com duas correções (D97): trilhas do `+5V` alargadas até 0,8 mm onde cabe (22 segmentos em 0,8 mm, 9 em 0,6, 1 em 0,5, 2 em 0,4; 14 ficam em 0,3 mm entre pads) e conexão sólida nos 3 pads de GND que davam `starved_thermal`. Silk, furos (325 metalizados, 4 não metalizados), contorno e netlist iguais à v1.0. SHA-256: `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62`. Fontes em `../hardware-v1.0/`, gerbers em `gerbers-v1.0/`.
+O `dumper-v1.0-jlcpcb.zip` é a v1.0 revisada em D97 e **substitui a v1.0 original** (a que foi encomendada, com todas as trilhas de alimentação em 0,3 mm; D110 tirou os gerbers dela do repositório, o histórico do git os guarda). É a **mesma v1.0, sem `/CART`, sem C5 e C6 e sem pontos de teste**, com duas correções (D97): trilhas do `+5V` alargadas até 0,8 mm onde cabe (22 segmentos em 0,8 mm, 9 em 0,6, 1 em 0,5, 2 em 0,4; 14 ficam em 0,3 mm entre pads) e conexão sólida nos 3 pads de GND que davam `starved_thermal`. Silk, furos (325 metalizados, 4 não metalizados), contorno e netlist iguais à v1.0. SHA-256: `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62`. Fontes em `../hardware-v1.0/`, gerbers em `gerbers-v1.0/`.
 
 DRC: 0 erros, 0 ligações abertas, 5 avisos de biblioteca. `check_netlist --board 16_bits` só reclama dos itens da v. 1.2 (`/CART`, C5, C6, TP1 a TP6), que a v1.0 não tem. Exportar de novo: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh 16_bits v1.0`.

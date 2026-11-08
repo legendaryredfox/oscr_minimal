@@ -5,11 +5,12 @@ vendor/pk2cmd/
 vendor/ardpicprog/
 tools/pic/bin/
 # Gerados pelo KiCad / MCP
-boards/*/hardware/.mcp-backups/
-boards/*/hardware/*_drc_violations.json
-boards/*/hardware/*.kicad_prl
-boards/*/hardware/fp-info-cache
-boards/*/hardware/*-backups/
+boards/*/hardware*/.mcp-backups/
+boards/*/hardware*/*_drc_violations.json
+boards/*/hardware*/*.kicad_prl
+boards/*/hardware*/fp-info-cache
+boards/*/hardware*/*-backups/
+boards/*/hardware*/~*.lck
 *.bak
 __pycache__/
 *.pyc

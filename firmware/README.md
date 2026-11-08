@@ -2,7 +2,7 @@
 
 | Pasta | O que é |
 |---|---|
-| `oscr/` | **Firmware atual**: fork do firmware novo do OSCR (`vendor/oscr/firmware`), sem SD, com o laço do protocolo serial em `src/dumper/`. Plano e estado: `docs/fork-oscr.md`; alterações no upstream: `oscr/README-FORK.md`. |
+| `oscr/` | **Firmware atual**: fork do firmware novo do OSCR (`vendor/oscr/firmware`), sem SD, com o laço do protocolo serial em `src/dumper/`. Plano e estado: `docs/referencia/fork-oscr.md`; alterações no upstream: `oscr/README-FORK.md`. |
 | `oscr/pc-tests/` | Testes do protocolo no PC (framing, CRC32, sessão, modo MOCK e modo fluxo) e o `sim_stdio` que o teste cruzado do `host/` usa. |
 | `arquivo/` | **Arquivado (D76)**: o firmware próprio anterior (`oscr_serial/`, `arduino/`, `platformio/`). Ver `arquivo/README.md`. |
 

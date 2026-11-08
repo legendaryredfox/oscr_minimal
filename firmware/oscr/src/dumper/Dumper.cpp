@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Fork oscr_minimal: laço de comandos do protocolo serial (docs/protocolo.md) ligado aos núcleos do OSCR.
-// Estado: SNES, NES/Famicom, Mega Drive, GBA e GB/GBC (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE), nunca rodados em hardware (docs/fork-oscr.md).
+// Fork oscr_minimal: laço de comandos do protocolo serial (docs/referencia/protocolo.md) ligado aos núcleos do OSCR.
+// Estado: SNES, NES/Famicom, Mega Drive, GBA e GB/GBC (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE), nunca rodados em hardware (docs/referencia/fork-oscr.md).
 #include "syslibinc.h"
 #include "config.h"
 
@@ -329,7 +329,7 @@ namespace OSCR::Dumper
     bool nesHasSave(uint16_t m) { return m == 1 || m == 4 || m == 5 || m == 69 || m == 118; }
 
     /**
-     * Confere mapper e tamanhos de ROM (KB) contra os limites do protocolo (docs/protocolo.md, NES/Famicom).
+     * Confere mapper e tamanhos de ROM (KB) contra os limites do protocolo (docs/referencia/protocolo.md, NES/Famicom).
      * Devolve 0 = ok, E_SISTEMA = mapper ou tamanho além do registrador, E_ARGUMENTO = tamanhos inválidos.
      */
     uint16_t nesCheckRom(uint16_t m, uint16_t prg, uint16_t chr)

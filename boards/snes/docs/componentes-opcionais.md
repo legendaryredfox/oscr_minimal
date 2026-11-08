@@ -9,7 +9,7 @@ Placa só SNES/Super Famicom (`boards/snes/`). Esta tabela diz o que acontece se
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
 | **U2** PIC12F629 (CIC) + soquete | **Perde o SA-1** | O PIC emula o CIC do console; o SA-1 só responde com o CIC rodando (D54). O resto da leitura segue | Só cartuchos **SA-1** (lista abaixo). LoROM, HiROM, ExHiROM, SuperFX, S-DD1, SPC7110 e Cx4 não dependem dele |
-| **U1** módulo Si5351 | **Perde o SA-1** e o PIC fica sem clock | Sai o clock mestre (pino 1, 21,477 MHz), o do CPU (pino 57) e o do CIC (pino 56). O PIC recebe o CLK2 do Si5351: sem módulo, o PIC também não roda, mesmo montado | Os mesmos SA-1. Futuros: **Satellaview (BS-X)** e **SF Memory Cassette**, que o OSCR lê com o clock mestre (ainda não portados, `docs/funcoes-oscr.md`). Os demais cartuchos comuns não dependem |
+| **U1** módulo Si5351 | **Perde o SA-1** e o PIC fica sem clock | Sai o clock mestre (pino 1, 21,477 MHz), o do CPU (pino 57) e o do CIC (pino 56). O PIC recebe o CLK2 do Si5351: sem módulo, o PIC também não roda, mesmo montado | Os mesmos SA-1. Futuros: **Satellaview (BS-X)** e **SF Memory Cassette**, que o OSCR lê com o clock mestre (ainda não portados, `docs/referencia/funcoes-oscr.md`). Os demais cartuchos comuns não dependem |
 | **R2** 1 kΩ (pull-up do `/IRQ`, D7) | Sim, sem perda conhecida | A linha `/IRQ` (pino 18 do slot) fica solta. O firmware atual só configura o pino como entrada na abertura e não o lê depois | Nenhum conhecido. Inferência: o OSCR HW5 tem o resistor; não achei uso dele nos cores ligados |
 | **D1** LED + **R1** 220 Ω | Sim | Some a indicação de atividade (D38) | Nenhum |
 | **TP1 a TP5** pontos de teste | Sim | Só o acesso para medir `5V`, `GND`, `/RD`, `/WR`, `/IRQ` | Nenhum |

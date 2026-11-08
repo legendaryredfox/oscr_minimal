@@ -1,6 +1,6 @@
 # Estudo final da placa 16_bits v. 1.2 (2026-11-06)
 
-Pedido do usuário: o projeto da v. 1.2 será fechado; fazer um último estudo para avaliar melhorias. Decisão do usuário na mesma conversa: **o RP2040 (no lugar do PIC) só entra na v. 1.3, se der certo** (`docs/placa-v1.3-rp2040.md`, D89). A v. 1.2 continua com o PIC12F629 em soquete.
+Pedido do usuário: o projeto da v. 1.2 será fechado; fazer um último estudo para avaliar melhorias. Decisão do usuário na mesma conversa: **o RP2040 (no lugar do PIC) só entra na v. 1.3, se der certo** (`docs/planos/placa-v1.3-rp2040.md`, D89). A v. 1.2 continua com o PIC12F629 em soquete.
 
 O estudo foi feito só no PC: ERC, DRC com paridade, `check_netlist.py`, leitura do PCB pelo `pcbnew` (larguras, furos, distâncias) e revisão visual do silk. **Nada foi montado nem medido num Mega ou num cartucho reais.**
 
@@ -40,7 +40,7 @@ Nas placas de um cartucho o silk agora diz "NÃO COLOQUE NEM RETIRE / O CARTUCHO
 
 ### 2.4 Sem proteção de porta, sem reset, sem chave de alimentação
 
-Já documentados em `docs/melhorias-megadrive-hardware.md` (HW-MD-3 e HW-MD-4 não coube) e agora sem custo de decisão para a v. 1.2: ficam para a v. 1.3. Ver a seção 3.
+Já documentados em `docs/planos/melhorias-megadrive-hardware.md` (HW-MD-3 e HW-MD-4 não coube) e agora sem custo de decisão para a v. 1.2: ficam para a v. 1.3. Ver a seção 3.
 
 ## 3. Melhorias para a v. 1.3 (o RP2040 já obriga a refazer o roteamento)
 
@@ -51,7 +51,7 @@ Como a v. 1.3 refaz o roteamento de qualquer jeito, é a hora de pagar o que nã
 3. **Furos M3 alinhados com os do Mega** (dois ou três), para o shield não depender só do atrito dos 85 pinos: puxar um cartucho do slot levanta o shield e esse esforço hoje passa pelos pinos e pelo Mega. É a decisão do usuário (D25) de ficar só com os 4 furos de canto; registrar o motivo da mudança se ela for reaberta.
 4. **Botão de reset** (o pad `RST1` do Mega está sem ligação e o botão do Mega fica sob o shield).
 5. **Pull-up de `/VRES` com pad DNP** (HW-MD-1), só se for usar o Open EverDrive.
-6. Se o RP2040 entrar: o level shifter bidirecional dos dois fios do CIC (slot 55 e 24) e a trilha do `CLK2`; ver `docs/placa-v1.3-rp2040.md`.
+6. Se o RP2040 entrar: o level shifter bidirecional dos dois fios do CIC (slot 55 e 24) e a trilha do `CLK2`; ver `docs/planos/placa-v1.3-rp2040.md`.
 
 ## 4. Pendências que só o hardware responde (inalteradas)
 
@@ -61,8 +61,8 @@ Medidas reais dos slots e do módulo Si5351 (D17, D23), lado da etiqueta (D27, D
 
 | Achado | O que foi feito | Verificação |
 |---|---|---|
-| 2.1 C4 longe do PIC | C4 movido para (92; 43,5)–(97; 43,5), acima do soquete: **2,5 mm do VDD e 3,6 mm do GND** (antes 21,7 e 20 mm). 5V pelo pino 1 por uma trilha de 0,5 mm; GND pela zona de cobre que passa junto ao pino 8. O pad antigo era também a passagem do 5V e do GND entre camadas: duas vias (0,6/0,3 mm) no lugar. Rótulo do U2 movido para a direita; silk e pátio do C4 só acima do soquete (o corpo de 2,5 mm toca a borda do soquete por 0,2 mm; aviso na `montagem.md`). `tools/revisao/v12_c4.py` | DRC 0 erros, 0 abertos; `check_netlist` 67 nets e 225 ligações; ERC 0 |
-| 2.2 aviso do USB | duas linhas "NÃO COLOQUE NEM RETIRE / O CARTUCHO COM USB LIGADO" junto a "UM CARTUCHO POR VEZ" (menor), data do silk 2026-11-06. `tools/revisao/v12_silk.py` | DRC de silk limpo; prévia refeita |
+| 2.1 C4 longe do PIC | C4 movido para (92; 43,5)–(97; 43,5), acima do soquete: **2,5 mm do VDD e 3,6 mm do GND** (antes 21,7 e 20 mm). 5V pelo pino 1 por uma trilha de 0,5 mm; GND pela zona de cobre que passa junto ao pino 8. O pad antigo era também a passagem do 5V e do GND entre camadas: duas vias (0,6/0,3 mm) no lugar. Rótulo do U2 movido para a direita; silk e pátio do C4 só acima do soquete (o corpo de 2,5 mm toca a borda do soquete por 0,2 mm; aviso na `montagem.md`). `tools/historico/revisao/v12_c4.py` | DRC 0 erros, 0 abertos; `check_netlist` 67 nets e 225 ligações; ERC 0 |
+| 2.2 aviso do USB | duas linhas "NÃO COLOQUE NEM RETIRE / O CARTUCHO COM USB LIGADO" junto a "UM CARTUCHO POR VEZ" (menor), data do silk 2026-11-06. `tools/historico/revisao/v12_silk.py` | DRC de silk limpo; prévia refeita |
 | 2.3 `_lib` | variante `Mega2560_R3_Shield_4MH` (85 pads) em `boards/_lib/`, para a v. 1.3; as placas atuais continuam com o `Mega2560_R3_Shield` (o aviso `lib_footprint_mismatch` do A1 é esperado) | só arquivo e README |
 | Fabricação | gerbers, zip, prévias e SHA-256 refeitos; 346 furos metalizados (344 + 2 vias novas), 4 não metalizados, 96 vias | `tools/export_fab.sh 16_bits v1.2` |
 

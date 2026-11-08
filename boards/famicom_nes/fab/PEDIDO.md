@@ -2,7 +2,7 @@
 
 Placa **Famicom + NES**, 2 camadas, 117,1 × 79,1 mm. Refeita em 2026-11-07 (D124) a partir de `../hardware/dumper.kicad_pcb`. **Nada encomendado.**
 
-Envie `dumper-v1.1-jlcpcb.zip` (cópia idêntica: `dumper-v1.1-gerbers-jlcpcb.zip`). SHA-256: `62a12edc95a34283508c19c4b81015b4dc37fc9d3e0c1bb268a28bf655039bb1` (muda a cada exportação; confira com `sha256sum`).
+Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `62a12edc95a34283508c19c4b81015b4dc37fc9d3e0c1bb268a28bf655039bb1` (muda a cada exportação; confira com `sha256sum`).
 
 Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 

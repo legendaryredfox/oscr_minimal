@@ -1,7 +1,7 @@
 # Gravar o PIC12F629 (CIC do SNES) com o PICkit 2
 
 Para a placa `16_bits` v1.0, que leva o PIC no soquete U2. A v1.3 troca o PIC por um RP2040
-(`docs/placa-v1.3-rp2040.md`); este guia vale para a v1.0 e para qualquer PIC12F629 do OSCR.
+(`docs/planos/placa-v1.3-rp2040.md`); este guia vale para a v1.0 e para qualquer PIC12F629 do OSCR.
 
 O PIC só é preciso para cartuchos SNES com SA-1. Hex a gravar:
 `firmware/cic_rp2040/third_party/snescic-lock-resync.hex` (do sd2snes, GPL v2).

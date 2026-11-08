@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Backend dos cartuchos reais: SNES (LoROM/HiROM), NES/Famicom (mapper 0), Mega Drive, GBA.
 // A lógica (cabeçalhos, tamanhos, mapeamento de endereços) é testada no PC com cartuchos simulados.
-// Limites desta versão estão em docs/protocolo.md e docs/uso.md.
+// Limites desta versão estão em docs/referencia/protocolo.md e docs/referencia/uso.md.
 #pragma once
 #include "oscr_bus.h"
 #include "oscr_session.h"

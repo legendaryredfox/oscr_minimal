@@ -12,7 +12,7 @@ HW = Path(sys.argv[1]); VERSAO = sys.argv[2]
 AX, AY = float(sys.argv[3]), float(sys.argv[4])
 REGION = [float(v) for v in sys.argv[5:9]] if len(sys.argv) >= 9 else None
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "revisao"))
+sys.path.insert(0, str(HERE.parent / "historico" / "revisao"))
 from schlib import placed
 mm = pcbnew.FromMM; tomm = pcbnew.ToMM
 V = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))

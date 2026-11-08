@@ -14,7 +14,7 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` (cópia idêntica: `dumper-v1.2-gerbers-jlcpcb.zip`) |
+| Arquivo | `boards/16_bits/fab/dumper-v1.2-jlcpcb.zip` |
 | Camadas | 2 |
 | Dimensões | 108,1 × 86,1 mm (largura acima de 100 mm: faixa de preço maior) |
 | Espessura | 1,6 mm |

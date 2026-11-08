@@ -8,7 +8,7 @@ import sys
 from . import ui
 
 
-# Códigos de saída (estáveis; docs/cli.md)
+# Códigos de saída (estáveis; docs/referencia/cli.md)
 EXIT_OK, EXIT_ERROR, EXIT_NO_CART, EXIT_NO_DEVICE, EXIT_REFUSED, EXIT_USAGE, EXIT_INTERRUPTED = 0, 1, 2, 3, 4, 64, 130
 
 CLI_EXIT_CODES = {

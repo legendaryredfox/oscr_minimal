@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Gravação de ROM em cartuchos de flash do NES (WRITE_ROM, docs/protocolo.md). Sequências do OSCR original (NES.cpp).
+// Gravação de ROM em cartuchos de flash do NES (WRITE_ROM, docs/referencia/protocolo.md). Sequências do OSCR original (NES.cpp).
 #pragma once
 #include "syslibinc.h"
 #include "dumper/oscr_session.h"

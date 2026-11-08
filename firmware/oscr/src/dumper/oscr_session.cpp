@@ -111,7 +111,7 @@ void Session::handle() {
 void Session::do_info(uint8_t seq) {
   uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, uint8_t(be_.flags() | (be_.power_switch() ? 32 : 0)), 0, 0, 0, 0};   // bit5: chave de 5V (D115)
   put_u16(p + 5, be_.systems());
-  put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/protocolo.md, seção 3)
+  put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/referencia/protocolo.md, seção 3)
   send(T_INFO_RESP, seq, p, 9);
 }
 

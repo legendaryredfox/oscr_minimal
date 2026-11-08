@@ -2,7 +2,7 @@
 
 Placa de 5 slots v1.0: SNES, NES, Famicom, Mega Drive e GBA (`boards/16_and_8_bits/`). Sem chave de 5 V (Q1) nem proteção das linhas. Um cartucho por vez.
 
-> **Nada aqui foi testado em hardware.** Fontes: `docs/bom.md`, `pinmap.md`, firmware, D54 e `docs/limites-gb.md`.
+> **Nada aqui foi testado em hardware.** Fontes: `docs/bom.md`, `pinmap.md`, firmware, D54 e `docs/referencia/limites-gb.md`.
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
@@ -18,7 +18,7 @@ Placa de 5 slots v1.0: SNES, NES, Famicom, Mega Drive e GBA (`boards/16_and_8_bi
 
 Como os slots dividem os mesmos barramentos, pode-se montar só os slots que o usuário vai usar; os demais ficam vazios sem prejuízo, **menos** o desacoplamento de cada slot (montar o capacitor do slot usado). Sem PIC e sem Si5351 a placa lê tudo menos SA-1. Sem U3 e seus capacitores perde-se tudo do GBA (inclusive GB/GBC por adaptador), mas o slot GBA pode continuar vazio.
 
-Sobre GB/GBC a 3,3 V: ver `docs/limites-gb.md` (alguns GB antigos podem falhar; jumper para 5 V só para GB/GBC, nunca GBA).
+Sobre GB/GBC a 3,3 V: ver `docs/referencia/limites-gb.md` (alguns GB antigos podem falhar; jumper para 5 V só para GB/GBC, nunca GBA).
 
 ## Bloco de troca de cartucho (v1.1)
 

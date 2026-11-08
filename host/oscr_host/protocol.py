@@ -16,9 +16,9 @@ CRC_LEN = 4
 # host -> dispositivo
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
-T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/protocolo.md)
-T_POWER = 0x0D                         # chave de 5V dos slots: liga, desliga ou consulta (docs/protocolo.md, D115)
-T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/protocolo.md)
+T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/referencia/protocolo.md)
+T_POWER = 0x0D                         # chave de 5V dos slots: liga, desliga ou consulta (docs/referencia/protocolo.md, D115)
+T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/referencia/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
@@ -44,9 +44,9 @@ ERRORS = {
 # o que fazer para cada erro (a GUI tem os mesmos textos traduzidos em I18n.kt)
 ERROR_HINTS = {
     1: "atualize o firmware e o programa para a mesma versão",
-    2: "o chip, o mapper ou o sistema deste cartucho ainda não é lido (veja docs/uso.md)",
+    2: "o chip, o mapper ou o sistema deste cartucho ainda não é lido (veja docs/referencia/uso.md)",
     3: "encaixe o cartucho até o fim, limpe os contatos e confira o sistema escolhido",
-    4: "confira mapper, PRG, CHR, RAM e o tamanho do arquivo (docs/protocolo.md)",
+    4: "confira mapper, PRG, CHR, RAM e o tamanho do arquivo (docs/referencia/protocolo.md)",
     5: "troque o cabo, evite hubs USB ou use --baud 115200",
     6: "refaça a leitura; se repetir, limpe os contatos e troque o cabo",
     7: "confira a bateria e os contatos; numa gravação o save pode ter ficado incompleto: tente de novo e use o backup",
@@ -151,13 +151,13 @@ def build_detect(system: int, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -
 
 
 def build_erase(system: int, chip: int, prg_kb: int, chr_kb: int) -> bytes:
-    """ERASE (0x0C): sistema e as três opções do programador de flash genérico (docs/protocolo.md)."""
+    """ERASE (0x0C): sistema e as três opções do programador de flash genérico (docs/referencia/protocolo.md)."""
     return struct.pack("<BHHH", system, chip, prg_kb, chr_kb)
 
 
 def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
     base = struct.pack("<BH", system, block)
-    if mapper or prg_kb or chr_kb:      # opções do NES/Famicom (docs/protocolo.md)
+    if mapper or prg_kb or chr_kb:      # opções do NES/Famicom (docs/referencia/protocolo.md)
         base += struct.pack("<HHH", mapper, prg_kb, chr_kb)
     return base
 
@@ -170,7 +170,7 @@ def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ra
 
 
 def build_write_rom(system: int, size: int, block: int = 0, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> bytes:
-    """WRITE_ROM: como o WRITE_SAVE, mas as três opções são sempre enviadas: chip, PRG e CHR em KB (docs/protocolo.md)."""
+    """WRITE_ROM: como o WRITE_SAVE, mas as três opções são sempre enviadas: chip, PRG e CHR em KB (docs/referencia/protocolo.md)."""
     return struct.pack("<BIHHHH", system, size, block, chip, prg_kb, chr_kb)
 
 
@@ -245,7 +245,7 @@ def parse_error(p: bytes) -> DeviceError:
     return DeviceError(code, p[3:3 + n].decode("ascii", "replace"))
 
 
-# padrão do modo MOCK (docs/protocolo.md, seção 9)
+# padrão do modo MOCK (docs/referencia/protocolo.md, seção 9)
 MOCK_SIZE = 32768
 
 
