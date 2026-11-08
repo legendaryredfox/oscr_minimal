@@ -6,6 +6,7 @@ from .. import database as DB
 from .. import protocol as P
 from ..client import Client, TimeoutError_
 from ..transport import SerialTransport, Transport
+from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_USAGE
 
 
@@ -21,8 +22,7 @@ def list_ports() -> list[str]:
 def auto_port() -> str:
     ports = [p for p in list_ports() if any(k in p for k in ("ttyUSB", "ttyACM", "cu.usb", "COM"))]
     if not ports:
-        raise CliError("no_port", "nenhuma porta serial encontrada", EXIT_NO_DEVICE,
-                       "conecte o dispositivo, use --port, ou --simulate sem hardware (no Linux: grupo dialout)")
+        raise CliError("no_port", tr("err.no_port"), EXIT_NO_DEVICE, tr("err.no_port.hint"))
     return ports[0]
 
 
@@ -60,16 +60,14 @@ def _open(args) -> tuple[Client, Transport, dict]:
         try:
             t = SerialTransport(port, b)
         except OSError as e:                              # porta ocupada, sem permissão (grupo dialout), cabo solto
-            raise CliError("open_port", f"não foi possível abrir {port}: {e}", EXIT_NO_DEVICE,
-                           "feche outros programas que usam a porta; no Linux o usuário precisa estar no grupo dialout") from e
+            raise CliError("open_port", tr("err.open_port", port=port, error=e), EXIT_NO_DEVICE, tr("err.open_port.hint")) from e
         c = Client(t, timeout=0.5)
         try:
             return c, t, c.info()
         except TimeoutError_ as e:
             last = e
             t.close()
-    raise CliError("no_response", f"sem resposta do dispositivo em {port} ({', '.join(map(str, bauds))} baud): {last}", EXIT_NO_DEVICE,
-                   "confira se o firmware está gravado, a porta e o baud (--baud 115200)")
+    raise CliError("no_response", tr("err.no_response", port=port, bauds=", ".join(map(str, bauds)), error=last), EXIT_NO_DEVICE, tr("err.no_response.hint"))
 
 
 def system_id(name: str) -> int:

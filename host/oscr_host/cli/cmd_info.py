@@ -7,6 +7,7 @@ from .. import protocol as P
 from ..planned import PLANNED
 from . import common, ui
 from .errors import CLI_EXIT_CODES
+from .messages import tr
 from .output import emit
 
 
@@ -32,10 +33,10 @@ def cmd_systems(args) -> int:
 
 
 def cmd_errors(args) -> int:
-    dev = [{"code": c, "text": t, "hint": P.ERROR_HINTS.get(c)} for c, t in P.ERRORS.items()]
-    cli = [{"exit_code": c, "meaning": m} for c, m in CLI_EXIT_CODES.items()]
+    dev = [{"code": c, "text": tr(f"dev.{c}.msg"), "hint": tr(f"dev.{c}.hint")} for c in P.ERRORS]
+    cli = [{"exit_code": c, "meaning": tr(f"exit.{c}")} for c in CLI_EXIT_CODES]
     emit(args, {"device_errors": dev, "exit_codes": cli},
-         [f"saída {c}: {m}" for c, m in CLI_EXIT_CODES.items()] + [f"erro 0x{d['code']:04X}: {d['text']}" for d in dev])
+         [tr("errors.exit_line", code=c["exit_code"], text=c["meaning"]) for c in cli] + [tr("errors.dev_line", code=d["code"], text=d["text"]) for d in dev])
     return 0
 
 

@@ -8,6 +8,7 @@ from pathlib import Path
 from .. import protocol as P
 from .. import romimage as RI
 from . import common
+from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_NO_CART, EXIT_OK, EXIT_REFUSED, EXIT_USAGE
 from .output import emit, progress, save_result
 
@@ -95,10 +96,10 @@ def cmd_flash_erase(args) -> int:
     job = _fp_job(args, need_type=args.bus in ("8", "plcc32"))
     if not args.yes:
         if not sys.stdin.isatty():
-            raise CliError("refused", "recusado: apagar o chip PERDE tudo o que ele tem. Em modo não interativo confirme com --yes.", EXIT_REFUSED, "repita o comando com --yes")
+            raise CliError("refused", tr("refused.erase"), EXIT_REFUSED, tr("refused.repeat"))
         ans = input(f"Apagar {RI.FLASHPROG_LABEL[args.bus]} de {job.prg_kb} KB? Isso PERDE o conteúdo. Continuar? [s/N] ")
-        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
-            print("cancelado")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
+            print(tr("cancelled"))
             return 1
     c, t, info = common.connect(args)
     try:
@@ -119,10 +120,10 @@ def cmd_flash_write(args) -> int:
     what = f"{RI.FLASHPROG_LABEL[args.bus]}: {len(job.rom)} bytes em um chip de {job.prg_kb} KB"
     if not args.yes:
         if not sys.stdin.isatty():
-            raise CliError("refused", "recusado: gravar APAGA o chip. Em modo não interativo confirme com --yes.", EXIT_REFUSED, "repita o comando com --yes")
+            raise CliError("refused", tr("refused.write"), EXIT_REFUSED, tr("refused.repeat"))
         ans = input(f"Gravar {what}? Isso APAGA o conteúdo atual do chip. Continuar? [s/N] ")
-        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
-            print("cancelado")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
+            print(tr("cancelled"))
             return 1
     c, t, info = common.connect(args)
     try:

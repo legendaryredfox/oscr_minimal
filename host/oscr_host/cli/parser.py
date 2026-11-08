@@ -9,6 +9,7 @@ import sys
 from .. import protocol as P
 from .. import romimage as RI
 from .. import __version__
+from . import messages
 from .cmd_db import cmd_identify, cmd_search
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
@@ -19,6 +20,13 @@ from .cmd_power import cmd_power
 from .cmd_rom import cmd_rom_write
 from .cmd_save import cmd_save_read, cmd_save_write
 from .errors import EXIT_USAGE
+
+
+def _lang_arg(v: str) -> str:
+    n = messages.normalize(v)
+    if n is None:
+        raise argparse.ArgumentTypeError(f"idioma desconhecido: {v} (use {', '.join(messages.LANGS)})")
+    return n
 
 
 class _Parser(argparse.ArgumentParser):
@@ -51,6 +59,8 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
                    help="cores e arte ASCII: auto (só em terminal; respeita NO_COLOR), always, never. Com --json nunca há enfeite")
     p.add_argument("--power", choices=("auto", "keep"), default=d("auto"),
                    help="placa com chave de 5V: auto (padrão) liga o 5V dos slots antes do comando e o mantém ligado; keep não mexe no 5V")
+    p.add_argument("--lang", default=d(None), type=_lang_arg, metavar="IDIOMA",
+                   help="idioma das mensagens: pt-BR, en, ru ou zh-CN (padrão: a variável OSCR_LANG ou a locale; reserva: en). Só o texto para pessoas muda; as chaves de --json e os códigos de saída não (D133)")
     p.add_argument("--progress", choices=("auto", "none", "jsonl"), default=d("auto"),
                    help="progresso em stderr: auto (barra se for terminal), none, jsonl (uma linha JSON por 1%%)")
 

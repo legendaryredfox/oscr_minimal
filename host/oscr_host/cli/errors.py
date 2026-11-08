@@ -6,6 +6,7 @@ import json
 import sys
 
 from . import ui
+from .messages import tr
 
 
 # Códigos de saída (estáveis; docs/referencia/cli.md)
@@ -39,5 +40,5 @@ def fail(args_json: bool, e: CliError) -> int:
         if ui.color_on(sys.stderr):
             print(ui.error_line(e.message, e.hint, sys.stderr), file=sys.stderr)
         else:
-            print(f"erro: {e.message}" + (f". Dica: {e.hint}" if e.hint else ""), file=sys.stderr)
+            print(f"{tr('err.prefix')}: {e.message}" + (f". {tr('err.hint_prefix')}: {e.hint}" if e.hint else ""), file=sys.stderr)
     return e.exit_code

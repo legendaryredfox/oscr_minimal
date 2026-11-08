@@ -9,6 +9,7 @@ from .. import protocol as P
 from .. import romimage as RI
 from . import common
 from .common import system_id
+from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_REFUSED, EXIT_USAGE
 from .md_chip import md_chip_line, md_flash_chip
 from .output import emit, progress
@@ -75,11 +76,11 @@ def cmd_rom_write(args) -> int:
         what = f"{RI.CHIP_LABEL[chip]}: PRG {img.prg_kb} KB, CHR {img.chr_kb} KB ({len(img.body)} bytes)"
     if not args.yes:
         if not sys.stdin.isatty():
-            raise CliError("refused", "recusado: gravar a ROM APAGA o chip de flash do cartucho. Em modo não interativo confirme com --yes.", EXIT_REFUSED,
-                           "repita o comando com --yes")
+            raise CliError("refused", tr("refused.rom"), EXIT_REFUSED,
+                           tr("refused.repeat"))
         ans = input(f"Gravar {what}? Isso APAGA a ROM atual do cartucho. Continuar? [s/N] ")
-        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
-            print("cancelado")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
+            print(tr("cancelled"))
             return 1
     c, t, info = common.connect(args)
     try:

@@ -11,6 +11,7 @@ from .. import romimage as RI
 from ..verify import eeprom_is_4k
 from . import common
 from .common import system_id
+from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_REFUSED
 from .output import emit, progress, save_result
 
@@ -30,11 +31,11 @@ def cmd_save_write(args) -> int:
     sid = system_id(args.system)
     if not args.yes:                                      # gravar sobrescreve (ou apaga) a memória do cartucho: sempre confirmar
         if not sys.stdin.isatty():
-            raise CliError("refused", "recusado: gravar o save sobrescreve a memória do cartucho. Em modo não interativo confirme com --yes.",
-                           EXIT_REFUSED, "repita o comando com --yes (o save atual é salvo em --backup-dir antes, a menos que use --no-backup)")
+            raise CliError("refused", tr("refused.save"),
+                           EXIT_REFUSED, tr("refused.save.hint"))
         ans = input(f"Gravar {len(data)} bytes no save de {args.system}? Isso sobrescreve o save do cartucho. Continuar? [s/N] ")
-        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
-            print("cancelado")
+        if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
+            print(tr("cancelled"))
             return 1
     c, t, _ = common.connect(args)
     try:

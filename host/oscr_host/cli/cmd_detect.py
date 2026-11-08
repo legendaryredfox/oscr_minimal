@@ -5,6 +5,7 @@ from __future__ import annotations
 from .. import protocol as P
 from . import common, ui
 from .common import system_id
+from .messages import tr
 from .errors import CliError, EXIT_NO_CART, EXIT_OK, EXIT_USAGE
 from .md_chip import md_chip_line, md_flash_chip
 from .output import emit
@@ -19,8 +20,7 @@ def cmd_detect(args) -> int:
             t.close()
             raise CliError("usage", "--flash-id vale só para o Mega Drive (-s md)", EXIT_USAGE)
         flash = md_flash_chip(c, info)
-    status = {0: "cartucho detectado", 1: "nenhum cartucho", 2: "não suportado",
-              3: "erro de hardware", 4: "cabeçalho inválido ou ilegível (há dados, mas o checksum do cabeçalho não confere; ou, no Mega Drive com a placa v. 1.2, o pino /CART indica cartucho mas o cabeçalho não leu: limpe os contatos e encaixe de novo)"}
+    status = {k: tr(f"detect.status.{k}") for k in range(5)}
     lines = [f"{P.SYSTEM_BY_ID.get(r['system'], r['system'])}: {status.get(r['status'], r['status'])}"]
     if r["status"] == 0:
         lines.append(f"  título: {r['name'] or '(desconhecido)'}  ROM: {r['rom_size']} bytes  save: {r['save_size']} bytes")

@@ -14,6 +14,10 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 - **Arquivos**: `-o` sobrescreve se existir. A extensão certa é acrescentada quando `-o` não tem uma. Sem `-o`, o nome vem do título do cartucho.
 - **Descoberta sem porta**: `systems` e `errors` não abrem a porta serial.
 
+## Idioma das mensagens (D133)
+
+`--lang pt-BR|en|ru|zh-CN` (antes ou depois do comando), senão `OSCR_LANG`, senão a locale (`LC_ALL`, `LC_MESSAGES`, `LANG`); sem nada reconhecível, **inglês**. Muda só o texto para pessoas (`message`, `hint`, `status_text`, o texto de `errors` e as linhas de texto). **Não mudam:** `ok`, `error.kind`, os nomes dos campos, os valores numéricos e os códigos de saída. Agentes devem usar `kind` e o código de saída, não o texto. Cobertura atual na CLI Python: erros, recusas, `errors`, `power`, `firmware-flash` e o `status_text` do `detect`; o resto ainda é em português. A CLI Kotlin só traduz os erros do dispositivo.
+
 ## Códigos de saída
 
 | Código | Significado | `error.kind` |

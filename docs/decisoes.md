@@ -131,6 +131,7 @@
 - **D130** 16_bits v1.2 sem os TVS; limpeza e reorganização (pedido do usuário, 2026-11-08)
 - **D131** `firmware-flash`: gravar o firmware do fork no Mega pela CLI (2026-11-08)
 - **D132** Cada versão em uma pasta com o nome da versão (pedido do usuário, 2026-11-08)
+- **D133** CLI Python multi-idioma, primeira fatia (2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1068,3 +1069,10 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Conferência.** O título do esquemático e do PCB (`rev`) e o silk batiam com a versão em todas as pastas; o que estava sem nome era a **versão mais nova**, que ficava em `hardware/`, `fab/gerbers/` e `fab/bom.csv`.
 - **Mudança.** `boards/<placa>/hardware/` virou `hardware-v1.1/` (16_bits: `hardware-v1.3/`), `fab/gerbers/` virou `gerbers-v1.1/` (16_bits: `gerbers-v1.3/`) e `fab/bom.csv` virou `bom-v1.1.csv` (16_bits: `bom-v1.3.csv`). `boards/versoes.json` guarda a versão atual de cada placa (usado pelo `check_netlist.py` quando não se dá o arquivo). `tools/export_fab.sh <placa> <versão>` e `tools/render_board.sh` derivam as pastas da versão; os scripts de `tools/troca/` e de `tools/boards/` e os docs foram atualizados. Os esqueletos `8_bits/` e `completa/` ainda não têm versão e mantêm `hardware/` vazia.
 - **Verificação.** `check_netlist.py` confere nas 9 placas; ERC e export de fábrica refeitos na `n64` sem mudança de conteúdo (restaurados para não mudar o SHA-256 dos zips); READMEs por versão regerados.
+
+### D133 — CLI Python multi-idioma, primeira fatia (2026-11-08)
+- **Pedido** (2026-11-07, para fazer no futuro; usuário: "continue"): catálogo de mensagens por idioma na CLI (pt-BR, en, ru, zh-CN como na GUI), idioma por `--lang` e pela locale, inglês como reserva, chaves do `--json` sem mudar.
+- **Feito.** `host/oscr_host/cli/messages.py`: `CATALOG` com os quatro idiomas por chave, `tr()`, `--lang` (antes ou depois do comando), variável `OSCR_LANG`, depois `LC_ALL`, `LC_MESSAGES` e `LANG`; sem nada reconhecível, inglês. Cobertura: erros do dispositivo (12 códigos, texto e dica), erros da CLI (porta, resposta, timeout, interrompido), recusas e cancelamento das gravações, `errors`, `power`, `firmware-flash` e o `status_text` do `detect`. Só o texto para pessoas muda: `ok`, `error.kind`, os nomes dos campos, `status` e os códigos de saída não mudam (testado). Mudança de comportamento: antes a CLI Python era sempre em português; agora segue a locale (um ambiente sem locale vira inglês); a suíte do host fixa `OSCR_LANG=pt-BR` (`tests/conftest.py`).
+- **Falta.** O resto das saídas em texto (linhas de `detect`, `dump`, `save-*`, `rom-write`, `flash-*`, `info`, `systems`), a barra de progresso, o `--help` e os `help=` do argparse continuam em português; a **CLI Kotlin** (hoje em inglês, só os erros do dispositivo seguem `--lang`) ainda não usa catálogo. As traduções ru e zh pedem revisão nativa (como as da GUI).
+- **Testes.** `host/tests/test_messages.py` (catálogo completo e com os mesmos campos nos quatro idiomas, escolha do idioma, JSON sem mudar de forma, `errors`, `power`, `detect`, recusa em russo); host com 204 testes.
+

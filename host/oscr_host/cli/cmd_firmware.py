@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import common
 from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_OK, EXIT_REFUSED, EXIT_USAGE
+from .messages import tr
 from .output import emit, progress
 
 REPO = Path(__file__).resolve().parents[3]
@@ -30,8 +31,7 @@ def find_hex(args) -> Path:
     cand = args.hex or os.environ.get("OSCR_FIRMWARE_HEX") or str(REPO / "firmware" / "oscr" / ".pio" / "build" / args.env / "firmware.hex")
     p = Path(cand).expanduser()
     if not p.is_file():
-        raise CliError("no_hex", f"arquivo de firmware não encontrado: {p}", EXIT_USAGE,
-                       "use --hex ARQUIVO.hex, ou compile antes: `cd firmware/oscr && pio run -e " + args.env + "`")
+        raise CliError("no_hex", tr("fw.no_hex", path=p), EXIT_USAGE, tr("fw.no_hex.hint", env=args.env))
     return p
 
 
@@ -39,7 +39,7 @@ def find_avrdude(args) -> str:
     cand = args.avrdude or os.environ.get("AVRDUDE")
     if cand:
         if not (shutil.which(cand) or Path(cand).is_file()):
-            raise CliError("no_avrdude", f"avrdude não encontrado: {cand}", EXIT_USAGE, "confira o caminho de --avrdude")
+            raise CliError("no_avrdude", tr("fw.no_avrdude_given", path=cand), EXIT_USAGE, tr("fw.no_avrdude_given.hint"))
         return cand
     found = shutil.which("avrdude")
     if found:
@@ -48,8 +48,7 @@ def find_avrdude(args) -> str:
     pio = [x for x in pio if Path(x).is_file() and not x.endswith((".conf", ".txt"))]
     if pio:
         return pio[0]
-    raise CliError("no_avrdude", "avrdude não encontrado", EXIT_USAGE,
-                   "instale o avrdude (Linux: `sudo apt install avrdude`; macOS: `brew install avrdude`; Windows: winget ou o pacote do Arduino) ou use --avrdude CAMINHO")
+    raise CliError("no_avrdude", tr("fw.no_avrdude"), EXIT_USAGE, tr("fw.no_avrdude.hint"))
 
 
 def avrdude_cmd(exe: str, port: str, hex_path: Path, verify: bool) -> list[str]:
@@ -99,49 +98,47 @@ def _info_after(args, timeout: float = 12.0) -> dict | None:
 def cmd_firmware_flash(args) -> int:
     hex_path = find_hex(args)
     simulate = args.simulate
-    exe = "avrdude (simulado)" if simulate else find_avrdude(args)
-    port = args.port or ("simulador" if simulate else common.auto_port())
+    exe = tr("fw.simulated_exe") if simulate else find_avrdude(args)
+    port = args.port or (tr("fw.simulator") if simulate else common.auto_port())
     before = None
     try:                                                      # a versão de antes só se o firmware atual responder; placa nova responde nada
         c, t, before = common._open(args)
         t.close()
     except Exception:
         before = None
-    what = f"gravar {hex_path.name} ({hex_path.stat().st_size} bytes de HEX) em {port} com o avrdude"
+    what = tr("fw.what", hex=hex_path.name, size=hex_path.stat().st_size, port=port)
     if args.dry_run:
         cmd = avrdude_cmd(exe, port, hex_path, not args.no_verify)
         emit(args, {"dry_run": True, "port": port, "hex": str(hex_path), "avrdude": exe, "command": cmd,
                     "firmware_before": before["firmware"] if before else None},
-             ["não gravou nada (--dry-run). Comando: " + " ".join(cmd)])
+             [tr("fw.dry_run", cmd=" ".join(cmd))])
         return EXIT_OK
     if not args.yes:
         if not sys.stdin.isatty():
-            raise CliError("refused", "recusado: gravar o firmware troca o programa do Arduino. Em modo não interativo confirme com --yes.",
-                           EXIT_REFUSED, "repita o comando com --yes")
-        ans = input(f"{what.capitalize()}. O firmware atual será substituído. Continuar? [s/N] ")
-        if ans.strip().lower() not in ("s", "sim", "y", "yes"):
-            print("cancelado")
+            raise CliError("refused", tr("refused.firmware"), EXIT_REFUSED, tr("refused.repeat"))
+        ans = input(tr("fw.ask", what=what[:1].upper() + what[1:]))
+        if ans.strip().lower() not in ("s", "sim", "y", "yes", "да", "д", "是", "是的"):
+            print(tr("cancelled"))
             return EXIT_ERROR
     if simulate:
         after = before
         out = {"simulated": True, "port": port, "hex": str(hex_path), "firmware_before": before["firmware"] if before else None,
                "firmware_after": after["firmware"] if after else None}
-        emit(args, out, [f"simulado: {what}"])
+        emit(args, out, [tr("fw.simulated", what=what)])
         return EXIT_OK
     cmd = avrdude_cmd(exe, port, hex_path, not args.no_verify)
     mode = getattr(args, "progress", "auto")
     code, err = run_avrdude(cmd, lambda label: progress(label, mode))
     if code != 0:
-        raise CliError("avrdude", f"o avrdude falhou (código {code}): {err or 'sem mensagem'}", EXIT_NO_DEVICE if code in (1, 127) else EXIT_ERROR,
-                       "confira a porta e o cabo, feche outros programas que usam a porta (monitor serial, GUI) e repita; no Linux, grupo dialout")
+        raise CliError("avrdude", tr("fw.failed", code=code, detail=err or tr("fw.failed.no_message")), EXIT_NO_DEVICE if code in (1, 127) else EXIT_ERROR,
+                       tr("fw.failed.hint"))
     after = _info_after(args, args.wait)
     out = {"port": port, "hex": str(hex_path), "verified": not args.no_verify, "firmware_before": before["firmware"] if before else None,
            "firmware_after": after["firmware"] if after else None, "responds": after is not None}
-    lines = [f"firmware gravado em {port}" + ("" if args.no_verify else " e conferido pelo avrdude")]
+    lines = [tr("fw.done", port=port) + ("" if args.no_verify else tr("fw.done_verified"))]
     if after:
-        lines.append(f"o dispositivo respondeu ao INFO: firmware {after['firmware']}, protocolo {after['proto']}"
-                     + (f" (antes: {before['firmware']})" if before else ""))
+        lines.append(tr("fw.answered", fw=after["firmware"], proto=after["proto"]) + (tr("fw.before", fw=before["firmware"]) if before else ""))
     else:
-        lines.append("o dispositivo ainda não respondeu ao INFO (a porta pode ter mudado de nome): rode `dumper info` em alguns segundos")
+        lines.append(tr("fw.no_answer"))
     emit(args, out, lines)
     return EXIT_OK

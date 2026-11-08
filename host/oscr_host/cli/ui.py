@@ -139,9 +139,10 @@ def decorate(line: str, stream=None) -> str:
 
 
 def error_line(message: str, hint: str | None, stream=None) -> str:
-    s = icon("err", stream) + " " + paint("erro:", "red", "bold", stream=stream) + " " + message
+    from .messages import tr
+    s = icon("err", stream) + " " + paint(tr("err.prefix") + ":", "red", "bold", stream=stream) + " " + message
     if hint:
-        s += "\n  " + icon("info", stream) + " " + paint("dica: " + hint, "yellow", stream=stream)
+        s += "\n  " + icon("info", stream) + " " + paint(tr("err.hint_prefix").lower() + ": " + hint, "yellow", stream=stream)
     return s
 
 
