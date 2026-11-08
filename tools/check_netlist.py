@@ -170,6 +170,8 @@ def expected_nets(pm_nets):
         v12b_ajusta(exp)
     if TROCA:
         troca_ajusta(exp)
+    for k in exp:
+        exp[k] = {rp for rp in exp[k] if not rp[0].startswith("FLG")}      # marcadores PWR_FLAG só servem ao ERC
     return exp
 
 
@@ -218,6 +220,48 @@ def v12b_ajusta(exp):
     exp["+5V"].add(("R15", "1"))        # pull-up de /VRES (com o bloco de troca vai para o +5V_CART, em troca_ajusta)
 
 
+D138 = None      # d138.json ao lado do esquemático: peças do D138 (F1, J1, seletor, resistores em série); ver tools/troca/sch_block.py
+_man = SCH.parent / "d138.json"
+if _man.exists():
+    D138 = _json.loads(_man.read_text())
+
+
+def d138_colapsa(nets):
+    """D138: devolve (bruta, fundida). `bruta` junta as redes que os resistores em série (RNx: pino i com o 17-i) e o Q4 de bypass (dreno com fonte) separam;
+    `fundida` junta também as duas pontas do F1. Nas duas saem as peças do D138 e os marcadores PWR_FLAG: o que sobra tem de bater com o pinmap."""
+    nome = {n: n for n in nets}
+    def raiz(n):
+        while nome[n] != n:
+            nome[n] = nome[nome[n]]; n = nome[n]
+        return n
+    onde = {}
+    for n, nodes in nets.items():
+        for rp in nodes:
+            onde[rp] = n
+    def une(a, b):
+        if a in onde and b in onde:
+            nome[raiz(onde[a])] = raiz(onde[b])
+    for rn in D138["rn"]:
+        for i in range(1, 9):
+            une((rn, str(i)), (rn, str(17 - i)))
+    for q in D138["bypass"]:
+        une((q, "2"), (q, "3"))
+    def monta(f1):
+        if f1:
+            for f in D138["fusivel"]:
+                une((f, "1"), (f, "2"))
+        grupos = {}
+        for n, nodes in nets.items():
+            grupos.setdefault(raiz(n), set()).update(rp for rp in nodes if rp[0] not in D138["novos"] and not rp[0].startswith("FLG"))
+        return {k: v for k, v in grupos.items() if v}
+    global ACT_SOLTO
+    ACT_SOLTO = {n: {rp for rp in nodes if rp[0] not in D138["novos"] and not rp[0].startswith("FLG")} for n, nodes in nets.items()}      # sem nenhuma união: cada rede como está
+    bruta = monta(False)
+    # a bruta precisa ser copiada antes de fundir o F1 (as uniões acima são cumulativas)
+    bruta = {k: set(v) for k, v in bruta.items()}
+    return bruta, monta(True)
+
+
 def actual_nets():
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "n.xml"
@@ -229,6 +273,13 @@ def actual_nets():
     nets = {}
     for n in root.find("nets"):
         nets[n.get("name")] = {(x.get("ref"), x.get("pin")) for x in n.findall("node")}
+    if D138:
+        global ACT_RAW
+        ACT_RAW, nets = d138_colapsa(nets)
+    else:
+        ACT_RAW = nets
+        nets = {k: {rp for rp in v if not rp[0].startswith("FLG")} for k, v in nets.items()}
+        ACT_RAW = nets
     return nets
 
 
@@ -237,6 +288,8 @@ def main():
     exp = expected_nets(pm_nets)
     act = actual_nets()
     errors = []
+    if D138:
+        print(f"D138: {len(D138['novos'])} peças do F1/J1/seletor ignoradas na comparação; {len(D138['fusivel'])} PTC e {len(D138['rn'])} redes de resistores em série tratados como ligação.")
 
     # 1. cada net esperada existe, com exatamente os mesmos nós
     act_by_nodes = {frozenset(v): k for k, v in act.items()}
@@ -269,9 +322,14 @@ def main():
             continue
         for pin in pins:
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
+            raw = next((v for v in ACT_RAW.values() if (ref, pin) in v), set())       # rede bruta: sem fundir o F1 (D138)
+            fus = D138["fusivel"][0] if D138 and D138["fusivel"] else None
             if TROCA:
-                if net is None or ("Q1", "2") not in act[net] or (MEGA, "5V1") in act[net]:
+                if net is None or ("Q1", "2") not in raw or (MEGA, "5V1") in raw:
                     errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
+            elif fus:
+                if (fus, "2") not in raw or (MEGA, "5V1") in raw:
+                    errors.append(f"{ref}.{pin} (VCC) deve estar só depois do {fus} (PTC), nunca direto no 5V do Mega")
             elif net is None or (MEGA, "5V1") not in act[net]:
                 errors.append(f"{ref}.{pin} (VCC) não está na net do 5V do Mega")
     for ref, pins in (("GBA1", ("1",)), ("N64_1", ("9", "17", "34", "42"))):
@@ -307,6 +365,15 @@ def main():
         if len(v) > 1 and frozenset(v) not in exp_sets and not any(v & e for e in exp_sets):
             errors.append(f"net '{k}' não consta no pinmap: {sorted(v)}")
 
+    # 6. D138: nos slots com seletor, nenhum sinal liga o Mega direto ao slot (tem de passar pelo resistor de 470 ohms), salvo as redes listadas em "sem_serie"
+    if D138 and D138.get("slots_sel"):
+        livres = set(D138.get("sem_serie", []))
+        for n, nodes in ACT_SOLTO.items():
+            slots_aqui = [rp for rp in nodes if rp[0] in D138["slots_sel"]]
+            if slots_aqui and any(r == MEGA and p.startswith(("A", "D")) for r, p in nodes) and n.lstrip("/") not in livres and n not in livres:
+                if not any(n.endswith(x) for x in ("5V", "GND")):
+                    errors.append(f"D138: a rede '{n}' liga o Mega direto ao slot {slots_aqui[0][0]} sem resistor em série")
+        print(f"D138: {len(livres)} rede(s) sem resistor em série por ligarem outra peça: {', '.join(sorted(livres)) or '-'}")
     n_pins = sum(len(v) for v in exp.values())
     if errors:
         print(f"FALHOU: {len(errors)} divergência(s):")

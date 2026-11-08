@@ -12,6 +12,7 @@ ap.add_argument("hw"); ap.add_argument("--move", action="append", default=[]); a
 ap.add_argument("--led-side", default="up")
 ap.add_argument("--hide", action="append", default=[], help="oculta o texto de referência dessa peça")
 ap.add_argument("--relabel", action="store_true", help="apaga e refaz os rótulos dos LEDs")
+ap.add_argument("--fusivel", action="store_true", help="versão só com o F1 (sem bloco de troca): não troca os avisos do silkscreen")
 a = ap.parse_args()
 HW = Path(a.hw); PCB = str(HW / "dumper.kicad_pcb")
 mm = pcbnew.FromMM; tomm = pcbnew.ToMM
@@ -52,30 +53,38 @@ def occupied():
         if d.GetLayer() in (pcbnew.F_SilkS, pcbnew.Edge_Cuts) and d.GetClass() in ("PCB_TEXT", "PCB_SHAPE"):
             _add_shape(boxes, d)
     return boxes
+def label_near(txt, f, size=0.9):
+    """texto de silkscreen no primeiro lugar livre ao redor da peça `f` (sem tocar pads, silkscreen e outros textos)"""
+    c = f.GetPosition(); cx, cy = tomm(c.x), tomm(c.y)
+    t = silk_text(txt, cx, cy - 3.6, size)
+    obs = occupied()
+    m = mm(0.35)
+    done = False
+    cands = sorted(((dx * 1.0, dy * 1.0) for dx in range(-30, 31) for dy in range(-20, 21)), key=lambda p: (p[0] ** 2 + (1.6 * p[1]) ** 2))
+    for dx, dy in cands:
+        if abs(dx) < 2 and abs(dy) < 3.2:
+            continue
+        t.SetPosition(V(cx + dx, cy + dy))
+        r = t.GetBoundingBox()
+        if r.GetLeft() < bb_in[0] or r.GetTop() < bb_in[1] or r.GetRight() > bb_in[2] or r.GetBottom() > bb_in[3]:
+            continue
+        if not any(r.GetLeft() - m < o[2] and r.GetRight() + m > o[0] and r.GetTop() - m < o[3] and r.GetBottom() + m > o[1] for o in obs):
+            done = True; break
+    if not done:
+        print("AVISO: sem lugar livre para", txt)
+        t.SetPosition(V(cx, cy - 3.6))
 for f in b.GetFootprints():
     v = f.GetValue()
     if v.startswith("LED") and f.GetReference() != "D1":
         txt = {"LED verde 3mm": "5V LIGADO", "LED amarelo 3mm": "SEGURO TROCAR"}.get(v)
         f.Reference().SetVisible(False)
         if txt and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == txt for d in b.GetDrawings()):
-            c = f.GetPosition(); cx, cy = tomm(c.x), tomm(c.y)
-            t = silk_text(txt, cx, cy - 3.6, 0.9)
-            obs = occupied()
-            m = mm(0.35)
-            done = False
-            cands = sorted(((dx * 1.0, dy * 1.0) for dx in range(-30, 31) for dy in range(-20, 21)), key=lambda p: (p[0] ** 2 + (1.6 * p[1]) ** 2))
-            for dx, dy in cands:
-                if abs(dx) < 2 and abs(dy) < 3.2:
-                    continue
-                t.SetPosition(V(cx + dx, cy + dy))
-                r = t.GetBoundingBox()
-                if r.GetLeft() < bb_in[0] or r.GetTop() < bb_in[1] or r.GetRight() > bb_in[2] or r.GetBottom() > bb_in[3]:
-                    continue
-                if not any(r.GetLeft() - m < o[2] and r.GetRight() + m > o[0] and r.GetTop() - m < o[3] and r.GetBottom() + m > o[1] for o in obs):
-                    done = True; break
-            if not done:
-                print("AVISO: sem lugar livre para", txt)
-                t.SetPosition(V(cx, cy - 3.6))
+            label_near(txt, f)
+    elif v == "TRAVA 3,3 V" and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == "TRAVA 3,3 V" for d in b.GetDrawings()):
+        label_near("TRAVA 3,3 V", f, 0.8)          # J1 (D138): jumper que impede o 5 V
+        label_near("PTC 0,5 A", b.FindFootprintByReference("F1"), 0.8) if b.FindFootprintByReference("F1") else None
+    elif v == "PTC 0,5 A" and f.GetReference() == "F1" and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == "PTC 0,5 A" for d in b.GetDrawings()):
+        f.Reference().SetVisible(True)
 tb = b.GetTitleBlock()
 for r_ in a.hide:
     b.FindFootprintByReference(r_).Reference().SetVisible(False)
@@ -84,7 +93,9 @@ for d in b.GetDrawings():
     if d.GetClass() != "PCB_TEXT":
         continue
     t = d.GetText()
-    if t == "NÃO COLOQUE NEM RETIRE":
+    if a.fusivel:
+        pass
+    elif t == "NÃO COLOQUE NEM RETIRE":
         d.SetText("SÓ TROQUE O CARTUCHO COM")
     elif t == "O CARTUCHO COM USB LIGADO":
         d.SetText("O LED AMARELO ACESO")

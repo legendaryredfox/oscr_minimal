@@ -7,8 +7,13 @@ descarregar o rail e acender o LED de "seguro trocar":
   Q3 2N7000 + R7 100k + R8 1k + R9 1k + LED amarelo (sensor do rail: aceso = seguro trocar; SENSE_MCU vai ao D53).
 Os pinos de 5V dos slots, Si5351, PIC, pull-ups e capacitores passam a +5V_CART (o 5V do Mega fica no C1, no LED de status, nos pontos de teste e no Q1).
 As referências novas seguem a última de cada tipo da placa (D109). Uso: python3 tools/troca/sch_block.py boards/<placa>/hardware/dumper.kicad_sch [versão]
+Variáveis de ambiente (D138):
+  TROCA_MODO=bloco|fusivel   "fusivel": só o F1 (v1.0, 16_bits v1.2, SNES); sem Q1, Q2, Q3, LEDs nem D19/D53.
+  TROCA_FUSE=1|0             F1 (PTC de furo passante, 0,5 A de retenção) em série na trilha de potência (padrão 1).
+  TROCA_SELETOR=1            seletor 3,3 V/5 V (LDO, Q4, Q5), J1 "TRAVA 3,3 V" e resistores em série (precisa do modo bloco).
+  TROCA_SLOTS=MD1,SMS1       slots que ficam no VCC_CART (seletor) e têm resistores em série; TROCA_SEL_CAPS=C3 os capacitores desses slots.
 Não roda duas vezes. Desenho final com tools/sch/regen.py não é necessário: o bloco já sai com fios nas cadeias e rótulos nos nós compartilhados."""
-import math, re, subprocess, sys, tempfile, uuid
+import math, os, re, subprocess, sys, tempfile, uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +21,14 @@ sys.path.insert(0, str(ROOT / "tools" / "sch"))
 from sexp import parse, dump, val, find, S
 
 PATH = Path(sys.argv[1]).resolve()
+MODO = os.environ.get("TROCA_MODO", "bloco")
+FUSE = os.environ.get("TROCA_FUSE", "1") == "1"
+SELETOR = os.environ.get("TROCA_SELETOR") == "1"
+SEL_SLOTS = [x for x in os.environ.get("TROCA_SLOTS", "MD1,SMS1").split(",") if x]
+SEL_CAPS = [x for x in os.environ.get("TROCA_SEL_CAPS", "").split(",") if x]
+SEL_REFS = set(SEL_SLOTS) | set(SEL_CAPS)
+assert MODO in ("bloco", "fusivel") and not (SELETOR and MODO != "bloco"), "o seletor precisa do modo bloco"
+SLOT_RE = re.compile(r"^(SNES|MD|NES|FC|N64|GBA|GB|SMS)\d+$")
 text = PATH.read_text()
 tree = parse(text)
 g = lambda: str(uuid.uuid4())
@@ -115,11 +128,11 @@ for c, v, xy in pw5:
     pins = comp_pins.get(fu(xy), [])
     sw = [rp for rp in pins if rp in switched]
     if sw and len(sw) == len(pins):
-        v[2] = S("+5V_CART"); renamed += 1
+        v[2] = S("VCC_CART" if SELETOR and all(rp[0] in SEL_REFS for rp in sw) else "+5V_CART"); renamed += 1
     elif sw:
         sys.exit("símbolo +5V em %s liga pinos %s: parte chaveada e parte não" % (xy, pins))
 print("símbolos +5V renomeados:", renamed, "pinos chaveados:", sorted(switched))
-labeled = {rp for xy, rps in comp_pins.items() for rp in rps if any(fu(xy) == fu(k) for c, v, k in pw5 if val(v[2]) == "+5V_CART")}
+labeled = {rp for xy, rps in comp_pins.items() for rp in rps if any(fu(xy) == fu(k) for c, v, k in pw5 if val(v[2]) in ("+5V_CART", "VCC_CART"))}
 falta = switched - labeled
 assert not falta, ("pinos de 5V sem símbolo próprio:", falta)
 
@@ -148,10 +161,15 @@ if "dumper:Q_PMOS_GDS" not in LIBPINS:
 def last_ref(prefix):
     nums = [int(re.sub(r"\D", "", r)) for r in parts if re.fullmatch(prefix + r"\d+", r)]
     return max(nums) if nums else 0
-NEXT = {"R": last_ref("R"), "D": last_ref("D"), "Q": last_ref("Q"), "FLG": last_ref("FLG")}
+NEXT = {"R": last_ref("R"), "D": last_ref("D"), "Q": last_ref("Q"), "FLG": last_ref("FLG"), "U": last_ref("U"), "C": last_ref("C"), "RN": last_ref("RN"), "F": last_ref("F"), "J": last_ref("J")}
+D138 = {"novos": [], "fusivel": [], "rn": [], "bypass": []}      # peças do D138 (F1, J1, seletor, resistores em série): lidas por tools/check_netlist.py (d138.json)
+PHASE = [False]
 def newref(prefix):
     NEXT[prefix] += 1
-    return "%s%d" % (prefix, NEXT[prefix])
+    ref = "%s%d" % (prefix, NEXT[prefix])
+    if PHASE[0]:
+        D138["novos"].append(ref)
+    return ref
 
 def prop(n, v, x, y, hide=False, rot=0, just=None):
     j = '\t\t\t\t(justify %s)\n' % just if just else ''
@@ -202,7 +220,7 @@ def note(txt, x, y, size=2.54):
 PW = [0]
 def power(net, a, out):
     """símbolo de alimentação com o pino em `a` e o corpo para `out`"""
-    base = {"+5V_CART": "+5V"}.get(net, net)
+    base = {"+5V_CART": "+5V", "VCC_CART": "+5V", "+5V_F": "+5V"}.get(net, net)
     default = (0, 1) if base == "GND" else (0, -1)
     rot = 0
     for r_ in (0, 90, 180, 270):
@@ -257,66 +275,196 @@ def R(value, at_pin1, up_net, down_net, desc=""):
     return p
 
 x = OX
-# --- Q1 (se a placa não tem)
-if not HAS_Q1:
-    q = add("dumper:Q_PMOS_GDS", newref("Q"), "IRF9540N", FP_TO220, "2", (x, OY), {"1": LF, "2": UP, "3": DN}, "P-MOSFET: chave de alta do 5V dos slots")
-    g_, d_, s_ = q.pos("1"), q.pos("2"), q.pos("3")
-    wire(g_, (g_[0] - 5.08, g_[1])); label("PWR_G", (g_[0] - 5.08, g_[1]), LF)
-    wire(d_, (d_[0], d_[1] - 5.08))
-    # dreno em cima, fonte embaixo: +5V_CART em cima (corpo para cima) e +5V embaixo (corpo para baixo)
-    power("+5V_CART", (d_[0], d_[1] - 5.08), UP)
-    wire(s_, (s_[0], s_[1] + 5.08)); power("+5V", (s_[0], s_[1] + 5.08), DN)
-    pwrflag((d_[0] + 5.08, d_[1] - 5.08)); wire((d_[0], d_[1] - 5.08), (d_[0] + 5.08, d_[1] - 5.08))
+# --- F1: PTC de furo passante em série na trilha de potência (D138). Modo bloco: +5V -> F1 -> +5V_F -> Q1; modo fusível: +5V -> F1 -> +5V_CART
+FP_F1 = "Fuse:Fuse_Bourns_MF-RHT050"
+SRC_NET = "+5V"
+PEND_FLAG = None
+if FUSE:
+    PHASE[0] = True
+    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "Polyfuse", "Device:Polyfuse")
+    SRC_NET = "+5V_F" if MODO == "bloco" else "+5V_CART"
+    f1 = add("Device:Polyfuse", newref("F"), "PTC 0,5 A", FP_F1, "1", (x, OY), {"1": UP, "2": DN},
+             "Fusivel rearmavel (PTC) de furo passante: 0,5 A de retencao, em serie com o 5 V da placa. Queda de 0,1 a 0,2 V a 200 mA")
+    a1 = f1.pos("1"); a2 = f1.pos("2")
+    wire(a1, (a1[0], a1[1] - 5.08)); power("+5V", (a1[0], a1[1] - 5.08), UP)
+    wire(a2, (a2[0], a2[1] + 5.08)); power(SRC_NET, (a2[0], a2[1] + 5.08), DN)
+    D138["fusivel"].append(f1.ref)
+    wire((a2[0], a2[1] + 5.08), (a2[0] + 5.08, a2[1] + 5.08)); PEND_FLAG = (a2[0] + 5.08, a2[1] + 5.08)      # o PTC é passivo: a rede a jusante precisa do marcador de alimentação (criado depois do bloco, para não mudar a numeração dos FLG dele)
     x += STEP
-    r3 = R("100k", (x, OY), ("pwr", "+5V"), ("lab", "PWR_G"), "Mantém o gate no 5V (chave desligada) com o Mega em reset")
-    x += STEP
-    r4 = R("100R", (x, OY), ("lab", "PWR_EN"), ("lab", "PWR_G"), "Série do comando D19 da chave")
-    x += STEP
-    # R5 + LED verde: +5V_CART -> R5 -> LED -> GND
-    r5 = R("1k", (x, OY), ("pwr", "+5V_CART"), None, "Limita o LED verde do 5V dos slots")
-    a = r5.pos("2"); d = (0, 1)
-    led = add("Device:LED", newref("D"), "LED verde 3mm", FP_LED, "2", (a[0], a[1] + 7.62), {"2": UP, "1": DN}, "LED verde: 5V dos slots ligado")
-    wire(a, led.pos("2"))
-    k_ = led.pos("1"); wire(k_, (k_[0], k_[1] + 5.08)); power("GND", (k_[0], k_[1] + 5.08), DN)
-    x += STEP
-else:
-    # a placa já tem Q1, R3 a R14.. (16_bits): só o PWR_G existente é usado
-    pass
+PHASE[0] = False
 
-# --- Q2 + R6 (+ R6b): descarga
-q2 = add("Transistor_FET:2N7000", newref("Q"), "2N7000", FP_TO92, "3", (x, OY), {"2": LF, "3": UP, "1": DN}, "Descarga do rail dos slots quando a chave abre")
-gp, dp, sp = q2.pos("2"), q2.pos("3"), q2.pos("1")
-wire(gp, (gp[0] - 5.08, gp[1])); label("PWR_G", (gp[0] - 5.08, gp[1]), LF)
-wire(sp, (sp[0], sp[1] + 5.08)); power("GND", (sp[0], sp[1] + 5.08), DN)
-nd = (dp[0], dp[1] - 5.08); wire(dp, nd)
-# R6: pino 2 (baixo) no nó nd, pino 1 (cima) no +5V_CART
-ref6 = newref("R")
-r6 = add("Device:R", ref6, "330R", FP_R, "2", nd, {"2": DN, "1": UP}, "Descarga do +5V_CART pelo Q2")
-t6 = r6.pos("1"); wire(t6, (t6[0], t6[1] - 5.08)); power("+5V_CART", (t6[0], t6[1] - 5.08), UP)
-if HAS_3V3:
-    r6b = add("Device:R", newref("R"), "330R", FP_R, "2", (nd[0] + 10.16, nd[1]), {"2": DN, "1": UP}, "Descarga do +3V3 pelo Q2")
-    wire(nd, (nd[0] + 10.16, nd[1])); junction(nd)
-    t = r6b.pos("1"); wire(t, (t[0], t[1] - 5.08)); power("+3V3", (t[0], t[1] - 5.08), UP)
-x += 2 * STEP + (10.16 if HAS_3V3 else 0)
+if MODO == "bloco":
+    # --- Q1 (se a placa não tem)
+    if not HAS_Q1:
+        q = add("dumper:Q_PMOS_GDS", newref("Q"), "IRF9540N", FP_TO220, "2", (x, OY), {"1": LF, "2": UP, "3": DN}, "P-MOSFET: chave de alta do 5V dos slots")
+        g_, d_, s_ = q.pos("1"), q.pos("2"), q.pos("3")
+        wire(g_, (g_[0] - 5.08, g_[1])); label("PWR_G", (g_[0] - 5.08, g_[1]), LF)
+        wire(d_, (d_[0], d_[1] - 5.08))
+        # dreno em cima, fonte embaixo: +5V_CART em cima (corpo para cima) e +5V embaixo (corpo para baixo)
+        power("+5V_CART", (d_[0], d_[1] - 5.08), UP)
+        wire(s_, (s_[0], s_[1] + 5.08)); power(SRC_NET, (s_[0], s_[1] + 5.08), DN)
+        pwrflag((d_[0] + 5.08, d_[1] - 5.08)); wire((d_[0], d_[1] - 5.08), (d_[0] + 5.08, d_[1] - 5.08))
+        x += STEP
+        r3 = R("100k", (x, OY), ("pwr", "+5V"), ("lab", "PWR_G"), "Mantém o gate no 5V (chave desligada) com o Mega em reset")
+        x += STEP
+        r4 = R("100R", (x, OY), ("lab", "PWR_EN"), ("lab", "PWR_G"), "Série do comando D19 da chave")
+        x += STEP
+        # R5 + LED verde: +5V_CART -> R5 -> LED -> GND
+        r5 = R("1k", (x, OY), ("pwr", "+5V_CART"), None, "Limita o LED verde do 5V dos slots")
+        a = r5.pos("2"); d = (0, 1)
+        led = add("Device:LED", newref("D"), "LED verde 3mm", FP_LED, "2", (a[0], a[1] + 7.62), {"2": UP, "1": DN}, "LED verde: 5V dos slots ligado")
+        wire(a, led.pos("2"))
+        k_ = led.pos("1"); wire(k_, (k_[0], k_[1] + 5.08)); power("GND", (k_[0], k_[1] + 5.08), DN)
+        x += STEP
+    else:
+        # a placa já tem Q1, R3 a R14.. (16_bits): só o PWR_G existente é usado
+        pass
 
-# --- Q3 + R7 + R8 + R9 + LED amarelo: sensor do rail
-q3 = add("Transistor_FET:2N7000", newref("Q"), "2N7000", FP_TO92, "3", (x, OY), {"2": LF, "3": UP, "1": DN}, "Detector de rail baixo (limiar de 1 a 2,5 V)")
-gp, dp, sp = q3.pos("2"), q3.pos("3"), q3.pos("1")
-ng = (gp[0] - 5.08, gp[1]); wire(gp, ng)
-wire(sp, (sp[0], sp[1] + 5.08)); power("GND", (sp[0], sp[1] + 5.08), DN)
-wire(dp, (dp[0], dp[1] - 5.08)); label("SENSE", (dp[0], dp[1] - 5.08), UP)
-r7 = add("Device:R", newref("R"), "100k", FP_R, "1", (ng[0] - 7.62, ng[1] + 5.08), {"1": UP, "2": DN}, "Garante rail baixo com o rail flutuando")
-t = r7.pos("1"); wire(t, (t[0], ng[1])); wire((t[0], ng[1]), ng); junction(ng)
-e_ = (ng[0], ng[1] - 5.08); wire(ng, e_); power("+5V_CART", e_, UP)
-t2 = r7.pos("2"); wire(t2, (t2[0], t2[1] + 5.08)); power("GND", (t2[0], t2[1] + 5.08), DN)
-x += STEP + 7.62
-r8 = R("1k", (x, OY), ("pwr", "+5V"), ("lab", "SENSE"), "Pull-up do nó SENSE")
-x += STEP
-r9 = R("1k", (x, OY), ("lab", "SENSE"), ("lab", "SENSE_MCU"), "Série do sensor ao D53")
-x += STEP
-led3 = add("Device:LED", newref("D"), "LED amarelo 3mm", FP_LED, "2", (x, OY), {"2": UP, "1": DN}, "Aceso = rail dos slots abaixo de ~2 V: seguro trocar o cartucho")
-a = led3.pos("2"); wire(a, (a[0], a[1] - 5.08)); label("SENSE", (a[0], a[1] - 5.08), UP)
-k_ = led3.pos("1"); wire(k_, (k_[0], k_[1] + 5.08)); power("GND", (k_[0], k_[1] + 5.08), DN)
+    # --- Q2 + R6 (+ R6b): descarga
+    q2 = add("Transistor_FET:2N7000", newref("Q"), "2N7000", FP_TO92, "3", (x, OY), {"2": LF, "3": UP, "1": DN}, "Descarga do rail dos slots quando a chave abre")
+    gp, dp, sp = q2.pos("2"), q2.pos("3"), q2.pos("1")
+    wire(gp, (gp[0] - 5.08, gp[1])); label("PWR_G", (gp[0] - 5.08, gp[1]), LF)
+    wire(sp, (sp[0], sp[1] + 5.08)); power("GND", (sp[0], sp[1] + 5.08), DN)
+    nd = (dp[0], dp[1] - 5.08); wire(dp, nd)
+    # R6: pino 2 (baixo) no nó nd, pino 1 (cima) no +5V_CART
+    ref6 = newref("R")
+    r6 = add("Device:R", ref6, "330R", FP_R, "2", nd, {"2": DN, "1": UP}, "Descarga do +5V_CART pelo Q2")
+    t6 = r6.pos("1"); wire(t6, (t6[0], t6[1] - 5.08)); power("+5V_CART", (t6[0], t6[1] - 5.08), UP)
+    if HAS_3V3:
+        r6b = add("Device:R", newref("R"), "330R", FP_R, "2", (nd[0] + 10.16, nd[1]), {"2": DN, "1": UP}, "Descarga do +3V3 pelo Q2")
+        wire(nd, (nd[0] + 10.16, nd[1])); junction(nd)
+        t = r6b.pos("1"); wire(t, (t[0], t[1] - 5.08)); power("+3V3", (t[0], t[1] - 5.08), UP)
+    x += 2 * STEP + (10.16 if HAS_3V3 else 0)
+
+    # --- Q3 + R7 + R8 + R9 + LED amarelo: sensor do rail
+    q3 = add("Transistor_FET:2N7000", newref("Q"), "2N7000", FP_TO92, "3", (x, OY), {"2": LF, "3": UP, "1": DN}, "Detector de rail baixo (limiar de 1 a 2,5 V)")
+    gp, dp, sp = q3.pos("2"), q3.pos("3"), q3.pos("1")
+    ng = (gp[0] - 5.08, gp[1]); wire(gp, ng)
+    wire(sp, (sp[0], sp[1] + 5.08)); power("GND", (sp[0], sp[1] + 5.08), DN)
+    wire(dp, (dp[0], dp[1] - 5.08)); label("SENSE", (dp[0], dp[1] - 5.08), UP)
+    r7 = add("Device:R", newref("R"), "100k", FP_R, "1", (ng[0] - 7.62, ng[1] + 5.08), {"1": UP, "2": DN}, "Garante rail baixo com o rail flutuando")
+    t = r7.pos("1"); wire(t, (t[0], ng[1])); wire((t[0], ng[1]), ng); junction(ng)
+    e_ = (ng[0], ng[1] - 5.08); wire(ng, e_); power("+5V_CART", e_, UP)
+    t2 = r7.pos("2"); wire(t2, (t2[0], t2[1] + 5.08)); power("GND", (t2[0], t2[1] + 5.08), DN)
+    x += STEP + 7.62
+    r8 = R("1k", (x, OY), ("pwr", "+5V"), ("lab", "SENSE"), "Pull-up do nó SENSE")
+    x += STEP
+    r9 = R("1k", (x, OY), ("lab", "SENSE"), ("lab", "SENSE_MCU"), "Série do sensor ao D53")
+    x += STEP
+    led3 = add("Device:LED", newref("D"), "LED amarelo 3mm", FP_LED, "2", (x, OY), {"2": UP, "1": DN}, "Aceso = rail dos slots abaixo de ~2 V: seguro trocar o cartucho")
+    a = led3.pos("2"); wire(a, (a[0], a[1] - 5.08)); label("SENSE", (a[0], a[1] - 5.08), UP)
+    k_ = led3.pos("1"); wire(k_, (k_[0], k_[1] + 5.08)); power("GND", (k_[0], k_[1] + 5.08), DN)
+
+
+if PEND_FLAG:
+    PHASE[0] = True; pwrflag(PEND_FLAG); PHASE[0] = False
+
+# ------------------------------------------------------------------ seletor 3,3 V / 5 V e resistores em série (TROCA_SELETOR=1, megadrive_sms v1.1, D138)
+FP_C = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
+FP_CP = "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
+FP_DIP16 = "Package_DIP:DIP-16_W7.62mm"
+if SELETOR:
+    PHASE[0] = True
+    embed_lib("/usr/share/kicad/symbols/Regulator_Linear.kicad_sym", "AP1117-15", "Regulator_Linear:AP1117-15")
+    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "R_Pack08", "Device:R_Pack08")
+    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "C", "Device:C")
+    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "C_Polarized", "Device:C_Polarized")
+    x += 2 * STEP
+    note("Seletor de tensao do cartucho: 3,3 V (LDO) ou 5 V (derivacao do LDO pelo Q4); D18 em nivel baixo = 5 V, solto = 3,3 V (D138)", x, OY - 22.86, 2)
+    def C(lib, value, fp, at_pin1, up_net, down_net, desc=""):
+        ref = newref("C")
+        p_ = add(lib, ref, value, fp, "1", at_pin1, {"1": UP, "2": DN}, desc)
+        for pin, net in (("1", up_net), ("2", down_net)):
+            a_ = p_.pos(pin); d_ = p_.out(pin); e2 = (a_[0] + d_[0] * 5.08, a_[1] + d_[1] * 5.08)
+            wire(a_, e2); power(net, e2, d_)
+        return p_
+    # LDO 3,3 V (LD1117V33, TO-220): VI no +5V_CART (saída do Q1), VO no VCC_CART (trilho do cartucho)
+    print("pinos do LDO:", LIBPINS["Regulator_Linear:AP1117-15"])
+    u2 = add("Regulator_Linear:AP1117-15", newref("U"), "LD1117V33", FP_TO220, "3", (x, OY), {"3": LF, "2": RT, "1": DN}, "LDO de 3,3 V (TO-220) para o VCC dos cartuchos de 3,3 V")
+    vi, vo, gn = u2.pos("3"), u2.pos("2"), u2.pos("1")
+    wire(vi, (vi[0] - 5.08, vi[1])); power("+5V_CART", (vi[0] - 5.08, vi[1]), LF)
+    wire(vo, (vo[0] + 5.08, vo[1])); power("VCC_CART", (vo[0] + 5.08, vo[1]), RT)
+    wire(gn, (gn[0], gn[1] + 5.08)); power("GND", (gn[0], gn[1] + 5.08), DN)
+    x += STEP + 7.62
+    C("Device:C", "100n", FP_C, (x, OY), "+5V_CART", "GND", "Desacoplamento da entrada do LDO")
+    x += STEP
+    C("Device:C_Polarized", "10u/16V", FP_CP, (x, OY), "VCC_CART", "GND", "Capacitor de saida do LDO (o LD1117 pede 10 uF ou mais)")
+    x += STEP
+    # Q4: P-MOSFET que liga o +5V_CART direto ao VCC_CART (deriva o LDO): conduz = 5 V; aberto = 3,3 V do LDO
+    q4 = add("dumper:Q_PMOS_GDS", newref("Q"), "IRF9540N", FP_TO220, "2", (x, OY), {"1": LF, "2": UP, "3": DN}, "P-MOSFET: 5 V nos slots (deriva o LDO); aberto = 3,3 V")
+    D138["bypass"].append(q4.ref)
+    g4, d4, s4 = q4.pos("1"), q4.pos("2"), q4.pos("3")
+    wire(g4, (g4[0] - 5.08, g4[1])); label("VSEL_G", (g4[0] - 5.08, g4[1]), LF)
+    wire(d4, (d4[0], d4[1] - 5.08)); power("VCC_CART", (d4[0], d4[1] - 5.08), UP)
+    wire(s4, (s4[0], s4[1] + 5.08)); power("+5V_CART", (s4[0], s4[1] + 5.08), DN)
+    x += STEP
+    R("100k", (x, OY), ("pwr", "+5V_CART"), ("lab", "VSEL_G"), "Mantem o gate do Q4 na fonte dele (Q4 aberto = 3,3 V) com o Mega em reset")
+    x += STEP
+    R("1k", (x, OY), ("lab", "VSEL_EN"), ("lab", "VSEL_G"), "Serie do comando D18 do seletor; com J1 fechado limita a corrente do pino a 5 mA")
+    x += STEP
+    # J1: jumper de 2 pinos "TRAVA 3,3 V": fechado prende o gate do Q4 na fonte dele (+5V_CART), Q4 nunca conduz e o 5 V fica impossivel, mesmo com erro de software
+    embed_lib("/usr/share/kicad/symbols/Connector_Generic.kicad_sym", "Conn_01x02", "Connector_Generic:Conn_01x02")
+    j1 = add("Connector_Generic:Conn_01x02", newref("J"), "TRAVA 3,3 V", "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical", "1", (x, OY), {"1": LF, "2": LF},
+             "Jumper opcional TRAVA 3,3 V: fechado, o gate do Q4 fica preso no 5 V e o slot nunca passa de 3,3 V")
+    ja, jb = j1.pos("1"), j1.pos("2")
+    wire(ja, (ja[0] - 5.08, ja[1])); label("VSEL_G", (ja[0] - 5.08, ja[1]), LF)
+    wire(jb, (jb[0] - 5.08, jb[1])); power("+5V_CART", (jb[0] - 5.08, jb[1]), LF)
+    x += STEP
+    # Q5 + R 220: carga de 15 mA no VCC_CART so no modo 3,3 V (gate no VSEL_G: alto = 3,3 V), para absorver a corrente que os sinais de 5 V injetam
+    q5 = add("Transistor_FET:2N7000", newref("Q"), "2N7000", FP_TO92, "3", (x, OY), {"2": LF, "3": UP, "1": DN}, "Carga que segura o VCC_CART em 3,3 V quando os sinais de 5 V injetam corrente")
+    g5, d5, s5 = q5.pos("2"), q5.pos("3"), q5.pos("1")
+    wire(g5, (g5[0] - 5.08, g5[1])); label("VSEL_G", (g5[0] - 5.08, g5[1]), LF)
+    wire(s5, (s5[0], s5[1] + 5.08)); power("GND", (s5[0], s5[1] + 5.08), DN)
+    nd5 = (d5[0], d5[1] - 5.08); wire(d5, nd5)
+    r10 = add("Device:R", newref("R"), "220R", FP_R, "2", nd5, {"2": DN, "1": UP}, "Carga do VCC_CART no modo 3,3 V")
+    t10 = r10.pos("1"); wire(t10, (t10[0], t10[1] - 5.08)); power("VCC_CART", (t10[0], t10[1] - 5.08), UP)
+    x += 2 * STEP
+
+    # ---- resistores de 470 ohms em série entre o Mega e os slots (opção B): redes isoladas de 8 resistores (DIP-16)
+    slot_pin_end = {}
+    for sref in SEL_SLOTS:
+        sp_ = parts[sref][1]
+        for n_ in sp_.pins:
+            slot_pin_end[K(*sp_.pos(n_))] = (sref, n_)
+    split, skipped = [], []
+    for n, nodes in NETS.items():
+        if n.startswith(("+", "GND", "unconnected")) or not any(r == "A1" for r, _ in nodes) or not any(r in SEL_SLOTS for r, _ in nodes):
+            continue
+        outros = sorted({r for r, _ in nodes if r != "A1" and not SLOT_RE.match(r) and not r.startswith("TP")})
+        (skipped if outros else split).append((n, outros))        # rede que liga outra peça (Si5351, PIC, pull-up, TVS): sem resistor em série
+    for n, outros in skipped:
+        print("  SEM resistor em série:", n, "(liga também", ", ".join(outros) + ")")
+    D138["sem_serie"] = [n for n, _ in skipped]
+    D138["slots_sel"] = list(SEL_SLOTS)
+    split = sorted((n for n, _ in split), key=lambda n: (n[0], int(re.sub(r"\D", "", n) or 0), n))
+    nlab = 0
+    for c in tree[1:]:
+        if isinstance(c, list) and c and val(c[0]) == "label":
+            nm = val(c[1])
+            at = find(c, "at")[0]
+            if K(at[1], at[2]) in slot_pin_end and nm in split:
+                c[1] = S(nm + "_S"); nlab += 1
+    expected = sum(1 for n in split for r, _ in NETS[n] if r in SEL_SLOTS)
+    print("resistores em série:", len(split), "nets;", nlab, "rótulos de slot renomeados de", expected, "pinos de slot")
+    assert nlab == expected, ("rótulos de slot não achados", nlab, expected)
+    RN_PINS = LIBPINS["Device:R_Pack08"]
+    print("pinos da R_Pack08:", RN_PINS)
+    OY2 = OY + 60.96
+    xr = OX
+    for k in range(0, len(split), 8):
+        grp = split[k:k + 8]
+        rn = add("Device:R_Pack08", newref("RN"), "470R", FP_DIP16, "1", (xr, OY2), {"1": LF, "16": RT}, "Resistores em serie de 470 ohms: protegem cartuchos de 3,3 V das saidas de 5 V do Mega")
+        for i, nm in enumerate(grp, start=1):
+            for pin, suf in ((str(i), ""), (str(17 - i), "_S")):
+                a_ = rn.pos(pin); d_ = rn.out(pin); e2 = (a_[0] + d_[0] * 5.08, a_[1] + d_[1] * 5.08)
+                wire(a_, e2); label(nm + suf, e2, d_)
+        for i in range(len(grp) + 1, 9):         # pinos livres da última rede: marca de não conexão
+            for pin in (str(i), str(17 - i)):
+                a_ = rn.pos(pin)
+                OUT.append('\t(no_connect\n\t\t(at %s %s)\n\t\t(uuid "%s")\n\t)\n' % (f2(a_[0]), f2(a_[1]), g()))
+        D138["rn"].append(rn.ref)
+        xr += 6 * STEP
+    PHASE[0] = False
 
 # --- rótulos nos pinos D19 e D53 do Mega (no lugar dos símbolos de "sem ligação")
 A1 = parts["A1"][1]
@@ -326,6 +474,10 @@ for n, nodes in NETS.items():
         if r == "A1" and n.startswith("unconnected-"):
             nc_names[pn] = n
 alvo = {"D19": "PWR_EN", "D53": "SENSE_MCU"}
+if SELETOR:
+    alvo["D18"] = "VSEL_EN"
+if MODO != "bloco":
+    alvo = {}
 if HAS_Q1:
     alvo.pop("D19")            # a placa já liga o D19 ao PWR_EN
 for pin, net in alvo.items():
@@ -354,4 +506,6 @@ final += ")\n"
 if len(sys.argv) > 2:
     final = re.sub(r'\(rev "[^"]*"\)', '(rev "%s")' % sys.argv[2], final, count=1)      # versão no carimbo
 PATH.write_text(final)
+import json as _json
+(PATH.parent / "d138.json").write_text(_json.dumps(D138, indent=1))
 print("ok", PATH, "símbolos novos:", sum(1 for t in OUT if t.startswith("\t(symbol")))

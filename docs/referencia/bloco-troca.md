@@ -25,3 +25,11 @@ Pinos do Mega usados: **D19** (`PWR_EN`, PD2) e **D53** (`SENSE_MCU`, PB0). Nenh
 ## Como foi gerado
 
 `tools/troca/`: `sch_block.py` (esquemático: peças novas, símbolos de alimentação `+5V_CART`, rótulos nos pinos D19 e D53), `pcb_block.py` (peças e nets no PCB, posições por busca de lugar livre, apaga trilhas), `route.py` (Freerouting e zonas de GND), `finish.py` (silkscreen, pads de GND sólidos, preenchimento), `boards.json` (parâmetros por placa; `tools/check_netlist.py` lê o mesmo arquivo), `docs.py` (textos das placas). `tools/render_board.sh <placa>` refaz o `render.png`. Referências novas seguem a última de cada tipo da placa (D109).
+
+## F1, J1 e seletor de tensão (D138)
+
+- **F1** (PTC de furo passante, 0,5 A de retenção) fica entre o 5 V do Mega e o Q1 (`+5V` -> F1 -> `+5V_F` -> Q1 -> `+5V_CART`); nas versões sem bloco, entre `+5V` e `+5V_CART`. Opcional (fio ou ponte de solda no lugar). Queda de 0,1 a 0,2 V a 200 mA.
+- **Seletor** (v1.1 e `16_bits` v1.3): LDO de 3,3 V com entrada em `+5V_CART` e saída em `VCC_CART`; o Q4 liga `+5V_CART` a `VCC_CART` quando o D18 está baixo (5 V); aberto, o LDO dá 3,3 V. Q5 e 220 Ω seguram o `VCC_CART` em 3,3 V quando os sinais de 5 V injetam corrente. O resistor de 100 kΩ mantém o Q4 fechado com o Mega em reset (3,3 V, o estado seguro de hardware; o firmware sobe em 5 V ao ligar o slot). O comando passa por 1 kΩ.
+- **J1** "TRAVA 3,3 V": entre o gate do Q4 e `+5V_CART`; fechado, o Q4 nunca conduz.
+- **Resistores em série**: redes DIP-16 de 470 Ω (pino i com o 17-i), só nas linhas entre o Mega e os slots com seletor.
+- Geração e verificação: `tools/troca/v138.py`, `d138.json` por versão, `tools/check_netlist.py`.

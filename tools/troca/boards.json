@@ -42,7 +42,17 @@
   "hide": [
    "D1",
    "C2"
-  ]
+  ],
+  "sel": {
+   "slots": [
+    "MD1"
+   ],
+   "caps": [
+    "C2",
+    "C3",
+    "C4"
+   ]
+  }
  },
  "nes": {
   "q0": 1,
@@ -61,7 +71,15 @@
    106
   ],
   "version": "v1.1",
-  "moves": []
+  "moves": [],
+  "sel": {
+   "slots": [
+    "NES1"
+   ],
+   "caps": [
+    "C2"
+   ]
+  }
  },
  "famicom": {
   "q0": 1,
@@ -84,7 +102,15 @@
    "Adaptado=70,96",
    "Baseado=70,99",
    "Projeto=62,102"
-  ]
+  ],
+  "sel": {
+   "slots": [
+    "FC1"
+   ],
+   "caps": [
+    "C2"
+   ]
+  }
  },
  "famicom_nes": {
   "q0": 1,
@@ -106,7 +132,17 @@
   "moves": [],
   "hide": [
    "D1"
-  ]
+  ],
+  "sel": {
+   "slots": [
+    "FC1",
+    "NES1"
+   ],
+   "caps": [
+    "C2",
+    "C3"
+   ]
+  }
  },
  "gb_gba": {
   "q0": 1,
@@ -144,7 +180,19 @@
    108
   ],
   "version": "v1.1",
-  "moves": []
+  "moves": [],
+  "sel": {
+   "slots": [
+    "NES1",
+    "FC1",
+    "MD1"
+   ],
+   "caps": [
+    "C3",
+    "C4",
+    "C5"
+   ]
+  }
  },
  "n64": {
   "q0": 1,
@@ -182,6 +230,60 @@
    125
   ],
   "version": "v1.3",
-  "moves": []
+  "moves": [],
+  "sel": {
+   "slots": [
+    "MD1"
+   ],
+   "caps": [
+    "C3",
+    "C5",
+    "C6"
+   ]
+  },
+  "fonte": "v1.2"
+ },
+ "megadrive_sms": {
+  "anchor": [
+   70,
+   150
+  ],
+  "region": [
+   19,
+   136,
+   120,
+   171
+  ],
+  "version": "v1.1",
+  "moves": [],
+  "sel": {
+   "slots": [
+    "MD1",
+    "SMS1"
+   ],
+   "caps": [
+    "C2",
+    "C3",
+    "C4",
+    "C5"
+   ]
+  },
+  "fusivel": {
+   "anchor": [
+    70,
+    125
+   ],
+   "region": [
+    19,
+    98,
+    120,
+    134
+   ]
+  },
+  "q0": 1,
+  "r0": 2,
+  "d0": 2,
+  "f0": 3,
+  "v3": false
  }
 }

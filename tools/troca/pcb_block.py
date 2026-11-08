@@ -112,7 +112,7 @@ def hit(box):
 def boxes_at(f, x, y):
     c = f.GetPosition(); dx, dy = x - tomm(c.x), y - tomm(c.y)
     return [(bx0 + dx, by0 + dy, bx1 + dx, by1 + dy) for bx0, by0, bx1, by1 in pad_boxes(f, 0.6)]
-ORDER = [r for r in novos if r.startswith("Q")] + [r for r in novos if r.startswith("D")] + [r for r in novos if r.startswith("R")]
+ORDER = [r for r in novos if r.startswith("RN")] + [r for r in novos if r.startswith(("F", "J"))] + [r for r in novos if r.startswith("Q")] + [r for r in novos if r.startswith("D")] + [r for r in novos if r.startswith("U")] + [r for r in novos if r.startswith("C")] + [r for r in novos if r.startswith("R") and not r.startswith("RN")]
 # peças ligadas pelas mesmas nets pequenas ficam juntas: a âncora de cada peça é a média das já postas que dividem uma net com até 6 nós
 small = [set(r for r, _ in nodes) for n, nodes in nets.items() if 2 <= len(nodes) <= 6 and not n.startswith(("GND", "+"))]
 placed_pos = {}
