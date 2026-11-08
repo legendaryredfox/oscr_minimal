@@ -17,6 +17,8 @@ def render() -> str:
     lines = ["# Gerado por tools/gen_cli_messages.py a partir de host/oscr_host/cli/messages.py. Não edite à mão.",
              "# chave\t" + "\t".join(LANGS)]
     for key, row in CATALOG.items():
+        if key.startswith("help."):
+            continue                      # o --help da Python não vai para a Kotlin (tem o HELP dela)
         cells = [row[l] for l in LANGS]
         assert not any("\t" in c or "\n" in c for c in cells), key
         lines.append(key + "\t" + "\t".join(cells))

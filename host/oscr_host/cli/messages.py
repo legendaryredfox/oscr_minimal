@@ -4,7 +4,7 @@
 Idioma: `--lang` (antes ou depois do comando), senão a variável OSCR_LANG, senão a locale (LC_ALL, LC_MESSAGES, LANG); sem nada reconhecível, inglês.
 O que **não** muda de idioma: as chaves do `--json` (`ok`, `error.kind`, nomes dos campos), os códigos de saída e os valores de `kind`.
 Só os textos para pessoas (`message`, `hint` e as linhas de texto) mudam. Cobertura atual: erros do dispositivo e da CLI, recusas de gravação,
-`power`, `firmware-flash` e `errors`; só o `--help` e o rótulo da barra de progresso ainda são em português (D133).
+`power`, `firmware-flash` e `errors`; só o rótulo da barra de progresso ainda é em português; o `--help` está em `help_texts.py` (D133).
 Para acrescentar uma mensagem: uma chave em CATALOG com os quatro idiomas e `tr("chave", campo=valor)`; `tests/test_messages.py` confere que nenhuma tem idioma faltando."""
 from __future__ import annotations
 
@@ -317,4 +317,10 @@ CATALOG: dict[str, dict[str, str]] = {
     "fid.legend": _r(" (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 ou FFFF = o chip não respondeu a essa rotina)", " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 or FFFF = the chip did not answer that routine)", " (I = Intel 28F, A = AMD 29F032, B = AMD 29F1610, S = SST 39SF040; ID 0000 или FFFF = чип не ответил на эту процедуру)", "（I = Intel 28F，A = AMD 29F032，B = AMD 29F1610，S = SST 39SF040；ID 为 0000 或 FFFF 表示芯片未响应该流程）"),
     "fid.line": _r("{label}: {ids}{legend}", "{label}: {ids}{legend}", "{label}: {ids}{legend}", "{label}：{ids}{legend}"),
     "fid.none": _r("{label}: nenhum chip respondeu (ID 0000 ou FFFF)", "{label}: no chip answered (ID 0000 or FFFF)", "{label}: ни один чип не ответил (ID 0000 или FFFF)", "{label}：没有芯片响应（ID 为 0000 或 FFFF）"),
+    "args.unknown_lang_cli": _r("idioma desconhecido: {tag} (use {langs})", "unknown language: {tag} (use {langs})", "неизвестный язык: {tag} (используйте {langs})", "未知的语言：{tag}（可用：{langs}）"),
 }
+
+
+from .help_texts import HELP_TEXTS  # noqa: E402  (o `--help`, separado para não misturar com as mensagens de execução)
+
+CATALOG.update(HELP_TEXTS)

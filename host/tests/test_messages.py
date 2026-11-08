@@ -152,3 +152,22 @@ def test_problema_de_imagem_traduzido(capsys, tmp_path):
     assert code == 64 and "the file has a 512-byte trainer" in out + err
     code, out, err = _run(capsys, "--lang", "zh", "--simulate", "rom-write", "-s", "nes", "-i", str(f), "--yes")
     assert code == 64 and "trainer" in out + err and "文件含有" in out + err
+
+
+def test_help_em_cada_idioma(capsys):
+    esperado = {"pt-BR": "liga, desliga ou consulta o 5V", "en": "turn the slots' 5V on or off", "ru": "включить, выключить", "zh-CN": "接通、断开或查询插槽 5V"}
+    for lang, trecho in esperado.items():
+        with pytest.raises(SystemExit) as e:
+            main(["--lang", lang, "power", "--help"])
+        assert e.value.code == 0
+        assert trecho in capsys.readouterr().out, lang
+    with pytest.raises(SystemExit):
+        main(["--lang", "en", "--version"])
+    assert "protocol" in capsys.readouterr().out
+
+
+def test_todo_help_do_parser_vem_do_catalogo():
+    import re
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[1] / "oscr_host/cli/parser.py").read_text(encoding="utf-8")
+    assert not re.search(r'help_?=\s*"', src), "help= com texto fixo no parser: use H(\"chave\") e o catálogo (help_texts.py)"
