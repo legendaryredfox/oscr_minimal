@@ -129,7 +129,7 @@ python3 host/dumper.py firmware-flash                    # pergunta antes de gra
 python3 host/dumper.py firmware-flash --env SerialASCII_PowerSense --yes   # placa com o bloco de troca (v1.1)
 ```
 
-O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` de novo por 12 s e mostra a versão nova. Feche a GUI e o monitor serial antes (a porta precisa estar livre). Ainda não há versão na CLI Kotlin nem na GUI, e nada foi testado em um Mega de verdade.
+O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` de novo por 12 s e mostra a versão nova. Feche a GUI e o monitor serial antes (a porta precisa estar livre). A CLI Kotlin tem o mesmo comando (`dumper firmware-flash`); a GUI ainda não tem o botão. Nada foi testado em um Mega de verdade.
 
 ## 5. Dicas
 

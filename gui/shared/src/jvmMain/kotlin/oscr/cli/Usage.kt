@@ -15,6 +15,7 @@ commands:
   systems      list systems, extensions and per-system options (does not open the port)
   errors       list device error codes and CLI exit codes (does not open the port)
   info         firmware version and supported systems
+  firmware-flash  flash the fork's firmware to the Arduino Mega over USB with avrdude (replaces the board's program) [--hex FILE --env NAME --avrdude PATH --yes --dry-run]
   detect       detect the cartridge            (-s SYSTEM)
   identify     identify saved ROMs by CRC32 in the database (--db), without opening the port
   search       search games by name in the database (--db), without opening the port
@@ -63,7 +64,12 @@ options (accepted before or after the command):
   --flash-id           detect -s md: also identify the cartridge's flash chip (the probe writes ID commands to the cartridge; mask ROM ignores them)
   --color MODE         auto (default: only in a terminal, respects NO_COLOR), always or never: colours and ASCII art; --json never has them
   --power MODE         power-switch boards: auto (default: turn the slots' 5V on before the command and keep it on) or keep (do not touch the 5V)
-  --no-verify          rom-write, save-write: do not read the ROM/save back to verify after writing (default: verify)
+  --hex FILE           firmware-flash: the firmware .hex (default: env OSCR_FIRMWARE_HEX or firmware/oscr/.pio/build/<env>/firmware.hex)
+  --env NAME           firmware-flash: PlatformIO environment the .hex comes from (default SerialASCII; SerialASCII_Power, SerialASCII_PowerSense)
+  --avrdude PATH       firmware-flash: avrdude to use (default: env AVRDUDE, PATH or PlatformIO's)
+  --wait S             firmware-flash: seconds waiting for the device to answer INFO after flashing (default 12)
+  --dry-run            firmware-flash: only show the avrdude command and the current firmware version
+  --no-verify          firmware-flash, rom-write, save-write: do not read the ROM/save back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
   --no-backup          save-write: do not read the current save first
   --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)

@@ -34,6 +34,7 @@ object Cli {
             return when (a.cmd) {
                 "ports" -> cmdPorts(io, a)
                 "power" -> cmdPower(io, a)
+                "firmware-flash" -> cmdFirmwareFlash(io, a)
                 "systems" -> cmdSystems(io, a)
                 "errors" -> cmdErrors(io, a, lang)
                 "info" -> cmdInfo(io, a)
