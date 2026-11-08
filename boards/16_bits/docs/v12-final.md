@@ -4,6 +4,8 @@
 
 Em 2026-11-06 o usuário pediu para levar para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040**, que fica sozinho na v. 1.3 (se der certo; `docs/placa-v1.3-rp2040.md`). Esta página descreve o que mudou, como montar e o que ainda **não foi testado** (nada foi montado nem medido).
 
+> **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
+
 ## O que entrou
 
 | Item | Peças | Onde | Observação |

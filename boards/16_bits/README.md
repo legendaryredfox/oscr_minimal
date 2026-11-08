@@ -8,6 +8,8 @@ Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES**
 
 **Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 sem a chave de 5V e sem reset, v1.3 com o bloco de troca). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
 
+> **D130 (2026-11-08):** a v1.2 saiu sem os 12 TVS (D3 a D14); a v1.3 os mantém (DNP).
+
 ## Versões (D128, 2026-11-07)
 
 Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não tem** o circuito de desligar o 5V dos slots pelo Arduino; a **v1.3** tem o bloco de troca de cartucho. Um par de PNGs (cima e baixo) por versão em `renders/` e um `README.md` por versão na pasta de hardware dela.

@@ -2,6 +2,8 @@
 
 > **Versões (D128):** a tabela abaixo é da v1.2 de 2026-11-06. **v1.2 atual:** sem Q1, R16, R17, R18, D2, SW1 e FLG3 (`../fab/bom-v1.2.csv`). **v1.3:** sem SW1; Q1, R16 a R18 e o LED verde (D15) como aqui, mais Q2 e Q3 (2N7000 TO-92), R19 330 Ω, R20 100 kΩ, R21 e R22 1 kΩ e o LED amarelo D16 (`../fab/bom.csv`). Ver `versoes.md`.
 
+> **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
+
 Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bits/fab/bom.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
 > **Pendências antes de comprar (conferir quando as peças chegarem):**

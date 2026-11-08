@@ -25,6 +25,8 @@ A rede `+5V_CART` (SNES, Mega Drive, Si5351, PIC, C2 a C6, R2, R15) vem do 5 V d
 | **R17** 100 Ω | Não | Série do comando D19; sem ele um curto na porta chega direto ao pino do Mega |
 | **R18** 1 kΩ + **D2** LED verde | Sim | Só o indicador de 5 V dos slots. Nenhum jogo afetado |
 
+> **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
+
 ## Linhas de controle (R3 a R14, D3 a D14)
 
 | Peça | Retirar? | O que deixa de funcionar |

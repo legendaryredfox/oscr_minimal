@@ -128,6 +128,7 @@
 - **D127** Importação do `oscr-databases` (P-01; pedido do usuário, 2026-11-07)
 - **D128** Desligamento por software em versão separada; 16_bits v1.0, v1.2 e v1.3; sem botão de reset; renders grandes (pedido do usuário, 2026-11-07)
 - **D129** Um README por versão; renders comuns no lugar dos grandes; silk da 16_and_8_bits (pedido do usuário, 2026-11-08)
+- **D130** 16_bits v1.2 sem os TVS; limpeza e reorganização (pedido do usuário, 2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1049,3 +1050,7 @@ Aplicadas as recomendações de `docs/revisao-codigo.md` e `docs/revisao-ux.md`;
 - **README por versão.** `boards/<placa>/hardware-<versão>/README.md` (a mais nova em `hardware/README.md`), gerado por `tools/gen_readme_versoes.py`: renders de cima e de baixo, slots, tamanho, se desliga o 5V por software, lista de peças (do esquemático), diferença para a versão anterior, arquivos de fábrica e comandos de verificação.
 - **Renders.** `tools/render_grande.py` removido. `tools/render_board.sh <placa> <versões...>` gera PNGs comuns de 1768 × 1064 (qualidade básica do `kicad-cli pcb render`) de cima e de baixo de cada versão em `boards/<placa>/renders/`, e o `render.png` (última versão, de cima).
 - **Silk.** Removido o texto "ETIQUETA DO CARTUCHO PARA BAIXO" dos dois PCBs da `16_and_8_bits` (voltou com a restauração do histórico na D128; já tinha saído uma vez). Gerbers e zips da v1.0 e da v1.1 refeitos. DRC pelo MCP do KiCad nas duas: 0 erros, 4 avisos `lib_footprint_mismatch` (os já justificados).
+
+### D130 — 16_bits v1.2 sem os TVS; limpeza e reorganização (pedido do usuário, 2026-11-08)
+- **TVS.** Pergunta do usuário sobre o que são os TVS 5 V (D3 a D14, DNP, proteção de ESD nas 12 linhas de controle). Resposta: "remover da 1.2, deixar na 1.3". `tools/16_bits/sem_tvs.py` tirou os 12 diodos do esquemático (com a poda de fios órfãos) e do PCB (e 10 trilhas e vias soltas). ERC 0; DRC 0 erros, nenhuma ligação aberta; `check_netlist.py --sem-tvs` confere. Gerbers, zip, `bom-v1.2.csv`, renders e README da v1.2 refeitos. A v1.3 não mudou.
+

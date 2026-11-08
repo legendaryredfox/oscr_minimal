@@ -23,12 +23,13 @@ Versão **v1.3** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 
 ## Particularidades desta versão
 
-A v1.2 mais o bloco de troca de cartucho (Q1 a Q3, R16 a R22, LEDs D15 e D16, comando no D19, sensor no D53). Roteada de novo pelo Freerouting: **revisar no KiCad antes de encomendar**.
+A v1.2 mais os 12 TVS 5 V (D3 a D14, DNP) e o bloco de troca de cartucho (Q1 a Q3, R16 a R22, LEDs D15 e D16, comando no D19, sensor no D53). Roteada de novo pelo Freerouting: **revisar no KiCad antes de encomendar**.
 
 ## O que muda em relação à v1.2
 
 | Peça | Referências | Antes | Agora |
 |---|---|---|---|
+| TVS ou zener 5V (DNP) | D3,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13,D14 | 0 | 12 |
 | LED verde 3mm | D15 | 0 | 1 |
 | LED amarelo 3mm | D16 | 0 | 1 |
 | IRF9540N | Q1 | 0 | 1 |

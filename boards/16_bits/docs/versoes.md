@@ -8,7 +8,8 @@ Pedido do usuário em 2026-11-07: o botão de reset sai de todas as versões; a 
 | Gerbers e zip | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip` | `fab/gerbers-v1.2/`, `fab/dumper-v1.2-jlcpcb.zip` | `fab/gerbers/`, `fab/dumper-v1.3-jlcpcb.zip` |
 | Lista de peças (CSV) | — | `fab/bom-v1.2.csv` | `fab/bom.csv` |
 | PNGs | `renders/16_bits-v1.0-cima.png`, `-baixo.png` | `renders/16_bits-v1.2-cima.png`, `-baixo.png` | `renders/16_bits-v1.3-cima.png`, `-baixo.png` (`render.png` = v1.3, de cima) |
-| Resistores série e TVS (DNP) nas 12 linhas de controle, pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste, furos M3 do Mega | não | sim | sim |
+| Resistores série (0 Ω) nas 12 linhas de controle, pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste, furos M3 do Mega | não | sim | sim |
+| TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | sim |
 | Botão de reset (SW1) | não | **não** | **não** |
 | Desligamento do 5V por software (Q1, R16 a R18, LED verde) | não | **não** (5V direto nos slots) | sim |
 | Descarga do rail e LED amarelo "seguro trocar" (Q2, Q3, R19 a R22, D16; sensor no D53) | não | não | sim |
@@ -34,3 +35,7 @@ HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2
 tools/export_fab.sh 16_bits v1.3
 tools/render_board.sh 16_bits v1.0 v1.2 v1.3
 ```
+
+## TVS (D130)
+
+Pedido do usuário em 2026-11-08: a v1.2 sai sem os 12 TVS 5 V (D3 a D14, que eram DNP); a v1.3 os mantém. Script: `tools/16_bits/sem_tvs.py` (esquemático e PCB; as 10 trilhas e vias que ficaram soltas saíram junto). ERC 0 violações; DRC 0 erros e nenhuma ligação aberta; `python3 tools/check_netlist.py --board 16_bits --sem-troca --sem-tvs boards/16_bits/hardware-v1.2/dumper.kicad_sch` confere (79 nets, 251 ligações).

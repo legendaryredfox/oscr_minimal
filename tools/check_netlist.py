@@ -27,7 +27,8 @@ if "--board" in _args:
     BOARD = _args[i + 1]
     del _args[i:i + 2]
 SEM_TROCA = "--sem-troca" in _args      # versão sem o bloco de troca de cartucho (D128): v1.0 das placas, v1.2 da 16_bits
-_args = [a for a in _args if a != "--sem-troca"]
+SEM_TVS = "--sem-tvs" in _args          # 16_bits v1.2 sem os TVS D3 a D14 (D130)
+_args = [a for a in _args if a not in ("--sem-troca", "--sem-tvs")]
 SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware/dumper.kicad_sch"
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
 # Capacitores de 100 nF (slots e PIC) e regulador de 3,3 V de cada placa.
@@ -36,7 +37,7 @@ BOARD_CFG = {
     "16_and_8_bits": dict(caps=range(2, 7), reg=True, tps={}),
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
-    # v. 1.2 final (D108): resistores serie R3..R14 e TVS D3..D14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES,
+    # v. 1.2 final (D108; sem os TVS desde a D130, --sem-tvs): resistores serie R3..R14 e TVS D3..D14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES,
     # chave de 5V dos slots (Q1, R16..R18, D2; comando no D19), reset (SW1)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}, v12b=True),
     # só GBA (GB e GBC por adaptador): regulador de 3,3 V (U1, C2, C3, C4), sem Si5351, PIC e R2
@@ -204,9 +205,11 @@ def v12b_ajusta(exp):
     for k, n in enumerate(CTRL):
         r, d = f"R{3 + k}", f"D{3 + k}"
         exp[n].discard((MEGA, n))
-        exp[n].update({(r, "2"), (d, "1")})
+        exp[n].add((r, "2"))
         exp[n + "_M"] = {(MEGA, n), (r, "1")}
-        exp["GND"].add((d, "2"))
+        if not SEM_TVS:
+            exp[n].add((d, "1"))
+            exp["GND"].add((d, "2"))
     exp["D17"].add(("R15", "2"))
     exp["+5V"].add(("R15", "1"))        # pull-up de /VRES (com o bloco de troca vai para o +5V_CART, em troca_ajusta)
 
