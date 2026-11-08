@@ -129,6 +129,7 @@
 - **D128** Desligamento por software em versão separada; 16_bits v1.0, v1.2 e v1.3; sem botão de reset; renders grandes (pedido do usuário, 2026-11-07)
 - **D129** Um README por versão; renders comuns no lugar dos grandes; silk da 16_and_8_bits (pedido do usuário, 2026-11-08)
 - **D130** 16_bits v1.2 sem os TVS; limpeza e reorganização (pedido do usuário, 2026-11-08)
+- **D131** `firmware-flash`: gravar o firmware do fork no Mega pela CLI (2026-11-08)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1055,3 +1056,9 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **TVS.** Pergunta do usuário sobre o que são os TVS 5 V (D3 a D14, DNP, proteção de ESD nas 12 linhas de controle). Resposta: "remover da 1.2, deixar na 1.3". `tools/boards/16_bits/sem_tvs.py` tirou os 12 diodos do esquemático (com a poda de fios órfãos) e do PCB (e 10 trilhas e vias soltas). ERC 0; DRC 0 erros, nenhuma ligação aberta; `check_netlist.py --sem-tvs` confere. Gerbers, zip, `bom-v1.2.csv`, renders e README da v1.2 refeitos. A v1.3 não mudou.
 
 - **Reorganização (itens 1 a 4 da análise).** `docs/` em `referencia/`, `planos/` e `historico/` (`continuacao.md`, `decisoes.md` e `img/` ficam na raiz; `docs/sessao-*.md` continua local, ignorado pelo git). `tools/` com `boards/<placa>/` (scripts de cada placa) e `historico/` (`pcb_v12/`, `revisao/`); links e caminhos dos scripts corrigidos. `fab/`: saiu a cópia `-gerbers-` de cada zip e as `previa-*.png` (os renders de `renders/` as substituem); `export_fab.sh` só gera um zip por versão. `.gitignore` cobre `hardware*/` (inclui `hardware-v1.x/`); o `.kicad_prl` rastreado saiu do índice. SHA-256 do zip da v1.2 no `PEDIDO.md` da 16_bits conferido e corrigido (o zip mudou com os TVS).
+
+### D131 — `firmware-flash`: gravar o firmware do fork no Mega pela CLI (2026-11-08)
+- **Pedido** (2026-11-07, para fazer no futuro; usuário: "pode continuar o desenvolvimento do projeto"): gravar o firmware sem abrir o PlatformIO.
+- **Decisão.** Chamar o `avrdude` (`-p atmega2560 -c wiring -b 115200 -D`, o mesmo que o PlatformIO usa para o Mega 2560) em vez de falar STK500v2 direto: o avrdude já confere a gravação e existe nos três sistemas. `.hex` de `--hex`, `OSCR_FIRMWARE_HEX` ou da compilação do projeto; avrdude de `--avrdude`, `AVRDUDE`, `PATH` ou do PlatformIO. Lê a versão do firmware (INFO) antes e depois, sempre pede confirmação (`--yes` fora de terminal), barras do avrdude viram progresso (`gravando`, `conferindo`). `host/oscr_host/cli/cmd_firmware.py`, `host/tests/test_firmware_flash.py` (avrdude falso).
+- **Limites.** Só na CLI Python; CLI Kotlin e GUI ficam para depois. Não embute o `.hex` nem o avrdude no instalador. **Nada rodou em um Mega de verdade.** O INFO depois da gravação pode falhar se a porta mudar de nome (o comando avisa e não falha).
+

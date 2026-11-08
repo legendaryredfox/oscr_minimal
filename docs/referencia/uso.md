@@ -119,6 +119,18 @@ Depois de cada dump o programa confere o **checksum do cabeçalho** (Mega Drive,
 
 Códigos de erro do protocolo: `docs/referencia/protocolo.md`, seção 8. Na CLI, o código de saída é 1 em erro, 2 se não houver cartucho; os demais e a saída `--json` para agentes estão em `docs/referencia/cli.md`.
 
+### Atualizar ou gravar o firmware do Arduino pela CLI (D131)
+
+Sem o PlatformIO: tenha o `avrdude` instalado e o `.hex` do firmware (compilado em `firmware/oscr/.pio/build/SerialASCII/firmware.hex`, ou o que alguém lhe passou).
+
+```
+python3 host/dumper.py firmware-flash --dry-run          # só mostra o comando e a versão atual
+python3 host/dumper.py firmware-flash                    # pergunta antes de gravar
+python3 host/dumper.py firmware-flash --env SerialASCII_PowerSense --yes   # placa com o bloco de troca (v1.1)
+```
+
+O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` de novo por 12 s e mostra a versão nova. Feche a GUI e o monitor serial antes (a porta precisa estar livre). Ainda não há versão na CLI Kotlin nem na GUI, e nada foi testado em um Mega de verdade.
+
 ## 5. Dicas
 
 - Leia cada cartucho **duas ou três vezes** e confira que o CRC32 é o mesmo.

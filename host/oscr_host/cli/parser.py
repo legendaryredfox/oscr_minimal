@@ -12,6 +12,7 @@ from .. import __version__
 from .cmd_db import cmd_identify, cmd_search
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
+from .cmd_firmware import ENV_HELP, DEFAULT_ENV, cmd_firmware_flash
 from .cmd_flash import cmd_flash_blank, cmd_flash_erase, cmd_flash_id, cmd_flash_read, cmd_flash_write
 from .cmd_info import cmd_errors, cmd_info, cmd_ports, cmd_systems
 from .cmd_power import cmd_power
@@ -91,6 +92,14 @@ def build_parser() -> argparse.ArgumentParser:
     add("info", cmd_info, "versão do firmware e sistemas suportados", system=False)
     pwp = add("power", cmd_power, "liga, desliga ou consulta o 5V dos slots (placa com chave de 5V; para trocar o cartucho)", system=False)
     pwp.add_argument("action", choices=("on", "off", "status"), help="on liga; off solta os pinos, corta o 5V e espera a descarga; status só consulta")
+    fw = add("firmware-flash", cmd_firmware_flash, "grava o firmware do fork no Arduino Mega pela USB (usa o avrdude; troca o programa da placa)", system=False)
+    fw.add_argument("--hex", help="arquivo .hex do firmware (padrão: a compilação do projeto, firmware/oscr/.pio/build/<env>/firmware.hex, ou a variável OSCR_FIRMWARE_HEX)")
+    fw.add_argument("--env", default=DEFAULT_ENV, help="ambiente do PlatformIO de onde vem o .hex quando --hex não é dado: " + ENV_HELP)
+    fw.add_argument("--avrdude", help="caminho do avrdude (padrão: a variável AVRDUDE, o PATH ou o que o PlatformIO instalou)")
+    fw.add_argument("--yes", action="store_true", help="não pergunta antes de gravar (obrigatório fora de um terminal)")
+    fw.add_argument("--no-verify", action="store_true", help="não pede ao avrdude para ler o firmware de volta (padrão: confere)")
+    fw.add_argument("--wait", type=float, default=12.0, help="segundos esperando o dispositivo voltar a responder ao INFO depois da gravação (padrão 12; 0 não espera)")
+    fw.add_argument("--dry-run", action="store_true", help="só mostra o comando do avrdude e a versão atual do firmware; não grava")
     dtp = add("detect", cmd_detect, "detecta o cartucho")
     dtp.add_argument("--flash-id", action="store_true", help="Mega Drive: identifica também o chip de flash do cartucho (a sondagem escreve comandos de ID no cartucho; ROM de máscara os ignora)")
     ip = add("identify", cmd_identify, "identifica arquivos já salvos pelo CRC32 na base de dados (--db), sem abrir a porta")
