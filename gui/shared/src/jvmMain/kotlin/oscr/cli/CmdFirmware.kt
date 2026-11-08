@@ -50,7 +50,7 @@ internal fun cmdFirmwareFlash(io: CliIo, a: Args): Int {
         emit(io, a, Json.obj("simulated" to true, "port" to port, "hex" to hex.path, "firmware_before" to before?.firmware, "firmware_after" to before?.firmware), listOf(Msg.t("fw.simulated", "what" to what)))
         return EXIT_OK
     }
-    val (code, err) = runAvrdude(avrdudeCmd(exe, port, hex, verify)) { label -> progress(io, a, if (label == "writing") "gravando" else "conferindo") }
+    val (code, err) = runAvrdude(avrdudeCmd(exe, port, hex, verify)) { label -> progress(io, a, label) }
     if (code != 0) throw CliError("avrdude", Msg.t("fw.failed", "code" to code, "detail" to err.ifEmpty { Msg.t("fw.failed.no_message") }), if (code == 1 || code == 127) EXIT_NO_DEVICE else EXIT_ERROR,
         Msg.t("fw.failed.hint"))
     val after = infoAfter(io, a, a.opts["wait"]?.toDoubleOrNull() ?: 12.0)

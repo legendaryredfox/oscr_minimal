@@ -71,7 +71,7 @@ def run_avrdude(cmd: list[str], cb_for) -> tuple[int, str]:
             line = buf.decode("utf-8", "replace"); buf = b""
             m = _PCT.search(line)
             if m:
-                label = "gravando" if m.group(1) == "Writing" else "conferindo"
+                label = "writing" if m.group(1) == "Writing" else "verifying"
                 cbs.setdefault(label, cb_for(label))(int(m.group(2)), 100)
             elif line.strip():
                 tail.append(line.strip())

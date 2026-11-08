@@ -55,7 +55,7 @@ def test_grava_com_yes_e_traduz_o_progresso(fake, capsys):
     assert code == 0 and r["ok"] and r["verified"] is True and r["responds"] is False
     assert json.loads(log.read_text())[-2:] == ["-U", f"flash:w:{hexf}:i"] and "-V" not in json.loads(log.read_text())
     ev = [json.loads(l) for l in err.splitlines() if l.startswith("{")]
-    assert ev and ev[-1]["label"] == "gravando" and ev[-1]["percent"] == 100
+    assert ev and ev[-1]["label"] == "writing" and ev[-1]["percent"] == 100
 
 
 def test_no_verify_passa_o_V(fake, capsys):

@@ -40,7 +40,7 @@ class FirmwareFlashTest {
         val r = run("--json", "--progress", "jsonl", "-p", "/dev/ttyOSCRteste", "firmware-flash", "--hex", hex.path, "--avrdude", exe.path, "--yes", "--wait", "0")
         assertEquals(0, r.code, r.out); assertTrue(r.out.contains("\"verified\":true") && r.out.contains("\"responds\":false"), r.out)
         val args = log.readLines(); assertEquals(listOf("-U", "flash:w:${hex.path}:i"), args.takeLast(2)); assertFalse("-V" in args)
-        assertTrue(r.err.contains("\"label\":\"gravando\"") && r.err.contains("\"percent\":100"), r.err)
+        assertTrue(r.err.contains("\"label\":\"writing\"") && r.err.contains("\"percent\":100"), r.err)
     }
 
     @Test fun noVerifyPassaOV() {

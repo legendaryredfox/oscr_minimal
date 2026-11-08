@@ -4,7 +4,7 @@
 Idioma: `--lang` (antes ou depois do comando), senão a variável OSCR_LANG, senão a locale (LC_ALL, LC_MESSAGES, LANG); sem nada reconhecível, inglês.
 O que **não** muda de idioma: as chaves do `--json` (`ok`, `error.kind`, nomes dos campos), os códigos de saída e os valores de `kind`.
 Só os textos para pessoas (`message`, `hint` e as linhas de texto) mudam. Cobertura atual: erros do dispositivo e da CLI, recusas de gravação,
-`power`, `firmware-flash` e `errors`; só o rótulo da barra de progresso ainda é em português; o `--help` está em `help_texts.py` (D133).
+`power`, `firmware-flash` e `errors`; os rótulos da barra de progresso são fixos (`writing`, `verifying`, não mudam com o idioma); o `--help` está em `help_texts.py` (D133).
 Para acrescentar uma mensagem: uma chave em CATALOG com os quatro idiomas e `tr("chave", campo=valor)`; `tests/test_messages.py` confere que nenhuma tem idioma faltando."""
 from __future__ import annotations
 

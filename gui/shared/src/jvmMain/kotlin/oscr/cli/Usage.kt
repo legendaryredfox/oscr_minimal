@@ -34,7 +34,7 @@ options (accepted before or after the command):
   --simulate           in-memory simulator (no hardware; only system 'mock' has a cartridge)
   --json               one JSON line on stdout, always with "ok"; errors: {"ok":false,"error":{kind,message,hint}}
   --progress MODE      auto | none | jsonl (one JSON line per 1% on stderr)
-  --lang TAG           language of device error texts: en (default), pt-BR, ru, zh-CN
+  --lang TAG           language of messages: en (default), pt-BR, ru, zh-CN (else OSCR_LANG, then the locale)
   -s, --system NAME    snes nes famicom md gba gb mock (default: mock)
   -o, --output FILE    output file (the right extension is added if missing; overwrites)
   -i, --input FILE     save file to write
