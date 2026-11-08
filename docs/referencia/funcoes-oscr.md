@@ -103,6 +103,16 @@ O protocolo ganhou `WRITE_ROM` (`0x0B`), D77 (`docs/referencia/protocolo.md` se�
 
 Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequência do OSCR, mais uma entrada na lista de chips do PC.
 
+## Família Sega de 8 bits (D137)
+
+| Função do OSCR (`SMS.cpp`) | Estado |
+|---|---|
+| Master System / Mark III: ler ROM (tamanho pelo cabeçalho ou informado), ler e gravar SRAM | ✅ código; nunca rodou em hardware |
+| Game Gear (adaptadores Retrode e Retron 3in1) | ✅ código; nunca rodou em hardware |
+| SG-1000 (adaptador Raphnet): ler ROM | ✅ código; nunca rodou em hardware |
+| Escolher o tamanho da ROM no menu | ✅ `--prg` / campo de tamanho |
+| Atualizar a leitura do cartucho (`Refresh`) | ✅ cada comando lê o cabeçalho de novo |
+
 ## Outros sistemas do OSCR (stubs na GUI)
 
-Arcadia 2001, Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, ColecoVision, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Nintendo 64, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, RCA Studio II, Master System, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.
+Arcadia 2001, Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, ColecoVision, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Nintendo 64, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, RCA Studio II, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.

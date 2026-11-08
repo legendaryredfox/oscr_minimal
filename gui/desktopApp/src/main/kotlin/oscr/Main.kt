@@ -695,7 +695,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true,
                     supportingText = { Text(t(S.GBA_SAVE_HINT)) }, modifier = Modifier.fillMaxWidth())
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES)) {
+            if (stub == null && (system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000)) {
+                Callout(t(S.SEGA_HINT), Tone.INFO)
+                OutlinedTextField(mapper, { mapper = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.SEGA_ADAPTER)) }, singleLine = true,
+                    supportingText = { Text(t(S.SEGA_ADAPTER_HINT)) }, modifier = Modifier.fillMaxWidth())
+            }
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }

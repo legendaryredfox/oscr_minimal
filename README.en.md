@@ -28,6 +28,24 @@ cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKot
 python3 tools/check_netlist.py --board <board>        # schematic vs boards/<board>/docs/pinmap.md
 ```
 
+## Adapters and reference repositories
+
+The cartridge-reading code comes from the OSCR; what changes per system is the adapter. Sources consulted and adapters the firmware recognizes (D136, D137):
+
+| Reference | What for |
+|---|---|
+| <https://github.com/sanni/cartreader> (`hardware/` folder: `mastersystem_adapter`, `six_slot_adapter`, `*_adapter`) | KiCad of the OSCR adapters; the `megadrive_sms` Master System slot and the slot footprints come from here (CC BY 4.0). Archived since 2026-06 |
+| <https://github.com/oscartreader/oscr-firmware> | current OSCR firmware (GPL v3), base of the fork in `firmware/oscr/` |
+| <https://github.com/oscartreader/oscr-databases> | game databases and the flash chip table (`database/oscr/`, D127 and D135; no declared license) |
+| <https://github.com/oscartreader/oscr-hardware> | hardware repository of the new upstream (empty on 2026-11-08) |
+| <https://github.com/sanni/cartreader/discussions/874> | Game Gear adapter discussion (slot with the RetroSix connector) |
+| <https://www.raphnet.net/electronique/sms_cartridge_programmer/index_en.php> | **Raphnet** Master System / SG-1000 adapter (`SMSRaphnet` and `SG1000Raphnet` modes of `SMS.cpp`) |
+| <https://forum.retrode.com> | **Retrode** adapters (`SMSRetrode`, `GGRetrode` of `SMS.cpp`) |
+| <https://www.retrosix.wiki> | Game Gear and other Sega cartridge pinouts |
+| <https://www.smspower.org/maxim/Documents/Pinouts> | cartridge connector pinout of the Master System, Mark III and SG-1000 |
+
+**Game Gear and SG-1000** have no slot of their own on this project's boards: they use an adapter in the Mega Drive slot (Retron 3in1, Retrode, Raphnet). The adapters I found are commercial; **I found no open (KiCad) files** for them. If an open-source adapter shows up, add its link here.
+
 ## Safety and legal
 
 Use at your own risk. One cartridge at a time, USB unplugged when swapping. Writing a ROM erases the chip. The tool is meant for backing up cartridges you own; the repository ships no ROMs, BIOS or keys (`database/oscr/` holds only game names and CRC32s from the OSCR). Console and company names are trademarks of their owners, used only to state compatibility.

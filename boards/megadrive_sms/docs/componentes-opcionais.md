@@ -2,7 +2,7 @@
 
 Placa Mega Drive + Master System (`boards/megadrive_sms/`): dois slots, LED e capacitores. Não tem Si5351, PIC, regulador de 3,3 V, R2 nem bloco de troca de cartucho.
 
-> **Nada aqui foi testado em hardware.** Conclusões vêm de `pinmap.md` e do firmware (`firmware/oscr/src/cores/MegaDrive.cpp`; o núcleo `SMS.cpp` do OSCR não usa clock e está desligado no `user.ini`).
+> **Nada aqui foi testado em hardware.** Conclusões vêm de `pinmap.md` e do firmware (`firmware/oscr/src/cores/MegaDrive.cpp`; o núcleo `SMS.cpp` do OSCR não usa clock e está ligado no fork desde a D137).
 
 | Peça | Retirar? | O que deixa de funcionar | Cartuchos afetados |
 |---|---|---|---|

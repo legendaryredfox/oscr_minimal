@@ -36,7 +36,7 @@ enum : uint16_t {  // códigos de ERRO
   E_CRC = 6, E_CARTUCHO_IO = 7, E_OCUPADO = 8, E_ABORTADO = 9, E_SEM_SAVE = 10, E_FLASH = 11, E_DESLIGADO = 12,
 };
 
-enum : uint8_t { SYS_SNES = 1, SYS_NES = 2, SYS_FAMICOM = 3, SYS_MD = 4, SYS_GBA = 5, SYS_GB = 6, SYS_FLASH = 7, SYS_MOCK = 255 };
+enum : uint8_t { SYS_SNES = 1, SYS_NES = 2, SYS_FAMICOM = 3, SYS_MD = 4, SYS_GBA = 5, SYS_GB = 6, SYS_FLASH = 7, SYS_SMS = 8, SYS_GG = 9, SYS_SG1000 = 10, SYS_MOCK = 255 };
 
 // CRC32 IEEE (igual ao zlib). `start` é o CRC acumulado anterior (0 no começo).
 uint32_t crc32_update(uint32_t start, const uint8_t* data, size_t len);

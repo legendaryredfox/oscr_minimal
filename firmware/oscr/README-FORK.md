@@ -6,7 +6,7 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 
 | Arquivo | Mudança |
 |---|---|
-| `user.ini` (novo) | Desliga os núcleos N64, SMS e autoteste (`[cores]`). Ficam SNES, NES/Famicom, Mega Drive e GB/GBC/GBA (`gbx`). |
+| `user.ini` (novo) | Desliga os núcleos N64 e autoteste (`[cores]`). Ficam SNES, NES/Famicom, Mega Drive, SMS/Game Gear/SG-1000 (D137) e GB/GBC/GBA (`gbx`). |
 | `include/flags.h` | `OSCR_DUMPER` (ligado): sem SD, saída pelo protocolo serial. |
 | `include/api/Storage.h`, `src/arch/avr/generic/Storage.cpp` | `File` usa `StreamFile` (arquivo virtual) e `sd` vira `StreamSd`; sem inicialização do SD. |
 | `include/arch/avr/generic/interfaces/ClockedSerial.h`, `src/.../ClockedSerial.cpp` | `mute` (a UI de texto não escreve) e `rawWrite` (só o protocolo). |

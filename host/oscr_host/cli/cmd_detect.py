@@ -13,7 +13,8 @@ from .output import emit
 
 def cmd_detect(args) -> int:
     c, t, info = common.connect(args)
-    r = c.detect(system_id(args.system))
+    sega = args.system in ("sms", "gg", "sg1000")          # o adaptador (campo mapper) muda a fiação dos barramentos; os outros sistemas ignoram as opções no DETECT
+    r = c.detect(system_id(args.system), args.mapper if sega else 0)
     flash = None
     if getattr(args, "flash_id", False):
         if args.system != "md":

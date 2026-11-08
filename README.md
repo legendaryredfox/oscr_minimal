@@ -37,6 +37,24 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3, mais `json/` (bases do `oscr-databases`, 4,9 mil CRC32 novos; o repositório de origem não declara licença, D127); carregada sozinha pelo host e pela GUI (D88, D127) |
 | `tools/` | Scripts de hardware: `check_netlist.py` (`--board <placa>`), `export_fab.sh`, `gen_pinmap.py`, `build_lib.py`, `fill_zones.py` e os de cada placa (`megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `gb_gba/`, `revisao/`); ver `tools/README.md` |
 
+## Adaptadores e repositórios de referência
+
+O código de leitura dos cartuchos vem do OSCR; o que muda por sistema é o adaptador. Fontes consultadas e adaptadores que o firmware reconhece (D136, D137):
+
+| Referência | Para quê |
+|---|---|
+| <https://github.com/sanni/cartreader> (pasta `hardware/`: `mastersystem_adapter`, `six_slot_adapter`, `*_adapter`) | KiCad dos adaptadores do OSCR; o slot Master System da `megadrive_sms` e os footprints dos slots vêm daí (CC BY 4.0). Arquivado desde 2026-06 |
+| <https://github.com/oscartreader/oscr-firmware> | firmware atual do OSCR (GPL v3), base do fork em `firmware/oscr/` |
+| <https://github.com/oscartreader/oscr-databases> | bases de jogos e a tabela de chips de flash (`database/oscr/`, D127 e D135; sem licença declarada) |
+| <https://github.com/oscartreader/oscr-hardware> | repositório de hardware do novo upstream (vazio em 2026-11-08) |
+| <https://github.com/sanni/cartreader/discussions/874> | discussão do adaptador de Game Gear (slot com o conector do RetroSix) |
+| <https://www.raphnet.net/electronique/sms_cartridge_programmer/index_en.php> | adaptador **Raphnet** de Master System / SG-1000 (modo `SMSRaphnet` e `SG1000Raphnet` do `SMS.cpp`) |
+| <https://forum.retrode.com> | adaptadores **Retrode** (`SMSRetrode`, `GGRetrode` do `SMS.cpp`) |
+| <https://www.retrosix.wiki> | pinagem do cartucho de Game Gear e de outros consoles Sega |
+| <https://www.smspower.org/maxim/Documents/Pinouts> | pinagem do conector de cartucho do Master System, Mark III e SG-1000 |
+
+**Game Gear e SG-1000** não têm slot próprio nas placas deste projeto: usam adaptador no slot Mega Drive (Retron 3in1, Retrode, Raphnet). Os adaptadores que achei são comerciais; **não encontrei arquivos abertos** (KiCad) deles. Se aparecer um adaptador de código aberto, acrescente o link aqui.
+
 ## Aviso
 
 - **Use por sua conta e risco.** Hardware e software saem sem garantia (CC BY 4.0 e GPL v3). Placas e firmware são experimentais.
@@ -46,6 +64,8 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 - Nintendo, Super Nintendo, Famicom, Game Boy, Sega, Mega Drive e outros nomes são marcas dos seus donos, citadas só para dizer com o que o projeto é compatível. Sem vínculo com essas empresas nem com o projeto OSCR.
 
 ## O que foi testado e o que falta
+
+Cobertura medida (Python 90 %, Kotlin 91,7 % das linhas, C++ puro no PC) e o que nenhum teste alcança: [`docs/referencia/cobertura-testes.md`](docs/referencia/cobertura-testes.md).
 
 **Testado (2026-11-06; tudo no PC, nada em hardware):**
 

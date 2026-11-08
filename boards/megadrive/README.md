@@ -21,6 +21,10 @@ Versão mínima de uma função: um slot **Mega Drive** (64p, 2,54 mm) em shield
 
 Ficam sem ligação no Mega: `D20`, `D21`, `D40`, `D41` (I²C do Si5351 e reset do PIC).
 
+## Adaptadores de referência
+
+O slot Mega Drive recebe os adaptadores de **Game Gear** (Retron 3in1, Retrode) e de **SG-1000** (Raphnet) que o núcleo `SMS.cpp` do OSCR conhece; **só os comerciais, sem arquivos abertos**. Lista de repositórios e links (`sanni/cartreader`, `oscartreader`, Raphnet, Retrode, RetroSix, smspower.org): [`README.md`](../../README.md#adaptadores-e-repositórios-de-referência). Modos de adaptador no protocolo: `docs/referencia/protocolo.md`.
+
 ## Como foi feita
 
 Scripts em `tools/boards/megadrive/` (da raiz do repositório):

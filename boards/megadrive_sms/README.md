@@ -24,11 +24,15 @@ Versão mínima de dois slots em shield para Arduino Mega 2560 R3, 100% THT, só
 | Placa | 107,1 × 65,1 mm | 107,1 × 83,1 mm (slot SMS abaixo da fileira de baixo do Mega) |
 | Furos M3 | 4 | 6 |
 
+## Adaptadores de referência
+
+O slot Mega Drive recebe os adaptadores de **Game Gear** (Retron 3in1, Retrode) e de **SG-1000** (Raphnet) que o núcleo `SMS.cpp` do OSCR conhece; **só os comerciais, sem arquivos abertos**. Lista de repositórios e links (`sanni/cartreader`, `oscartreader`, Raphnet, Retrode, RetroSix, smspower.org): [`README.md`](../../README.md#adaptadores-e-repositórios-de-referência). Modos de adaptador no protocolo: `docs/referencia/protocolo.md`.
+
 ## Pendências
 
 1. **Direção da etiqueta do cartucho SMS** no silk (não confirmada; o do Mega Drive está).
 2. Medidas dos dois slots comprados e folga entre eles (cerca de 40 mm entre os centros).
-3. **Firmware:** o núcleo `SMS.cpp` do OSCR está desligado no `user.ini` e não há comando no protocolo; a placa só lê Master System depois que esse núcleo entrar no fork (meta D77, `docs/referencia/funcoes-oscr.md`).
+3. **Firmware (D137):** o núcleo `SMS.cpp` do OSCR está ligado no fork (Master System, Game Gear e SG-1000; sistemas 8, 9 e 10 do protocolo); compila e a lógica pura tem teste no PC, **mas nada rodou em hardware**. O slot SMS desta placa é o `--mapper 0` (fiação do `mastersystem_adapter`).
 4. Revisar o layout no KiCad (roteamento por autoroteador).
 
 ## Como foi feita

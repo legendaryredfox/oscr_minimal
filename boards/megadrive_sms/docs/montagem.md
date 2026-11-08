@@ -92,7 +92,7 @@ Firmware do fork do OSCR: `cd firmware/oscr && ~/.platformio/penv/bin/pio run -e
 
 ## 8. Primeiro dump real
 
-A leitura do Master System depende do núcleo `SMS.cpp` do OSCR, hoje desligado no `user.ini` e sem comando no protocolo (`docs/referencia/funcoes-oscr.md`): **a placa lê SMS só depois que esse núcleo entrar no fork.** O slot Mega Drive funciona com o firmware atual.
+O firmware atual do fork lê Master System (`dumper detect -s sms`, `dump -s sms`, `--mapper 0` para o slot desta placa; `--prg` quando o cartucho não tem cabeçalho "TMR SEGA"), Game Gear e SG-1000 (só por adaptador no slot Mega Drive; D137). **Nada disso rodou em hardware:** comece pelo Mega Drive.
 
 Use um cartucho de Mega Drive comum, de ROM mascarada de 512 KB a 1 MB e **sem valor** de coleção. Escolha o sistema Mega Drive, rode `detect` (o cabeçalho `SEGA MEGA DRIVE`/`SEGA GENESIS` deve ser lido e o D50 deve indicar cartucho presente) e depois `dump`. Compare o CRC32 com o do No-Intro (ou com a base de dados do projeto, `identify`). Repita o dump 3 vezes: os três CRC32 têm que ser iguais.
 

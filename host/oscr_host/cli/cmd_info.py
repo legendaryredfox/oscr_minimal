@@ -19,7 +19,7 @@ def cmd_ports(args) -> int:
 
 # Opções específicas de cada sistema (as de --mapper, --prg, --chr e --ram; o sentido de cada uma está em --help)
 SYSTEM_OPTIONS = {"snes": ["prg"], "nes": ["mapper", "prg", "chr", "ram"], "famicom": ["mapper", "prg", "chr", "ram"],
-                  "md": ["prg"], "gba": ["mapper"], "gb": [], "mock": []}
+                  "md": ["prg"], "gba": ["mapper"], "gb": [], "sms": ["mapper", "prg"], "gg": ["mapper", "prg"], "sg1000": ["prg"], "mock": []}
 
 
 def cmd_systems(args) -> int:

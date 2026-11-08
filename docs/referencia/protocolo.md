@@ -73,7 +73,24 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 4 | Mega Drive/Genesis | `.md` |
 | 5 | GBA (3,3 V) | `.gba` |
 | 6 | Game Boy / Game Boy Color (via adaptador no slot GBA, 3,3 V) | `.gb` (os jogos só de GBC podem ser renomeados para `.gbc`) |
+| 7 | Programador de flash genérico (chips soltos, D85) | `.bin` |
+| 8 | Master System / Mark III (slot SMS da placa `megadrive_sms`, ou adaptador no slot Mega Drive; D137) | `.sms` |
+| 9 | Game Gear (adaptador Retrode ou Retron no slot Mega Drive; D137) | `.gg` |
+| 10 | SG-1000 (adaptador Raphnet no slot Mega Drive; D137) | `.sg` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções para Master System, Game Gear e SG-1000 (D137)
+
+Usam o núcleo `SMS.cpp` do OSCR sem alteração de leitura (`getCartInfo`, `readROM`, `readSRAM`, `writeSRAM`). O campo `mapper` é o **adaptador** e vale em `DETECT`, `DUMP_ROM`, `READ_SAVE` e `WRITE_SAVE` (o `DETECT` leva as opções no próprio quadro, como o programador de flash):
+
+| Sistema | `mapper` | Modo do núcleo |
+|---|---|---|
+| 8 (SMS) | 0 | slot direto da placa `megadrive_sms` ou adaptador Raphnet (`SMSRaphnet`) |
+| 8 (SMS) | 1, 2 | adaptador Retrode (`SMSRetrode`), Retron 3in1 (`SMSRetron`), no slot Mega Drive |
+| 9 (Game Gear) | 0, 1 | Retron 3in1 (`GGRetron`), Retrode (`GGRetrode`) |
+| 10 (SG-1000) | 0 | Raphnet (`SG1000Raphnet`) |
+
+`prg_kb` é o **tamanho da ROM em KB** e vale sempre: SMS e Game Gear 32, 64, 128, 256, 512 ou 1024 (os tamanhos do menu do OSCR); SG-1000 8, 16, 24 ou 32; 0 = pelo cabeçalho. O cabeçalho "TMR SEGA" dá o tamanho (nibble de `$7FFF` e espelhamento); **sem cabeçalho** (Mark III, SG-1000, jogos antigos) o `DETECT` devolve `status` 4 e o `DUMP_ROM` sem `prg_kb` falha com `E_ARGUMENTO`. Slot vazio = o barramento lê um valor só (`$00` ou `$FF`): `status` 1. O save é sempre 32 KB (`READ_SAVE`/`WRITE_SAVE`; o cartucho de 8 KB aparece espelhado); o cabeçalho não diz se há SRAM (`save_type` 255), quem decide é o usuário. Valores fora das tabelas: `E_ARGUMENTO` (ou `status` 2 no `DETECT`). Regras puras em `firmware/oscr/include/dumper/SmsCore.h` (testes em `pc-tests/test_sms.cpp`). O firmware não conhece a tensão: Game Gear a 5 V é problema do adaptador (ver `docs/referencia/uso.md`).
 
 ### Opções de `DUMP_ROM` para NES/Famicom e Mega Drive
 

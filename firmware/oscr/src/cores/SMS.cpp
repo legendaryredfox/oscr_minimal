@@ -704,6 +704,11 @@ namespace OSCR::Cores::SMS
 
   void manual_selectRomSize()
   {
+# if OSCR_DUMPER
+    // fork oscr_minimal: sem menu; o tamanho informado pelo PC (opção prg_kb) é aplicado por OSCR::Dumper depois de getCartInfo
+    return;
+# endif
+
     // Set rom size manually
     if (adapterMode == SMSMode::SG1000Raphnet)
     {

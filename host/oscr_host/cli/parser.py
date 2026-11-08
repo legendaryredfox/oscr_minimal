@@ -118,6 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     fw.add_argument("--dry-run", action="store_true", help=H("fw_dry_run"))
     dtp = add("detect", cmd_detect, H("cmd_detect"))
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
+    dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
     ip = add("identify", cmd_identify, H("cmd_identify"))
     ip.add_argument("files", nargs="+", help=H("identify_files"))
     sp_ = add("search", cmd_search, H("cmd_search"), system=False)
