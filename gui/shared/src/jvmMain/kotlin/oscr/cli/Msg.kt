@@ -36,7 +36,7 @@ object Msg {
 
     fun tIn(l: Lang, key: String, vararg args: Pair<String, Any?>): String {
         val row = table[key] ?: return key
-        val text = row[l] ?: row.getValue(Lang.EN)
+        val text = (row[l] ?: row.getValue(Lang.EN)).let { if (key == "usage.text") it.replace("\\n", "\n") else it }
         return FIELD.replace(text) { m ->
             val v = args.firstOrNull { it.first == m.groupValues[1] }?.second
             val spec = m.groupValues[2]

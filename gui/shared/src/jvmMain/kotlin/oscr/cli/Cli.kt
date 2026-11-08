@@ -27,7 +27,7 @@ object Cli {
             val a = parseArgs(argv)
             a.opts["lang"]?.let { t -> if (Msg.parse(t) == null) throw CliError("usage", Msg.t("args.unknown_lang", "tag" to t), EXIT_USAGE) }
             if ("version" in a.flags) { io.out("dumper-kt $VERSION (protocol ${Proto.VERSION})"); return EXIT_OK }
-            if ("help" in a.flags || a.cmd == null) { if (Ui.on(colorMode, io.stdoutTty, jsonWanted)) io.out(Ui.banner(true, VERSION) + "\n"); io.out(HELP); return if (a.cmd == null && "help" !in a.flags) EXIT_USAGE else EXIT_OK }
+            if ("help" in a.flags || a.cmd == null) { if (Ui.on(colorMode, io.stdoutTty, jsonWanted)) io.out(Ui.banner(true, VERSION) + "\n"); io.out(helpText()); return if (a.cmd == null && "help" !in a.flags) EXIT_USAGE else EXIT_OK }
             if (a.cmd !in COMMANDS) throw CliError("usage", Msg.t("args.unknown_cmd", "cmd" to a.cmd, "cmds" to COMMANDS.joinToString(" ")), EXIT_USAGE)
             a.opts["power"]?.let { if (it !in setOf("auto", "keep")) throw CliError("usage", Msg.t("args.power"), EXIT_USAGE) }
             a.opts["color"]?.let { if (it !in setOf("auto", "always", "never")) throw CliError("usage", Msg.t("args.color"), EXIT_USAGE) }

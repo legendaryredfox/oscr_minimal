@@ -324,3 +324,7 @@ CATALOG: dict[str, dict[str, str]] = {
 from .help_texts import HELP_TEXTS  # noqa: E402  (o `--help`, separado para não misturar com as mensagens de execução)
 
 CATALOG.update(HELP_TEXTS)
+
+from .usage_text import USAGE  # noqa: E402  (texto de ajuda da CLI Kotlin; a Python usa o argparse + help_texts.py)
+
+CATALOG["usage.text"] = dict(USAGE)

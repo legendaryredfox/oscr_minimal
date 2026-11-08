@@ -80,4 +80,12 @@ class MsgTest {
         val (_, o2, _) = run(emptyMap(), "--lang", "ru", "--json", "--simulate", "rom-write", "-s", "nes", "-i", f.path, "--yes")
         assertTrue("trainer на 512 байт" in o2 && "\"kind\":\"bad_rom\"" in o2, o2)
     }
+
+    @Test fun ajudaNosQuatroIdiomas() {
+        val esperado = mapOf("en" to "commands:", "pt-BR" to "comandos:", "ru" to "команды:", "zh" to "命令：")
+        for ((lang, trecho) in esperado) {
+            val (c, o, _) = run(emptyMap(), "--lang", lang, "--help")
+            assertEquals(0, c); assertTrue(trecho in o && o.lines().size > 60 && "--simulate" in o, lang)
+        }
+    }
 }

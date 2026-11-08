@@ -20,6 +20,7 @@ def render() -> str:
         if key.startswith("help."):
             continue                      # o --help da Python não vai para a Kotlin (tem o HELP dela)
         cells = [row[l] for l in LANGS]
+        cells = [c.replace("\n", "\\n") if key == "usage.text" else c for c in cells]      # o texto de ajuda tem várias linhas: \n literal, a Kotlin desfaz
         assert not any("\t" in c or "\n" in c for c in cells), key
         lines.append(key + "\t" + "\t".join(cells))
     return "\n".join(lines) + "\n"
