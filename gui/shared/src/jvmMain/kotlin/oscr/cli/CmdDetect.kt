@@ -9,7 +9,10 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
     if (wantChip && a.opts["system"] != "md") throw CliError("usage", Msg.t("detect.flash_id_md_only"), EXIT_USAGE)
     val c = connect(io, a)
     var chip: MdFlashChip? = null
-    val r = try { c.client.detect(system(a), if (a.opts["system"] in setOf("sms", "gg", "sg1000")) (a.opts["mapper"]?.toIntOrNull() ?: 0) else 0).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) } } finally { c.transport.close() }
+    val adapter = if (a.opts["system"] in setOf("sms", "gg", "sg1000")) (a.opts["mapper"]?.toIntOrNull() ?: 0) else 0     // o adaptador (campo mapper) muda a fiação dos barramentos
+    val r = try {
+        c.client.detect(system(a), adapter).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) }
+    } finally { c.transport.close() }
     val text = statusText(r.status)
     val lines = mutableListOf("${CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system}: $text")
     if (r.status == 0) lines += Msg.t("detect.title_line", "name" to r.name.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to r.romSize, "save" to r.saveSize)

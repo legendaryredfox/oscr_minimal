@@ -13,14 +13,16 @@ internal class Conn(val client: OscrClient, val transport: Transport, val info: 
 internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
     val c = open(io, a)
     if (needCart && c.info.powerSwitch && a.opts["power"] != "keep") {
-        try { if (!c.client.power(Power.STATUS).on) c.client.power(Power.ON) } catch (e: Throwable) { c.transport.close(); throw e }
+        try {
+            setVoltage(io, a, c, c.client.power(Power.STATUS))
+        } catch (e: Throwable) { c.transport.close(); throw e }
     }
     return c
 }
 
 private fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(powerSwitch = io.simPower, railSensor = io.simSense, detectAttempts = if (io.simSense) 3 else 1)
+        val t = SimDevice(powerSwitch = io.simPower, railSensor = io.simSense, detectAttempts = if (io.simSense) 3 else 1, voltSelect = io.simVolt, cartNeeds5v = io.simCart5v)
         val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }

@@ -18,6 +18,7 @@ struct Io {
 struct PowerInfo {
   bool on = true;
   uint8_t features = 0, sw = 0xFF, rail = 0xFF;
+  uint8_t volt = 0;         // tensão dos slots (D138): 0 fixa em 5 V (placa sem seletor), 1 = 3,3 V, 2 = 5 V. `features` bit3 = a placa tem o seletor
 };
 
 struct DetectInfo {
@@ -77,6 +78,8 @@ class Backend {
   virtual bool cart_powered() { return true; }
   // Liga ou desliga (bloqueia até a descarga). Devolve false e `err` se não der para ligar.
   virtual bool cart_power(bool on, uint16_t& err) { (void)on; err = E_COMANDO; return false; }
+  // Seletor de tensão do cartucho (megadrive_sms v1.1, D138): liga na tensão `volt` (1 = 3,3 V, 2 = 5 V). Se já estiver ligado em outra, desliga (solta os pinos, espera a descarga) e liga.
+  virtual bool cart_voltage(uint8_t volt, uint16_t& err) { (void)volt; err = E_COMANDO; return false; }
   virtual void power_info(PowerInfo& p) { p.on = cart_powered(); }
 };
 

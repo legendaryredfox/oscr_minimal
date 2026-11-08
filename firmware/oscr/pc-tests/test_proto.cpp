@@ -202,13 +202,15 @@ static void test_erase_e_detect_com_opcoes() {
 
 // ---- POWER: chave de 5V dos slots (D115)
 struct PowerBackend : MockBackend {
-  bool on = false, sw = true, deny_on = false;
-  int calls = 0;
+  bool on = false, sw = true, deny_on = false, selector = false;
+  uint8_t volt = 2;                // 1 = 3,3 V, 2 = 5 V; começa em 5 V (padrão) (seletor, D138)
+  int calls = 0, volt_calls = 0;
   bool supports(uint8_t s) override { return s == SYS_SNES || MockBackend::supports(s); }
   bool power_switch() override { return sw; }
   bool cart_powered() override { return on || !sw; }
   bool cart_power(bool v, uint16_t& err) override { calls++; if (v && deny_on) { err = E_DESLIGADO; return false; } on = v; return true; }
-  void power_info(PowerInfo& p) override { p.on = cart_powered(); p.features = 0; p.sw = 0xFF; p.rail = 0xFF; }
+  bool cart_voltage(uint8_t v, uint16_t& err) override { if (!selector) { err = E_COMANDO; return false; } volt_calls++; volt = v; on = true; return true; }
+  void power_info(PowerInfo& p) override { p.on = cart_powered(); p.features = selector ? 8 : 0; p.sw = 0xFF; p.rail = 0xFF; p.volt = selector ? volt : 0; }
 };
 
 struct PowerRun {
@@ -258,7 +260,7 @@ static void test_power() {
   uint8_t rd[3] = {SYS_SNES, 0, 0};
   CHECK(r.ask(T_READ_SAVE, rd, 3, t, p) && t == T_ERRO && get_u16(p.data()) == E_DESLIGADO);
   uint8_t st[1] = {POWER_STATUS}, on[1] = {POWER_ON}, off[1] = {POWER_OFF}, bad[1] = {9};
-  CHECK(r.ask(T_POWER, st, 1, t, p) && t == T_POWER_RESP && p.size() == 4 && p[0] == 0 && be.calls == 0);   // status não mexe em nada
+  CHECK(r.ask(T_POWER, st, 1, t, p) && t == T_POWER_RESP && p.size() == 5 && p[0] == 0 && be.calls == 0 && p[4] == 0);   // status não mexe em nada; sem seletor a tensão é 0 (5 V fixo)
   CHECK(r.ask(T_POWER, on, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && be.calls == 1);
   CHECK(r.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);                                // ligado: atende
   CHECK(r.ask(T_POWER, off, 1, t, p) && t == T_POWER_RESP && p[0] == 0 && be.calls == 2);
@@ -273,6 +275,21 @@ static void test_power() {
   CHECK(q.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);
   CHECK(q.ask(T_POWER, on, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && plain.calls == 0);
   CHECK(q.ask(T_POWER, off, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO);
+  uint8_t v3[1] = {POWER_ON_3V3}, v5[1] = {POWER_ON_5V};
+  CHECK(q.ask(T_POWER, v3, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO && plain.volt_calls == 0);   // placa sem chave: não escolhe tensão
+
+  // placa com o seletor 3,3 V/5 V (megadrive_sms v1.1, D138)
+  PowerBackend sel; sel.selector = true;
+  PowerRun s2(sel);
+  CHECK(s2.ask(T_POWER, st, 1, t, p) && t == T_POWER_RESP && p.size() == 5 && p[1] == 8 && p[4] == 2);          // recursos bit3 e tensão 5 V (padrão)
+  CHECK(s2.ask(T_POWER, v3, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && p[1] == 8 && p[4] == 1 && sel.volt_calls == 1);
+  CHECK(s2.ask(T_POWER, v5, 1, t, p) && t == T_POWER_RESP && p[0] == 1 && p[4] == 2 && sel.volt_calls == 2);
+  CHECK(s2.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);                                            // ligado em 5 V: atende
+  uint8_t bad2[1] = {5};
+  CHECK(s2.ask(T_POWER, bad2, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);                    // 5 e acima não existem
+  PowerBackend sw_only; sw_only.sw = true;                                                                     // chave sem seletor (v1.1 das outras placas)
+  PowerRun s3(sw_only);
+  CHECK(s3.ask(T_POWER, v5, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO && sw_only.volt_calls == 0);
 }
 
 int main() {

@@ -140,9 +140,12 @@ void Session::do_erase(uint8_t seq, const uint8_t* p, uint16_t len) {
 }
 
 void Session::do_power(uint8_t seq, const uint8_t* p, uint16_t len) {
-  if (len < 1 || p[0] > POWER_STATUS) { send_error(seq, E_ARGUMENTO, "args"); return; }
+  if (len < 1 || p[0] > POWER_ON_5V) { send_error(seq, E_ARGUMENTO, "args"); return; }
   uint8_t action = p[0];
-  if (action != POWER_STATUS && be_.power_switch()) {
+  if (action == POWER_ON_3V3 || action == POWER_ON_5V) {   // escolhe a tensão (seletor 3,3 V/5 V): precisa da chave de 5V e do seletor
+    uint16_t err = E_COMANDO;
+    if (!be_.power_switch() || !be_.cart_voltage(action == POWER_ON_3V3 ? 1 : 2, err)) { send_error(seq, err, "sem seletor"); return; }
+  } else if (action != POWER_STATUS && be_.power_switch()) {
     uint16_t err = E_CARTUCHO_IO;
     if (!be_.cart_power(action == POWER_ON, err)) { send_error(seq, err, err == E_DESLIGADO ? "chave" : ""); return; }
   } else if (action == POWER_OFF) {             // sem chave na placa não dá para desligar o 5V (POWER_ON e POWER_STATUS respondem o estado: sempre ligado)
@@ -151,8 +154,8 @@ void Session::do_power(uint8_t seq, const uint8_t* p, uint16_t len) {
   }
   PowerInfo pi;
   be_.power_info(pi);
-  uint8_t r[4] = {uint8_t(pi.on ? 1 : 0), pi.features, pi.sw, pi.rail};
-  send(T_POWER_RESP, seq, r, 4);
+  uint8_t r[5] = {uint8_t(pi.on ? 1 : 0), pi.features, pi.sw, pi.rail, pi.volt};
+  send(T_POWER_RESP, seq, r, 5);
 }
 
 int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {

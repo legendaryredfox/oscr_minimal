@@ -34,4 +34,16 @@ uint8_t retry_with_cycle(uint8_t max_attempts, Attempt attempt, Cycle cycle, boo
   return n;
 }
 
+/// Seletor de tensão do cartucho (D138). Valores de `PowerInfo::volt`: 0 sem seletor (5 V fixo), 1 = 3,3 V, 2 = 5 V.
+enum : uint8_t { kVoltNone = 0, kVolt3V3 = 1, kVolt5V = 2 };
+
+/// Ação do POWER -> tensão pedida (0 = a ação não escolhe tensão).
+inline uint8_t action_volt(uint8_t action) { return action == 3 ? kVolt3V3 : action == 4 ? kVolt5V : kVoltNone; }
+
+/// Trocar de tensão com os slots ligados exige desligar antes (soltar os pinos, abrir o Q1 e esperar a descarga): nunca se muda a tensão "a quente".
+inline bool needs_cycle(bool powered, uint8_t current, uint8_t wanted) { return powered && current != wanted; }
+
+/// Depois de desligar, a tensão volta para o padrão (5 V, como nos flashcarts comuns de Mega Drive: o AMS1117 do cartucho precisa de ~4,5 V na entrada): o próximo POWER_ON sem tensão escolhida começa em 5 V. 3,3 V é opção explícita do usuário.
+inline uint8_t after_off(bool has_selector) { return has_selector ? kVolt5V : kVoltNone; }
+
 }}  // namespace oscr::power

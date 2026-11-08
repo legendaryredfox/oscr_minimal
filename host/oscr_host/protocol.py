@@ -24,6 +24,7 @@ T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x8
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
 T_POWER_RESP = 0x89
 POWER_OFF, POWER_ON, POWER_STATUS = 0, 1, 2
+POWER_ON_3V3, POWER_ON_5V = 3, 4              # liga na tensão escolhida (seletor 3,3 V/5 V da megadrive_sms v1.1, D138)
 
 KIND_ROM, KIND_SAVE = 1, 2
 
@@ -201,8 +202,10 @@ def parse_power_resp(p: bytes) -> dict:
     if len(p) < 4:
         raise ProtocolError("POWER_RESP curto")
     on, features, sw, rail = p[0], p[1], p[2], p[3]
+    volt = p[4] if len(p) >= 5 else 0                      # firmware sem seletor (antes da D138) não manda o 5º byte
     return {"on": bool(on), "rail_sensor": bool(features & 2), "forced_discharge": bool(features & 4),
-            "rail_low": None if rail == 0xFF else rail == 0}
+            "rail_low": None if rail == 0xFF else rail == 0,
+            "voltage_select": bool(features & 8), "voltage": {1: "3v3", 2: "5v"}.get(volt, "5v-fixed")}
 
 
 def parse_detect_resp(p: bytes) -> dict:

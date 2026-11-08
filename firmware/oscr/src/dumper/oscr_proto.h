@@ -29,7 +29,7 @@ enum : uint8_t {  // host -> dispositivo
 
 enum : uint8_t { KIND_ROM = 1, KIND_SAVE = 2 };
 
-enum : uint8_t { POWER_OFF = 0, POWER_ON = 1, POWER_STATUS = 2 };   // ação do POWER (docs/referencia/protocolo.md)
+enum : uint8_t { POWER_OFF = 0, POWER_ON = 1, POWER_STATUS = 2, POWER_ON_3V3 = 3, POWER_ON_5V = 4 };   // 3 e 4: liga na tensão escolhida (seletor 3,3 V/5 V, D138)   // ação do POWER (docs/referencia/protocolo.md)
 
 enum : uint16_t {  // códigos de ERRO
   E_COMANDO = 1, E_SISTEMA = 2, E_SEM_CARTUCHO = 3, E_ARGUMENTO = 4, E_REENVIOS = 5,

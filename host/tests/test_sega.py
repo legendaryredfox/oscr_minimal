@@ -43,6 +43,9 @@ def test_detect_so_manda_o_adaptador_nos_sistemas_sega(monkeypatch, capsys):
     chamadas = []
 
     class FakeClient:
+        def power(self, action=2):                                        # placa sem seletor: o detect não oferece 5 V
+            return {"on": True, "voltage_select": False, "voltage": "5v-fixed"}
+
         def detect(self, system, chip=0, prg_kb=0, chr_kb=0):
             chamadas.append((system, chip))
             return {"system": system, "status": 1, "name": "", "rom_size": 0, "save_size": 0, "save_type": 0}

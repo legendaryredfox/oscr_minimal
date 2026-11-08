@@ -67,7 +67,9 @@ class OscrClient(
     fun power(action: Int = Power.STATUS): PowerState {
         val p = request(Proto.T_POWER, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_POWER_RESP), longTimeoutMs).payload
         if (p.size < 4) throw ProtocolError(Fail.SHORT_REPLY, "POWER_RESP")
-        return PowerState(p.u8(0) != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0)
+        val volt = if (p.size >= 5) p.u8(4) else 0                  // firmware sem seletor (antes da D138) não manda o 5º byte
+        return PowerState(p.u8(0) != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0,
+            p.u8(1) and 8 != 0, when (volt) { 1 -> "3v3"; 2 -> "5v"; else -> "5v-fixed" })
     }
 
     fun detect(system: CartSystem, chip: Int = 0, prgKb: Int = 0, chrKb: Int = 0): DetectResult {

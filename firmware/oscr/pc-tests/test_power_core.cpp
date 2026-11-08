@@ -51,9 +51,22 @@ static void test_retry() {
   CHECK(in_order);
 }
 
+static void test_volt() {
+  CHECK(kVoltNone == 0 && kVolt3V3 == 1 && kVolt5V == 2);
+  CHECK(action_volt(0) == kVoltNone && action_volt(1) == kVoltNone && action_volt(2) == kVoltNone);   // desliga, liga e consulta não escolhem tensão
+  CHECK(action_volt(3) == kVolt3V3 && action_volt(4) == kVolt5V);
+  // nunca se troca a tensão com os slots ligados sem desligar antes
+  CHECK(needs_cycle(true, kVolt3V3, kVolt5V) && needs_cycle(true, kVolt5V, kVolt3V3));
+  CHECK(!needs_cycle(true, kVolt3V3, kVolt3V3) && !needs_cycle(true, kVolt5V, kVolt5V));
+  CHECK(!needs_cycle(false, kVolt3V3, kVolt5V) && !needs_cycle(false, kVolt5V, kVolt3V3));          // desligado: só ajusta o pino antes de ligar
+  // depois de desligar volta ao padrão (5 V); sem seletor não há tensão a escolher
+  CHECK(after_off(true) == kVolt5V && after_off(false) == kVoltNone);
+}
+
 int main() {
   test_discharge();
   test_retry();
+  test_volt();
   printf("%d verificações do PowerCore, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

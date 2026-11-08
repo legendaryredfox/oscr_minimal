@@ -23,7 +23,7 @@ class _Aborted(Exception):
 
 class MockDevice:
     def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, power_switch: bool = False,
-                 rail_sensor: bool = False, detect_attempts: int = 1):
+                 rail_sensor: bool = False, detect_attempts: int = 1, volt_select: bool = False, cart_needs_5v: bool = False):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
@@ -33,6 +33,10 @@ class MockDevice:
         power_switch = power_switch or rail_sensor    # com o sensor do rail a placa tem a chave de 5V em software (D123: não há chave física)
         self.power_switch = power_switch          # placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
         self.powered = not power_switch
+        self.volt_select = volt_select        # placa com o seletor 3,3 V/5 V (D138): liga em 5 V (padrão); 3,3 V só quando pedido
+        self.cart_needs_5v = cart_needs_5v    # o cartucho simulado só é lido a 5 V
+        self.volt = 2                         # 1 = 3,3 V, 2 = 5 V (padrão 5 V)
+        self.volt_calls: list[int] = []
         self.power_calls: list[int] = []
         self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
@@ -96,10 +100,10 @@ class MockDevice:
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
 
     def _power_resp(self) -> bytes:
-        feat = 2 if self.rail_sensor else 0
+        feat = (2 if self.rail_sensor else 0) | (8 if self.volt_select else 0)
         sw = 0xFF                                  # reservado: não há chave física (D123)
         rail = 0xFF if not self.rail_sensor else (1 if self.powered else 0)
-        return bytes([1 if self.powered else 0, feat, sw, rail])
+        return bytes([1 if self.powered else 0, feat, sw, rail, self.volt if self.volt_select else 0])
 
     def _handle(self, t: Transport, f: P.Frame) -> None:
         needs_cart = f.type in (P.T_DETECT, P.T_DUMP_ROM, P.T_READ_SAVE, P.T_WRITE_SAVE, P.T_WRITE_ROM, P.T_ERASE)
@@ -108,14 +112,24 @@ class MockDevice:
             return
         if f.type == P.T_POWER:
             action = f.payload[0] if f.payload else 9
-            if action > P.POWER_STATUS:
+            if action > P.POWER_ON_5V:
                 self._error(t, f.seq, 4, "args")
+            elif action in (P.POWER_ON_3V3, P.POWER_ON_5V):
+                if not (self.power_switch and self.volt_select):
+                    self._error(t, f.seq, 1, "sem seletor")
+                else:
+                    self.volt = 1 if action == P.POWER_ON_3V3 else 2
+                    self.volt_calls.append(self.volt)
+                    self.powered = True
+                    self._send(t, P.T_POWER_RESP, f.seq, self._power_resp())
             elif action == P.POWER_OFF and not self.power_switch:
                 self._error(t, f.seq, 1, "sem chave")
             else:
                 if action != P.POWER_STATUS and self.power_switch:
                     self.power_calls.append(action)
                     self.powered = action == P.POWER_ON
+                    if not self.powered and self.volt_select:
+                        self.volt = 2                       # desligado, volta ao padrão (5 V)
                 self._send(t, P.T_POWER_RESP, f.seq, self._power_resp())
         elif f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
@@ -129,11 +143,15 @@ class MockDevice:
                            + bytes([1, len(name)]) + name)
             else:
                 extra = bytes([self.detect_attempts]) if self.detect_attempts > 1 else b""
-                self._send(t, P.T_DETECT_RESP, f.seq, bytes([sysid, 1]) + bytes(8) + bytes([0, 0]) + extra)
+                if self.volt_select and self.cart_needs_5v and self.volt == 2:       # cartucho simulado que só lê a 5 V
+                    name = b"SIM CART"
+                    self._send(t, P.T_DETECT_RESP, f.seq, bytes([sysid, 0]) + (65536).to_bytes(4, "little") + (0).to_bytes(4, "little") + bytes([0, len(name)]) + name)
+                else:
+                    self._send(t, P.T_DETECT_RESP, f.seq, bytes([sysid, 1]) + bytes(8) + bytes([0, 0]) + extra)
         elif f.type in (P.T_DUMP_ROM, P.T_READ_SAVE):
             sysid = f.payload[0] if f.payload else 0
             block = int.from_bytes(f.payload[1:3], "little") if len(f.payload) >= 3 else 0
-            if sysid not in (0, 255):
+            if sysid not in (0, 255) and not (self.volt_select and self.cart_needs_5v and self.volt == 2):
                 self._error(t, f.seq, 3, "sem cartucho")
                 return
             if len(f.payload) >= 9:

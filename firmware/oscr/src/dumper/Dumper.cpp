@@ -275,6 +275,9 @@ namespace OSCR::Dumper
 #ifndef OSCR_POWER_DISCHARGE
 # define OSCR_POWER_DISCHARGE 0
 #endif
+#ifndef OSCR_VOLT_SELECT
+# define OSCR_VOLT_SELECT 0
+#endif
 #ifndef OSCR_POWER_DISCHARGE_MS
 # define OSCR_POWER_DISCHARGE_MS (OSCR_POWER_DISCHARGE ? 500 : 2000)   // espera depois de cortar o 5V sem sensor
 #endif
@@ -282,6 +285,7 @@ namespace OSCR::Dumper
 # define OSCR_POWER_CYCLE_TRIES 3                                       // SA-1: tentativas de ler o cabeçalho, com ciclo de energia entre elas
 #endif
     constexpr bool kPowerSwitch = OSCR_POWER_SWITCH;
+    constexpr bool kVoltSelect = OSCR_POWER_SWITCH && OSCR_VOLT_SELECT;   // seletor 3,3 V/5 V do cartucho (megadrive_sms v1.1, D138): D18 = PD3, baixo = 5 V (Q4 liga), alto ou solto = 3,3 V (LDO)
 
     /** Solta todos os pinos de sinal dos slots (entrada, sem pull-up). Cortar o 5V com o Mega ainda dirigindo os pinos alimentaria o cartucho por eles.
      *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), em D19 (PD2), no sensor (PB0) nem nos LEDs (PB4 a PB7). */
@@ -302,6 +306,16 @@ namespace OSCR::Dumper
     }
 
     bool powerOn = true;
+    uint8_t cartVolt = kVoltSelect ? oscr::power::kVolt5V : oscr::power::kVoltNone;   // padrão 5 V (flashcarts comuns precisam dele); 3,3 V só quando o usuário pede, e o host avisa antes de 5 V em cartucho marcado como 3,3 V
+
+    /** Pino do seletor (D18 = PD3): alto = Q4 aberto = 3,3 V; baixo = Q4 conduz = 5 V. Com o Mega em reset o pino solto e o pull-up do gate dão 3,3 V. */
+    void setVoltPin(uint8_t volt)
+    {
+      if (!kVoltSelect) return;
+      DDRD |= _BV(PD3);
+      if (volt == oscr::power::kVolt5V) PORTD &= ~_BV(PD3);
+      else PORTD |= _BV(PD3);
+    }
 
     bool railLow() { return (PINB & _BV(PB0)) != 0; }          // sensor do Q3: alto = rail baixo
 
@@ -477,16 +491,36 @@ namespace OSCR::Dumper
         if (on == powerOn) return true;
         if (on)
         {
+          setVoltPin(cartVolt);                   // a tensão certa antes de o Q1 fechar
           railUp();
         }
-        else railDown();
+        else
+        {
+          railDown();
+          cartVolt = oscr::power::after_off(kVoltSelect);   // desligado, volta ao padrão (5 V)
+          setVoltPin(cartVolt);
+        }
         powerOn = on;
+        return true;
+      }
+
+      // Seletor 3,3 V/5 V (D138): com os slots ligados em outra tensão, desliga antes (solta os pinos, abre o Q1, espera a descarga); nunca troca "a quente".
+      bool cart_voltage(uint8_t volt, uint16_t & err) override
+      {
+        if (!kVoltSelect || (volt != oscr::power::kVolt3V3 && volt != oscr::power::kVolt5V)) { err = oscr::E_COMANDO; return false; }
+        if (powerOn && cartVolt == volt) return true;
+        if (oscr::power::needs_cycle(powerOn, cartVolt, volt)) railDown();
+        cartVolt = volt;
+        setVoltPin(volt);
+        railUp();
+        powerOn = true;
         return true;
       }
       void power_info(oscr::PowerInfo & p) override
       {
         p.on = powerOn;
-        p.features = uint8_t((OSCR_POWER_SENSE ? 2 : 0) | (OSCR_POWER_DISCHARGE ? 4 : 0));
+        p.features = uint8_t((OSCR_POWER_SENSE ? 2 : 0) | (OSCR_POWER_DISCHARGE ? 4 : 0) | (kVoltSelect ? 8 : 0));
+        p.volt = cartVolt;
         p.sw = 0xFF;                                  // reservado: não há chave física (D123)
         p.rail = OSCR_POWER_SENSE ? (railLow() ? 0 : 1) : 0xFF;
       }
@@ -995,7 +1029,7 @@ namespace OSCR::Dumper
   void setup()
   {
     if (OSCR_POWER_SENSE) { DDRB &= ~_BV(PB0); PORTB &= ~_BV(PB0); }        // sensor do rail no D53: entrada sem pull-up
-    if (kPowerSwitch) { cartPower(false); powerOn = false; }                  // placa com a chave de 5V em software: começa desligado, o host liga (D115)
+    if (kPowerSwitch) { cartPower(false); powerOn = false; setVoltPin(cartVolt); }   // o seletor começa em 5 V (D138)   // placa com a chave de 5V em software: começa desligado, o host liga (D115)
     else cartPower(true);                     // sem isso o cartucho fica sem 5V; o OSCR original não tinha chave
     delay(50);                                // o 5V dos slots, o Si5351 e o PIC sobem antes do primeiro comando
     ClockedSerial.begin(OSCR_DUMPER_BAUD);

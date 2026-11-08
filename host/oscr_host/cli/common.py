@@ -2,12 +2,14 @@
 """Coisas que todo comando usa: conexão (porta ou simulador), sistema, base de dados."""
 from __future__ import annotations
 
+import sys
+
 from .. import database as DB
 from .. import protocol as P
 from ..client import Client, TimeoutError_
 from ..transport import SerialTransport, Transport
 from .messages import tr
-from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_USAGE
+from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_REFUSED, EXIT_USAGE
 
 
 BAUDS = (1_000_000, 115_200)
@@ -28,16 +30,62 @@ def auto_port() -> str:
 
 def connect(args, need_cart: bool = True) -> tuple[Client, Transport, dict]:
     """Abre a porta (ou o simulador), faz INFO e, em placa com a chave de 5V, liga o 5V dos slots (`--power auto`, o padrão).
-    `need_cart=False` (info, power) nunca mexe no 5V. Com `--power keep` o 5V fica como está."""
+    `need_cart=False` (info, power) nunca mexe no 5V. Com `--power keep` o 5V fica como está.
+    Placa com o seletor 3,3 V/5 V (D138): o padrão é 5 V; `--voltage 3v3` liga a 3,3 V (cartucho marcado como 3,3 V); passar de 3,3 V para 5 V
+    mostra o alerta e pede confirmação (ou `--allow-5v`). Falha de leitura nunca muda a tensão sozinha."""
     c, t, info = _open(args)
     if need_cart and info.get("power_switch") and getattr(args, "power", "auto") != "keep":
         try:
-            if not c.power(P.POWER_STATUS)["on"]:
-                c.power(P.POWER_ON)
+            set_voltage(args, c, c.power(P.POWER_STATUS))
         except BaseException:
             t.close()
             raise
     return c, t, info
+
+
+def set_voltage(args, c: Client, st: dict, turn_on: bool = True) -> dict:
+    """Aplica `--voltage` e liga o 5V dos slots (se `turn_on`). `st` é o POWER_STATUS atual. Devolve o estado depois."""
+    mode = getattr(args, "voltage", "auto")
+    sel = bool(st.get("voltage_select"))
+    if mode == "3v3" and not sel:
+        raise CliError("no_selector", tr("volt.no_selector"), EXIT_USAGE)           # pediu 3,3 V e a placa só dá 5 V: não segue calado
+    if sel and mode == "5v" and st["on"] and st.get("voltage") == "3v3":
+        confirm_5v(args)                                                              # slot marcado como 3,3 V: alerta e confirmação antes de subir
+        return c.power(P.POWER_ON_5V)
+    if sel and mode == "3v3" and (not st["on"] or st.get("voltage") != "3v3"):
+        return c.power(P.POWER_ON_3V3)                                               # o firmware desliga e espera a descarga antes de trocar
+    if sel and mode == "5v" and not st["on"]:
+        return c.power(P.POWER_ON_5V)
+    if turn_on and not st["on"]:
+        return c.power(P.POWER_ON)
+    return st
+
+
+def _warn_5v(args) -> None:
+    """Alerta bem visível (no stderr) antes de passar o slot de 3,3 V para 5 V."""
+    from . import ui
+    lines = [tr("volt.warn_title"), "", tr("volt.warn_1"), "", tr("volt.warn_2"), "", tr("volt.warn_3")]
+    bar = "#" * 78
+    if ui.color_on(sys.stderr):
+        out = [ui.paint(bar, "bold", "red", stream=sys.stderr), ui.paint(lines[0], "bold", "red", stream=sys.stderr)] + \
+              [ui.paint(x, "bold", "yellow", stream=sys.stderr) if x else "" for x in lines[1:]] + [ui.paint(bar, "bold", "red", stream=sys.stderr)]
+    else:
+        out = [bar, lines[0]] + lines[1:] + [bar]
+    print("\n".join(out), file=sys.stderr)
+
+
+def confirm_5v(args) -> None:
+    """Escolheu 5 V num cartucho marcado como 3,3 V (D138): mostra o alerta de risco e só segue se o usuário digitar 5V ou se `--allow-5v` foi dado
+    (scripts). Sem terminal e sem `--allow-5v`, recusa. Levanta CliError (EXIT_REFUSED) se não confirmar."""
+    _warn_5v(args)
+    if getattr(args, "allow_5v", False):
+        print(tr("volt.now_5v"), file=sys.stderr)
+        return
+    if getattr(args, "json", False) or not sys.stdin.isatty():
+        raise CliError("refused", tr("volt.need_flag"), EXIT_REFUSED)
+    if input(tr("volt.prompt")).strip().lower() != "5v":
+        raise CliError("refused", tr("volt.cancelled"), EXIT_REFUSED)
+    print(tr("volt.now_5v"), file=sys.stderr)
 
 
 def _open(args) -> tuple[Client, Transport, dict]:
@@ -47,9 +95,11 @@ def _open(args) -> tuple[Client, Transport, dict]:
         from .. import sim
 
         # OSCR_SIM_POWER=1: o simulador finge uma placa com a chave de 5V (começa desligada)
+        # OSCR_SIM_VOLT=1 (com OSCR_SIM_POWER=1): finge o seletor 3,3 V/5 V; OSCR_SIM_5V_CART=1: o cartucho só é lido a 5 V
         # OSCR_SIM_SENSE=1: finge também o sensor do rail e 3 tentativas do SA-1 (a placa com sensor tem a chave de 5V em software)
         sense = os.environ.get("OSCR_SIM_SENSE") == "1"
-        dev = sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1", rail_sensor=sense, detect_attempts=3 if sense else 1)
+        dev = sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1", rail_sensor=sense, detect_attempts=3 if sense else 1,
+                             volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1")        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()
