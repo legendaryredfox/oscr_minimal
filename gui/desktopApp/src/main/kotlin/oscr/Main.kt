@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.focusable
 import androidx.compose.material3.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,6 +122,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var speed by remember { mutableStateOf("") }
     var slowNote by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<Pending?>(null) }
+    var voltReq by remember { mutableStateOf(false) }                       // alerta de 3,3 V -> 5 V aberto (D138)
     var writeReq by remember { mutableStateOf<WriteRequest?>(null) }
     var romReq by remember { mutableStateOf<RomWriteRequest?>(null) }
     var verifyRom by remember { mutableStateOf(Prefs.verifyRom) }
@@ -319,6 +321,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             val st = withContext(Dispatchers.IO) { c.power(if (on) Power.ON else Power.OFF) }
             powerOn = st.on; powerSt = st
             say(t(if (st.on) S.POWER_ON_DONE else S.POWER_OFF_DONE))
+        }
+    }
+
+    /** Seletor de tensão (D138): liga os slots em 3,3 V (`volt` = 3) ou 5 V (`volt` = 5). O firmware desliga, espera a descarga e liga na tensão nova. */
+    fun actVoltage(volt: Int) {
+        val c = client ?: return
+        run(S.STAGE_VOLT, needsCart = false) {
+            val st = withContext(Dispatchers.IO) { c.power(if (volt == 3) Power.ON_3V3 else Power.ON_5V) }
+            powerOn = st.on; powerSt = st
+            say(t(if (volt == 3) S.VOLT_DONE_3V3 else S.VOLT_DONE_5V))
         }
     }
 
@@ -648,6 +660,17 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     Text(t(if (powerOn == true) S.POWER_STATUS_ON else S.POWER_STATUS_OFF), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
                     OutlinedButton(enabled = !busy, onClick = { actPower(powerOn != true) }) { Text(t(if (powerOn == true) S.POWER_BTN_OFF else S.POWER_BTN_ON)) }
                 }
+                powerSt?.takeIf { it.voltageSelect }?.let { ps ->        // seletor 3,3 V/5 V (megadrive_sms v1.1 e demais v1.1): padrão 5 V; de 3,3 V para 5 V pede confirmação
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(t(S.VOLT_LABEL), style = MaterialTheme.typography.labelLarge)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val is5 = ps.voltage == "5v"
+                            if (is5) Button(enabled = !busy, onClick = { actVoltage(5) }) { Text(t(S.VOLT_5V)) } else OutlinedButton(enabled = !busy, onClick = { voltReq = true }) { Text(t(S.VOLT_5V)) }
+                            if (!is5) Button(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) } else OutlinedButton(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) }
+                        }
+                        Text(t(S.VOLT_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                    }
+                }
                 powerSt?.let { ps ->                                    // LEDs virtuais (5V presente e, com o sensor do rail, seguro trocar)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("●", color = if (ps.on) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline)
@@ -890,6 +913,22 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
             }
         }
+    }
+
+    if (voltReq) {                       // 5 V sobre cartucho marcado como 3,3 V: alerta vermelho e confirmação (D138)
+        AlertDialog(
+            onDismissRequest = { voltReq = false },
+            title = { Text(t(S.VOLT_WARN_TITLE), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(t(S.VOLT_WARN_1), fontWeight = FontWeight.Bold)
+                    Text(t(S.VOLT_WARN_2), color = MaterialTheme.colorScheme.error)
+                    Text(t(S.VOLT_WARN_3))
+                }
+            },
+            confirmButton = { OutlinedButton(onClick = { voltReq = false; actVoltage(5) }, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(t(S.VOLT_CONFIRM)) } },
+            dismissButton = { Button(onClick = { voltReq = false }) { Text(t(S.CANCEL)) } },       // o botão destacado é o seguro: cancelar
+        )
     }
 
     romReq?.let { req ->
