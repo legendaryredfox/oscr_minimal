@@ -56,7 +56,7 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 ├── docs/                     # docs gerais (valem para todas as placas)
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
 │   ├── decisoes.md           # log de decisões e desvios
-│   ├── referencia/           # como as coisas são: protocolo.md, cli.md, uso.md (guia de uso), funcoes-oscr.md, fork-oscr.md, bloco-troca.md...
+│   ├── referencia/           # como as coisas são: protocolo.md, cli.md, uso.md (guia de uso), funcoes-oscr.md, fork-oscr.md, seletor-tensao.md...
 │   ├── planos/               # o que ainda não foi feito ou foi adiado (RP2040, melhorias do Mega Drive...)
 │   ├── historico/            # revisões e pesquisas datadas
 │   └── img/                  # capturas da GUI

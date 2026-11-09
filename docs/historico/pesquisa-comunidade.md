@@ -43,7 +43,7 @@ Objetivo (pedido do usuário): ver o que a comunidade de modders e de dumping de
 - A wiki do OSCR manda ligar o leitor, inserir o cartucho e então escolher o sistema; a restrição "não ligar com cartucho de 3,3 V" foi retirada no firmware V13.2 (discussão #906, não lida). O dumping.guide ainda avisa que cartuchos só de 3,3 V podem ser danificados e danificar o dumper.
 - Slot de N64 exige espaçamento de 2,5 mm; muitos slots de AliExpress são 2,54 mm. (Os nossos NES/SNES são 2,5 mm e Famicom/Mega Drive 2,54 mm por decisão do projeto.)
 - Retrode (fórum): slots de 2,54 mm têm alto risco de curto entre contatos; adaptadores de PCB precisam de **1,2 mm** exatos.
-- Nossa pergunta sobre desligar o shield para trocar cartucho: ver `docs/referencia/troca-de-cartucho.md`.
+- Nossa pergunta sobre desligar o shield para trocar cartucho: o desligamento por software foi retirado (D139); troque o cartucho com o USB desligado.
 
 ### NES / Famicom
 - O dumping.guide lista fontes de mapper/tamanho: `nes.dnsabr.com`, `bootgod.dyndns.org:7777`, `nescartdb.com`, `tuxnes nesmapper.txt`. O RetroBlaster não detecta mapper (o usuário informa), como a nossa GUI.

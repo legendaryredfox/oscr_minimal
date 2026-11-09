@@ -1,0 +1,35 @@
+# Seletor de tensão, F1 e J1 (D138; sem desligamento por software, D139)
+
+O 5V dos slots **vai direto do Mega e não é cortado por software** em nenhuma placa. O bloco de troca de cartucho (Q1, Q2, Q3, LEDs verde e amarelo, D19 e D53; D115 a D128) foi retirado em D139: **para trocar o cartucho, desligue o USB.** O que ficou de proteção e de tensão está abaixo.
+
+## F1: fusível
+
+Fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega (`+5V` -> F1 -> `+5V_CART`). Queda de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES não destrava acima de ~5,2 V: segue abaixo). **Opcional**: sem fusível no suporte a placa fica sem 5 V (um fio no lugar também serve). O suporte (cerca de 24 × 6,5 mm) fica numa faixa de 10 mm acrescentada à borda de baixo de cada placa. Está em todas as versões, exceto na `16_bits` v1.0 (já encomendada).
+
+## Seletor 3,3 V/5 V (v1.1 com slot de 5 V e `16_bits` v1.3)
+
+- LDO LD1117V33 (TO-220) com entrada em `+5V_CART` e saída em `VCC_CART`. O Q4 (IRF9540N) liga `+5V_CART` a `VCC_CART` quando o D18 está baixo (5 V); aberto, o LDO dá 3,3 V.
+- Q5 (2N7000) e 220 Ω seguram o `VCC_CART` em 3,3 V quando os sinais de 5 V injetam corrente.
+- 100 kΩ entre o gate do Q4 e `+5V_CART`: com o Mega em reset o Q4 fica aberto (3,3 V, o estado seguro de hardware). O comando do D18 passa por 1 kΩ.
+- Só o VCC dos slots com seletor e os capacitores deles ficam no `VCC_CART`; Si5351, PIC e pull-ups ficam no `+5V_CART`.
+- **Resistores em série:** redes DIP-16 de 470 Ω (pino i com o 17-i) nas linhas entre o Mega e os slots com seletor. Redes que também ligam outra peça (clock do Si5351, CIC, pull-ups, TVS) ficam sem resistor.
+- **J1 "TRAVA 3,3 V":** entre o gate do Q4 e `+5V_CART`; fechado, o Q4 nunca conduz e o 5 V fica impossível, mesmo com erro de software ou de GUI. É a única defesa independente do firmware. Opcional.
+
+Placas com seletor: `megadrive`, `nes`, `famicom`, `famicom_nes`, `megadrive_sms` (v1.1) e `16_bits` (v1.3, slot Mega Drive). Sem seletor: `snes` (o SA-1 precisa de 5 V), os slots de 5 V da `16_and_8_bits` (o seletor ainda não foi roteado nela), `gb_gba` e `n64` (3,3 V).
+
+## Firmware e programa do PC
+
+- Ambiente `SerialASCII_Volt` (`pio run -e SerialASCII_Volt -t upload` em `firmware/oscr`); as placas sem seletor usam `SerialASCII`.
+- Como o 5V nunca é cortado, **abrir a porta reinicia o Mega** e o seletor sobe em **3,3 V** (o estado seguro: um cartucho de 3,3 V no slot não recebe 5 V antes de o host escolher). Antes de um comando que precisa do cartucho, a CLI e a GUI passam a **5 V** (padrão dos flashcarts comuns, D138), a menos que o usuário tenha escolhido 3,3 V (`--voltage 3v3`, botão da GUI).
+- Passar de 3,3 V (escolhido) para 5 V mostra um alerta e pede confirmação (`--allow-5v` em script). Falha de leitura nunca muda a tensão sozinha.
+- Protocolo: comando `VOLT` (`docs/referencia/protocolo.md`). CLI: `dumper voltage status|3v3|5v` e a opção `--voltage auto|3v3|5v`.
+
+## Pontos a conferir na bancada (nada foi montado)
+
+- Corrente injetada pelos sinais de 5 V no `VCC_CART` a 3,3 V, limiar do Q4/Q5 e queda do fusível são cálculos, não medidas.
+- Em 5 V, o VCC dos slots deve ficar entre 4,6 e 5,1 V; em 3,3 V, entre 3,2 e 3,4 V.
+- Trocar de tensão com o cartucho no slot não é seguro por si só: o 5V não é cortado. Troque o cartucho só com o USB desligado.
+
+## Como foi gerado
+
+`tools/troca/`: `v138.py` (F1, J1, seletor e resistores em série a partir da v1.0), `sch_block.py` e `pcb_block.py` (esquemático e PCB), `route.py` e `finish.py` (Freerouting e acabamento), `sem_bloco.py` (retirou o bloco de troca das v1.1 já roteadas, D139, mantendo o roteamento: o Q1 virou um jumper de cobre), `verifica.sh` (DRC e ERC), `boards.json` (parâmetros por placa). `tools/check_netlist.py` lê o `d138.json` de cada versão.
