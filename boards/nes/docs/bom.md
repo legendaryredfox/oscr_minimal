@@ -1,5 +1,7 @@
 # BOM — placa nes (só NES) v1.1
 
+> **v1.0 (D141):** mesma lista sem as peças marcadas v1.1 (J1, LDO, Q4, Q5, 2 C, 3 R). Placa de 110,1 × 61,1 mm, só 4 furos não metalizados (os de canto) e **sem os 6 espaçadores do Mega**. Arquivos: `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv`.
+
 Montagem **manual**. Lista gerada de `boards/nes/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot NES e do módulo Si5351 (D17, D23); direção da etiqueta (D27).

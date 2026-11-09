@@ -1,5 +1,7 @@
 # Montagem — placa nes (só NES) v1.1
 
+> **v1.0 (D141):** sem o seletor (passos da v1.1 não valem); sem os 6 furos do Mega, então **não há os 6 espaçadores** (só os 4 de cantos com pés de borracha); o suporte do F1 fica entre o slot e o header de baixo do Mega, sem faixa extra. Sem espaçadores no Mega, segure o shield pelas laterais ao inserir ou retirar o cartucho: a força passa pelos pinos dos headers.
+
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e em `boards/nes/docs/bom.md`.
 
 > **Segurança:** só um cartucho por vez, de NES (72 pinos). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Antes de trocar de cartucho, desligue o USB: o silkscreen avisa "TROQUE O CARTUCHO COM O USB DESLIGADO".
