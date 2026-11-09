@@ -50,8 +50,8 @@ Peças opcionais a comprar a mais por placa:
 | F1 | suporte de clipes para fusível 5×20 mm (Littelfuse série 100, 2 clipes) e fusível de vidro 5×20 mm de 500 mA, ação rápida | 1 + 1 (compre fusíveis de reserva) | todas as versões (v1.0 e v1.1) |
 | J1 | cabeçalho de 2 pinos de 2,54 mm e um jumper ("TRAVA 3,3 V") | 1 | v1.1 |
 | LDO | LD1117V33 (TO-220) | 1 | v1.1 |
-| Q4 | IRF9540N (P-MOSFET, TO-220) | 1 | v1.1 |
-| Q5 | 2N7000 (TO-92) | 1 | v1.1 |
+| Q1 | IRF9540N (P-MOSFET, TO-220) | 1 | v1.1 |
+| Q2 | 2N7000 (TO-92) | 1 | v1.1 |
 | C (2) | 100 nF cerâmico e 10 µF/16 V eletrolítico (entrada e saída do LDO) | 2 | v1.1 |
 | R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | v1.1 |
 

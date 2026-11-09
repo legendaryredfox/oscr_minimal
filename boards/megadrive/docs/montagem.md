@@ -118,7 +118,7 @@ Só depois disso, e na ordem de risco de `docs/referencia/uso.md` seção 7, tes
 
 1. **Suporte do F1** (clipes para fusível 5×20 mm, furo passante) entra com os componentes baixos, na faixa de 10 mm acrescentada à borda de baixo da placa; solde os 4 furos (as duas pernas de cada clipe). O fusível **não vai soldado**: encaixe um fusível de vidro 5×20 mm de 500 mA (ação rápida) nos clipes depois dos testes, e troque-o assim quando queimar.
 2. Teste antes de ligar, com o fusível encaixado: continuidade entre os dois clipes (menos de 2 Ω) e nenhuma entre 5 V e GND.
-3. **Seletor (v1.1)**: solde os resistores comuns, os capacitores, o Q5, o LDO e o Q4 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**).
+3. **Seletor (v1.1)**: solde os resistores comuns, os capacitores, o Q2, o LDO e o Q1 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**).
 4. Gravar `pio run -e SerialASCII_Volt -t upload` (firmware com o seletor no D18). A placa sobe em 3,3 V (estado seguro) e os comandos de cartucho passam a **5 V** sozinhos (padrão); `dumper voltage 3v3` escolhe 3,3 V.
-5. Medidas sem cartucho: em 5 V, o VCC dos slots fica entre 4,6 e 5,1 V (queda do fusível e do Q4); com `--voltage 3v3`, entre 3,2 e 3,4 V (LDO). Com o J1 fechado, `--voltage 5v` não consegue passar de 3,3 V.
+5. Medidas sem cartucho: em 5 V, o VCC dos slots fica entre 4,6 e 5,1 V (queda do fusível e do Q1); com `--voltage 3v3`, entre 3,2 e 3,4 V (LDO). Com o J1 fechado, `--voltage 5v` não consegue passar de 3,3 V.
 6. Os slots Mega Drive são os únicos com seletor de tensão; o resto da placa (Si5351, PIC e outros slots) fica sempre em 5 V. **Confira a tensão que o cartucho suporta antes de inserir:** a placa não limita as saídas de 5 V do Mega para um cartucho de 3,3 V (D140).

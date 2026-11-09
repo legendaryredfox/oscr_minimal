@@ -19,7 +19,7 @@ Versão mínima de uma função: um slot **NES** (72p, 2,5 mm) em shield para Ar
 | Removido | SNES1, FC1, MD1, GBA1, PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C4, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 110,1 × 65,1 mm |
 
-O slot NES fica entre as fileiras de pinos do Mega, deslocado 9 mm para a esquerda do centro para não encostar no header 2x18 (os pads dele chegam a 116,5 mm). Os 6 furos não metalizados do Mega e os 4 furos de canto foram mantidos na v1.1. **A v1.0 não tem os 6 furos do Mega** (só os 4 de canto) e o F1 fica entre o slot e o header de baixo do Mega, sem a faixa extra: 110,1 × 61,1 mm (D141).
+O slot NES fica entre as fileiras de pinos do Mega, deslocado 9 mm para a esquerda do centro para não encostar no header 2x18 (os pads dele chegam a 116,5 mm). Os 4 furos de canto foram mantidos na v1.1. **A v1.0 não tem os 6 furos do Mega** (só os 4 de canto) e o F1 fica entre o slot e o header de baixo do Mega, sem a faixa extra: 110,1 × 61,1 mm (D141).
 
 Ficam sem ligação no Mega: `D2..D9`, `D14..D17`, `D29..D34`, `D36`, `D37`, `D40`, `D41` (outros sistemas) e os de sempre (`D0`, `D1`, `D10..D13`, `D18`, `D19`, `D39`, `D50..D53`).
 

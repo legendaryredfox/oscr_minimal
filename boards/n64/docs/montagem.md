@@ -8,7 +8,7 @@ Segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Refer
 
 ## 1. Lista de peças
 
-Ver `boards/n64/docs/bom.md`. Resumo: R1 (220 Ω), R2 (1 kΩ); C4 (100 nF); C2 e C3 (1 µF cerâmicos); C1 (470 µF/16 V); D1 (LED 3 mm); U2 (MCP1700-3302E, TO-92); U1 (header fêmea 1x7 e módulo Si5351); N64_1 (slot de 50 pinos); pinos macho longos (85 posições); 6 espaçadores M3 nos furos do Mega e 4 nos cantos com pés de borracha.
+Ver `boards/n64/docs/bom.md`. Resumo: R1 (220 Ω), R2 (1 kΩ); C4 (100 nF); C2 e C3 (1 µF cerâmicos); C1 (470 µF/16 V); D1 (LED 3 mm); U2 (MCP1700-3302E, TO-92); U1 (header fêmea 1x7 e módulo Si5351); N64_1 (slot de 50 pinos); pinos macho longos (85 posições); 4 espaçadores M3 nos cantos com pés de borracha (a v1.0 não tem os 6 furos do Mega, D150).
 
 ## 2. Ferramentas
 

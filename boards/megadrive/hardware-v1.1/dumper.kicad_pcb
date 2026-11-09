@@ -666,7 +666,7 @@
 		(at 45.37 145.98)
 		(descr "TO-220-3, Vertical, RM 2.54mm, see https://www.vishay.com/docs/66542/to-220-1.pdf")
 		(tags "TO-220-3 Vertical RM 2.54mm")
-		(property "Reference" "Q4"
+		(property "Reference" "Q1"
 			(at 2.54 -4.1 0)
 			(layer "F.SilkS")
 			(uuid "a5232874-d816-43fa-997c-caac8a2b9f76")
@@ -6176,7 +6176,7 @@
 		(at 29.9183 147.25)
 		(descr "Resistor, Axial_DIN0204 series, Axial, Vertical, pin pitch=2.54mm, 0.167W, length*diameter=3.6*1.6mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0204 series Axial Vertical pin pitch 2.54mm 0.167W length 3.6mm diameter 1.6mm")
-		(property "Reference" "R9"
+		(property "Reference" "R2"
 			(at 1.27 -1.92 0)
 			(layer "F.SilkS")
 			(uuid "94324fa5-1e47-4008-9749-ccb5c50f63aa")
@@ -6394,7 +6394,7 @@
 		(at 25.685 138.36)
 		(descr "Resistor, Axial_DIN0204 series, Axial, Vertical, pin pitch=2.54mm, 0.167W, length*diameter=3.6*1.6mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0204 series Axial Vertical pin pitch 2.54mm 0.167W length 3.6mm diameter 1.6mm")
-		(property "Reference" "R11"
+		(property "Reference" "R4"
 			(at 1.27 -1.92 0)
 			(layer "F.SilkS")
 			(uuid "78042848-eac4-4b77-9f3e-a1d689060a89")
@@ -6533,7 +6533,7 @@
 			(drill 0.7)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q5-D)")
+			(net "Net-(Q2-D)")
 			(uuid "644a7ac6-1423-473a-aaf3-b07daacb4e3a")
 		)
 		(embedded_fonts no)
@@ -6646,7 +6646,7 @@
 		(at 25.9027 125.776)
 		(descr "Resistor, Axial_DIN0204 series, Axial, Vertical, pin pitch=2.54mm, 0.167W, length*diameter=3.6*1.6mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0204 series Axial Vertical pin pitch 2.54mm 0.167W length 3.6mm diameter 1.6mm")
-		(property "Reference" "R10"
+		(property "Reference" "R3"
 			(at 1.27 -1.92 0)
 			(layer "F.SilkS")
 			(uuid "3b0d449d-aee3-40e1-a755-a2175c8465b9")
@@ -7980,7 +7980,7 @@
 		(at 37.115 144.71)
 		(descr "TO-92 leads in-line, narrow, oval pads, drill 0.75mm (see NXP sot054_po.pdf)")
 		(tags "to-92 sc-43 sc-43a sot54 PA33 transistor")
-		(property "Reference" "Q5"
+		(property "Reference" "Q2"
 			(at 1.27 -3.56 0)
 			(layer "F.SilkS")
 			(uuid "0b7f2aa9-696b-46bb-bc9e-da6fc7a9c8d9")
@@ -8171,7 +8171,7 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q5-D)")
+			(net "Net-(Q2-D)")
 			(uuid "152a849c-4f07-4b88-a534-da710e1bc85b")
 		)
 		(embedded_fonts no)
@@ -28573,7 +28573,7 @@
 		(end 36.4432 145.812)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "4eeb6109-b782-43bd-85c0-76db92405256")
 	)
 	(segment
@@ -28581,7 +28581,7 @@
 		(end 34.2507 143.619)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "4eff4b41-6944-42e2-bcc7-0f5419cf1c19")
 	)
 	(segment
@@ -28589,7 +28589,7 @@
 		(end 34.2507 143.165)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "64698508-4d91-408d-89e1-dd0299aec22f")
 	)
 	(segment
@@ -28597,7 +28597,7 @@
 		(end 39.655 145.812)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "9c9a55f9-4721-4f9e-abae-c55c6844ef75")
 	)
 	(segment
@@ -28605,7 +28605,7 @@
 		(end 29.4457 138.36)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "d277438a-fa57-4f6c-a03c-91d9b10cb2dc")
 	)
 	(segment
@@ -28613,7 +28613,7 @@
 		(end 28.225 138.36)
 		(width 0.3)
 		(layer "F.Cu")
-		(net "Net-(Q5-D)")
+		(net "Net-(Q2-D)")
 		(uuid "fa5848ec-f992-4070-b21a-1c35b808e818")
 	)
 	(zone

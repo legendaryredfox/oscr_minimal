@@ -11547,7 +11547,7 @@
 			)
 		)
 	)
-	(text "Seletor de tensao do cartucho: 3,3 V (LDO) ou 5 V (derivacao do LDO pelo Q4); D18 em nivel baixo = 5 V, solto = 3,3 V (D138)"
+	(text "Seletor de tensao do cartucho: 3,3 V (LDO) ou 5 V (derivacao do LDO pelo Q1); D18 em nivel baixo = 5 V, solto = 3,3 V (D138)"
 		(exclude_from_sim no)
 		(at 312.42 397.51 0)
 		(effects
@@ -12433,7 +12433,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a98f858c-f861-4a7b-86cb-1ee63389f01c")
-		(property "Reference" "Q4"
+		(property "Reference" "Q1"
 			(at 390.12 421.37 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12500,7 +12500,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "Q4")
+					(reference "Q1")
 					(unit 1)
 				)
 			)
@@ -12714,7 +12714,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "144058de-1ecd-4a16-9d28-384fe3ff48ef")
-		(property "Reference" "R9"
+		(property "Reference" "R2"
 			(at 413.68 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12758,7 +12758,7 @@
 				)
 			)
 		)
-		(property "Description" "Mantem o gate do Q4 na fonte dele (Q4 aberto = 3,3 V) com o Mega em reset"
+		(property "Description" "Mantem o gate do Q1 na fonte dele (Q1 aberto = 3,3 V) com o Mega em reset"
 			(at 411.48 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -12778,7 +12778,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R9")
+					(reference "R2")
 					(unit 1)
 				)
 			)
@@ -12904,7 +12904,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "29c2c74e-46f5-445a-a48b-398e45dfb651")
-		(property "Reference" "R10"
+		(property "Reference" "R3"
 			(at 436.54 423.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12968,7 +12968,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R10")
+					(reference "R3")
 					(unit 1)
 				)
 			)
@@ -13071,7 +13071,7 @@
 				)
 			)
 		)
-		(property "Description" "Jumper opcional TRAVA 3,3 V: fechado, o gate do Q4 fica preso no 5 V e o slot nunca passa de 3,3 V"
+		(property "Description" "Jumper opcional TRAVA 3,3 V: fechado, o gate do Q1 fica preso no 5 V e o slot nunca passa de 3,3 V"
 			(at 462.28 420.37 0)
 			(hide yes)
 			(show_name no)
@@ -13218,7 +13218,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "5dc76c3e-d353-448c-b99f-f454fc4590c5")
-		(property "Reference" "Q5"
+		(property "Reference" "Q2"
 			(at 481.56 421.37 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13285,7 +13285,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "Q5")
+					(reference "Q2")
 					(unit 1)
 				)
 			)
@@ -13422,7 +13422,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a61ce788-c2f2-4859-83a1-9b1a0463a52d")
-		(property "Reference" "R11"
+		(property "Reference" "R4"
 			(at 482.26 410.48 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13486,7 +13486,7 @@
 		(instances
 			(project "dumper"
 				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R11")
+					(reference "R4")
 					(unit 1)
 				)
 			)

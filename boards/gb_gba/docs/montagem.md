@@ -20,7 +20,7 @@ Quantidades e valores: `boards/gb_gba/docs/bom.md`. Resumo:
 | LED 3 mm | D1 |
 | Slot GBA 32 pads, SMD, 1,5 mm | GBA1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
-| Mecânica | 6 espaçadores M3 nos furos do Mega e 4 espaçadores M3 + pés de borracha (furos do lado do Mega) |
+| Mecânica | 4 espaçadores M3 + pés de borracha (furos do lado do Mega); a v1.0 não tem os 6 furos do Mega (D150) |
 
 Não existem nesta placa: Si5351, PIC, R2 e os outros slots.
 
@@ -48,7 +48,7 @@ Não existem nesta placa: Si5351, PIC, R2 e os outros slots.
 7. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
     - Corte as tiras: header 1x7 (potência), 2 x 1x8 (analógicos), 1x10, 1x8 e 1x8 (digitais) e 2x18 (cantos).
     - Encaixe o shield sobre o Mega com os pinos nos furos do Mega, solde 2 pinos das pontas de cada tira, confira se tudo ficou reto e solde o resto.
-    - Depois fixe os 6 espaçadores M3 nos furos do Mega e os 4 espaçadores M3 do lado do Mega com os pés de borracha.
+    - Depois fixe os 4 espaçadores M3 do lado do Mega (v1.0: sem os 6 do centro, D150) com os pés de borracha.
 
 ## 4. Inspeção visual
 

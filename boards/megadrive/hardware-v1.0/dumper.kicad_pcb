@@ -1540,7 +1540,7 @@
 		(descr "Littelfuse clips, https://www.littelfuse.com/~/media/electronics/datasheets/fuse_clips/littelfuse_fuse_clip_100_445_030_520_datasheet.pdf.pdf")
 		(tags "Fuseholder clips")
 		(property "Reference" "F1"
-			(at 10.25 -4.3 0)
+			(at 20.2 -4.2 0)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(uuid "a47e89c4-fc43-42a3-9bdc-7526f5f24bf9")
