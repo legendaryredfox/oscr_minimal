@@ -1,6 +1,6 @@
-# BOM — placa gb_gba (GBA; GB e GBC por adaptador) v1.1
+# BOM — placa gb_gba (GBA; GB e GBC por adaptador) v1.0
 
-Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
+Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom-v1.0.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot GBA; direção do cartucho (D28); adaptador de GB/GBC (D56).
 
@@ -8,7 +8,7 @@ Montagem **manual**. Lista gerada de `boards/gb_gba/fab/bom-v1.1.csv` mais as pe
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/gb_gba/fab/dumper-v1.1-jlcpcb.zip` |
+| Arquivo | `boards/gb_gba/fab/dumper-v1.0-jlcpcb.zip` |
 | Camadas | 2 |
 | Dimensões | 138,1 × 67,1 mm (acima de 100 mm de largura: faixa de preço maior) |
 | Espessura / acabamento | 1,6 mm, HASL |
@@ -40,23 +40,6 @@ Sem Si5351, PIC, R2 e pontos de teste.
 | Espaçador M3 | 6 | Furos do Mega; seguram o shield no Mega, como na `16_and_8_bits`. |
 | Cabo USB-C | 1 | Interface com o PC. |
 
-## Bloco de troca de cartucho (v1.1, D126)
-
-Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
-
-| Ref. | Valor | Função |
-|---|---|---|
-| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
-| R2 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
-| R3 | 100 Ω | D19 ao gate do Q1 |
-| R4, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
-| Q2, R5 e R6 | 2N7000 (TO-92), 330 Ω (o R6 descarrega o 3,3 V) | descarga do rail quando o Q1 abre |
-| Q3, R7, R8, R9, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R9 leva o nó ao D53 |
-
-Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
-
-Peças a comprar a mais por placa: 1 × IRF9540N, 2 × 2N7000, 1 LED verde e 1 LED amarelo de 3 mm, resistores axiais 1/4 W (pequenos, 0204 ou 0207 em pé): 100 kΩ × 2, 100 Ω × 1, 1 kΩ × 3, 330 Ω × 2.
-
 ## F1, J1 e seletor de tensão (D138)
 
 <!-- d138 -->
@@ -65,6 +48,6 @@ Peças opcionais a comprar a mais por placa:
 
 | Ref. | Peça | Qtd | Onde |
 |---|---|---|---|
-| F1 | suporte de clipes para fusível 5×20 mm (Littelfuse série 100, 2 clipes) e fusível de vidro 5×20 mm de 500 mA, ação rápida | 1 + 1 (compre fusíveis de reserva) | todas as versões (v1.0 e v1.1) |
+| F1 | suporte de clipes para fusível 5×20 mm (Littelfuse série 100, 2 clipes) e fusível de vidro 5×20 mm de 500 mA, ação rápida | 1 + 1 (compre fusíveis de reserva) | todas as versões (v1.0) |
 
-**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 e v1.1 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.
+**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega. Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.

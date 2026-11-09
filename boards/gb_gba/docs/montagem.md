@@ -1,8 +1,8 @@
-# Montagem — placa gb_gba (GBA; GB e GBC por adaptador) v1.1
+# Montagem — placa gb_gba (GBA; GB e GBC por adaptador) v1.0
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto, com as adaptações do slot GBA (SMD) e do regulador de 3,3 V. Todas as referências (R1, C1...) estão no silkscreen e em `boards/gb_gba/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez. O slot GBA é **3,3 V**: nunca ligue o VCC dele ao 5V. Cartucho de GB e GBC só entra pelo adaptador (D56). Antes de trocar de cartucho, desligue o 5V dos slots (`dumper.py power off`, espere o LED amarelo acender) ou o USB: o silkscreen avisa "SÓ TROQUE O CARTUCHO COM O LED AMARELO ACESO".
+> **Segurança:** só um cartucho por vez. O slot GBA é **3,3 V**: nunca ligue o VCC dele ao 5V. Cartucho de GB e GBC só entra pelo adaptador (D56). Antes de trocar de cartucho, desligue o USB: o silkscreen avisa "TROQUE O CARTUCHO COM O USB DESLIGADO".
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão; o `/D9` (RD do GBA) foi roteado à parte, pelo roteador A* do projeto. Se algo das seções 5 e 6 falhar, pare e avise antes de seguir.
 
@@ -119,18 +119,6 @@ Só depois, e na ordem de risco de `docs/referencia/uso.md` seção 7, teste sav
 - Altura dos espaçadores M3 (D25): o USB-C e o jack do Mega têm que passar por baixo do shield.
 - Via-in-fanout do GBA: o Freerouting pôs vias ao lado dos pads de 1,5 mm; confira no KiCad.
 - A placa foi roteada por autoroteador: confira as trilhas no KiCad e faça o teste de continuidade da seção 5 com atenção.
-
-## Bloco de troca de cartucho (v1.1)
-
-Solde com os componentes baixos: R2 a R9 (em pé, como no silkscreen), os dois 2N7000 (Q2, Q3; o lado chato do silk é o lado chato do transistor), os LEDs D2 (verde) e D3 (amarelo) e, **por último entre os baixos**, o Q1 (TO-220, em pé, como no silkscreen).
-
-**Firmware:** grave o ambiente `SerialASCII_PowerSense` (`pio run -e SerialASCII_PowerSense -t upload` em `firmware/oscr`): começa com o 5V dos slots desligado; o host liga com `POWER`.
-
-Testes extras (multímetro, sem cartucho):
-
-1. Antes de ligar: continuidade entre o dreno do Q1 (`+5V_CART`) e o VCC do slot; **nenhuma** entre `+5V_CART` e o 5V do Mega.
-2. Ligado ao USB, com o firmware padrão: o 5V do Mega presente, `+5V_CART` conforme o comando `POWER` (`dumper.py power on|off`): ligado = LED verde (D2) aceso e 4,7 a 5,2 V no VCC do slot; desligado = D3 aceso e VCC abaixo de 0,5 V em até 1 s.
-3. Medir a queda do Q1 em carga e o tempo de descarga; anotar nos logs. O limiar do LED amarelo varia com o 2N7000 (1 a 2,5 V).
 
 ## F1, J1 e seletor de tensão (D138)
 

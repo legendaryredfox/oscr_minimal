@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""D138: F1 (PTC), J1 e seletor 3,3 V/5 V em uma placa. Refaz a versão a partir do git (HEAD), roda o gerador e o roteamento.
+"""D138: F1, J1 e seletor 3,3 V/5 V em uma placa. ATENÇÃO (D139): o modo `bloco` gerava o bloco de troca de cartucho, retirado de todas as placas (veja `sem_bloco.py`); não o use. Só `fusivel:<versão>` e `existente` ainda fazem sentido. Refaz a versão a partir do git (HEAD), roda o gerador e o roteamento.
 Uso (da raiz):
   python3 tools/troca/v138.py <placa> prep  bloco|fusivel:<versão> [--ext mm]    esquemático + posicionamento
   python3 tools/troca/v138.py <placa> rota  bloco|fusivel:<versão>               Freerouting + acabamento

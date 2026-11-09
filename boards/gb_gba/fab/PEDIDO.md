@@ -1,27 +1,27 @@
-# Pedido da placa gb_gba v1.1 (JLCPCB)
+# Pedido da placa gb_gba (JLCPCB)
 
-Placa **GBA (GB e GBC por adaptador)**, 2 camadas, 138,1 × 67,1 mm. Refeita em 2026-11-07 (bloco de troca de cartucho, D126) a partir de `../hardware-v1.1/dumper.kicad_pcb`. **Nada encomendado.**
+Envie `dumper-v1.0-jlcpcb.zip` (a versão mais nova; gerbers em `gerbers-v1.0/`). **Nada encomendado.** O layout foi roteado por autoroteador e **ainda não foi revisado à mão no KiCad**: revise antes de pagar.
 
-Envie `dumper-v1.1-jlcpcb.zip`. SHA-256: `f928bfc9c66193c3f9f3617f7fd18158ec6758d843b54fa75dc92d8316996333` (muda a cada exportação; confira com `sha256sum`).
-
-Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
+Conteúdo do zip (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs`, `F_Silkscreen.gto`, `B_Silkscreen.gbo`, `Edge_Cuts.gm1`, `PTH.drl`, `NPTH.drl`.
 
 | Item | Valor esperado |
 |---|---|
 | Camadas | 2 |
-| Dimensões | 138,1 × 67,1 mm |
-| Furos não metalizados | 10 de 3,2 mm (4 M3 do lado do Mega e 6 do Mega) e 2 de 2,2 mm (guias do slot GBA) |
+| Dimensões | 138,1 × 77,1 mm |
+| Espessura / acabamento | 1,6 mm, HASL |
+| Quantidade | 5 |
+| Furos não metalizados | 2 (M3 de canto, 3,2 mm) |
 | Furo mínimo | 0,3 mm (vias) |
+| Demais | trilha/espaço mín. 0,2 mm; sem montagem; sem stencil |
 
-Se a pré-visualização mostrar outra coisa, **não pague**. Pads SMD de 1 mm a 1,5 mm de passo: HASL é aceitável para solda manual; ENIG sai mais caro.
+Se a pré-visualização mostrar outra coisa, **não pague**.
 
-**Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, como na `16_and_8_bits`); ERC com 1 aviso (`lib_symbol_mismatch` do U1); `tools/check_netlist.py --board gb_gba` confere (41 nets, 120 ligações).
+## F1, J1 e seletor de tensão (D138)
 
-## D138 — F1, J1 e seletor de tensão (2026-11-08)
-
-As versões abaixo foram **refeitas** com o PTC F1 (opcional; sem ele, fio ou ponte de solda nos furos) e, nas v1.1 com slot de 5 V, o seletor 3,3 V/5 V, o jumper J1 e os resistores em série (D138). Os tamanhos e SHA-256 mais acima, de antes do D138, **não valem mais**; valem estes (mude de zip só depois de rever o layout no KiCad: roteamento por autoroteador, nada encomendado):
+O suporte do fusível F1 está em todas as versões (opcional; troca sem solda). O seletor 3,3 V/5 V, o jumper J1 e os resistores em série estão nas placas com slot de 5 V que têm v1.1. O 5V dos slots **não é cortado por software** (D139): troque o cartucho com o USB desligado. Circuito: `docs/referencia/seletor-tensao.md`. Os SHA-256 mudam a cada exportação; confira com `sha256sum`.
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
 | v1.0 | `dumper-v1.0-jlcpcb.zip` | 138,1 × 77,1 mm | `18bb27a6d05a910d61625780a9963b9e25842dc0ba71f65ba2ea15c8c356e588` |
-| v1.1 | `dumper-v1.1-jlcpcb.zip` | 138,1 × 77,1 mm | `0aad96a4d6c8d49c41d321929da1704a842ed89974f87b839b03b2132d8f2fd4` |
+
+Verificação: `python3 tools/check_netlist.py --board gb_gba` (versão mais nova); ERC e DRC com `tools/troca/verifica.sh gb_gba v1.0`.

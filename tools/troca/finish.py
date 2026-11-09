@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bloco de troca de cartucho (D126), acabamento depois do roteamento: avisos de silkscreen, rótulos dos LEDs, data, pads de GND sólidos
+"""Acabamento (D138; nasceu no bloco de troca de cartucho, D126) depois do roteamento: avisos de silkscreen, rótulos dos LEDs, data, pads de GND sólidos
 onde o DRC aponta starved_thermal e novo preenchimento das zonas.
 Uso (Python do venv do KiCad MCP): python finish.py boards/<placa>/hardware [--move "TEXTO=x,y"]... [--date 2026-11-07]"""
 import argparse, re, subprocess, sys, tempfile
@@ -12,7 +12,7 @@ ap.add_argument("hw"); ap.add_argument("--move", action="append", default=[]); a
 ap.add_argument("--led-side", default="up")
 ap.add_argument("--hide", action="append", default=[], help="oculta o texto de referência dessa peça")
 ap.add_argument("--relabel", action="store_true", help="apaga e refaz os rótulos dos LEDs")
-ap.add_argument("--fusivel", action="store_true", help="versão só com o F1 (sem bloco de troca): não troca os avisos do silkscreen")
+ap.add_argument("--fusivel", action="store_true", help="versão só com o F1: não troca os avisos do silkscreen")
 a = ap.parse_args()
 HW = Path(a.hw); PCB = str(HW / "dumper.kicad_pcb")
 mm = pcbnew.FromMM; tomm = pcbnew.ToMM
@@ -76,10 +76,7 @@ def label_near(txt, f, size=0.9):
 for f in b.GetFootprints():
     v = f.GetValue()
     if v.startswith("LED") and f.GetReference() != "D1":
-        txt = {"LED verde 3mm": "5V LIGADO", "LED amarelo 3mm": "SEGURO TROCAR"}.get(v)
         f.Reference().SetVisible(False)
-        if txt and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == txt for d in b.GetDrawings()):
-            label_near(txt, f)
     elif v == "TRAVA 3,3 V" and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == "TRAVA 3,3 V" for d in b.GetDrawings()):
         label_near("TRAVA 3,3 V", f, 0.8)          # J1 (D138): jumper que impede o 5 V
 tb = b.GetTitleBlock()
@@ -93,9 +90,9 @@ for d in b.GetDrawings():
     if a.fusivel:
         pass
     elif t == "NÃO COLOQUE NEM RETIRE":
-        d.SetText("SÓ TROQUE O CARTUCHO COM")
+        d.SetText("TROQUE O CARTUCHO COM")
     elif t == "O CARTUCHO COM USB LIGADO":
-        d.SetText("O LED AMARELO ACESO")
+        d.SetText("O USB DESLIGADO")
     m = re.search(r"v\.? ?\d+\.\d+\s+\d{4}-\d{2}-\d{2}", t)
     if m:
         d.SetText(re.sub(r"\d{4}-\d{2}-\d{2}", a.date, t))

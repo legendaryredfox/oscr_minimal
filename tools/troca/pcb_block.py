@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bloco de troca de cartucho (D126), PCB. Depois de tools/troca/sch_block.py: cria as peças novas e as nets, liga os pads pela netlist,
+"""PCB do seletor de tensão e do F1 (D138; nasceu no bloco de troca de cartucho, D126, retirado em D139). Depois de tools/troca/sch_block.py: cria as peças novas e as nets, liga os pads pela netlist,
 acha para cada peça nova um lugar livre (busca em espiral a partir de uma âncora, sem tocar pads, furos nem a área do slot),
 apaga trilhas, vias e zonas (o roteamento é refeito por tools/troca/route.py) e atualiza versão e avisos do silkscreen.
 Uso (Python do venv do KiCad MCP): python pcb_block.py boards/<placa>/hardware <versão> <x_ancora> <y_ancora> [x0 y0 x1 y1 da região permitida]"""

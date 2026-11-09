@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bloco de troca (D126), roteamento: roteia com o Freerouting (DSN -> SES), cria as zonas de GND e preenche. Se sobrar ligação aberta
+"""Roteamento das placas com F1 e seletor (D138; nasceu no bloco de troca, D126): roteia com o Freerouting (DSN -> SES), cria as zonas de GND e preenche. Se sobrar ligação aberta
 (o Freerouting às vezes deixa uma rede de fora sem avisar) ou o .ses não aparecer, tenta de novo com mais passadas (até 3 vezes).
 Uso (Python do venv do KiCad MCP): python route.py boards/<placa>/hardware [passes]   (precisa de java e ~/.kicad-mcp/freerouting.jar)"""
 import subprocess, sys, tempfile, time

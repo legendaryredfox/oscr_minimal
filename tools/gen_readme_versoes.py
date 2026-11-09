@@ -14,12 +14,9 @@ import pcbnew
 ROOT = Path(__file__).resolve().parents[1]
 BOARDS = ROOT / "boards"
 
-# Texto por placa. "ver" = (versão, pasta de hardware, pasta de gerbers, tem o bloco de troca, nota própria da versão)
-SEM_BLOCO = ("**Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa "
-             "tirando o cabo USB** do Mega; nunca com a USB ligada.")
-COM_BLOCO = ("**Com desligamento por software** (bloco de troca de cartucho, D126): o comando `POWER` liga e desliga o 5V dos slots, "
-             "o rail é descarregado e o LED amarelo \"SEGURO TROCAR\" acende quando dá para tirar o cartucho. Circuito, peças e testes: "
-             "[`docs/referencia/bloco-troca.md`](../../../docs/referencia/bloco-troca.md).")
+# Texto por placa. "ver" = (versão, pasta de hardware, pasta de gerbers, reservado (sempre False desde D139), nota própria da versão)
+TROCA = ("O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligamento por software foi retirado, D139). "
+         "Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.")
 
 NOMES_SLOT = {"MD1": "Mega Drive", "SMS1": "Master System", "NES1": "NES", "FC1": "Famicom", "SNES1": "SNES", "GBA1": "GBA", "N64": "N64"}
 SEL_CFG = json.loads((Path(__file__).resolve().parent / "troca" / "boards.json").read_text())
@@ -32,7 +29,7 @@ def protecao(placa, linhas):
     if "F1" in refs:
         out += ["## Proteção de corrente e tensão (D138)", "",
                 "**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega "
-                "(nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA "
+                "Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA "
                 "(o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). "
                 "Ele limita corrente e não protege contra tensão errada.", ""]
     if "J1" in refs:
@@ -51,7 +48,7 @@ PLACAS = {
         nome="16_and_8_bits", slots="SNES (62p), NES (72p), Famicom (60p), Mega Drive (64p), todos a 5 V, e GBA (32p, SMD, 1,5 mm) a 3,3 V (regulador U3)",
         extra="Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete.",
         versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""),
-                 ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                 ]),
     "16_bits": dict(
         nome="16_bits", slots="SNES (62p) e Mega Drive (64p), 5 V",
         extra="Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. Sem botão de reset em nenhuma versão (D128).",
@@ -59,24 +56,24 @@ PLACAS = {
                   "Antiga `rev2` (D97): alimentação em 0,8 mm, sem resistores série nem TVS nas linhas de controle, sem `/CART` no D50, sem C5, C6 e pontos de teste, sem furos M3 do Mega. A v1.0 original (trilhas de 0,3 mm) foi encomendada pelo usuário em 2026-11-06 e seus gerbers saíram do repositório (D110)."),
                  ("v1.2", "hardware-v1.2", "gerbers-v1.2", False,
                   "Resistores série (0 Ω) nas 12 linhas de controle (**sem os TVS**, D130), pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste e três furos M3 alinhados com o Mega. Sem a chave de 5V (Q1) e sem o botão de reset (D128); D19 e RST ficam sem ligação."),
-                 ("v1.3", "hardware-v1.3", "gerbers-v1.3", True,
-                  "A v1.2 mais os 12 TVS 5 V (D3 a D14, DNP) e o bloco de troca de cartucho (Q1 a Q3, R16 a R22, LEDs D15 e D16, comando no D19, sensor no D53). Roteada de novo pelo Freerouting: **revisar no KiCad antes de encomendar**.")]),
+                 ("v1.3", "hardware-v1.3", "gerbers-v1.3", False,
+                  "A v1.2 mais os 12 TVS 5 V (D3 a D14, DNP), o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138) e os resistores em série das linhas desse slot. Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**.")]),
     "megadrive": dict(nome="megadrive", slots="Mega Drive (64p, 2,54 mm), 5 V", extra="Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/componentes-opcionais.md`).",
-                      versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                      versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "megadrive_sms": dict(nome="megadrive_sms", slots="Mega Drive (64p, 2,54 mm) e Master System / Mark III (50p, 2,54 mm), 5 V ou 3,3 V (seletor na v1.1); **um cartucho por vez**", extra="Sem Si5351 e sem PIC (pino 47, Clock, do slot SMS sem ligação).",
-                          versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                          versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "snes": dict(nome="snes", slots="SNES (62p, 2,5 mm), 5 V", extra="Si5351 em header fêmea e PIC12F629 (CIC) em soquete.",
-                 versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                 versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, "")]),
     "nes": dict(nome="nes", slots="NES (72p, 2,5 mm), 5 V", extra="Si5351 (clock do slot), sem PIC.",
-                versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "famicom": dict(nome="famicom", slots="Famicom (60p, 2,54 mm), 5 V", extra="Sem Si5351 e sem PIC.",
-                    versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                    versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "famicom_nes": dict(nome="famicom_nes", slots="Famicom (60p) e NES (72p) em paralelo, 5 V; **um cartucho por vez, em um slot só**", extra="Si5351, sem PIC.",
-                        versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                        versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "gb_gba": dict(nome="gb_gba", slots="GBA (32 pads SMD, 1,5 mm), 3,3 V; GB e GBC só com adaptador", extra="Sem Si5351 e sem PIC.",
-                   versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                   versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, "")]),
     "n64": dict(nome="n64", slots="N64 (50 pinos), 3,3 V", extra="Si5351 só para a EEPROM.",
-                versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", True, "")]),
+                versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, "")]),
 }
 
 
@@ -113,12 +110,11 @@ def gerar(placa):
                f"{'Esta é a versão mais nova.' if i == len(vers) - 1 else 'Versão anterior, mantida ao lado da mais nova.'}", "",
                "| | |", "|---|---|",
                f"| Slots | {cfg['slots']} |", f"| Circuitos | {cfg['extra']} |", f"| Tamanho | {tamanho(pcb)} |",
-               f"| Desligar o 5V por software | {'**sim**' if bloco else '**não**'} |",
                f"| Projeto KiCad | [`{hw}/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |",
                f"| Fábrica (JLCPCB) | `../fab/{gd}/`, `../fab/dumper-{v}-jlcpcb.zip` |",
                f"| Renders | `render-cima.png`, `render-baixo.png` |",
                "| Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |", ""]
-        md += ["## Troca de cartucho", "", COM_BLOCO if bloco else SEM_BLOCO, ""]
+        md += ["## Troca de cartucho", "", TROCA, ""]
         md += protecao(placa, linhas)
         if nota:
             md += ["## Particularidades desta versão", "", nota, ""]
@@ -143,8 +139,7 @@ def gerar(placa):
         for r in linhas:
             md.append(f"| {r['Ref']} | {r['Valor']} | `{r['Footprint']}` | {r['Qtd']} |")
         md += ["", "Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.", ""]
-        chk = (f"python3 tools/check_netlist.py --board {placa}" if bloco else
-               f"python3 tools/check_netlist.py --board {placa} --sem-troca {'--sem-tvs ' if (placa, v) == ('16_bits', 'v1.2') else ''}boards/{placa}/{hw}/dumper.kicad_sch")
+        chk = f"python3 tools/check_netlist.py --board {placa} {'--sem-tvs ' if (placa, v) == ('16_bits', 'v1.2') else ''}boards/{placa}/{hw}/dumper.kicad_sch"
         gx = ""
         sem_chk = (placa, v) == ("16_bits", "v1.0")   # o pinmap atual inclui C5, C6, D3 a D14 e TP2, que a v1.0 não tem
         md += ["## Verificação e fábrica (da raiz do repositório)", "", "```",

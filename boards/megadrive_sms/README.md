@@ -6,14 +6,14 @@
 
 Versão mínima de dois slots em shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** fixo: **Mega Drive** (64p, 2,54 mm) e **Master System / Mark III** (50p, 2,54 mm). Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`; o SMS vem do `mastersystem_adapter` do OSCR).
 
-**Estado:** v1.0, 107,1 × 83,1 mm, **sem o bloco de troca de cartucho** (regra do usuário: a v1.0 é a mais barata que funciona; desligue o USB para trocar). ERC 0 violações; DRC sem erros nem ligações abertas; netlist confere com `docs/pinmap.md` (`tools/check_netlist.py --board megadrive_sms --sem-troca`); gerbers em `fab/`. Roteada pelo Freerouting e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar**. Nada encomendado, montado nem testado.
+**Estado:** v1.0, 107,1 × 83,1 mm, 5V direto nos slots (nenhuma versão corta o 5V por software, D139: desligue o USB para trocar o cartucho). ERC 0 violações; DRC sem erros nem ligações abertas; netlist confere com `docs/pinmap.md` (`tools/check_netlist.py --board megadrive_sms --sem-troca`); gerbers em `fab/`. Roteada pelo Freerouting e costurada com vias de GND: **revisar o layout no KiCad antes de encomendar**. Nada encomendado, montado nem testado.
 
 ## Decisões (2026-11-08, D136)
 
 - Pino 47 (Clock) do SMS sem ligação; sem Si5351.
 - Slot SMS de 50p a 2,54 mm (2 × 25), o mesmo tipo de item de AliExpress do slot Mega Drive (wiki de peças do OSCR). Footprint `SMS_Slot` em `boards/_lib/` (e no repositório `romulofer/kicad_libraries_romulo`). Medir o slot recebido.
 - Game Gear e SG-1000 por adaptador de terceiros (Retrode, Retron, Raphnet), fora da placa.
-- v1.0 sem o bloco de troca; versão com bloco só depois, como v1.1.
+- v1.0 sem seletor de tensão; a v1.1 acrescenta o seletor 3,3 V/5 V (D138). Nenhuma versão tem o bloco de troca de cartucho (D139).
 
 ## Diferenças em relação à `megadrive` v1.0
 
@@ -47,7 +47,7 @@ Scripts em `tools/boards/megadrive_sms/` (da raiz do repositório):
 Verificação:
 
 ```
-python3 tools/check_netlist.py --board megadrive_sms --sem-troca
+python3 tools/check_netlist.py --board megadrive_sms boards/megadrive_sms/hardware-v1.0/dumper.kicad_sch
 kicad-cli sch erc boards/megadrive_sms/hardware-v1.0/dumper.kicad_sch
 kicad-cli pcb drc boards/megadrive_sms/hardware-v1.0/dumper.kicad_pcb
 tools/export_fab.sh megadrive_sms v1.0

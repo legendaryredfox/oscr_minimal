@@ -11,7 +11,6 @@ Versão **v1.2** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Slots | SNES (62p) e Mega Drive (64p), 5 V |
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. Sem botão de reset em nenhuma versão (D128). |
 | Tamanho | 108,1 × 96,1 mm |
-| Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.2/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.2/`, `../fab/dumper-v1.2-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
@@ -19,11 +18,11 @@ Versão **v1.2** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 
 ## Troca de cartucho
 
-**Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
+O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligamento por software foi retirado, D139). Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
 
 ## Proteção de corrente e tensão (D138)
 
-**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
 
 ## Particularidades desta versão
 
@@ -62,7 +61,7 @@ Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcad
 ## Verificação e fábrica (da raiz do repositório)
 
 ```
-python3 tools/check_netlist.py --board 16_bits --sem-troca --sem-tvs boards/16_bits/hardware-v1.2/dumper.kicad_sch
+python3 tools/check_netlist.py --board 16_bits --sem-tvs boards/16_bits/hardware-v1.2/dumper.kicad_sch
 kicad-cli sch erc boards/16_bits/hardware-v1.2/dumper.kicad_sch
 kicad-cli pcb drc boards/16_bits/hardware-v1.2/dumper.kicad_pcb
 tools/export_fab.sh 16_bits v1.2

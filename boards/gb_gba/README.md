@@ -2,11 +2,11 @@
 
 ![Render 3D da placa gb_gba (KiCad, vista de cima)](render.png)
 
-**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md), [v1.1](hardware-v1.1/README.md).
+**README por versão** (renders de cima e de baixo, peças, diferenças): [v1.0](hardware-v1.0/README.md).
 
 Versão mínima de uma função: um slot **GBA** (32 pads SMD, 1,5 mm, **3,3 V**) em shield para Arduino Mega 2560 R3, só USB. GB e GBC entram **só pelo slot GBA, com adaptador** (D56). Um cartucho por vez. Pinagem idêntica ao OSCR HW5 (`docs/pinmap.md`, recorte da `16_and_8_bits`). Sem SD, sem LCD, sem Si5351 e sem PIC.
 
-**Estado:** v1.1, 138,1 × 67,1 mm. ERC com 1 aviso de biblioteca (U1, antes U3; o mesmo da `16_and_8_bits`); DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com o GND junto; o `/D9` o autoroteador não achou caminho em nenhuma tentativa e foi roteado pelo A* de `tools/historico/pcb_v12` (`tools/boards/gb_gba/route_net.py`). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`, `+3V3`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/historico/revisao/widen_power.py`, D96).
+**Estado:** v1.0, 138,1 × 67,1 mm. ERC com 1 aviso de biblioteca (U1, antes U3; o mesmo da `16_and_8_bits`); DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com o GND junto; o `/D9` o autoroteador não achou caminho em nenhuma tentativa e foi roteado pelo A* de `tools/historico/pcb_v12` (`tools/boards/gb_gba/route_net.py`). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`. Trilhas de alimentação (`+5V`, `+3V3`) alargadas até onde cabe, 0,8 mm na maior parte (`tools/historico/revisao/widen_power.py`, D96).
 
 ## Diferenças em relação à `16_and_8_bits`
 
@@ -26,36 +26,13 @@ Mesma receita da `megadrive/` e da `snes/` (`boards/megadrive/README.md`, D92 e 
 
 ```
 python3 tools/check_netlist.py --board gb_gba
-kicad-cli sch erc boards/gb_gba/hardware-v1.1/dumper.kicad_sch
-kicad-cli pcb drc boards/gb_gba/hardware-v1.1/dumper.kicad_pcb
+kicad-cli sch erc boards/gb_gba/hardware-v1.0/dumper.kicad_sch
+kicad-cli pcb drc boards/gb_gba/hardware-v1.0/dumper.kicad_pcb
 tools/export_fab.sh gb_gba v1.0
 ```
 
 **Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
 
-## Bloco de troca de cartucho (v1.1, D126)
+## Versões
 
-Circuito e motivo: `docs/referencia/bloco-troca.md` (na raiz do repositório). Peças novas desta placa:
-
-| Ref. | Valor | Função |
-|---|---|---|
-| Q1 | IRF9540N (P-MOSFET, TO-220) | chave de alta do 5V dos slots (`+5V_CART`); comando no D19 (nível baixo liga) |
-| R2 | 100 kΩ | gate do Q1 ao 5V (desligado com o Mega em reset) |
-| R3 | 100 Ω | D19 ao gate do Q1 |
-| R4, D2 | 1 kΩ, LED verde 3 mm | `+5V_CART` presente |
-| Q2, R5 e R6 | 2N7000 (TO-92), 330 Ω (o R6 descarrega o 3,3 V) | descarga do rail quando o Q1 abre |
-| Q3, R7, R8, R9, D3 | 2N7000, 100 kΩ, 1 kΩ, 1 kΩ, LED amarelo 3 mm | sensor do rail: D3 aceso = seguro trocar; R9 leva o nó ao D53 |
-
-Os pinos de 5V dos slots e dos circuitos que a placa tiver (Si5351, PIC, pull-up, entrada do regulador de 3,3 V) e os capacitores deles ficam em `+5V_CART`. O Q1 (TO-220) fica em pé na placa, sem dissipador (a corrente do cartucho é baixa).
-
-## Versões: com e sem o desligamento por software (D128)
-
-O desligamento do 5V dos slots por software (bloco de troca de cartucho, D126) é uma versão **separada**; a placa existe também sem ele.
-
-| Versão | Bloco de troca (Q1, Q2, Q3, LEDs, D19 e D53) | Projeto KiCad | Fábrica | Renders (cima e baixo) |
-|---|---|---|---|---|
-| v1.0 | **não** (5V direto nos slots) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
-| v1.1 | sim | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `hardware-v1.1/render-cima.png`, `hardware-v1.1/render-baixo.png` (`render.png` = v1.1, de cima) |
-
-A v1.0 é o projeto de antes do D126, restaurado do histórico do git; os gerbers dela foram regerados da pasta `hardware-v1.0/`. Verificação: `python3 tools/check_netlist.py --board gb_gba --sem-troca boards/gb_gba/hardware-v1.0/dumper.kicad_sch` (v1.0) e `python3 tools/check_netlist.py --board gb_gba` (v1.1). Para refazer os gerbers da v1.0: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh gb_gba v1.0`. Nenhuma das duas foi encomendada, montada nem testada com cartucho.
-
+Só a **v1.0** (`hardware-v1.0/`; fábrica em `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv`; renders em `hardware-v1.0/render-cima.png` e `render-baixo.png`). Ela já leva o suporte do fusível F1 (D138). O 5V dos slots vai direto do Mega e **não é cortado por software** (o bloco de troca de cartucho, D126 a D128, foi retirado em D139): para trocar o cartucho, desligue o USB. Verificação: `python3 tools/check_netlist.py --board gb_gba`.

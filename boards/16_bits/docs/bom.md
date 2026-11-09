@@ -1,6 +1,6 @@
 # BOM — placa 16_bits (SNES e Mega Drive) v. 1.2
 
-> **Versões (D128):** a tabela abaixo é da v1.2 de 2026-11-06. **v1.2 atual:** sem Q1, R16, R17, R18, D2, SW1 e FLG3 (`../fab/bom-v1.2.csv`). **v1.3:** sem SW1; Q1, R16 a R18 e o LED verde (D15) como aqui, mais Q2 e Q3 (2N7000 TO-92), R19 330 Ω, R20 100 kΩ, R21 e R22 1 kΩ e o LED amarelo D16 (`../fab/bom-v1.3.csv`). Ver `versoes.md`.
+> **Versões (D128, D139):** nenhuma versão tem a chave de 5V (Q1, R16 a R18, D2), o botão de reset (SW1) nem o bloco de troca de cartucho. A lista de peças de cada versão está em `../fab/bom-v1.2.csv` e `../fab/bom-v1.3.csv`; a v1.3 acrescenta TVS, o seletor de tensão e os resistores de 470 Ω (ver `versoes.md`).
 
 > **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
 
@@ -44,10 +44,6 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | R3 a R14 | 12 | 0 Ω (fio) de fábrica; 47 a 100 Ω depois dos testes | `R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | Série das linhas de controle (D2 a D9, D14 a D17), em pé. `docs/v12-final.md`. |
 | D3 a D14 | 12 (DNP) | TVS 5 V ou zener 5,1 V, DO-35 | `D_DO-35_SOD27_P2.54mm_Vertical_CathodeUp` | **Não montar** por padrão. |
 | R15 | 1 (DNP) | 10 kΩ | idem R3 | Pull-up de `/VRES` (Open EverDrive). **Não montar.** |
-| R16, R17, R18 | 3 | 100 kΩ, 100 Ω, 1 kΩ | idem R3 | Chave de 5V: pull-up da porta, série do comando D19, limitador do LED verde. |
-| Q1 | 1 | P-MOSFET TO-220 (IRF9540N ou equivalente) | `TO-220-3_Vertical` | Chave de alta do 5V dos slots (G, D, S). Medir a queda com carga. |
-| D2 | 1 | LED verde 3 mm | `LED_D3.0mm` | Acende com o 5V dos slots ligado. |
-| SW1 | 1 | Botão tátil 6 × 6 mm, 4 pinos | `SW_PUSH_6mm` | Reset do Mega. |
 | TP1 a TP6 | 6 | Pontos de teste: pad de 2 mm, furo de 1 mm (`TestPoint_THTPad_D2.0mm_Drill1.0mm`) | só cobre | Na placa, sem peça: `5V`, `GND`, `/CE`, `/OE`, `/WE`, `/UWR`. Opcional: tira de pinos macho 1x6 de 2,54 mm (os furos ficam a 2,54 mm um do outro). Fora da BOM de compra. |
 
 ## Pinos e mecânica (sem símbolo no esquemático)
@@ -79,6 +75,6 @@ Peças opcionais a comprar a mais por placa:
 | C (2) | 100 nF cerâmico e 10 µF/16 V eletrolítico (entrada e saída do LDO) | 2 | v1.3 |
 | R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | v1.3 |
 
-**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.2 e v1.3 (a v1.0 já foi encomendada e não muda) (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.
+**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega. Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.2 e v1.3 (a v1.0 já foi encomendada e não muda) (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.
 
 Seletor 3,3 V/5 V nos slots Mega Drive (resto da placa sempre em 5 V). Preço aproximado das peças extras: menos de US$ 3 por placa (estimativa de varejo, não cotada).

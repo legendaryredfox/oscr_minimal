@@ -1,12 +1,12 @@
 {
   "16_and_8_bits": {
-    "atual": "v1.1"
+    "atual": "v1.0"
   },
   "megadrive": {
     "atual": "v1.1"
   },
   "snes": {
-    "atual": "v1.1"
+    "atual": "v1.0"
   },
   "nes": {
     "atual": "v1.1"
@@ -18,15 +18,15 @@
     "atual": "v1.1"
   },
   "gb_gba": {
-    "atual": "v1.1"
+    "atual": "v1.0"
   },
   "n64": {
-    "atual": "v1.1"
+    "atual": "v1.0"
   },
   "16_bits": {
     "atual": "v1.3"
   },
   "megadrive_sms": {
-    "atual": "v1.0"
+    "atual": "v1.1"
   }
 }

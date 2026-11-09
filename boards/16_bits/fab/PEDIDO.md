@@ -1,6 +1,6 @@
 # Pedido da placa 16_bits v. 1.2 (JLCPCB)
 
-> **Versões (D128):** o texto abaixo é do pedido da v1.2 de 2026-11-06. A v1.2 foi refeita em 2026-11-07 **sem** Q1, R16 a R18, D2 e SW1 (zip novo `dumper-v1.2-jlcpcb.zip`, gerbers em `gerbers-v1.2/`; confira o SHA-256 com `sha256sum`). A **v1.3** (`dumper-v1.3-jlcpcb.zip`, gerbers em `gerbers-v1.3/`) leva o bloco de troca e continua sem o botão. Contagem de furos: v1.2 e v1.3 têm os mesmos 7 furos não metalizados; o número de furos metalizados e de vias mudou, **leia a pré-visualização da fábrica, não a tabela abaixo**. Ver `docs/versoes.md`.
+> **Versões (D128, D139):** o texto abaixo é do pedido da v1.2 de 2026-11-06. A v1.2 foi refeita **sem** Q1, R16 a R18, D2 e SW1 (zip `dumper-v1.2-jlcpcb.zip`, gerbers em `gerbers-v1.2/`; confira o SHA-256 com `sha256sum`). A **v1.3** (`dumper-v1.3-jlcpcb.zip`, gerbers em `gerbers-v1.3/`) leva TVS, o seletor de tensão e os resistores em série, sem botão e **sem bloco de troca de cartucho**. O 5V dos slots não é cortado por software em nenhuma versão (troque o cartucho com o USB desligado). As linhas abaixo sobre Q1, chave de 5V, reset e furos M3 do Mega são história da v1.2 de 2026-11-06.
 
 > **D130 (2026-11-08):** a v1.2 foi refeita **sem os 12 TVS (D3 a D14)**; o zip e o SHA-256 abaixo são os novos, e as linhas sobre TVS no texto são da v1.3. A v1.3 não mudou.
 
@@ -28,9 +28,7 @@ Se a pré-visualização mostrar outra coisa, **não pague**: avise.
 O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos o RP2040. Detalhes e testes de bancada: `docs/v12-final.md`. **A placa foi roteada de novo** (Freerouting, 0 não roteadas; DRC 0 erros, `check_netlist` OK): as trilhas não são as da versão anterior desta pasta.
 
 - 12 resistores série (R3 a R14, 0 Ω) e 12 TVS (D3 a D14, **DNP**) nas linhas de controle; pull-up de `/VRES` (R15, DNP).
-- Chave de 5V dos slots (Q1 P-MOSFET, R16 a R18, LED verde D2), comando no D19 (nível baixo liga; o firmware liga no `setup()`).
-- Botão de reset (SW1) e três furos M3 alinhados com o Mega (MH5 a MH7). PIC, C4, C6 e pontos de teste mudaram de lugar.
-- Compras a mais: 12 resistores 0 Ω (ou 47 a 100 Ω), 3 resistores, 1 P-MOSFET TO-220, 1 LED verde, 1 botão tátil 6 mm, 3 espaçadores M3 com parafusos. Os TVS e o R15 só se for usar.
+- Compras a mais: 12 resistores 0 Ω (ou 47 a 100 Ω). Os TVS e o R15 só se for usar.
 
 ## O que mudou da v1.0 para a v. 1.2
 
@@ -103,5 +101,6 @@ As versões abaixo foram **refeitas** com o PTC F1 (opcional; sem ele, fio ou po
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 108,1 × 86,1 mm | `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62` |
 | v1.2 | `dumper-v1.2-jlcpcb.zip` | 108,1 × 96,1 mm | `043e74b6e856421651310a5fcf18321d683789cc11c5f2e3dda1acb1d4611b24` |
-| v1.3 | `dumper-v1.3-jlcpcb.zip` | 108,1 × 126,1 mm | `fea7d854bf89ef114661cbd7e005ed13a204cca5a2eaf9f7da151558388ba1ce` |
+| v1.3 | `dumper-v1.3-jlcpcb.zip` | 108,1 × 126,1 mm | `c17f0899d0afa052beef89b6f0bb43717aee1e145c5e51aba9b629db8e8d24ef` |

@@ -11,7 +11,6 @@ Versão **v1.0** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Slots | SNES (62p) e Mega Drive (64p), 5 V |
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. Sem botão de reset em nenhuma versão (D128). |
 | Tamanho | 108,1 × 86,1 mm |
-| Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
@@ -19,7 +18,7 @@ Versão **v1.0** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 
 ## Troca de cartucho
 
-**Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
+O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligamento por software foi retirado, D139). Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
 
 ## Particularidades desta versão
 

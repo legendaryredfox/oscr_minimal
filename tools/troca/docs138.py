@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CFG = json.loads((ROOT / "tools/troca/boards.json").read_text())
 NOMES = {"MD1": "Mega Drive", "SMS1": "Master System", "NES1": "NES", "FC1": "Famicom", "SNES1": "SNES", "GBA1": "GBA", "N64": "N64"}
 MARK = "<!-- d138 -->"
-PLACAS = ["16_and_8_bits", "16_bits", "famicom", "famicom_nes", "gb_gba", "megadrive", "megadrive_sms", "n64", "nes", "snes"]
+PLACAS = ["16_and_8_bits", "16_bits", "famicom", "famicom_nes", "megadrive", "megadrive_sms", "nes"]
 
 
 def versoes(b):
@@ -35,7 +35,7 @@ def secao(b, tipo):
     slots_sel = [NOMES.get(s, s) for s in sel["slots"]] if sel else []
     nrn = len(m.get("rn", []))
     f1 = ("**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega "
-          "(nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões " + vf + " (exceção declarada à regra \"a v1.0 é a mais barata que funciona\", D138). "
+          "Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões " + vf + " (exceção declarada à regra \"a v1.0 é a mais barata que funciona\", D138). "
           "**Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.")
     if tipo == "bom":
         t = [f"## F1, J1 e seletor de tensão (D138)", "", MARK, "", "Peças opcionais a comprar a mais por placa:", "", "| Ref. | Peça | Qtd | Onde |", "|---|---|---|---|",
@@ -50,7 +50,7 @@ def secao(b, tipo):
                   "| R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | " + vb + " |"]
         t += ["", f1, ""]
         if pend:
-            t += ["**Pendente:** a v1.1 desta placa ainda **não** tem o F1, o J1, o seletor de tensão nem os resistores em série (o Freerouting não conseguiu rotear a placa maior com o bloco de troca e o seletor). Só a v1.0 ganhou o fusível.", ""]
+            t += ["**Pendente:** a v1.1 desta placa ainda **não** tem o F1, o J1, o seletor de tensão nem os resistores em série (o Freerouting não conseguiu rotear a placa maior com o seletor). Só a v1.0 ganhou o fusível.", ""]
         if sel:
             t += ["Seletor 3,3 V/5 V nos slots " + ", ".join(slots_sel) + " (resto da placa sempre em 5 V). Preço aproximado das peças extras: menos de US$ 3 por placa (estimativa de varejo, não cotada).", ""]
         return "\n".join(t)
@@ -68,7 +68,7 @@ def secao(b, tipo):
          "2. Teste antes de ligar, com o fusível encaixado: continuidade entre os dois clipes (menos de 2 Ω) e nenhuma entre 5 V e GND."]
     if sel:
         t += [f"3. **Seletor ({vb})**: solde os resistores comuns, as redes RN1 a RN{nrn} (DIP-16 com a marca no pino 1, de preferência em soquete), os capacitores, o Q5, o LDO e o Q4 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**).",
-              "4. Gravar `pio run -e SerialASCII_PowerVolt -t upload` (firmware com o seletor no D18). Liga em **5 V** por padrão; `dumper power on --voltage 3v3` liga a 3,3 V.",
+              "4. Gravar `pio run -e SerialASCII_Volt -t upload` (firmware com o seletor no D18). A placa sobe em 3,3 V e o programa passa a **5 V** antes de ler; `dumper voltage 3v3` escolhe 3,3 V.",
               "5. Medidas sem cartucho: em 5 V, o VCC dos slots fica entre 4,6 e 5,1 V (queda do fusível e do Q4); com `--voltage 3v3`, entre 3,2 e 3,4 V (LDO). Com o J1 fechado, `--voltage 5v` não consegue passar de 3,3 V.",
               "6. Os slots " + ", ".join(slots_sel) + " são os únicos com resistores em série e seletor; o resto da placa (Si5351, PIC e outros slots) fica sempre em 5 V."]
     return "\n".join(t)

@@ -1,4 +1,4 @@
-# Montagem — placa n64 (só N64, 3,3 V) v1.1
+# Montagem — placa n64 (só N64, 3,3 V) v1.0
 
 Segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Referências (R1, C1...) estão no silkscreen e em `boards/n64/docs/bom.md`.
 
@@ -61,18 +61,6 @@ Quando o firmware existir: ROM de um cartucho simples, 3 dumps com o mesmo CRC32
 ## Pendências
 
 Direção da etiqueta e medidas reais do slot N64 (D17, D27); altura dos espaçadores (D25); firmware, protocolo, host e GUI do N64.
-
-## Bloco de troca de cartucho (v1.1)
-
-Solde com os componentes baixos: R3 a R10 (em pé, como no silkscreen), os dois 2N7000 (Q2, Q3; o lado chato do silk é o lado chato do transistor), os LEDs D2 (verde) e D3 (amarelo) e, **por último entre os baixos**, o Q1 (TO-220, em pé, como no silkscreen).
-
-**Firmware:** grave o ambiente `SerialASCII_PowerSense` (`pio run -e SerialASCII_PowerSense -t upload` em `firmware/oscr`): começa com o 5V dos slots desligado; o host liga com `POWER`.
-
-Testes extras (multímetro, sem cartucho):
-
-1. Antes de ligar: continuidade entre o dreno do Q1 (`+5V_CART`) e o VCC do slot; **nenhuma** entre `+5V_CART` e o 5V do Mega.
-2. Ligado ao USB, com o firmware padrão: o 5V do Mega presente, `+5V_CART` conforme o comando `POWER` (`dumper.py power on|off`): ligado = LED verde (D2) aceso e 4,7 a 5,2 V no VCC do slot; desligado = D3 aceso e VCC abaixo de 0,5 V em até 1 s.
-3. Medir a queda do Q1 em carga e o tempo de descarga; anotar nos logs. O limiar do LED amarelo varia com o 2N7000 (1 a 2,5 V).
 
 ## F1, J1 e seletor de tensão (D138)
 

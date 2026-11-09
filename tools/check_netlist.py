@@ -26,10 +26,10 @@ if "--board" in _args:
     i = _args.index("--board")
     BOARD = _args[i + 1]
     del _args[i:i + 2]
-SEM_TROCA = "--sem-troca" in _args      # versão sem o bloco de troca de cartucho (D128): v1.0 das placas, v1.2 da 16_bits
 SEM_TVS = "--sem-tvs" in _args          # 16_bits v1.2 sem os TVS D3 a D14 (D130)
-_args = [a for a in _args if a not in ("--sem-troca", "--sem-tvs")]
+_args = [a for a in _args if a != "--sem-tvs"]
 import json as _j
+_json = _j
 # versão atual de cada placa: boards/versoes.json; cada versão fica em boards/<placa>/hardware-<versão>/
 SCH = Path(_args[0]) if _args else ROOT / f"boards/{BOARD}/hardware-{_j.loads((ROOT / 'boards/versoes.json').read_text())[BOARD]['atual']}/dumper.kicad_sch"
 PINMAP = ROOT / f"boards/{BOARD}/docs/pinmap.md"
@@ -61,8 +61,6 @@ BOARD_CFG = {
 }
 CFG = BOARD_CFG[BOARD]
 V12B = CFG.get("v12b", False)
-import json as _json
-TROCA = None if SEM_TROCA else _json.loads((ROOT / "tools/troca/boards.json").read_text()).get(BOARD)      # bloco de troca de cartucho (D126): dict(q0, r0, d0, f0, q1) com a primeira referência nova de cada tipo; ver troca_ajusta()
 CTRL = ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D14", "D15", "D16", "D17"]      # v12b: ordem de R3..R14 e D3..D14
 MDONLY = CFG.get("mdonly", False)
 NOPIC = CFG.get("nopic", False)      # tem Si5351 mas não tem PIC nem R2
@@ -82,8 +80,6 @@ MEGA_GND = ("GND1", "GND2", "GND3", "GND5", "GND6")
 # D0/D1 = serial USB; nunca podem ir a um slot.
 MEGA_NC_OK = {"D0", "D1", "D10", "D11", "D12", "D13", "D18", "D19", "D39", "D50", "D51", "D52",
               "D53", "3V3", "VIN", "RST1", "IORF", "AREF", "SCL", "SDA"}
-if TROCA:
-    MEGA_NC_OK -= {"D19", "D53"}       # D19 = comando do Q1 (PWR_EN), D53 = sensor do rail (SENSE_MCU)
 if BOARD in ("16_bits", "megadrive", "megadrive_sms"):
     MEGA_NC_OK.discard("D50")          # v. 1.2: D50 = /CART (B32 do slot Mega Drive)
 
@@ -168,46 +164,13 @@ def expected_nets(pm_nets):
     exp["GND"].update({(f"C{i}", "2") for i in CFG["caps"]})
     if V12B:
         v12b_ajusta(exp)
-    if TROCA:
-        troca_ajusta(exp)
     for k in exp:
         exp[k] = {rp for rp in exp[k] if not rp[0].startswith("FLG")}      # marcadores PWR_FLAG só servem ao ERC
     return exp
 
 
-def troca_ajusta(exp):
-    """Bloco de troca de cartucho (D126, tools/troca/sch_block.py): Q1 (chave de alta), Q2 (descarga), Q3 (sensor), LEDs verde e amarelo.
-    Ordem das referências novas, como o gerador as numera: [Q1, R100k, R100R, R1k, LED verde se a placa não tinha Q1], Q2, R330, [R330 do 3,3 V], Q3, R100k, R1k, R1k, LED amarelo."""
-    t = TROCA
-    q, r, d = t["q0"], t["r0"], t["d0"]
-    keep = {(MEGA, p) for p in MEGA_5V} | {("D1", "2"), ("C1", "1"), ("FLG1", "1")} | {(tp, "1") for tp, n in CFG["tps"].items() if n == "+5V"}
-    cart = {rp for rp in exp["+5V"] if rp not in keep}
-    exp["+5V"] -= cart
-    q1, q2, q3 = f"Q{q}", f"Q{q + 1}", f"Q{q + 2}"
-    r3, r4, r5 = f"R{r}", f"R{r + 1}", f"R{r + 2}"
-    n = r + 3
-    r6 = f"R{n}"; n += 1
-    r6b = None
-    if t.get("v3"):
-        r6b = f"R{n}"; n += 1
-    r7, r8, r9 = f"R{n}", f"R{n + 1}", f"R{n + 2}"
-    dg, dy = f"D{d}", f"D{d + 1}"
-    flg = f"FLG{t['f0']}"
-    exp["+5V"].update({(q1, "3"), (r3, "1"), (r8, "1")})
-    exp["+5V_CART"] = cart | {(q1, "2"), (r5, "1"), (r6, "1"), (q3, "2"), (r7, "1"), (flg, "1")}
-    exp["PWR_G"] = {(q1, "1"), (q2, "2"), (r3, "2"), (r4, "2")}
-    exp["PWR_EN"] = {(MEGA, "D19"), (r4, "1")}
-    exp["LED_CART"] = {(r5, "2"), (dg, "2")}
-    exp["DESCARGA"] = {(q2, "3"), (r6, "2")} | ({(r6b, "2")} if r6b else set())
-    exp["SENSE"] = {(dy, "2"), (q3, "3"), (r8, "2"), (r9, "1")}
-    exp["SENSE_MCU"] = {(MEGA, "D53"), (r9, "2")}
-    exp["GND"].update({(q2, "1"), (q3, "1"), (r7, "2"), (dg, "1"), (dy, "1")})
-    if r6b:
-        exp["+3V3"].add((r6b, "1"))
-
-
 def v12b_ajusta(exp):
-    """Resistores serie, TVS e pull-up (so a 16_bits v. 1.2 em diante). Desde D128 a v. 1.2 não tem chave de 5V, LED D2 nem reset; a v. 1.3 leva o bloco de troca (TROCA)."""
+    """Resistores serie, TVS e pull-up (so a 16_bits v. 1.2 em diante). Nenhuma versão tem chave de 5V, LED D2 nem reset (D128, D139)."""
     for k, n in enumerate(CTRL):
         r, d = f"R{3 + k}", f"D{3 + k}"
         exp[n].discard((MEGA, n))
@@ -217,7 +180,7 @@ def v12b_ajusta(exp):
             exp[n].add((d, "1"))
             exp["GND"].add((d, "2"))
     exp["D17"].add(("R15", "2"))
-    exp["+5V"].add(("R15", "1"))        # pull-up de /VRES (com o bloco de troca vai para o +5V_CART, em troca_ajusta)
+    exp["+5V"].add(("R15", "1"))        # pull-up de /VRES
 
 
 D138 = None      # d138.json ao lado do esquemático: peças do D138 (F1, J1, seletor, resistores em série); ver tools/troca/sch_block.py
@@ -324,10 +287,7 @@ def main():
             net = next((k for k, v in act.items() if (ref, pin) in v), None)
             raw = next((v for v in ACT_RAW.values() if (ref, pin) in v), set())       # rede bruta: sem fundir o F1 (D138)
             fus = D138["fusivel"][0] if D138 and D138["fusivel"] else None
-            if TROCA:
-                if net is None or ("Q1", "2") not in raw or (MEGA, "5V1") in raw:
-                    errors.append(f"{ref}.{pin} (VCC) deve estar só no 5V chaveado (dreno do Q1), nunca direto no 5V do Mega")
-            elif fus:
+            if fus:
                 if (fus, "2") not in raw or (MEGA, "5V1") in raw:
                     errors.append(f"{ref}.{pin} (VCC) deve estar só depois do {fus} (PTC), nunca direto no 5V do Mega")
             elif net is None or (MEGA, "5V1") not in act[net]:

@@ -3,11 +3,11 @@
 > **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
 
 
-> **Versões (D128):** este guia foi escrito para a v1.2 de 2026-11-06. A v1.2 atual **não tem** Q1, R16 a R18, D2 nem SW1 (pule esses itens e o passo 4b); a v1.3 tem o bloco de troca (Q1, Q2, Q3, R16 a R22, D15 verde e D16 amarelo) e **também não tem o botão**. Lista de cada versão: `fab/bom-v1.2.csv` e `fab/bom-v1.3.csv`; resumo em `versoes.md`.
+> **Versões (D128, D139):** nenhuma versão tem Q1, R16 a R18, D2, SW1 nem bloco de troca de cartucho (o 5V dos slots não é cortado por software). Lista de cada versão: `fab/bom-v1.2.csv` e `fab/bom-v1.3.csv`; resumo em `versoes.md`.
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_bits/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". A chave de 5V (Q1) existe: com o firmware `SerialASCII_Power`, `dumper power off` corta o 5V para trocar o cartucho (veja `docs/v12-final.md`; sem sensor, confira com o multímetro que o 5V do cartucho caiu antes de trocar).
+> **Segurança:** só um cartucho por vez (SNES ou Mega Drive). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Desligue o USB antes de trocar de cartucho: o silkscreen avisa "NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO". O 5V dos slots não é cortado por software: desligar o USB é o único jeito de trocar o cartucho com a placa sem tensão.
 
 ## 1. Lista de peças
 
@@ -15,13 +15,12 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 | Grupo | Referências |
 |---|---|
-| Resistores | R1 (220 Ω), R2 (1 kΩ); **R3 a R14** (série das linhas de controle, 0 Ω de fábrica); R16 (100 kΩ), R17 (100 Ω), R18 (1 kΩ) da chave de 5V; R15 (10 kΩ, **não montar**) |
+| Resistores | R1 (220 Ω), R2 (1 kΩ); **R3 a R14** (série das linhas de controle, 0 Ω de fábrica); R15 (10 kΩ, **não montar**) |
 | Diodos | D3 a D14 (TVS ou zener 5,1 V, **não montar**) |
-| Chave de 5V e reset | Q1 (P-MOSFET TO-220), D2 (LED verde 3 mm), SW1 (botão tátil 6 mm) |
 | Capacitores cerâmicos 100 nF | C2 (SNES), C3 (Mega Drive), C4 (PIC, acima do soquete), C5 e C6 (extras do slot Mega Drive, junto aos pinos A31 e A2) |
 | Capacitor eletrolítico 470 µF/16 V | C1 |
 | Soquete DIP-8 e PIC12F629 | U2 |
-| LED 3 mm | D1 (status), D2 (verde, 5V dos slots) |
+| LED 3 mm | D1 (status) |
 | Header fêmea 1x7 (Si5351) e módulo | U1 |
 | Slots | SNES1, MD1 |
 | Pinos macho longos, 85 posições | pads do shield (A1) |
@@ -37,11 +36,10 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
-1. **Resistores** R1 e R2 (deitados, como no silkscreen) e os de 2,54 mm (em pé, como no desenho): **R3 a R14 como 0 Ω** (um fio ou resistor de 0 Ω; troque por 47 a 100 Ω só depois dos testes da v12-final), R16, R17 e R18. **Não monte R15 nem D3 a D14** (DNP).
+1. **Resistores** R1 e R2 (deitados, como no silkscreen) e os de 2,54 mm (em pé, como no desenho): **R3 a R14 como 0 Ω** (um fio ou resistor de 0 Ω; troque por 47 a 100 Ω só depois dos testes da v12-final). **Não monte R15 nem D3 a D14** (DNP).
 2. **Capacitores cerâmicos de 100 nF**: C2, C3, C4, C5, C6. O **C4** fica logo acima do soquete do PIC (D107): o corpo toca de leve a borda do soquete, então solde-o com as pernas dobradas rente e o corpo um pouco inclinado para cima, sem forçar o soquete.
 3. **Soquete DIP-8 (U2)**, tradicional, com o chanfro alinhado ao silkscreen e **sem o PIC**. O PIC nunca é soldado: fica no soquete para poder ser trocado ou regravado.
-4. **LEDs (D1 e D2)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
-4b. **Q1** (TO-220, em pé, lado do metal para a borda direita da placa; pinos G, D, S de cima para baixo) e o **botão SW1**.
+4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 6. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).
 7. **Slots SNES1 e MD1.** Para cada um: solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo.
@@ -119,6 +117,6 @@ Use um cartucho simples: SNES LoROM. Escolha o sistema, faça `detect` e depois 
 1. **Suporte do F1** (clipes para fusível 5×20 mm, furo passante) entra com os componentes baixos, na faixa de 10 mm acrescentada à borda de baixo da placa; solde os 4 furos (as duas pernas de cada clipe). O fusível **não vai soldado**: encaixe um fusível de vidro 5×20 mm de 500 mA (ação rápida) nos clipes depois dos testes, e troque-o assim quando queimar.
 2. Teste antes de ligar, com o fusível encaixado: continuidade entre os dois clipes (menos de 2 Ω) e nenhuma entre 5 V e GND.
 3. **Seletor (v1.3)**: solde os resistores comuns, as redes RN1 a RN5 (DIP-16 com a marca no pino 1, de preferência em soquete), os capacitores, o Q5, o LDO e o Q4 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**).
-4. Gravar `pio run -e SerialASCII_PowerVolt -t upload` (firmware com o seletor no D18). Liga em **5 V** por padrão; `dumper power on --voltage 3v3` liga a 3,3 V.
+4. Gravar `pio run -e SerialASCII_Volt -t upload` (firmware com o seletor no D18). A placa sobe em 3,3 V (estado seguro) e os comandos de cartucho passam a **5 V** sozinhos (padrão); `dumper voltage 3v3` escolhe 3,3 V.
 5. Medidas sem cartucho: em 5 V, o VCC dos slots fica entre 4,6 e 5,1 V (queda do fusível e do Q4); com `--voltage 3v3`, entre 3,2 e 3,4 V (LDO). Com o J1 fechado, `--voltage 5v` não consegue passar de 3,3 V.
 6. Os slots Mega Drive são os únicos com resistores em série e seletor; o resto da placa (Si5351, PIC e outros slots) fica sempre em 5 V.

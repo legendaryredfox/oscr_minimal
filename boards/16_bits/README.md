@@ -6,25 +6,25 @@
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
-**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 sem a chave de 5V e sem reset, v1.3 com o bloco de troca). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
+**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 e v1.3 com TVS e seletor de tensão). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
 
 > **D130 (2026-11-08):** a v1.2 saiu sem os 12 TVS (D3 a D14); a v1.3 os mantém (DNP).
 
 ## Versões (D128, 2026-11-07)
 
-Pedido do usuário: o botão de reset sai de todas as versões; a **v1.2 não tem** o circuito de desligar o 5V dos slots pelo Arduino; a **v1.3** tem o bloco de troca de cartucho. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
+Nenhuma versão tem o botão de reset nem o circuito de desligar o 5V dos slots por software (o bloco de troca de cartucho, D126 a D128, foi retirado em D139: para trocar o cartucho, desligue o USB). A **v1.3** leva os TVS (DNP), o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138) e os resistores de 470 Ω em série. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
 
-| Versão | Projeto | Bloco de troca (Q1, Q2, Q3, LEDs, D19, D53) | Botão de reset | PNGs |
+| Versão | Projeto | Seletor de tensão e TVS | Botão de reset | PNGs |
 |---|---|---|---|---|
 | v1.0 | `hardware-v1.0/` | não | não | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
-| v1.2 | `hardware-v1.2/` | **não** | **não** | `hardware-v1.2/render-cima.png`, `hardware-v1.2/render-baixo.png` |
+| v1.2 | `hardware-v1.2/` | **não** (sem TVS) | **não** | `hardware-v1.2/render-cima.png`, `hardware-v1.2/render-baixo.png` |
 | v1.3 | `hardware-v1.3/` | sim | **não** | `hardware-v1.3/render-cima.png`, `hardware-v1.3/render-baixo.png` (`render.png`) |
 
-Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, valem só para a v1.3 (chave) ou para nenhuma versão (reset).**
+Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, não valem para nenhuma versão (D139).**
 
-## v. 1.2 final: proteção, chave de 5V, reset e furos do Mega (2026-11-06, D108)
+## v. 1.2 final: proteção e pull-up (2026-11-06, D108; chave de 5V e reset retirados)
 
-O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040** (esse fica sozinho na v. 1.3, se der certo). Resistores série e TVS (DNP) nas 12 linhas de controle, pull-up de `/VRES` (DNP), botão de reset, chave de 5V dos slots comandada pelo D19, três furos M3 alinhados com o Mega. A placa foi roteada de novo. Detalhes, lista de peças e testes de bancada: `docs/v12-final.md`. **Nada foi montado nem medido.**
+O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040** (esse fica sozinho na v. 1.3, se der certo). Resistores série e TVS (DNP) nas 12 linhas de controle e pull-up de `/VRES` (DNP). O botão de reset, a chave de 5V dos slots comandada pelo D19 e os furos M3 do Mega saíram depois. A placa foi roteada de novo. Detalhes, lista de peças e testes de bancada: `docs/v12-final.md`. **Nada foi montado nem medido.**
 
 ## Revisão final v. 1.2 (2026-11-06, D107)
 
@@ -51,8 +51,8 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware-v1.3/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 sem Q1 e reset, mais o bloco de troca de cartucho, D128); pasta de trabalho |
-| `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-troca` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
+| `hardware-v1.3/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 mais TVS, seletor de tensão e resistores em série, D130 e D138); pasta de trabalho |
+| `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128) e sem os TVS (D130); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-tvs` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
 | `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers-v1.3/` (da pasta de trabalho `hardware-v1.3/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom-v1.3.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` |
 | `docs/` | `pinmap.md`, `bom.md`, `montagem.md` |

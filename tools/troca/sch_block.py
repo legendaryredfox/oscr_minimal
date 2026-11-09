@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bloco de troca de cartucho (D123/D126), esquemático. Acrescenta a uma placa o que falta para ligar e desligar o 5V dos slots por software,
+"""[D139: o bloco de troca de cartucho foi retirado de todas as placas (tools/troca/sem_bloco.py); o modo `bloco` abaixo não deve mais ser usado, restam `fusivel` e `existente` com o seletor.]
+Bloco de troca de cartucho (D123/D126), esquemático. Acrescenta a uma placa o que falta para ligar e desligar o 5V dos slots por software,
 descarregar o rail e acender o LED de "seguro trocar":
   Q1 (P-MOSFET, só nas placas que ainda não têm), R3 100k (gate ao +5V), R4 100R (D19 ao gate), R5 1k + LED verde (+5V_CART presente),
   Q2 2N7000 + R6 330R (descarga do +5V_CART; mais um 330R do +3V3 nas placas com regulador de 3,3 V),
