@@ -8983,7 +8983,7 @@
 		(descr "Littelfuse clips, https://www.littelfuse.com/~/media/electronics/datasheets/fuse_clips/littelfuse_fuse_clip_100_445_030_520_datasheet.pdf.pdf")
 		(tags "Fuseholder clips")
 		(property "Reference" "F1"
-			(at 10.25 -4.3 0)
+			(at 20.207 -4.2 0)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(uuid "320f190d-9ea3-46c8-b586-d92c0de03323")
@@ -9569,17 +9569,6 @@
 		(at 44.95 128.85 0)
 		(layer "F.SilkS")
 		(uuid "065408c1-09bc-4d89-9d2d-4848962af335")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(gr_text "TVS 5V: NÃO MONTAR (D3-D14)"
-		(at 62 43.6 0)
-		(layer "F.SilkS")
-		(uuid "63099b76-90cf-461f-8822-ddbb58402264")
 		(effects
 			(font
 				(size 1 1)
