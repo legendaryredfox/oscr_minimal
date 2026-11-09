@@ -82,9 +82,6 @@ for f in b.GetFootprints():
             label_near(txt, f)
     elif v == "TRAVA 3,3 V" and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == "TRAVA 3,3 V" for d in b.GetDrawings()):
         label_near("TRAVA 3,3 V", f, 0.8)          # J1 (D138): jumper que impede o 5 V
-        label_near("PTC 0,5 A", b.FindFootprintByReference("F1"), 0.8) if b.FindFootprintByReference("F1") else None
-    elif v == "PTC 0,5 A" and f.GetReference() == "F1" and not any(d.GetClass() == "PCB_TEXT" and d.GetText() == "PTC 0,5 A" for d in b.GetDrawings()):
-        f.Reference().SetVisible(True)
 tb = b.GetTitleBlock()
 for r_ in a.hide:
     b.FindFootprintByReference(r_).Reference().SetVisible(False)

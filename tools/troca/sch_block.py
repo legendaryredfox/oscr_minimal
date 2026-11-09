@@ -27,7 +27,7 @@ SELETOR = os.environ.get("TROCA_SELETOR") == "1"
 SEL_SLOTS = [x for x in os.environ.get("TROCA_SLOTS", "MD1,SMS1").split(",") if x]
 SEL_CAPS = [x for x in os.environ.get("TROCA_SEL_CAPS", "").split(",") if x]
 SEL_REFS = set(SEL_SLOTS) | set(SEL_CAPS)
-assert MODO in ("bloco", "fusivel") and not (SELETOR and MODO != "bloco"), "o seletor precisa do modo bloco"
+assert MODO in ("bloco", "fusivel", "existente") and not (SELETOR and MODO == "fusivel"), "o seletor precisa do bloco de troca"      # "existente": a placa já tem o bloco (16_bits v1.3): só F1, J1 e seletor
 SLOT_RE = re.compile(r"^(SNES|MD|NES|FC|N64|GBA|GB|SMS)\d+$")
 text = PATH.read_text()
 tree = parse(text)
@@ -79,7 +79,7 @@ for c in syms:
     at = find(c, "at")[0]
     mir = [val(m[1]) for m in find(c, "mirror")]
     parts[ref] = (c, Part(lib, ref, float(at[1]), float(at[2]), int(float(at[3])), mir[0] if mir else None))
-if "R3" in parts and "Q2" in parts:
+if "R3" in parts and "Q2" in parts and MODO != "existente":
     sys.exit("bloco já aplicado")
 
 def netlist(path):
@@ -122,7 +122,7 @@ comp_pins = {}
 for xy, rp in pin_at.items():
     comp_pins.setdefault(fu(xy), []).append(rp)
 renamed = 0
-for c, v, xy in pw5:
+for c, v, xy in (pw5 if MODO != "existente" else []):
     if val(v[2]) != "+5V":
         continue
     pins = comp_pins.get(fu(xy), [])
@@ -132,9 +132,30 @@ for c, v, xy in pw5:
     elif sw:
         sys.exit("símbolo +5V em %s liga pinos %s: parte chaveada e parte não" % (xy, pins))
 print("símbolos +5V renomeados:", renamed, "pinos chaveados:", sorted(switched))
+if MODO == "existente":      # o 5 V chaveado já é +5V_CART: os slots e capacitores do seletor passam para VCC_CART
+    for ref_, (c_, p_) in parts.items():
+        if p_.lib != "power:+5V":
+            continue
+        v_ = [pr for pr in find(c_, "property") if val(pr[1]) == "Value"][0]
+        if val(v_[2]) != "+5V_CART":
+            continue
+        pins_ = comp_pins.get(fu(K(p_.x, p_.y)), [])
+        if SELETOR and pins_ and all(rp[0] in SEL_REFS for rp in pins_):
+            v_[2] = S("VCC_CART"); renamed += 1
+    print("símbolos +5V_CART passados para VCC_CART:", renamed)
+    switched = set()
 labeled = {rp for xy, rps in comp_pins.items() for rp in rps if any(fu(xy) == fu(k) for c, v, k in pw5 if val(v[2]) in ("+5V_CART", "VCC_CART"))}
 falta = switched - labeled
 assert not falta, ("pinos de 5V sem símbolo próprio:", falta)
+
+if MODO == "existente" and FUSE:     # a fonte do Q1 existente passa a ser o lado de saída do F1
+    q1p = parts["Q1"][1]
+    cl = comp_pins.get(fu(K(*q1p.pos("3"))), [])
+    alvo5 = [(c, v) for c, v, k in pw5 if fu(k) == fu(K(*q1p.pos("3")))]
+    assert alvo5, "símbolo +5V da fonte do Q1 não achado"
+    for c, v in alvo5:
+        v[2] = S("+5V_F")
+    print("fonte do Q1 em +5V_F; pinos no mesmo nó:", cl)
 
 # ------------------------------------------------------------------ peças novas
 OUT = []
@@ -276,15 +297,15 @@ def R(value, at_pin1, up_net, down_net, desc=""):
 
 x = OX
 # --- F1: PTC de furo passante em série na trilha de potência (D138). Modo bloco: +5V -> F1 -> +5V_F -> Q1; modo fusível: +5V -> F1 -> +5V_CART
-FP_F1 = "Fuse:Fuse_Bourns_MF-RHT050"
+FP_F1 = "Fuse:Fuseholder_Littelfuse_100_series_5x20mm"      # suporte de clipes para fusível de vidro 5x20 mm: o usuário troca sem solda (D138)
 SRC_NET = "+5V"
 PEND_FLAG = None
 if FUSE:
     PHASE[0] = True
-    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "Polyfuse", "Device:Polyfuse")
-    SRC_NET = "+5V_F" if MODO == "bloco" else "+5V_CART"
-    f1 = add("Device:Polyfuse", newref("F"), "PTC 0,5 A", FP_F1, "1", (x, OY), {"1": UP, "2": DN},
-             "Fusivel rearmavel (PTC) de furo passante: 0,5 A de retencao, em serie com o 5 V da placa. Queda de 0,1 a 0,2 V a 200 mA")
+    embed_lib("/usr/share/kicad/symbols/Device.kicad_sym", "Fuse", "Device:Fuse")
+    SRC_NET = "+5V_CART" if MODO == "fusivel" else "+5V_F"
+    f1 = add("Device:Fuse", newref("F"), "Fusivel 5x20 500mA", FP_F1, "1", (x, OY), {"1": UP, "2": DN},
+             "Fusivel de vidro 5x20 mm de 500 mA (rapido) em suporte de clipes: troca sem solda. Queda de 0,1 a 0,2 V a 200 mA")
     a1 = f1.pos("1"); a2 = f1.pos("2")
     wire(a1, (a1[0], a1[1] - 5.08)); power("+5V", (a1[0], a1[1] - 5.08), UP)
     wire(a2, (a2[0], a2[1] + 5.08)); power(SRC_NET, (a2[0], a2[1] + 5.08), DN)
@@ -476,10 +497,12 @@ for n, nodes in NETS.items():
 alvo = {"D19": "PWR_EN", "D53": "SENSE_MCU"}
 if SELETOR:
     alvo["D18"] = "VSEL_EN"
-if MODO != "bloco":
+if MODO == "fusivel":
     alvo = {}
+elif MODO == "existente":
+    alvo = {"D18": "VSEL_EN"} if SELETOR else {}
 if HAS_Q1:
-    alvo.pop("D19")            # a placa já liga o D19 ao PWR_EN
+    alvo.pop("D19", None)      # a placa já liga o D19 ao PWR_EN
 for pin, net in alvo.items():
     assert pin in nc_names, ("pino do Mega ocupado:", pin)
 body = [c for c in tree[1:] if not (isinstance(c, list) and c and val(c[0]) == "no_connect")]

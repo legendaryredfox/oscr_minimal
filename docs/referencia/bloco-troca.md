@@ -28,7 +28,7 @@ Pinos do Mega usados: **D19** (`PWR_EN`, PD2) e **D53** (`SENSE_MCU`, PB0). Nenh
 
 ## F1, J1 e seletor de tensão (D138)
 
-- **F1** (PTC de furo passante, 0,5 A de retenção) fica entre o 5 V do Mega e o Q1 (`+5V` -> F1 -> `+5V_F` -> Q1 -> `+5V_CART`); nas versões sem bloco, entre `+5V` e `+5V_CART`. Opcional (fio ou ponte de solda no lugar). Queda de 0,1 a 0,2 V a 200 mA.
+- **F1** (fusível de vidro 5×20 mm de 500 mA, ação rápida, em suporte de clipes de furo passante: troca sem solda) fica entre o 5 V do Mega e o Q1 (`+5V` -> F1 -> `+5V_F` -> Q1 -> `+5V_CART`); nas versões sem bloco, entre `+5V` e `+5V_CART`. Opcional (um fio no lugar do fusível também serve). Queda de 0,1 a 0,2 V a 200 mA. O suporte (cerca de 24 × 6,5 mm) fica numa faixa de 10 mm acrescentada à borda de baixo de cada placa.
 - **Seletor** (v1.1 e `16_bits` v1.3): LDO de 3,3 V com entrada em `+5V_CART` e saída em `VCC_CART`; o Q4 liga `+5V_CART` a `VCC_CART` quando o D18 está baixo (5 V); aberto, o LDO dá 3,3 V. Q5 e 220 Ω seguram o `VCC_CART` em 3,3 V quando os sinais de 5 V injetam corrente. O resistor de 100 kΩ mantém o Q4 fechado com o Mega em reset (3,3 V, o estado seguro de hardware; o firmware sobe em 5 V ao ligar o slot). O comando passa por 1 kΩ.
 - **J1** "TRAVA 3,3 V": entre o gate do Q4 e `+5V_CART`; fechado, o Q4 nunca conduz.
 - **Resistores em série**: redes DIP-16 de 470 Ω (pino i com o 17-i), só nas linhas entre o Mega e os slots com seletor.

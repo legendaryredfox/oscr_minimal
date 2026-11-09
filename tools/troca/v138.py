@@ -14,7 +14,8 @@ EXT = float(sys.argv[sys.argv.index("--ext") + 1]) if "--ext" in sys.argv else N
 cfg = json.loads((ROOT / "tools/troca/boards.json").read_text())[B]
 fus = ALVO.startswith("fusivel:")
 VER = ALVO.split(":")[1] if fus else cfg["version"]
-FONTE = VER if fus else cfg.get("fonte", "v1.0")
+MODO_BLOCO = cfg.get("modo", "bloco")      # "existente": a fonte já tem o bloco de troca (16_bits v1.3)
+FONTE = VER if (fus or MODO_BLOCO == "existente") else cfg.get("fonte", "v1.0")
 sel = None if fus else cfg.get("sel")
 HW = ROOT / f"boards/{B}/hardware-{VER}"
 def run(cmd, env=None, check=True):
@@ -30,7 +31,7 @@ if ETAPA == "manifesto":      # refaz só o esquemático numa pasta temporária 
     with tempfile.TemporaryDirectory() as td:
         src = subprocess.run(["git", "show", f"HEAD:boards/{B}/hardware-{FONTE}/dumper.kicad_sch"], cwd=ROOT, capture_output=True, check=True).stdout
         (Path(td) / "dumper.kicad_sch").write_bytes(src)
-        env = {"TROCA_MODO": "fusivel" if fus else "bloco", "TROCA_FUSE": "1"}
+        env = {"TROCA_MODO": "fusivel" if fus else MODO_BLOCO, "TROCA_FUSE": "1"}
         if sel:
             env.update(TROCA_SELETOR="1", TROCA_SLOTS=",".join(sel["slots"]), TROCA_SEL_CAPS=",".join(sel["caps"]))
         run(["python3", "tools/troca/sch_block.py", str(Path(td) / "dumper.kicad_sch"), VER], env)
@@ -41,7 +42,7 @@ if ETAPA == "prep":
     for ext in ("kicad_sch", "kicad_pcb"):
         src = subprocess.run(["git", "show", f"HEAD:boards/{B}/hardware-{FONTE}/dumper.{ext}"], cwd=ROOT, capture_output=True, check=True).stdout
         (HW / f"dumper.{ext}").write_bytes(src)
-    env = {"TROCA_MODO": "fusivel" if fus else "bloco", "TROCA_FUSE": "1"}
+    env = {"TROCA_MODO": "fusivel" if fus else MODO_BLOCO, "TROCA_FUSE": "1"}
     src_cfg = cfg.get("fusivel", cfg) if fus else cfg
     region = src_cfg["region"]; anchor = src_cfg["anchor"]
     if sel:

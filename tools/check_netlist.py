@@ -252,7 +252,7 @@ def d138_colapsa(nets):
                 une((f, "1"), (f, "2"))
         grupos = {}
         for n, nodes in nets.items():
-            grupos.setdefault(raiz(n), set()).update(rp for rp in nodes if rp[0] not in D138["novos"] and not rp[0].startswith("FLG"))
+            grupos.setdefault(raiz(n), set()).update(rp for rp in nodes if (rp[0] not in D138["novos"] or (not f1 and rp[0] in D138["fusivel"])) and not rp[0].startswith("FLG"))      # na rede bruta o F1 fica, para conferir o VCC depois dele
         return {k: v for k, v in grupos.items() if v}
     global ACT_SOLTO
     ACT_SOLTO = {n: {rp for rp in nodes if rp[0] not in D138["novos"] and not rp[0].startswith("FLG")} for n, nodes in nets.items()}      # sem nenhuma união: cada rede como está

@@ -142,6 +142,18 @@
     "C2",
     "C3"
    ]
+  },
+  "fusivel": {
+   "anchor": [
+    95,
+    72
+   ],
+   "region": [
+    30,
+    55,
+    105,
+    78
+   ]
   }
  },
  "gb_gba": {
@@ -241,7 +253,7 @@
     "C6"
    ]
   },
-  "fonte": "v1.2"
+  "modo": "existente"
  },
  "megadrive_sms": {
   "anchor": [

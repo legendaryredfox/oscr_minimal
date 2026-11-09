@@ -40,7 +40,7 @@ for ref in novos:
     fp = pcbnew.FootprintLoad("%s/%s.pretty" % (FPDIR, lib), name)
     fp.SetFPID(pcbnew.LIB_ID(lib, name)); fp.SetReference(ref); fp.SetValue(val)
     fp.SetPath(pcbnew.KIID_PATH("/%s/%s" % (SHEET, uu[ref])))
-    fp.Reference().SetVisible(not ref.startswith("R"))
+    fp.Reference().SetVisible(True)      # todas as referências no silkscreen, resistores inclusive (pedido do usuário, D138)
     fp.Value().SetVisible(False)
     for g in fp.GraphicalItems():
         pass
@@ -118,6 +118,15 @@ small = [set(r for r, _ in nodes) for n, nodes in nets.items() if 2 <= len(nodes
 placed_pos = {}
 for ref in ORDER:
     mates = [placed_pos[o] for sset in small if ref in sset for o in sset if o in placed_pos]
+    # peças que já estavam na placa (Mega, slots) ligadas por redes pequenas: a posição dos pads delas puxa a peça nova para perto (fios curtos)
+    for nname, nodes in nets.items():
+        if 2 <= len(nodes) <= 6 and not nname.startswith(("GND", "+")) and any(r == ref for r, _ in nodes):
+            for r_, p_ in nodes:
+                f_ = b.FindFootprintByReference(r_) if r_ != ref else None
+                if f_ is not None and r_ not in novos:
+                    for pad_ in f_.Pads():
+                        if pad_.GetNumber() == p_:
+                            q_ = pad_.GetPosition(); mates.append((tomm(q_.x), tomm(q_.y)))
     ax_, ay_ = (sum(p[0] for p in mates) / len(mates), sum(p[1] for p in mates) / len(mates)) if mates else (AX, AY)
     f = b.FindFootprintByReference(ref)
     f.SetPosition(V(0, 0))
@@ -126,7 +135,9 @@ for ref in ORDER:
         f.SetOrientationDegrees(rot)
         f.SetPosition(V(0, 0))
         # candidatos em espiral (passo 1,27 mm) ordenados pela distância à âncora
-        cand = sorted(((ax_ + i * 1.27, ay_ + j * 1.27) for i in range(-60, 61) for j in range(-40, 41)), key=lambda p: math.hypot(p[0] - ax_, p[1] - ay_))
+        gx0, gx1 = int((x0 - ax_) / 1.27) - 1, int((x1 - ax_) / 1.27) + 1
+        gy0, gy1 = int((y0 - ay_) / 1.27) - 1, int((y1 - ay_) / 1.27) + 1
+        cand = sorted(((ax_ + i * 1.27, ay_ + j * 1.27) for i in range(gx0, gx1 + 1) for j in range(gy0, gy1 + 1)), key=lambda p: math.hypot(p[0] - ax_, p[1] - ay_))
         for x, y in cand:
             bx = boxes_at(f, x, y)
             if any(b_[0] < x0 or b_[1] < y0 or b_[2] > x1 or b_[3] > y1 for b_ in bx):

@@ -55,7 +55,7 @@ O código de leitura dos cartuchos vem do OSCR; o que muda por sistema é o adap
 
 **Game Gear e SG-1000** não têm slot próprio nas placas deste projeto: usam adaptador no slot Mega Drive (Retron 3in1, Retrode, Raphnet). Os adaptadores que achei são comerciais; **não encontrei arquivos abertos** (KiCad) deles. Se aparecer um adaptador de código aberto, acrescente o link aqui.
 
-**Tensão dos adaptadores (D138).** Os slots são de 5 V; os flashcarts comuns de Mega Drive e Master System precisam disso (regulam 3,3 V por dentro). As placas v1.1 de Mega Drive, SMS, NES e Famicom têm o **seletor 3,3 V/5 V** (padrão 5 V, `--voltage 3v3` para 3,3 V, alerta ao passar de 3,3 V para 5 V) e o jumper J1 \"TRAVA 3,3 V\"; todas as placas têm o PTC F1 opcional. Adaptador de Game Gear ou cartucho de 3,3 V: confira a tensão do adaptador antes de ligar. Detalhes: `docs/decisoes.md` D138.
+**Tensão dos adaptadores (D138).** Os slots são de 5 V; os flashcarts comuns de Mega Drive e Master System precisam disso (regulam 3,3 V por dentro). As placas v1.1 de Mega Drive, SMS, NES e Famicom têm o **seletor 3,3 V/5 V** (padrão 5 V, `--voltage 3v3` para 3,3 V, alerta ao passar de 3,3 V para 5 V) e o jumper J1 \"TRAVA 3,3 V\"; todas as placas têm o fusível F1 (5×20 mm, 500 mA, em suporte de clipes, troca sem solda) opcional. Adaptador de Game Gear ou cartucho de 3,3 V: confira a tensão do adaptador antes de ligar. Detalhes: `docs/decisoes.md` D138.
 
 ## Aviso
 

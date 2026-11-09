@@ -31,9 +31,9 @@ def protecao(placa, linhas):
     out = []
     if "F1" in refs:
         out += ["## Proteção de corrente e tensão (D138)", "",
-                "**F1: fusível rearmável (PTC) de furo passante, opcional.** Bourns MF-RHT050 ou equivalente de 0,35 a 0,5 A de retenção, em série com o 5 V que a placa recebe do Mega "
-                "(nas versões com bloco de troca, antes do Q1). Um curto no cartucho abre o PTC e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA "
-                "(o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o F1, ponha um fio ou uma ponte de solda entre os dois furos dele**, senão a placa fica sem 5 V. "
+                "**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega "
+                "(nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA "
+                "(o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). "
                 "Ele limita corrente e não protege contra tensão errada.", ""]
     if "J1" in refs:
         sel = (SEL_CFG.get(placa) or {}).get("sel") or {"slots": []}
