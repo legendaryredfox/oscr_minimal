@@ -19,7 +19,7 @@ Versão mínima de duas funções: um slot **Famicom** (60p, 2,54 mm) e um slot 
 | Removido | SNES1, MD1, GBA1, PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 117,1 × 79,1 mm |
 
-**Layout:** o NES fica entre as fileiras de pinos do Mega, deslocado 12 mm para a esquerda do centro; o Famicom fica acima do cabeçalho do Mega (a placa cresce para cima); o soquete do Si5351 fica na vertical, ao lado do header duplo do Mega, com o módulo em pé. Os 6 furos não metalizados do Mega e os 4 de canto foram mantidos.
+**Layout:** o NES fica entre as fileiras de pinos do Mega, deslocado 12 mm para a esquerda do centro; o Famicom fica acima do cabeçalho do Mega (a placa cresce para cima); o soquete do Si5351 fica na vertical, ao lado do header duplo do Mega, com o módulo em pé. Os 6 furos não metalizados do Mega e os 4 de canto existem na v1.1; **a v1.0 não tem os 6 do Mega** (D149), só os 4 de canto.
 
 **Rótulo:** nos dois slots o rótulo do cartucho fica para baixo (lado do USB). Conferido com a [página Cartridge connector da NESdev](https://www.nesdev.org/wiki/Cartridge_connector): os pinos 1–36 do NES e 1–30 do Famicom estão no lado do rótulo, e nos dois footprints essa é a fileira de baixo. A orientação do corpo do slot continua a confirmar com a peça (D27).
 

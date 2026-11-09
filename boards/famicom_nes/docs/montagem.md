@@ -2,6 +2,8 @@
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto. Todas as referências (R1, C1...) estão no silkscreen e em `boards/famicom_nes/docs/bom.md`.
 
+> **v1.0:** não tem os 6 furos do Mega (D149): ignore os 6 espaçadores do centro; só os 4 dos cantos.
+>
 > **Segurança:** só um cartucho por vez, de NES (72 pinos) **ou** de Famicom (60 pinos), nunca os dois slots ao mesmo tempo (os dois estão ligados em paralelo nos mesmos pinos do Mega). Esta placa não tem 3,3 V: não use adaptador de GB/GBA nela. Antes de trocar de cartucho, desligue o 5V dos slots (`dumper.py power off`, espere o LED amarelo acender) ou o USB.
 >
 > **Esta placa nunca foi montada nem testada com cartucho.** O layout foi roteado por autoroteador (Freerouting) e conferido por DRC e pela netlist, não à mão. Se algo dos testes das seções 5 e 6 falhar, pare e avise antes de seguir.

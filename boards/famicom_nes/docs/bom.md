@@ -37,7 +37,7 @@ Sem PIC, R2, regulador nem pontos de teste.
 |---|---|---|
 | Pinos macho 2,54 mm, **cauda longa** (≥ 10 mm abaixo, ≥ 5 mm acima) | **85 posições** | Todos os pads do shield, inclusive os sem sinal (2 tiras 1x40 e 1 tira 2x20, corte em 2x18). |
 | Espaçador M3 + pé de borracha | 4 (cantos) | Só apoio. |
-| Espaçador M3 | 6 (furos do Mega) | Seguram o shield no Mega, como na `16_and_8_bits`. |
+| Espaçador M3 | 6 (furos do Mega) | Seguram o shield no Mega, como na `16_and_8_bits`. **Só na v1.1**: a v1.0 não tem esses furos (D149). |
 | Cabo USB-C | 1 | Interface com o PC. |
 
 ## F1, J1 e seletor de tensão (D138)
