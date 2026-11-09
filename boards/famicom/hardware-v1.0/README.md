@@ -10,10 +10,11 @@ Versão **v1.0** da placa [`famicom`](../README.md): shield 100% THT para Arduin
 |---|---|
 | Slots | Famicom (60p, 2,54 mm), 5 V |
 | Circuitos | Sem Si5351 e sem PIC. |
-| Tamanho | 107,1 × 75,1 mm |
+| Tamanho | 107,1 × 61,1 mm |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
+| Mecânica | Sem os 6 furos M3 do Mega (só os 4 de canto); F1 entre o slot e o header de baixo do Mega, sem a faixa extra de baixo; rótulo do F1 abaixo do suporte (D142) |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho

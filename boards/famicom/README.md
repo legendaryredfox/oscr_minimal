@@ -8,7 +8,7 @@ Versão mínima de uma função: um slot **Famicom** (60p, 2,54 mm) em shield pa
 
 **Sem Si5351 e sem PIC:** o slot Famicom não tem pino de clock nem CIC do SNES; o `pinmap.md` não liga nenhum deles ao slot. A placa é a mais simples de todas: slot, LED, C1 e um capacitor.
 
-**Estado:** v1.1, 107,1 × 65,1 mm. ERC 0 violações; DRC sem erros nem ligações abertas (só 4 avisos de biblioteca e os de paridade das outras placas); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com GND roteado junto e costurado com vias; alimentação (`+5V`) com 0,8 mm desde o roteamento (padrão de net class `/+5V` já corrigido, D96). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`.
+**Estado:** v1.1, 107,1 × 65,1 mm (v1.0: 107,1 × 61,1 mm). ERC 0 violações; DRC sem erros nem ligações abertas (só 4 avisos de biblioteca e os de paridade das outras placas); netlist confere com `docs/pinmap.md`; gerbers em `fab/`. Roteada pelo Freerouting (MCP) com GND roteado junto e costurado com vias; alimentação (`+5V`) com 0,8 mm desde o roteamento (padrão de net class `/+5V` já corrigido, D96). **Revisar o layout no KiCad antes de encomendar.** Nada encomendado nem montado. Montagem: `docs/montagem.md`.
 
 **NES:** cartucho de 72 pinos não entra aqui; use `boards/nes/`.
 
@@ -21,7 +21,7 @@ Versão mínima de uma função: um slot **Famicom** (60p, 2,54 mm) em shield pa
 | Removido | SNES1, NES1, MD1, GBA1, Si5351 (U1), PIC (U2), R2, regulador U3 e C7, C8, C9, C2, C3, C5, C6, furos M2 | |
 | Placa | 144 × 108 mm | 107,1 × 65,1 mm |
 
-O slot fica entre as fileiras de pinos do Mega, no mesmo lugar que o Mega Drive na `megadrive/`. Os 6 furos não metalizados do Mega e os 4 de canto foram mantidos.
+O slot fica entre as fileiras de pinos do Mega, no mesmo lugar que o Mega Drive na `megadrive/`. **A v1.0 não tem os 6 furos do Mega** (só os 4 de canto) e o F1 fica entre o slot e o header de baixo do Mega, sem a faixa extra: 107,1 × 61,1 mm (D142). Na v1.1, os 6 furos não metalizados do Mega e os 4 de canto foram mantidos.
 
 Ficam sem ligação no Mega: tudo que só os outros sistemas usam (`D2..D9`, `D14..D17`, `D20`, `D21`, `D29..D34`, `D36`, `D37`, `D40`, `D41`) e os de sempre (`D0`, `D1`, `D10..D13`, `D18`, `D19`, `D39`, `D50..D53`).
 
@@ -42,7 +42,7 @@ tools/export_fab.sh famicom v1.0
 
 | Versão | O que tem | Projeto KiCad | Fábrica | Renders (cima e baixo) |
 |---|---|---|---|---|
-| v1.0 | F1 (suporte de fusível); 5V direto nos slots | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
+| v1.0 | F1 (suporte de fusível); 5V direto nos slots; 107,1 × 61,1 mm, sem os 6 furos do Mega (D142) | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
 | v1.1 | v1.0 mais o seletor de tensão 3,3 V/5 V e o J1 (D138; sem resistores em série, D140) | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `hardware-v1.1/render-cima.png`, `hardware-v1.1/render-baixo.png` (`render.png` = v1.1, de cima) |
 
 O 5V dos slots **não é cortado por software** em nenhuma versão (o bloco de troca de cartucho, D126 a D128, foi retirado em D139): para trocar o cartucho, desligue o USB. Verificação: `python3 tools/check_netlist.py --board famicom` (v1.1) e `python3 tools/check_netlist.py --board famicom boards/famicom/hardware-v1.0/dumper.kicad_sch` (v1.0).

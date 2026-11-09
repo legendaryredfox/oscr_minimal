@@ -1,5 +1,7 @@
 # BOM — placa famicom (só Famicom) v1.1
 
+> **v1.0 (D142):** mesma lista sem as peças marcadas v1.1 (J1, LDO, Q4, Q5, 2 C, 3 R). Placa de 107,1 × 61,1 mm, só 4 furos não metalizados (os de canto) e **sem os 6 espaçadores do Mega**. Arquivos: `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv`.
+
 Montagem **manual**. Lista gerada de `boards/famicom/fab/bom-v1.1.csv` mais as peças sem símbolo (pinos e espaçadores).
 
 > **Pendências antes de comprar:** medidas reais do slot Famicom (D17, D23); direção da etiqueta (D27).
