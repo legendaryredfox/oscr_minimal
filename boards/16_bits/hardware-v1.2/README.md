@@ -35,14 +35,13 @@ A v. 1.2 de 2026-11-06 (D108) tinha 12 resistores em série, um em cada linha de
 ## Particularidades desta versão
 ## Particularidades desta versão
 
-Sem os resistores série das linhas de controle (retirados em D145) e sem os TVS (D130); pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste e três furos M3 alinhados com o Mega. Sem a chave de 5V (Q1) e sem o botão de reset (D128); D19 e RST ficam sem ligação.
+Sem os resistores série das linhas de controle (retirados em D145) e sem os TVS (D130); sem o pull-up de `/VRES` (R15, retirado em D146), `/CART` no D50, C5, C6, pontos de teste e três furos M3 alinhados com o Mega. Sem a chave de 5V (Q1) e sem o botão de reset (D128); D19 e RST ficam sem ligação.
 
 ## O que muda em relação à v1.0
 
 | Peça | Referências | Antes | Agora |
 |---|---|---|---|
 | Fusivel 5x20 500mA | F1 | 0 | 1 |
-| 0R | 10k (DNP) | R15 | 0 | 1 |
 | 100n | C2,C3,C4,C5,C6 | 3 | 5 |
 
 ## Lista de peças
@@ -58,7 +57,6 @@ Sem os resistores série das linhas de controle (retirados em D145) e sem os TVS
 | MD1 | MD_Slot | `dumper:MD_Slot` | 1 |
 | R1 | 220R | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |
 | R2 | 1k | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |
-| R15 | 10k (DNP) | `Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P5.08mm_Horizontal` | 1 |
 | SNES1 | SNES_Slot | `dumper:SNES_Slot` | 1 |
 | U1 | Si5351_Module | `Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical` | 1 |
 | U2 | PIC12F629 (em soquete; snescic-lock-resync) | `Package_DIP:DIP-8_W7.62mm` | 1 |

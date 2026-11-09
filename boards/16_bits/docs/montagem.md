@@ -1,5 +1,7 @@
 # Montagem — placa 16_bits (SNES e Mega Drive) v. 1.2
 
+> **Atualização D146:** o R15 (pull-up de `/VRES`, DNP) também foi retirado da v1.2; nenhuma versão o tem mais. Ignore as menções a ele neste documento.
+
 > **Atualização D145:** a v1.2 não tem mais os resistores R3 a R14 (as linhas vão direto do Mega ao slot); a v1.3 ainda os tem.
 
 > **Atualização D130 e D140:** nenhuma versão tem os 12 TVS (D3 a D14) nem as redes RN. A v1.3 também não tem o R15; a v1.2 (congelada) mantém o R15 (10 kΩ, **não montar**). Os resistores série R3 a R14 continuam.

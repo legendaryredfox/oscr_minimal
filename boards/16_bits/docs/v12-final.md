@@ -1,5 +1,7 @@
 # 16_bits v. 1.2 final: proteção de porta e pull-up de /VRES (D108, atualizado em D139)
 
+> **Atualização D146:** o R15 (pull-up de `/VRES`, DNP) também foi retirado da v1.2; nenhuma versão o tem mais. Ignore as menções a ele neste documento.
+
 > **Atualização D145:** os resistores R3 a R14 foram retirados da v1.2 (o OSCR não os tem); ficam só na v1.3.
 
 > **Atualização D128/D139:** o botão de reset (SW1), a chave de 5V (Q1, R16 a R18, D2) e o bloco de troca de cartucho **não existem em nenhuma versão**: o 5V dos slots vai direto do Mega e a troca de cartucho é com o USB desligado. Este texto fica só com o que continua valendo.

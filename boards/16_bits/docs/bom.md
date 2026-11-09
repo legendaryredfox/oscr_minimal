@@ -1,5 +1,7 @@
 # BOM — placa 16_bits (SNES e Mega Drive) v. 1.2
 
+> **Atualização D146:** o R15 (pull-up de `/VRES`, DNP) também foi retirado da v1.2; nenhuma versão o tem mais. Ignore as menções a ele neste documento.
+
 > **Atualização D145:** a v1.2 não tem mais R3 a R14 (retirados); a v1.3 ainda os tem. Para a v1.2 ignore as linhas de R3 a R14.
 
 > **Versões (D128, D139):** nenhuma versão tem a chave de 5V (Q1, R16 a R18, D2), o botão de reset (SW1) nem o bloco de troca de cartucho. A lista de peças de cada versão está em `../fab/bom-v1.2.csv` e `../fab/bom-v1.3.csv`; a v1.3 acrescenta o seletor de tensão (ver `versoes.md`). Nenhuma versão tem TVS nem resistores em série de 470 Ω (D140).
