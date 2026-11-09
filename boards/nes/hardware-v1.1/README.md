@@ -24,7 +24,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 
 **F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
 
-**Seletor de tensão 3,3 V/5 V dos slots NES** (LDO LD1117V33 em TO-220, Q4 de bypass, Q5 de carga, redes de resistores de 470 Ω em série com as linhas entre o Mega e esses slots, comando no D18). **Padrão: 5 V**; 3,3 V só quando o usuário pede (`--voltage 3v3`, ou o botão da GUI). Passar de 3,3 V para 5 V mostra um alerta e pede confirmação. Os outros slots e o Si5351/PIC ficam direto no 5 V. Cartuchos de 3,3 V ligados em 5 V podem queimar.
+**Seletor de tensão 3,3 V/5 V dos slots NES** (LDO LD1117V33 em TO-220, Q4 de bypass, Q5 de carga, comando no D18; sem resistores em série entre o Mega e os slots, D140). **Padrão: 5 V**; 3,3 V só quando o usuário pede (`--voltage 3v3`, ou o botão da GUI). Passar de 3,3 V para 5 V mostra um alerta e pede confirmação. Os outros slots e o Si5351/PIC ficam direto no 5 V. Cartuchos de 3,3 V ligados em 5 V podem queimar, e em 3,3 V as saídas do Mega continuam em 5 V: **confira a tensão que o cartucho suporta antes de inserir**.
 
 **J1: jumper "TRAVA 3,3 V", opcional.** Fechado, prende o gate do Q4 no 5 V e o slot nunca passa de 3,3 V, mesmo com erro de software ou de GUI: é a única defesa independente do firmware. Aberto, o seletor funciona normalmente.
 
@@ -39,7 +39,6 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 | 100k | R9 | 0 | 1 |
 | 1k | R10 | 0 | 1 |
 | 220R | R11 | 0 | 1 |
-| 470R | RN1,RN2,RN3,RN4 | 0 | 4 |
 | LD1117V33 | U2 | 0 | 1 |
 | 100n | C2,C3 | 1 | 2 |
 
@@ -62,7 +61,6 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 | R9 | 100k | `Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | 1 |
 | R10 | 1k | `Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | 1 |
 | R11 | 220R | `Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | 1 |
-| RN1,RN2,RN3,RN4 | 470R | `Package_DIP:DIP-16_W7.62mm` | 4 |
 | U1 | Si5351_Module | `Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical` | 1 |
 | U2 | LD1117V33 | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 

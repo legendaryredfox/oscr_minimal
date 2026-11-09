@@ -10,27 +10,13 @@
   "R10",
   "J1",
   "Q5",
-  "R11",
-  "RN1",
-  "RN2",
-  "RN3",
-  "RN4"
+  "R11"
  ],
  "fusivel": [
   "F1"
  ],
- "rn": [
-  "RN1",
-  "RN2",
-  "RN3",
-  "RN4"
- ],
+ "rn": [],
  "bypass": [
   "Q4"
- ],
- "sem_serie": [],
- "slots_sel": [
-  "FC1",
-  "NES1"
  ]
 }

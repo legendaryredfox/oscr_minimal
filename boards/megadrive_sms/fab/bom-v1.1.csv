@@ -14,6 +14,5 @@
 "R9","100k","Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical","1"
 "R10","1k","Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical","1"
 "R11","220R","Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical","1"
-"RN1,RN2,RN3,RN4,RN5,RN6,RN7","470R","Package_DIP:DIP-16_W7.62mm","7"
 "SMS1","SMS_Slot","dumper:SMS_Slot","1"
 "U1","LD1117V33","Package_TO_SOT_THT:TO-220-3_Vertical","1"
