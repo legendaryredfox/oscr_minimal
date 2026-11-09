@@ -30,7 +30,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 
 ## Particularidades desta versão
 
-**Pendente:** fechar à mão no KiCad as ligações `/D25`, `/D26`, `/D27`, `/D28` e `/D29` do slot Mega Drive, que a retirada das redes RN deixou abertas (as pontas soltas ficam nos furos onde estavam as RN). Nada montado nem testado.
+Sem as redes RN (D140), foi roteada de novo pelo Freerouting (0 ligações abertas): **revisar o layout no KiCad**. Nada montado nem testado.
 
 ## O que muda em relação à v1.0
 

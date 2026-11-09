@@ -23,7 +23,7 @@ Do projeto da v1.2 de 2026-11-06 (D108) saíram **SW1** (botão de reset), **Q1*
 
 ## O que a v1.3 leva (D130, D138, D139)
 
-A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (LDO, Q4, Q5, J1; comando no **D18**), sem o R15. Em D138 ela também tinha os 12 TVS (DNP) e as redes de 470 Ω (RN1 a RN5) em série com as linhas do slot Mega Drive; ambos saíram em D140 (`tools/troca/sem_rn.py`, mantendo o roteamento): o foco é proteger o Arduino e o shield, e a tensão que o cartucho aguenta fica por conta do usuário (aviso no silk e nos docs). O bloco de troca que a v1.3 chegou a ter em 2026-11-07 (Q1 a Q3, LEDs, D19, D53) saiu em D139 por `tools/troca/sem_bloco.py`, mantendo o roteamento. Firmware: ambiente `SerialASCII_Volt`. Pendente: fechar à mão no KiCad `/A0` e `/A8` (abertas pela retirada das RN) e as ligações `/A4` (RN1.5 a A1.A4) e `/D17` (MD1.B27) que o autoroteador deixou abertas; nada montado nem testado.
+A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (LDO, Q4, Q5, J1; comando no **D18**), sem o R15. Em D138 ela também tinha os 12 TVS (DNP) e as redes de 470 Ω (RN1 a RN5) em série com as linhas do slot Mega Drive; ambos saíram em D140 (`tools/troca/sem_rn.py`, mantendo o roteamento): o foco é proteger o Arduino e o shield, e a tensão que o cartucho aguenta fica por conta do usuário (aviso no silk e nos docs). O bloco de troca que a v1.3 chegou a ter em 2026-11-07 (Q1 a Q3, LEDs, D19, D53) saiu em D139 por `tools/troca/sem_bloco.py`, mantendo o roteamento. Firmware: ambiente `SerialASCII_Volt`. Roteada de novo pelo Freerouting em D140 (DRC sem ligação aberta; as antigas `/A4` e `/D17` fecharam); revisar o layout no KiCad antes de encomendar; nada montado nem testado.
 
 ## Como refazer
 

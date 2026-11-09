@@ -7962,7 +7962,7 @@
 			(uuid "0a75fe28-a5c9-4bb4-9006-456aec0db874")
 		)
 		(embedded_fonts no)
-		(model "${KICAD10_3DMODEL_DIR}/Fuse.3dshapes/Fuseholder_Littelfuse_100_series_5x20mm.step"
+		(model "${KIPRJMOD}/../../_lib/3dmodels/Fuseholder_Littelfuse_100_series_5x20mm.step"
 			(offset
 				(xyz 0 0 0)
 			)

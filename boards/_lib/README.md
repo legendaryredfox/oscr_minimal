@@ -14,3 +14,5 @@ Gerado por `tools/build_lib.py` (não edite à mão).
 Atribuição: "Based on Open Source Cartridge Reader by sanni — CC BY 4.0".
 
 O corpo dos slots é ESTIMADO (12 mm de largura, vão dos pads + 8 mm, ~16 mm de altura; ver `docs/decisoes.md` D17). Medir os slots comprados e ajustar `BODY_W`/`BODY_END` em `tools/build_lib.py`.
+
+- `3dmodels/Fuseholder_Littelfuse_100_series_5x20mm.step`: modelo 3D aproximado do suporte de fusível 5x20 mm (F1), gerado por `tools/build_3d_fuseholder.py` porque o modelo oficial não vem no kicad-packages3d desta máquina (D140). Os PCBs apontam para ele com `${KIPRJMOD}/../../_lib/3dmodels/...`.

@@ -30,7 +30,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 
 ## Particularidades desta versão
 
-A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138), sem R15, TVS nem resistores de 470 Ω em série (D140). Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**. **Pendente:** fechar à mão as ligações `/A0` e `/A8` (a retirada das RN as deixou abertas; as pontas ficam nos furos de RN1 e RN2) e as duas que o autoroteador já deixara, `/A4` (RN1.5 a A1.A4) e `/D17` (MD1.B27).
+A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138), sem R15, TVS nem resistores de 470 Ω em série (D140). Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**. Sem as RN, os TVS e o R15 (D140), foi roteada de novo pelo Freerouting (0 ligações abertas; as antigas `/A4` e `/D17` fecharam).
 
 ## O que muda em relação à v1.2
 
