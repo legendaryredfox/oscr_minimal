@@ -1,5 +1,7 @@
 # 16_bits v. 1.2 final: proteção de porta e pull-up de /VRES (D108, atualizado em D139)
 
+> **Atualização D145:** os resistores R3 a R14 foram retirados da v1.2 (o OSCR não os tem); ficam só na v1.3.
+
 > **Atualização D128/D139:** o botão de reset (SW1), a chave de 5V (Q1, R16 a R18, D2) e o bloco de troca de cartucho **não existem em nenhuma versão**: o 5V dos slots vai direto do Mega e a troca de cartucho é com o USB desligado. Este texto fica só com o que continua valendo.
 
 Em 2026-11-06 o usuário pediu para levar para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040**, que fica sozinho na v. 1.3 (se der certo; `docs/planos/placa-v1.3-rp2040.md`). Esta página descreve o que mudou, como montar e o que ainda **não foi testado** (nada foi montado nem medido).

@@ -12861,953 +12861,137 @@
 			)
 		)
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 143.51 81.28 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "f70a3e6e-2a77-4aeb-8e7d-f4dd773f541d")
-		(property "Reference" "R3"
-			(at 143.51 78.28 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 139.7 81.28)
+			(xy 147.32 81.28)
 		)
-		(property "Value" "0R"
-			(at 143.51 84.28 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 143.51 81.28 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 143.51 81.28 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 143.51 81.28 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "c598d81c-8ec1-4124-95bf-6727c69c985f")
-		)
-		(pin "2"
-			(uuid "c826ecf1-bb74-463d-81f5-19e54827034d")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R3")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "3140fa1b-1eed-41f5-9c0c-180d75bc413d")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 163.83 83.82 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2d6fcbe3-12b8-43a9-bf4e-ee9ec6fd3ecf")
-		(property "Reference" "R4"
-			(at 163.83 80.82 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 160.02 83.82)
+			(xy 167.64 83.82)
 		)
-		(property "Value" "0R"
-			(at 163.83 86.82 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 163.83 83.82 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 163.83 83.82 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 163.83 83.82 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "99a6c751-c967-4199-b45d-f8150e1e9e13")
-		)
-		(pin "2"
-			(uuid "60ad883a-7d9d-4e20-b765-ab95cd5f3a68")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R4")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "2832a5f1-818d-45d1-8627-cee6a6e25225")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 163.83 86.36 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "ac4b79ad-7d01-4249-9750-5810af5f0449")
-		(property "Reference" "R5"
-			(at 163.83 83.36 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 160.02 86.36)
+			(xy 167.64 86.36)
 		)
-		(property "Value" "0R"
-			(at 163.83 89.36 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 163.83 86.36 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 163.83 86.36 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 163.83 86.36 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "93d6a0d4-d5a4-4017-87d8-82771e22903d")
-		)
-		(pin "2"
-			(uuid "3861d06c-59b9-441c-aad9-d694cbe31702")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R5")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "ee8ebf59-7b13-446f-9329-da20790b6152")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 184.15 88.9 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "d2a3ff7a-cbd1-4e73-8015-ab216b59f3d4")
-		(property "Reference" "R6"
-			(at 184.15 85.9 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 180.34 88.9)
+			(xy 187.96 88.9)
 		)
-		(property "Value" "0R"
-			(at 184.15 91.9 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 184.15 88.9 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 184.15 88.9 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 184.15 88.9 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "bae18a2b-bc09-4ad1-bb68-001b651bbcbe")
-		)
-		(pin "2"
-			(uuid "84f6f1e1-6fc4-4420-a195-28c31c662960")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R6")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "98a5d71d-bb81-49fe-8eca-dbfd8d5c7a94")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 143.51 91.44 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2266f380-b6cb-4867-89bb-3d526c6d2c4f")
-		(property "Reference" "R7"
-			(at 143.51 88.44 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 139.7 91.44)
+			(xy 147.32 91.44)
 		)
-		(property "Value" "0R"
-			(at 143.51 94.44 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 143.51 91.44 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 143.51 91.44 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 143.51 91.44 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "284baeaf-46f3-4953-a9a1-95ca3ba9a0e4")
-		)
-		(pin "2"
-			(uuid "9d4fa814-0325-465a-90bd-05f0dd6e6f54")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R7")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "80fb9995-4803-4137-a8db-bea1ce974d1b")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 163.83 93.98 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "d790fa5e-f2ed-4b34-8992-3247dc4bd002")
-		(property "Reference" "R8"
-			(at 163.83 90.98 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 160.02 93.98)
+			(xy 167.64 93.98)
 		)
-		(property "Value" "0R"
-			(at 163.83 96.98 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 163.83 93.98 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 163.83 93.98 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 163.83 93.98 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0e49c09d-0c37-454c-a641-ab1375c7f05c")
-		)
-		(pin "2"
-			(uuid "37dcc7c1-bb7a-4420-b174-ac9985ecfc80")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R8")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "4de247c3-c5b6-44e3-a9c6-26513cf968cd")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 184.15 96.52 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "1a707135-c7db-4978-98c6-08ddeb30df2e")
-		(property "Reference" "R9"
-			(at 184.15 93.52 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 180.34 96.52)
+			(xy 187.96 96.52)
 		)
-		(property "Value" "0R"
-			(at 184.15 99.52 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 184.15 96.52 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 184.15 96.52 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 184.15 96.52 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "8de9c0b9-6437-497c-8b41-4945cb39790f")
-		)
-		(pin "2"
-			(uuid "80c8eed4-1f4a-4641-b72f-f38e13ed3eec")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R9")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "c3b59298-bbde-460e-abc9-e6c89b673b44")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 143.51 99.06 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "0c105778-f03b-4abc-ba21-5175e2d96184")
-		(property "Reference" "R10"
-			(at 143.51 96.06 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 139.7 99.06)
+			(xy 147.32 99.06)
 		)
-		(property "Value" "0R"
-			(at 143.51 102.06 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 143.51 99.06 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 143.51 99.06 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 143.51 99.06 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "c1e0b9b7-2f0c-4ee0-87c6-60c4cb7ea052")
-		)
-		(pin "2"
-			(uuid "8ce88626-13b1-4aa7-9e2a-b135c9348eb3")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R10")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "65327f68-852a-4792-a8c8-5551b350e526")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 143.51 121.92 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "9b030b04-653c-4ddc-b1f4-d358d4f69aa0")
-		(property "Reference" "R11"
-			(at 143.51 118.92 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 139.7 121.92)
+			(xy 147.32 121.92)
 		)
-		(property "Value" "0R"
-			(at 143.51 124.92 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 143.51 121.92 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 143.51 121.92 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 143.51 121.92 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "4bd8e880-cebc-4b49-8cb5-30f6909fc794")
-		)
-		(pin "2"
-			(uuid "1ab3c724-64e8-429d-81a0-78497483c263")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R11")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "d350dd04-417a-4b72-9cf0-de2572bebfa7")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 163.83 124.46 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "1916b6fd-1f3f-4fa4-9e8b-a3f8352d8d00")
-		(property "Reference" "R12"
-			(at 163.83 121.46 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 160.02 124.46)
+			(xy 167.64 124.46)
 		)
-		(property "Value" "0R"
-			(at 163.83 127.46 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 163.83 124.46 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 163.83 124.46 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 163.83 124.46 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "f932a407-7b23-4c99-9db5-92f3336bca1d")
-		)
-		(pin "2"
-			(uuid "828a29a5-2bfe-48fe-9dcf-c47bd7e06048")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R12")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "ff09b1da-7672-47b9-967b-0bcc50344246")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 184.15 127 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "d7523bb7-c3e3-4874-9db7-74f66974201c")
-		(property "Reference" "R13"
-			(at 184.15 124 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 180.34 127.0)
+			(xy 187.96 127.0)
 		)
-		(property "Value" "0R"
-			(at 184.15 130 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 184.15 127 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 184.15 127 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 184.15 127 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "021047f3-0887-4c60-ac8a-19c47a6c740c")
-		)
-		(pin "2"
-			(uuid "f9a17f7a-521d-4ab9-84a3-b3ddea6dd157")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R13")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "eb5bf90a-69ed-4667-9d10-b30eb035b3a4")
 	)
-	(symbol
-		(lib_id "Device:R")
-		(at 143.51 129.54 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "1be7bab6-234c-46dc-9436-2033b136f897")
-		(property "Reference" "R14"
-			(at 143.51 126.54 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+	(wire
+		(pts
+			(xy 139.7 129.54)
+			(xy 147.32 129.54)
 		)
-		(property "Value" "0R"
-			(at 143.51 132.54 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
+		(stroke
+			(width 0)
+			(type default)
 		)
-		(property "Footprint" "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical"
-			(at 143.51 129.54 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 143.51 129.54 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor serie (protecao de porta; 0R de fabrica, trocavel por 47 a 100R)"
-			(at 143.51 129.54 270)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "cbf059f6-5650-4889-9ca6-8eba01118c6b")
-		)
-		(pin "2"
-			(uuid "a42abce3-9743-4d61-be16-ef0e44748b49")
-		)
-		(instances
-			(project "dumper"
-				(path "/7a60289e-82cc-4290-bd86-3bc08aff2373"
-					(reference "R14")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "ad2f0179-0359-4447-9c0c-180af88a19ee")
 	)
 	(symbol
 		(lib_id "Device:R")

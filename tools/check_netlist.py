@@ -169,11 +169,12 @@ def expected_nets(pm_nets):
 
 def v12b_ajusta(exp):
     """Resistores série (R3 a R14) e, só na v. 1.2, o pull-up de /VRES (R15). Nenhuma versão tem TVS (D140), chave de 5V, LED D2 nem reset (D128, D139)."""
-    for k, n in enumerate(CTRL):
-        r = f"R{3 + k}"
-        exp[n].discard((MEGA, n))
-        exp[n].add((r, "2"))
-        exp[n + "_M"] = {(MEGA, n), (r, "1")}
+    if '(property "Reference" "R3"' in SCH.read_text():      # sem R3 a R14 (D145) as linhas vão direto do Mega ao slot
+        for k, n in enumerate(CTRL):
+            r = f"R{3 + k}"
+            exp[n].discard((MEGA, n))
+            exp[n].add((r, "2"))
+            exp[n + "_M"] = {(MEGA, n), (r, "1")}
     if '"R15"' in SCH.read_text():
         exp["D17"].add(("R15", "2"))
         exp["+5V"].add(("R15", "1"))        # pull-up de /VRES

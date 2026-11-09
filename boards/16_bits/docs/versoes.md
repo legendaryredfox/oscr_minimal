@@ -8,7 +8,8 @@ Nenhuma versão tem botão de reset nem desligamento do 5V dos slots por softwar
 | Gerbers e zip | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip` | `fab/gerbers-v1.2/`, `fab/dumper-v1.2-jlcpcb.zip` | `fab/gerbers-v1.3/`, `fab/dumper-v1.3-jlcpcb.zip` |
 | Lista de peças (CSV) | — | `fab/bom-v1.2.csv` | `fab/bom-v1.3.csv` |
 | PNGs | `hardware-v1.0/render-cima.png`, `-baixo.png` | `hardware-v1.2/render-cima.png`, `-baixo.png` | `hardware-v1.3/render-cima.png`, `-baixo.png` (`render.png` = v1.3, de cima) |
-| Resistores série (0 Ω) nas 12 linhas de controle, `/CART` no D50, C5, C6, pontos de teste | não | sim | sim |
+| Resistores série (0 Ω) nas 12 linhas de controle (R3 a R14) | não | **não** (retirados em D145) | sim |
+| `/CART` no D50, C5, C6, pontos de teste | não | sim | sim |
 | Pull-up de `/VRES` (R15, DNP) | não | sim | **não** (D140) |
 | TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | **não** (D140) |
 | F1 (suporte de fusível 5×20 mm, D138) | sim, acrescentado em 2026-11-09 (D144; a v1.0 encomendada em 2026-11-06 não tem) | sim | sim |
