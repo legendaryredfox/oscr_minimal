@@ -4,7 +4,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 
 | Pasta | Slots | Estado |
 |---|---|---|
-| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. **Versões v1.0, v1.2 (sem TVS) e v1.3 (TVS, seletor de tensão e resistores em série), D128 e D139.** Gerbers v. 1.2 (D87: `/CART` no D50, C5 e C6, pontos de teste a 2,54 mm, D99) e v1.0 (a antiga `rev2`: alimentação em 0,8 mm, D97; o zip da v1.0 original, com trilhas de 0,3 mm, saiu do repositório em D110) |
+| [`16_bits/`](16_bits/) | SNES, Mega Drive | Projeto KiCad derivado da `16_and_8_bits`, 108 × 86 mm. **Versões v1.0, v1.2 (sem TVS) e v1.3 (seletor de tensão, sem TVS nem resistores de 470 Ω), D128, D139 e D140.** Gerbers v. 1.2 (D87: `/CART` no D50, C5 e C6, pontos de teste a 2,54 mm, D99) e v1.0 (a antiga `rev2`: alimentação em 0,8 mm, D97; o zip da v1.0 original, com trilhas de 0,3 mm, saiu do repositório em D110) |
 | [`megadrive/`](megadrive/) | Mega Drive | Projeto KiCad criado de `16_bits` (D92), slot no centro, 107 × 65 mm, gerbers v1.1 gerados. **v1.1 com o seletor de tensão 3,3 V/5 V (D138).** Nada encomendado |
 | [`snes/`](snes/) | SNES | Projeto KiCad criado de `16_bits` (D93), PIC12F629 em soquete, 107 × 65 mm, só a v1.0 (o SA-1 precisa de 5 V: sem seletor). Nada encomendado |
 | [`nes/`](nes/) | NES | Projeto KiCad criado da `16_and_8_bits` (D95), Si5351 sem PIC, 110 × 65 mm, gerbers v1.1 gerados. Famicom em `famicom/` ou `famicom_nes/`. **v1.1 com o seletor de tensão 3,3 V/5 V (D138).** Nada encomendado |

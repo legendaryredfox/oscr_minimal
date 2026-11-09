@@ -8,10 +8,11 @@ Nenhuma versão tem botão de reset nem desligamento do 5V dos slots por softwar
 | Gerbers e zip | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip` | `fab/gerbers-v1.2/`, `fab/dumper-v1.2-jlcpcb.zip` | `fab/gerbers-v1.3/`, `fab/dumper-v1.3-jlcpcb.zip` |
 | Lista de peças (CSV) | — | `fab/bom-v1.2.csv` | `fab/bom-v1.3.csv` |
 | PNGs | `hardware-v1.0/render-cima.png`, `-baixo.png` | `hardware-v1.2/render-cima.png`, `-baixo.png` | `hardware-v1.3/render-cima.png`, `-baixo.png` (`render.png` = v1.3, de cima) |
-| Resistores série (0 Ω) nas 12 linhas de controle, pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste | não | sim | sim |
-| TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | sim |
+| Resistores série (0 Ω) nas 12 linhas de controle, `/CART` no D50, C5, C6, pontos de teste | não | sim | sim |
+| Pull-up de `/VRES` (R15, DNP) | não | sim | **não** (D140) |
+| TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | **não** (D140) |
 | F1 (suporte de fusível 5×20 mm, D138) | **não** (a v1.0 já foi encomendada e não muda) | sim | sim |
-| Seletor de tensão 3,3 V/5 V no slot Mega Drive, J1 e resistores de 470 Ω em série (D138) | não | não | sim |
+| Seletor de tensão 3,3 V/5 V no slot Mega Drive e J1 (D138); sem resistores em série de 470 Ω (D140) | não | não | sim |
 | Botão de reset (SW1) | não | **não** | **não** |
 | RP2040 no lugar do PIC | não | não | **não** (só se validar em bancada, `docs/planos/placa-v1.3-rp2040.md`) |
 | Estado | gerbers de referência; a original foi encomendada em 2026-11-06 | nada encomendado | nada encomendado |
@@ -22,7 +23,7 @@ Do projeto da v1.2 de 2026-11-06 (D108) saíram **SW1** (botão de reset), **Q1*
 
 ## O que a v1.3 leva (D130, D138, D139)
 
-A v1.2 mais os 12 TVS (DNP), o seletor de tensão 3,3 V/5 V do slot Mega Drive (LDO, Q4, Q5, J1; comando no **D18**) e as redes de resistores de 470 Ω em série com as linhas desse slot. O bloco de troca que a v1.3 chegou a ter em 2026-11-07 (Q1 a Q3, LEDs, D19, D53) saiu em D139 por `tools/troca/sem_bloco.py`, mantendo o roteamento. Firmware: ambiente `SerialASCII_Volt`. Pendente: fechar à mão no KiCad as ligações `/A4` (RN1.5 a A1.A4) e `/D17` (MD1.B27) que o autoroteador deixou abertas; nada montado nem testado.
+A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (LDO, Q4, Q5, J1; comando no **D18**), sem o R15. Em D138 ela também tinha os 12 TVS (DNP) e as redes de 470 Ω (RN1 a RN5) em série com as linhas do slot Mega Drive; ambos saíram em D140 (`tools/troca/sem_rn.py`, mantendo o roteamento): o foco é proteger o Arduino e o shield, e a tensão que o cartucho aguenta fica por conta do usuário (aviso no silk e nos docs). O bloco de troca que a v1.3 chegou a ter em 2026-11-07 (Q1 a Q3, LEDs, D19, D53) saiu em D139 por `tools/troca/sem_bloco.py`, mantendo o roteamento. Firmware: ambiente `SerialASCII_Volt`. Pendente: fechar à mão no KiCad `/A0` e `/A8` (abertas pela retirada das RN) e as ligações `/A4` (RN1.5 a A1.A4) e `/D17` (MD1.B27) que o autoroteador deixou abertas; nada montado nem testado.
 
 ## Como refazer
 

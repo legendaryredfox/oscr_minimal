@@ -35,9 +35,9 @@ def protecao(placa, linhas):
     if "J1" in refs:
         sel = (SEL_CFG.get(placa) or {}).get("sel") or {"slots": []}
         com = [NOMES_SLOT.get(x, x) for x in sel["slots"]]
-        out += ["**Seletor de tensão 3,3 V/5 V dos slots " + ", ".join(com) + "** (LDO LD1117V33 em TO-220, Q4 de bypass, Q5 de carga, redes de resistores de 470 Ω em série com as linhas "
-                "entre o Mega e esses slots, comando no D18). **Padrão: 5 V**; 3,3 V só quando o usuário pede (`--voltage 3v3`, ou o botão da GUI). Passar de 3,3 V para 5 V mostra "
-                "um alerta e pede confirmação. Os outros slots e o Si5351/PIC ficam direto no 5 V. Cartuchos de 3,3 V ligados em 5 V podem queimar.", "",
+        out += ["**Seletor de tensão 3,3 V/5 V dos slots " + ", ".join(com) + "** (LDO LD1117V33 em TO-220, Q4 de bypass, Q5 de carga, comando no D18; sem resistores em série entre o Mega e os slots, D140). "
+                "**Padrão: 5 V**; 3,3 V só quando o usuário pede (`--voltage 3v3`, ou o botão da GUI). Passar de 3,3 V para 5 V mostra "
+                "um alerta e pede confirmação. Os outros slots e o Si5351/PIC ficam direto no 5 V. Cartuchos de 3,3 V ligados em 5 V podem queimar, e em 3,3 V as saídas do Mega continuam em 5 V: **confira a tensão que o cartucho suporta antes de inserir**.", "",
                 "**J1: jumper \"TRAVA 3,3 V\", opcional.** Fechado, prende o gate do Q4 no 5 V e o slot nunca passa de 3,3 V, mesmo com erro de software ou de GUI: é a única "
                 "defesa independente do firmware. Aberto, o seletor funciona normalmente.", ""]
     return out
@@ -57,11 +57,11 @@ PLACAS = {
                  ("v1.2", "hardware-v1.2", "gerbers-v1.2", False,
                   "Resistores série (0 Ω) nas 12 linhas de controle (**sem os TVS**, D130), pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste e três furos M3 alinhados com o Mega. Sem a chave de 5V (Q1) e sem o botão de reset (D128); D19 e RST ficam sem ligação."),
                  ("v1.3", "hardware-v1.3", "gerbers-v1.3", False,
-                  "A v1.2 mais os 12 TVS 5 V (D3 a D14, DNP), o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138) e os resistores em série das linhas desse slot. Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**.")]),
+                  "A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138), sem R15, TVS nem resistores de 470 Ω em série (D140). Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**. **Pendente:** fechar à mão as ligações `/A0` e `/A8` (a retirada das RN as deixou abertas; as pontas ficam nos furos de RN1 e RN2) e as duas que o autoroteador já deixara, `/A4` (RN1.5 a A1.A4) e `/D17` (MD1.B27).")]),
     "megadrive": dict(nome="megadrive", slots="Mega Drive (64p, 2,54 mm), 5 V", extra="Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/componentes-opcionais.md`).",
                       versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "megadrive_sms": dict(nome="megadrive_sms", slots="Mega Drive (64p, 2,54 mm) e Master System / Mark III (50p, 2,54 mm), 5 V ou 3,3 V (seletor na v1.1); **um cartucho por vez**", extra="Sem Si5351 e sem PIC (pino 47, Clock, do slot SMS sem ligação).",
-                          versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
+                          versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "**Pendente:** fechar à mão no KiCad as ligações `/D25`, `/D26`, `/D27`, `/D28` e `/D29` do slot Mega Drive, que a retirada das redes RN deixou abertas (as pontas soltas ficam nos furos onde estavam as RN). Nada montado nem testado.")]),
     "snes": dict(nome="snes", slots="SNES (62p, 2,5 mm), 5 V", extra="Si5351 em header fêmea e PIC12F629 (CIC) em soquete.",
                  versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, "")]),
     "nes": dict(nome="nes", slots="NES (72p, 2,5 mm), 5 V", extra="Si5351 (clock do slot), sem PIC.",

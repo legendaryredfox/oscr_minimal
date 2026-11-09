@@ -47,6 +47,6 @@ tools/export_fab.sh nes v1.0
 | Versão | O que tem | Projeto KiCad | Fábrica | Renders (cima e baixo) |
 |---|---|---|---|---|
 | v1.0 | F1 (suporte de fusível); 5V direto nos slots | `hardware-v1.0/` | `fab/gerbers-v1.0/`, `fab/dumper-v1.0-jlcpcb.zip`, `fab/bom-v1.0.csv` | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
-| v1.1 | v1.0 mais o seletor de tensão 3,3 V/5 V, J1 e os resistores de 470 Ω em série (D138) | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `hardware-v1.1/render-cima.png`, `hardware-v1.1/render-baixo.png` (`render.png` = v1.1, de cima) |
+| v1.1 | v1.0 mais o seletor de tensão 3,3 V/5 V e o J1 (D138; sem resistores em série, D140) | `hardware-v1.1/` | `fab/gerbers-v1.1/`, `fab/dumper-v1.1-jlcpcb.zip`, `fab/bom-v1.1.csv` | `hardware-v1.1/render-cima.png`, `hardware-v1.1/render-baixo.png` (`render.png` = v1.1, de cima) |
 
 O 5V dos slots **não é cortado por software** em nenhuma versão (o bloco de troca de cartucho, D126 a D128, foi retirado em D139): para trocar o cartucho, desligue o USB. Verificação: `python3 tools/check_netlist.py --board nes` (v1.1) e `python3 tools/check_netlist.py --board nes boards/nes/hardware-v1.0/dumper.kicad_sch` (v1.0).

@@ -6,15 +6,15 @@
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
-**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 e v1.3 com TVS e seletor de tensão). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
+**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 e v1.3 com seletor de tensão). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
 
-> **D130 (2026-11-08):** a v1.2 saiu sem os 12 TVS (D3 a D14); a v1.3 os mantém (DNP).
+> **D130 e D140:** a v1.2 saiu sem os 12 TVS (D3 a D14) e a v1.3 também ficou sem eles, sem o R15 e sem as redes RN de 470 Ω (2026-11-09).
 
 ## Versões (D128, 2026-11-07)
 
-Nenhuma versão tem o botão de reset nem o circuito de desligar o 5V dos slots por software (o bloco de troca de cartucho, D126 a D128, foi retirado em D139: para trocar o cartucho, desligue o USB). A **v1.3** leva os TVS (DNP), o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138) e os resistores de 470 Ω em série. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
+Nenhuma versão tem o botão de reset nem o circuito de desligar o 5V dos slots por software (o bloco de troca de cartucho, D126 a D128, foi retirado em D139: para trocar o cartucho, desligue o USB). A **v1.3** leva o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138); sem TVS nem resistores de 470 Ω em série (D140), então **confira a tensão que o cartucho suporta antes de inserir**. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
 
-| Versão | Projeto | Seletor de tensão e TVS | Botão de reset | PNGs |
+| Versão | Projeto | Seletor de tensão | Botão de reset | PNGs |
 |---|---|---|---|---|
 | v1.0 | `hardware-v1.0/` | não | não | `hardware-v1.0/render-cima.png`, `hardware-v1.0/render-baixo.png` |
 | v1.2 | `hardware-v1.2/` | **não** (sem TVS) | **não** | `hardware-v1.2/render-cima.png`, `hardware-v1.2/render-baixo.png` |
@@ -51,7 +51,7 @@ Pinagem idêntica à da `16_and_8_bits` (e ao OSCR HW5): `docs/pinmap.md` é um 
 
 | Pasta | Conteúdo |
 |---|---|
-| `hardware-v1.3/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 mais TVS, seletor de tensão e resistores em série, D130 e D138); pasta de trabalho |
+| `hardware-v1.3/` | `dumper.kicad_pro/_sch/_pcb` (KiCad 10): a **v1.3** (v1.2 mais o seletor de tensão, sem R15, D138 e D140); pasta de trabalho |
 | `hardware-v1.2/` | **a v. 1.2 congelada**, desde 2026-11-07 **sem** SW1, Q1, R16 a R18 e D2 (D128) e sem os TVS (D130); esquemático, PCB e `.kicad_pro` iguais aos de `fab/dumper-v1.2-jlcpcb.zip` (DRC 0 erros e 0 ligações abertas, ERC 0, `check_netlist --sem-tvs` OK). Usa `../../_lib/` (inclui o símbolo `Q_PMOS_GDS`). Para refazer os gerbers dela: `HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2` |
 | `hardware-v1.0/` | a v1.0 (commit `7c38c77`) com as correções de alimentação e de térmico (D97); gerbers em `fab/dumper-v1.0-jlcpcb.zip` |
 | `fab/` | `PEDIDO.md` (como pedir na JLCPCB), `gerbers-v1.3/` (da pasta de trabalho `hardware-v1.3/`, v1.3), `dumper-v1.3-jlcpcb.zip`, `gerbers-v1.2/` (da `hardware-v1.2/`, congelada, como a `gerbers-v1.0/` da v1.0), `bom-v1.3.csv` (v1.3), `bom-v1.2.csv`, `dumper-v1.2-jlcpcb.zip` |

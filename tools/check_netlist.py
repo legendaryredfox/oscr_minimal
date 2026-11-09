@@ -26,8 +26,6 @@ if "--board" in _args:
     i = _args.index("--board")
     BOARD = _args[i + 1]
     del _args[i:i + 2]
-SEM_TVS = "--sem-tvs" in _args          # 16_bits v1.2 sem os TVS D3 a D14 (D130)
-_args = [a for a in _args if a != "--sem-tvs"]
 import json as _j
 _json = _j
 # versão atual de cada placa: boards/versoes.json; cada versão fica em boards/<placa>/hardware-<versão>/
@@ -39,7 +37,7 @@ BOARD_CFG = {
     "16_and_8_bits": dict(caps=range(2, 7), reg=True, tps={}),
     # C2 SNES, C3 Mega Drive, C4 PIC (renumerados em 7c38c77; C1 é o eletrolítico); v. 1.2: C5 junto ao A31 e C6 junto ao A2 do slot Mega Drive
     # tps: pontos de teste da v. 1.2 (referência, net)
-    # v. 1.2 final (D108; sem os TVS desde a D130, --sem-tvs): resistores serie R3..R14 e TVS D3..D14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES,
+    # v. 1.2 final (D108; sem os TVS desde a D130; a v. 1.3 também ficou sem R15 em D140): resistores serie R3..R14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES só na v. 1.2,
     # chave de 5V dos slots (Q1, R16..R18, D2; comando no D19), reset (SW1)
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}, v12b=True),
     # só GBA (GB e GBC por adaptador): regulador de 3,3 V (U1, C2, C3, C4), sem Si5351, PIC e R2
@@ -170,17 +168,15 @@ def expected_nets(pm_nets):
 
 
 def v12b_ajusta(exp):
-    """Resistores serie, TVS e pull-up (so a 16_bits v. 1.2 em diante). Nenhuma versão tem chave de 5V, LED D2 nem reset (D128, D139)."""
+    """Resistores série (R3 a R14) e, só na v. 1.2, o pull-up de /VRES (R15). Nenhuma versão tem TVS (D140), chave de 5V, LED D2 nem reset (D128, D139)."""
     for k, n in enumerate(CTRL):
-        r, d = f"R{3 + k}", f"D{3 + k}"
+        r = f"R{3 + k}"
         exp[n].discard((MEGA, n))
         exp[n].add((r, "2"))
         exp[n + "_M"] = {(MEGA, n), (r, "1")}
-        if not SEM_TVS:
-            exp[n].add((d, "1"))
-            exp["GND"].add((d, "2"))
-    exp["D17"].add(("R15", "2"))
-    exp["+5V"].add(("R15", "1"))        # pull-up de /VRES
+    if '"R15"' in SCH.read_text():
+        exp["D17"].add(("R15", "2"))
+        exp["+5V"].add(("R15", "1"))        # pull-up de /VRES
 
 
 D138 = None      # d138.json ao lado do esquemático: peças do D138 (F1, J1, seletor, resistores em série); ver tools/troca/sch_block.py
@@ -190,7 +186,7 @@ if _man.exists():
 
 
 def d138_colapsa(nets):
-    """D138: devolve (bruta, fundida). `bruta` junta as redes que os resistores em série (RNx: pino i com o 17-i) e o Q4 de bypass (dreno com fonte) separam;
+    """D138: devolve (bruta, fundida). `bruta` junta as redes que os resistores em série (só nas versões antigas, com RNx: pino i com o 17-i) e o Q4 de bypass (dreno com fonte) separam;
     `fundida` junta também as duas pontas do F1. Nas duas saem as peças do D138 e os marcadores PWR_FLAG: o que sobra tem de bater com o pinmap."""
     nome = {n: n for n in nets}
     def raiz(n):
@@ -204,7 +200,7 @@ def d138_colapsa(nets):
     def une(a, b):
         if a in onde and b in onde:
             nome[raiz(onde[a])] = raiz(onde[b])
-    for rn in D138["rn"]:
+    for rn in D138.get("rn", []):
         for i in range(1, 9):
             une((rn, str(i)), (rn, str(17 - i)))
     for q in D138["bypass"]:
@@ -252,7 +248,7 @@ def main():
     act = actual_nets()
     errors = []
     if D138:
-        print(f"D138: {len(D138['novos'])} peças do F1/J1/seletor ignoradas na comparação; {len(D138['fusivel'])} PTC e {len(D138['rn'])} redes de resistores em série tratados como ligação.")
+        print(f"D138: {len(D138['novos'])} peças do F1/J1/seletor ignoradas na comparação; {len(D138['fusivel'])} PTC tratados como ligação.")
 
     # 1. cada net esperada existe, com exatamente os mesmos nós
     act_by_nodes = {frozenset(v): k for k, v in act.items()}
@@ -325,15 +321,6 @@ def main():
         if len(v) > 1 and frozenset(v) not in exp_sets and not any(v & e for e in exp_sets):
             errors.append(f"net '{k}' não consta no pinmap: {sorted(v)}")
 
-    # 6. D138: nos slots com seletor, nenhum sinal liga o Mega direto ao slot (tem de passar pelo resistor de 470 ohms), salvo as redes listadas em "sem_serie"
-    if D138 and D138.get("slots_sel"):
-        livres = set(D138.get("sem_serie", []))
-        for n, nodes in ACT_SOLTO.items():
-            slots_aqui = [rp for rp in nodes if rp[0] in D138["slots_sel"]]
-            if slots_aqui and any(r == MEGA and p.startswith(("A", "D")) for r, p in nodes) and n.lstrip("/") not in livres and n not in livres:
-                if not any(n.endswith(x) for x in ("5V", "GND")):
-                    errors.append(f"D138: a rede '{n}' liga o Mega direto ao slot {slots_aqui[0][0]} sem resistor em série")
-        print(f"D138: {len(livres)} rede(s) sem resistor em série por ligarem outra peça: {', '.join(sorted(livres)) or '-'}")
     n_pins = sum(len(v) for v in exp.values())
     if errors:
         print(f"FALHOU: {len(errors)} divergência(s):")

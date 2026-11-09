@@ -1,8 +1,8 @@
 # BOM — placa 16_bits (SNES e Mega Drive) v. 1.2
 
-> **Versões (D128, D139):** nenhuma versão tem a chave de 5V (Q1, R16 a R18, D2), o botão de reset (SW1) nem o bloco de troca de cartucho. A lista de peças de cada versão está em `../fab/bom-v1.2.csv` e `../fab/bom-v1.3.csv`; a v1.3 acrescenta TVS, o seletor de tensão e os resistores de 470 Ω (ver `versoes.md`).
+> **Versões (D128, D139):** nenhuma versão tem a chave de 5V (Q1, R16 a R18, D2), o botão de reset (SW1) nem o bloco de troca de cartucho. A lista de peças de cada versão está em `../fab/bom-v1.2.csv` e `../fab/bom-v1.3.csv`; a v1.3 acrescenta o seletor de tensão (ver `versoes.md`). Nenhuma versão tem TVS nem resistores em série de 470 Ω (D140).
 
-> **Atualização D130 (2026-11-08):** a **v1.2 ficou sem os 12 TVS (D3 a D14)**; os resistores série R3 a R14 continuam. A **v1.3** mantém os TVS (DNP). Onde este texto fala de D3 a D14, vale só para a v1.3.
+> **Atualização D130 e D140:** a v1.2 ficou sem os 12 TVS (D3 a D14, D130) e a v1.3 também os perdeu em 2026-11-09 (D140), junto com o R15 (pull-up de `/VRES`, DNP) e as redes RN1 a RN5; a v1.2 congelada mantém o R15. Os resistores série R3 a R14 continuam. Menções a D3 a D14 e RN que restarem neste texto são históricas.
 
 Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bits/fab/bom-v1.3.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
@@ -42,8 +42,6 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_bit
 | C1 | 1 | 470 µF / 16 V eletrolítico, radial, Ø8 mm, passo 3,5 mm | `CP_Radial_D8.0mm_P3.50mm` | Entrada de 5V. |
 | C2, C3, C4, C5, C6 | 5 | 100 nF cerâmico, passo 5 mm | `C_Disc_D5.0mm_W2.5mm_P5.00mm` | Um por slot (C2 SNES, C3 Mega Drive), um no PIC (C4) e, na v. 1.2, dois extras no slot Mega Drive: C5 junto ao pino A31 e C6 junto ao A2 (5V). |
 | R3 a R14 | 12 | 0 Ω (fio) de fábrica; 47 a 100 Ω depois dos testes | `R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | Série das linhas de controle (D2 a D9, D14 a D17), em pé. `docs/v12-final.md`. |
-| D3 a D14 | 12 (DNP) | TVS 5 V ou zener 5,1 V, DO-35 | `D_DO-35_SOD27_P2.54mm_Vertical_CathodeUp` | **Não montar** por padrão. |
-| R15 | 1 (DNP) | 10 kΩ | idem R3 | Pull-up de `/VRES` (Open EverDrive). **Não montar.** |
 | TP1 a TP6 | 6 | Pontos de teste: pad de 2 mm, furo de 1 mm (`TestPoint_THTPad_D2.0mm_Drill1.0mm`) | só cobre | Na placa, sem peça: `5V`, `GND`, `/CE`, `/OE`, `/WE`, `/UWR`. Opcional: tira de pinos macho 1x6 de 2,54 mm (os furos ficam a 2,54 mm um do outro). Fora da BOM de compra. |
 
 ## Pinos e mecânica (sem símbolo no esquemático)
@@ -71,7 +69,6 @@ Peças opcionais a comprar a mais por placa:
 | LDO | LD1117V33 (TO-220) | 1 | v1.3 |
 | Q4 | IRF9540N (P-MOSFET, TO-220) | 1 | v1.3 |
 | Q5 | 2N7000 (TO-92) | 1 | v1.3 |
-| RN1 a RN5 | rede isolada de 8 resistores de 470 Ω, DIP-16 | 5 | v1.3 |
 | C (2) | 100 nF cerâmico e 10 µF/16 V eletrolítico (entrada e saída do LDO) | 2 | v1.3 |
 | R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | v1.3 |
 

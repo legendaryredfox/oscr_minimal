@@ -12,15 +12,15 @@ Fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de 
 - Q5 (2N7000) e 220 Ω seguram o `VCC_CART` em 3,3 V quando os sinais de 5 V injetam corrente.
 - 100 kΩ entre o gate do Q4 e `+5V_CART`: com o Mega em reset o Q4 fica aberto (3,3 V, o estado seguro de hardware). O comando do D18 passa por 1 kΩ.
 - Só o VCC dos slots com seletor e os capacitores deles ficam no `VCC_CART`; Si5351, PIC e pull-ups ficam no `+5V_CART`.
-- **Resistores em série:** redes DIP-16 de 470 Ω (pino i com o 17-i) nas linhas entre o Mega e os slots com seletor. Redes que também ligam outra peça (clock do Si5351, CIC, pull-ups, TVS) ficam sem resistor.
-- **J1 "TRAVA 3,3 V":** entre o gate do Q4 e `+5V_CART`; fechado, o Q4 nunca conduz e o 5 V fica impossível, mesmo com erro de software ou de GUI. É a única defesa independente do firmware. Opcional.
+- **Sem resistores em série (D140):** as redes DIP-16 de 470 Ω (RN) e os TVS DNP da `16_bits` saíram. As saídas do Mega vão direto aos slots, também no modo 3,3 V: o seletor só baixa o VCC do cartucho, os sinais continuam em 5 V. **Confira a tensão que o cartucho suporta antes de inserir**; um cartucho só de 3,3 V pode ser danificado. A proteção que fica é a do Arduino e do shield (fusível F1 e, na `16_bits`, os resistores série R3 a R14 das linhas de controle).
+- **J1 "TRAVA 3,3 V":** entre o gate do Q4 e `+5V_CART`; fechado, o Q4 nunca conduz e o 5 V fica impossível, mesmo com erro de software ou de GUI. É a única defesa independente do firmware contra 5 V no VCC do cartucho. Opcional.
 
 Placas com seletor: `megadrive`, `nes`, `famicom`, `famicom_nes`, `megadrive_sms` (v1.1) e `16_bits` (v1.3, slot Mega Drive). Sem seletor: `snes` (o SA-1 precisa de 5 V), os slots de 5 V da `16_and_8_bits` (o seletor ainda não foi roteado nela), `gb_gba` e `n64` (3,3 V).
 
 ## Firmware e programa do PC
 
 - Ambiente `SerialASCII_Volt` (`pio run -e SerialASCII_Volt -t upload` em `firmware/oscr`); as placas sem seletor usam `SerialASCII`.
-- Como o 5V nunca é cortado, **abrir a porta reinicia o Mega** e o seletor sobe em **3,3 V** (o estado seguro: um cartucho de 3,3 V no slot não recebe 5 V antes de o host escolher). Antes de um comando que precisa do cartucho, a CLI e a GUI passam a **5 V** (padrão dos flashcarts comuns, D138), a menos que o usuário tenha escolhido 3,3 V (`--voltage 3v3`, botão da GUI).
+- Como o 5V nunca é cortado, **abrir a porta reinicia o Mega** e o seletor sobe em **3,3 V** (o estado de VCC mais baixo: o cartucho não recebe 5 V no VCC antes de o host escolher; os sinais do Mega seguem em 5 V, ver acima). Antes de um comando que precisa do cartucho, a CLI e a GUI passam a **5 V** (padrão dos flashcarts comuns, D138), a menos que o usuário tenha escolhido 3,3 V (`--voltage 3v3`, botão da GUI).
 - Passar de 3,3 V (escolhido) para 5 V mostra um alerta e pede confirmação (`--allow-5v` em script). Falha de leitura nunca muda a tensão sozinha.
 - Protocolo: comando `VOLT` (`docs/referencia/protocolo.md`). CLI: `dumper voltage status|3v3|5v` e a opção `--voltage auto|3v3|5v`.
 
@@ -32,4 +32,4 @@ Placas com seletor: `megadrive`, `nes`, `famicom`, `famicom_nes`, `megadrive_sms
 
 ## Como foi gerado
 
-`tools/troca/`: `v138.py` (F1, J1, seletor e resistores em série a partir da v1.0), `sch_block.py` e `pcb_block.py` (esquemático e PCB), `route.py` e `finish.py` (Freerouting e acabamento), `sem_bloco.py` (retirou o bloco de troca das v1.1 já roteadas, D139, mantendo o roteamento: o Q1 virou um jumper de cobre), `verifica.sh` (DRC e ERC), `boards.json` (parâmetros por placa). `tools/check_netlist.py` lê o `d138.json` de cada versão.
+`tools/troca/`: `v138.py` (F1, J1, seletor e resistores em série a partir da v1.0; estes saíram em D140), `sch_block.py` e `pcb_block.py` (esquemático e PCB), `route.py` e `finish.py` (Freerouting e acabamento), `sem_bloco.py` (retirou o bloco de troca das v1.1 já roteadas, D139, mantendo o roteamento: o Q1 virou um jumper de cobre), `sem_rn.py` (retirou as redes RN e as peças DNP das v1.1 e da `16_bits` v1.3 já roteadas, D140: cada par de furos vira uma ponte de cobre achada por um roteador A* próprio, com trilha de 0,3 mm ou, nos espaços apertados, 0,2 mm; o que não coube fica aberto para fechar à mão), `verifica.sh` (DRC e ERC), `boards.json` (parâmetros por placa). `tools/check_netlist.py` lê o `d138.json` de cada versão.

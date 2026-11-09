@@ -138,6 +138,7 @@
 - **D137** Firmware: Master System, Game Gear e SG-1000 (pedido do usuário, 2026-11-08)
 - **D138** Seletor de tensão do cartucho (5 V padrão), fusível F1 e jumper J1 (pedido do usuário, 2026-11-08)
 - **D139** Sem desligamento do 5V por software (pedido do usuário, 2026-11-09)
+- **D140** Sem redes RN de 470 Ω nem peças DNP: foco em proteger o Arduino e o shield (pedido do usuário, 2026-11-09)
 <!-- /indice -->
 
 ## Fase 1 — referência e pinmap (2026-11-02)
@@ -1146,3 +1147,15 @@ Aplicadas as recomendações de `docs/historico/revisao-codigo.md` e `docs/histo
 - **Docs removidos.** `docs/referencia/bloco-troca.md` (o que sobrou está em `docs/referencia/seletor-tensao.md`), `docs/referencia/troca-de-cartucho.md`, `docs/planos/plano-chave-fisica.md`, `tools/troca/aplicar.sh`, `fechar.sh` e `docs.py`. As entradas D114 a D128 deste log citam esses arquivos e ficam como registro histórico.
 - **Silkscreen.** Saem "SEGURO TROCAR" e "5V LIGADO"; o aviso passa a "TROQUE O CARTUCHO COM O USB DESLIGADO".
 - **Nada montado nem testado.** O layout das placas roteadas por autoroteador continua para revisar no KiCad antes de encomendar.
+
+### D140 — Sem redes RN de 470 Ω nem peças DNP: foco em proteger o Arduino e o shield (pedido do usuário, 2026-11-09)
+
+- **Pedido.** Tirar os componentes DNP e as redes de resistores RN, com os componentes que ficassem sem função; manter os avisos ao usuário sobre a tensão que o cartucho suporta. O seletor de tensão 3,3 V/5 V (LDO, Q4, Q5, J1, R23 a R25, D18) **fica** (o usuário escolheu manter).
+- **O que saiu.** `16_bits` v1.3: as 5 redes RN1 a RN5, os 12 TVS D3 a D14 (DNP) e o R15 (pull-up de `/VRES`, DNP). `famicom`, `famicom_nes`, `nes`, `megadrive` e `megadrive_sms` v1.1: as redes RN (4 em três delas, 7 nas `megadrive*`). A v1.2 da `16_bits` está congelada e não muda (mantém o R15 DNP).
+- **Efeito elétrico.** As linhas entre o Mega e os slots com seletor voltam a ir direto (como antes do D138); os resistores série R3 a R14 da `16_bits` (linhas de controle) continuam. Em 3,3 V só o VCC do cartucho cai; os sinais do Mega seguem em 5 V. A proteção que sobra é a do Arduino e do shield (F1 e R3 a R14). Os avisos (`docs/referencia/seletor-tensao.md`, `componentes-opcionais.md`, `montagem.md` e READMEs por versão) mandam conferir a tensão que o cartucho suporta antes de inserir.
+- **Como foi feito.** `tools/troca/sem_rn.py` (esquemático: os rótulos `<rede>_S` voltam a `<rede>`, as RN e os DNP saem, o ERC aponta o que sobrou solto; PCB: cada par de furos da RN, pino i e 17-i, vira uma ponte de cobre). Como o roteamento passava pelo vão do DIP-16, a ponte reta nem sempre cabe: o script usa um roteador A* próprio (grade de 0,1 mm, duas camadas, via de 0,6 mm, folga de 0,2 mm do cobre, da borda e de vias da mesma rede), com trilha de 0,3 mm e, nos espaços apertados, grade de 0,05 mm e trilha de 0,2 mm; se algum par não achar caminho, refaz até 3 rodadas com os difíceis na frente. O Freerouting em modo incremental foi tentado (30 min) e não resolveu o que o A* não achou. O roteador escreveu dois bugs que foram corrigidos no caminho (janela de busca cortando trilhas e a folga da via menor que a da trilha); está em `sem_rn.py`.
+- **Verificação.** ERC 0 em todas; `check_netlist` OK em todas (`tools/check_netlist.py` perdeu a opção `--sem-tvs`, a conferência dos TVS e a regra "todo sinal do slot com seletor passa por resistor"; o R15 só é esperado se existir no esquemático); DRC sem erro novo em `famicom`, `megadrive` e `nes`.
+- **Ligações abertas para fechar à mão no KiCad** (as pontas soltas ficam nos furos onde estavam as RN, a 7,62 mm uma da outra): `16_bits` v1.3: `/A0` e `/A8` (mais as antigas `/A4` e `/D17`); `megadrive_sms` v1.1: `/D25`, `/D26`, `/D27`, `/D28` e `/D29`; `famicom_nes` v1.1: só a antiga (`+5V_CART`, C4 pino 1).
+- **Silkscreen.** O aviso "TVS 5V: NÃO MONTAR (D3-D14)" saiu da `16_bits` v1.3. A referência do F1, que ficava sobre o texto "FUSIVEL 5x20 500 mA" em todas as placas, foi movida para a direita do texto (`silk_overlap` zerado).
+- **Removido.** `tools/boards/16_bits/sem_tvs.py` (já aplicado à v1.2 congelada; o texto dele dizia que a v1.3 manteria os TVS).
+- **Nada montado nem testado.** As placas continuam sem encomenda; reveja o layout no KiCad antes de fabricar.
