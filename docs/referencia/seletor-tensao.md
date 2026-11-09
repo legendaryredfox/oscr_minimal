@@ -33,3 +33,14 @@ Placas com seletor: `megadrive`, `nes`, `famicom`, `famicom_nes`, `megadrive_sms
 ## Como foi gerado
 
 `tools/troca/`: `v138.py` (F1, J1, seletor e resistores em série a partir da v1.0; estes saíram em D140), `sch_block.py` e `pcb_block.py` (esquemático e PCB), `route.py` e `finish.py` (Freerouting e acabamento), `sem_bloco.py` (retirou o bloco de troca das v1.1 já roteadas, D139, mantendo o roteamento: o Q1 virou um jumper de cobre), `sem_rn.py` (retirou as redes RN e as peças DNP das v1.1 e da `16_bits` v1.3 já roteadas, D140: cada par de furos vira uma ponte de cobre achada por um roteador A* próprio, com trilha de 0,3 mm ou, nos espaços apertados, 0,2 mm; o que não coube fica aberto para fechar à mão), `verifica.sh` (DRC e ERC), `boards.json` (parâmetros por placa). `tools/check_netlist.py` lê o `d138.json` de cada versão.
+
+## Por que LDO + Q4 + Q5 e não o TPS2113 do OSCR (D147)
+
+O OSCR (módulo VSelect) usa o **TPS2113**, um chip que escolhe entre duas fontes de 5 V. Aqui ficamos com LDO + Q4 + Q5 por estes motivos:
+
+- **Só existe em SMD** (TSSOP-8, pitch 0,65 mm). O projeto é 100% THT (a única exceção é o slot do GBA). Soldar à mão é difícil, e a montagem na fábrica cobra taxa de setup e peça "estendida" na JLCPCB; o README do VSelect diz que não compensa para menos de 10 módulos.
+- **Ele não gera o 3,3 V**, só escolhe entre duas fontes. O LDO continuaria necessário.
+- **O custo da peça é parecido** com o do nosso conjunto (estimativa de memória, sem consulta de preço).
+
+Alternativas THT avaliadas e descartadas: relé de sinal DPDT (maior, tem bobina, mais caro), diodo-OR de Schottky (perde 0,3 a 0,5 V e não troca 3,3/5 V), chave analógica CD4066 (resistência de dezenas de ohms, alta demais para o VCC), chave SPDT ou jumper (manual; o J1 já cumpre esse papel) e módulo SMD pronto em header (peça extra). O que o TPS2113 teria a mais (comutação sem queda, limite de corrente ajustável) fica para uma versão futura, se valer o SMD.
+
