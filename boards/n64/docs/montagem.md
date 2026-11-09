@@ -78,5 +78,5 @@ Testes extras (multímetro, sem cartucho):
 
 <!-- d138 -->
 
-1. **F1** (ou o fio no lugar dele) entra junto com os componentes baixos: depois dos resistores e antes dos capacitores. Confira que não há curto entre o lado do 5 V do Mega e o lado dos slots depois dele.
-2. Teste antes de ligar: continuidade entre os dois furos do F1 (menos de 2 Ω), nenhuma entre 5 V e GND.
+1. **Suporte do F1** (clipes para fusível 5×20 mm, furo passante) entra com os componentes baixos, na faixa de 10 mm acrescentada à borda de baixo da placa; solde os 4 furos (as duas pernas de cada clipe). O fusível **não vai soldado**: encaixe um fusível de vidro 5×20 mm de 500 mA (ação rápida) nos clipes depois dos testes, e troque-o assim quando queimar.
+2. Teste antes de ligar, com o fusível encaixado: continuidade entre os dois clipes (menos de 2 Ω) e nenhuma entre 5 V e GND.

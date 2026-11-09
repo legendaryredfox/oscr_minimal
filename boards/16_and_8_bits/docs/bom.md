@@ -83,15 +83,8 @@ Peças opcionais a comprar a mais por placa:
 
 | Ref. | Peça | Qtd | Onde |
 |---|---|---|---|
-| F1 | PTC de furo passante 0,35 a 0,5 A (Bourns MF-RHT050) | 1 | todas as versões (v1.0 e v1.1) |
-| J1 | cabeçalho de 2 pinos de 2,54 mm e um jumper ("TRAVA 3,3 V") | 1 | v1.1 |
-| LDO | LD1117V33 (TO-220) | 1 | v1.1 |
-| Q4 | IRF9540N (P-MOSFET, TO-220) | 1 | v1.1 |
-| Q5 | 2N7000 (TO-92) | 1 | v1.1 |
-| RN1 a RN7 | rede isolada de 8 resistores de 470 Ω, DIP-16 | 7 | v1.1 |
-| C (2) | 100 nF cerâmico e 10 µF/16 V eletrolítico (entrada e saída do LDO) | 2 | v1.1 |
-| R (3) | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | v1.1 |
+| F1 | suporte de clipes para fusível 5×20 mm (Littelfuse série 100, 2 clipes) e fusível de vidro 5×20 mm de 500 mA, ação rápida | 1 + 1 (compre fusíveis de reserva) | todas as versões (v1.0) |
 
-**F1** (PTC de furo passante, Bourns MF-RHT050 ou equivalente de 0,35 a 0,5 A de retenção, passo de 5,1 mm), em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 e v1.1 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o F1, ponha um fio ou uma ponte de solda entre os dois furos dele**, senão a placa fica sem 5 V.
+**F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.
 
-Seletor 3,3 V/5 V nos slots NES, Famicom, Mega Drive (resto da placa sempre em 5 V). Preço aproximado das peças extras: menos de US$ 3 por placa (estimativa de varejo, não cotada).
+**Pendente:** a v1.1 desta placa ainda **não** tem o F1, o J1, o seletor de tensão nem os resistores em série (o Freerouting não conseguiu rotear a placa maior com o bloco de troca e o seletor). Só a v1.0 ganhou o fusível.
