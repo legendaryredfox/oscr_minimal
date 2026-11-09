@@ -14,11 +14,16 @@ Versão **v1.0** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
+| Proteção | F1: suporte de fusível 5×20 mm, 500 mA, em série com o 5 V dos slots (acrescentado em 2026-11-09, D144) |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho
 
 O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligamento por software foi retirado, D139). Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
+
+## F1 (D144)
+
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, de furo passante** (Littelfuse série 100 ou equivalente). Fica em série entre o 5 V do Mega e o `+5V_CART` (slots, Si5351, PIC, R2 e capacitores): um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. O fusível queimado se troca **sem solda**. **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar também serve). Limita corrente; não protege contra tensão errada. Posição: canto de cima, à direita do Si5351, sem aumentar a placa (108,1 × 86,1 mm). **As placas v1.0 já encomendadas em 2026-11-06 não têm o F1**; estes arquivos valem para uma nova encomenda.
 
 ## Particularidades desta versão
 
@@ -34,6 +39,7 @@ Antiga `rev2` (D97): alimentação em 0,8 mm, sem resistores série nem TVS nas 
 | D1 | LED 3mm | `LED_THT:LED_D3.0mm` | 1 |
 | FLG1,FLG2 | PWR_FLAG | `` | 2 |
 | MD1 | MD_Slot | `dumper:MD_Slot` | 1 |
+| F1 | Fusivel 5x20 500mA | `Fuse:Fuseholder_Littelfuse_100_series_5x20mm` | 1 |
 | R1 | 220R | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |
 | R2 | 1k | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |
 | SNES1 | SNES_Slot | `dumper:SNES_Slot` | 1 |

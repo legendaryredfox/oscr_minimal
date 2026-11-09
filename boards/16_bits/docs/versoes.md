@@ -11,11 +11,11 @@ Nenhuma versão tem botão de reset nem desligamento do 5V dos slots por softwar
 | Resistores série (0 Ω) nas 12 linhas de controle, `/CART` no D50, C5, C6, pontos de teste | não | sim | sim |
 | Pull-up de `/VRES` (R15, DNP) | não | sim | **não** (D140) |
 | TVS 5 V (DNP) nas 12 linhas de controle (D3 a D14) | não | **não** (D130) | **não** (D140) |
-| F1 (suporte de fusível 5×20 mm, D138) | **não** (a v1.0 já foi encomendada e não muda) | sim | sim |
+| F1 (suporte de fusível 5×20 mm, D138) | sim, acrescentado em 2026-11-09 (D144; a v1.0 encomendada em 2026-11-06 não tem) | sim | sim |
 | Seletor de tensão 3,3 V/5 V no slot Mega Drive e J1 (D138); sem resistores em série de 470 Ω (D140) | não | não | sim |
 | Botão de reset (SW1) | não | **não** | **não** |
 | RP2040 no lugar do PIC | não | não | **não** (só se validar em bancada, `docs/planos/placa-v1.3-rp2040.md`) |
-| Estado | gerbers de referência; a original foi encomendada em 2026-11-06 | nada encomendado | nada encomendado |
+| Estado | a original foi encomendada em 2026-11-06 sem F1; os arquivos agora têm o F1 (D144) | nada encomendado | nada encomendado |
 
 ## O que saiu da v1.2 (D128)
 
