@@ -101,8 +101,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var client by remember { mutableStateOf<OscrClient?>(null) }
     var transport by remember { mutableStateOf<Transport?>(null) }
     var info by remember { mutableStateOf<DeviceInfo?>(null) }
-    var powerSt by remember { mutableStateOf<PowerState?>(null) }       // estado completo do POWER (chave física, sensor do rail)
-    var powerOn by remember { mutableStateOf<Boolean?>(null) }          // 5V dos slots (placa com a chave de 5V); null = placa sem chave ou desconectado
+    var voltSt by remember { mutableStateOf<VoltState?>(null) }         // tensão dos slots (seletor 3,3 V/5 V, D138); null = desconectado
     var busy by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var db by remember { mutableStateOf<Database?>(null) }
@@ -195,33 +194,27 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else null
 
     fun dropConnection(msg: S? = S.NOT_CONNECTED) {
-        transport?.close(); client = null; transport = null; info = null; powerOn = null; powerSt = null
+        transport?.close(); client = null; transport = null; info = null; voltSt = null
         if (msg != null) say(t(msg))
     }
 
-    /** Placa com a chave de 5V: liga o 5V dos slots antes de uma ação que precisa do cartucho (o firmware começa desligado, D115). */
-    suspend fun ensurePowered(back: S) {
+    /** Placa com o seletor: a placa sobe em 3,3 V (estado seguro); antes de uma ação que precisa do cartucho o programa passa a 5 V (padrão, D138),
+     *  a menos que o usuário tenha escolhido 3,3 V. O 5V dos slots fica sempre ligado (D139). */
+    suspend fun ensureVoltage(back: S) {
         val c = client ?: return
-        if (info?.powerSwitch != true || powerOn == true) return
-        stage = S.STAGE_POWER_ON
-        val st = withContext(Dispatchers.IO) { c.power(Power.ON) }
-        powerOn = st.on; powerSt = st; say(t(S.POWER_ON_DONE)); stage = back; progress = 0f
-    }
-
-    /** Relê o estado do 5V (a chave física pode ter aberto e cortado sozinha, D119). Não faz nada sem chave ou desconectado. */
-    suspend fun refreshPower() {
-        val c = client ?: return
-        if (info?.powerSwitch != true) return
-        try { val st = withContext(Dispatchers.IO) { c.power(Power.STATUS) }; powerSt = st; powerOn = st.on } catch (_: Exception) {}
+        val st = voltSt ?: return
+        if (!st.voltageSelect || st.voltage != "3v3" || st.chosen) return
+        stage = S.STAGE_VOLT
+        voltSt = withContext(Dispatchers.IO) { c.voltage(Volt.V5V) }; stage = back; progress = 0f
     }
 
     fun run(stageKey: S, needsCart: Boolean = true, block: suspend () -> Unit) {
         scope.launch {
             busy = true; progress = 0f; speed = ""; stage = stageKey
-            try { if (needsCart && stageKey != S.STAGE_IDLE) ensurePowered(stageKey); block() } catch (e: Exception) {
+            try { if (needsCart && stageKey != S.STAGE_IDLE) ensureVoltage(stageKey); block() } catch (e: Exception) {
                 say(describeError(lang, e))
                 if ((e is ProtocolError && e.fail == Fail.DISCONNECTED) || transport?.isOpen == false) { dropConnection(null); say(t(S.STATUS_DISCONNECTED)) }
-            } finally { refreshPower(); busy = false; stage = null; speed = ""; slowNote = false }
+            } finally { busy = false; stage = null; speed = ""; slowNote = false }
         }
     }
 
@@ -282,8 +275,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     }
                     if (b != baud) { say(f(S.BAUD_FALLBACK, baud, b)); baud = b }
                     transport = tr2; client = c; info = i
-                    powerSt = if (i.powerSwitch) withContext(Dispatchers.IO) { c.power(Power.STATUS) } else null
-                    powerOn = powerSt?.on
+                    voltSt = if (i.voltageSelect) withContext(Dispatchers.IO) { c.voltage(Volt.STATUS) } else null
                     Prefs.port = port; Prefs.baud = baud; Prefs.firstRunDone = true; firstRun = false
                     say("${t(S.CONNECTED)}: ${t(S.DEVICE_INFO)} ${i.firmware}" + if (i.mock) " — ${t(S.MOCK_MODE)}" else "")
                     return@run
@@ -314,22 +306,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
-    /** Liga ou desliga o 5V dos slots (trocar o cartucho). Desligar solta os pinos e espera a descarga no firmware. */
-    fun actPower(on: Boolean) {
-        val c = client ?: return
-        run(if (on) S.STAGE_POWER_ON else S.STAGE_POWER_OFF, needsCart = false) {
-            val st = withContext(Dispatchers.IO) { c.power(if (on) Power.ON else Power.OFF) }
-            powerOn = st.on; powerSt = st
-            say(t(if (st.on) S.POWER_ON_DONE else S.POWER_OFF_DONE))
-        }
-    }
-
-    /** Seletor de tensão (D138): liga os slots em 3,3 V (`volt` = 3) ou 5 V (`volt` = 5). O firmware desliga, espera a descarga e liga na tensão nova. */
+    /** Seletor de tensão (D138): escolhe 3,3 V (`volt` = 3) ou 5 V (`volt` = 5). O firmware solta os pinos, troca e espera o rail assentar; o 5V não é cortado. */
     fun actVoltage(volt: Int) {
         val c = client ?: return
         run(S.STAGE_VOLT, needsCart = false) {
-            val st = withContext(Dispatchers.IO) { c.power(if (volt == 3) Power.ON_3V3 else Power.ON_5V) }
-            powerOn = st.on; powerSt = st
+            voltSt = withContext(Dispatchers.IO) { c.voltage(if (volt == 3) Volt.V3V3 else Volt.V5V) }
             say(t(if (volt == 3) S.VOLT_DONE_3V3 else S.VOLT_DONE_5V))
         }
     }
@@ -463,7 +444,6 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system) }
-            if (r.attempts > 1) say(f(S.DETECT_ATTEMPTS, r.attempts))                 // SNES: o firmware precisou do ciclo de energia do SA-1
             val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; 4 -> S.CART_BAD_HEADER; else -> S.CART_HW_ERROR }
             if (r.status == 0) detectedNames[system] = r.name
             say(t(st) + if (r.status == 0) " — ${t(S.TITLE_LABEL)}: ${r.name.ifEmpty { "?" }}, ${t(S.ROM_LABEL)}: ${r.romSize}, ${t(S.SAVE_LABEL)}: ${r.saveSize}" else "")
@@ -655,28 +635,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     // Cartão "Cartucho": sistema e as opções do sistema escolhido
     val cartridgeCard: @Composable () -> Unit = {
         SectionCard(t(S.CARTRIDGE_TITLE)) {
-            if (connected && info?.powerSwitch == true) {            // placa com a chave de 5V: trocar o cartucho sem desligar o USB
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(t(if (powerOn == true) S.POWER_STATUS_ON else S.POWER_STATUS_OFF), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
-                    OutlinedButton(enabled = !busy, onClick = { actPower(powerOn != true) }) { Text(t(if (powerOn == true) S.POWER_BTN_OFF else S.POWER_BTN_ON)) }
-                }
-                powerSt?.takeIf { it.voltageSelect }?.let { ps ->        // seletor 3,3 V/5 V (megadrive_sms v1.1 e demais v1.1): padrão 5 V; de 3,3 V para 5 V pede confirmação
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(t(S.VOLT_LABEL), style = MaterialTheme.typography.labelLarge)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            val is5 = ps.voltage == "5v"
-                            if (is5) Button(enabled = !busy, onClick = { actVoltage(5) }) { Text(t(S.VOLT_5V)) } else OutlinedButton(enabled = !busy, onClick = { voltReq = true }) { Text(t(S.VOLT_5V)) }
-                            if (!is5) Button(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) } else OutlinedButton(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) }
-                        }
-                        Text(t(S.VOLT_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            voltSt?.takeIf { connected && it.voltageSelect }?.let { vs ->        // seletor 3,3 V/5 V (v1.1 com seletor): a placa sobe em 3,3 V, o padrão é 5 V; de 3,3 V (escolhido) para 5 V pede confirmação
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(t(S.VOLT_LABEL), style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        val is5 = vs.voltage == "5v"
+                        if (is5) Button(enabled = !busy, onClick = { actVoltage(5) }) { Text(t(S.VOLT_5V)) } else OutlinedButton(enabled = !busy, onClick = { if (vs.chosen) voltReq = true else actVoltage(5) }) { Text(t(S.VOLT_5V)) }
+                        if (!is5) Button(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) } else OutlinedButton(enabled = !busy, onClick = { actVoltage(3) }) { Text(t(S.VOLT_3V3)) }
                     }
-                }
-                powerSt?.let { ps ->                                    // LEDs virtuais (5V presente e, com o sensor do rail, seguro trocar)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("●", color = if (ps.on) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline)
-                        if (ps.railLow != null) Text("●", color = if (ps.railLow == true) Color(0xFFF9A825) else MaterialTheme.colorScheme.outline)
-                        ps.railLow?.let { Text(t(if (it) S.POWER_RAIL_SAFE else S.POWER_RAIL_HOT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
-                    }
+                    Text(t(S.VOLT_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                 }
             }
             LabeledField(t(S.SYSTEM)) {

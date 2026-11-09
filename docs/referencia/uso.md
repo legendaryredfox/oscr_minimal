@@ -11,7 +11,7 @@ Este guia vale para a **GUI** (`gui/`, aba "Ajuda" também traz um resumo em por
    - `arduino-cli upload ...` ou `pio run -t upload`.
    - Para testar o cabo sem cartucho, grave a versão de teste (`-DOSCR_MOCK` / ambiente `megaatmega2560_mock`).
 3. Cabo USB-C **de dados**. No Linux: `sudo usermod -aG dialout $USER` e reinicie a sessão. Clone com CH340: driver no Windows/macOS.
-4. **Um cartucho por vez. Desligue o USB antes de trocar de cartucho** (placa com a chave de 5V e firmware `SerialASCII_Power`: `dumper power off`, ou o botão "Desligar para trocar o cartucho" da GUI, e depois `dumper power on`; veja `docs/referencia/troca-de-cartucho.md`). O slot GBA é 3,3 V: só cartuchos GBA nele, ou Game Boy/Color pelo adaptador.
+4. **Um cartucho por vez. Desligue o USB antes de trocar de cartucho** (a placa não corta o 5V por software: o desligamento por software foi retirado, D139). O slot GBA é 3,3 V: só cartuchos GBA nele, ou Game Boy/Color pelo adaptador.
 
 Interfaces:
 
@@ -129,7 +129,7 @@ Sem o PlatformIO: tenha o `avrdude` instalado e o `.hex` do firmware (compilado 
 ```
 python3 host/dumper.py firmware-flash --dry-run          # só mostra o comando e a versão atual
 python3 host/dumper.py firmware-flash                    # pergunta antes de gravar
-python3 host/dumper.py firmware-flash --env SerialASCII_PowerSense --yes   # placa com o bloco de troca (v1.1)
+python3 host/dumper.py firmware-flash --env SerialASCII_Volt --yes   # placa com o seletor de tensão 3,3 V/5 V (v1.1)
 ```
 
 O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` de novo por 12 s e mostra a versão nova. Feche a GUI e o monitor serial antes (a porta precisa estar livre). A CLI Kotlin tem o mesmo comando (`dumper firmware-flash`). Na GUI, o cartão **Firmware do Arduino** (abaixo de Conexão) faz o mesmo: escolha a porta, opcionalmente um `.hex`, clique em **Gravar firmware** e confirme; a GUI fecha a conexão antes, e depois você clica em Conectar. Nada foi testado em um Mega de verdade.
@@ -144,10 +144,10 @@ O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` 
 
 ## 6. Limites e segurança
 
-- Um cartucho por vez; USB desligado ao trocar (nas placas v1.1, `power off` e o LED amarelo aceso bastam).
+- Um cartucho por vez; USB desligado ao trocar o cartucho (o 5V dos slots não é cortado por software).
 - Nunca insira cartucho de outro console no slot GBA (3,3 V).
 - **Os slots de SNES, NES, Famicom e Mega Drive são de 5 V** (decisão do projeto); as placas v1.1 de Mega Drive, SMS, NES e Famicom têm o **seletor 3,3 V/5 V** (D138): liga em 5 V (flashcarts comuns precisam dele), `--voltage 3v3` (ou o botão da GUI) liga a 3,3 V, e passar de 3,3 V para 5 V mostra um alerta e pede confirmação (`--allow-5v` em script). Falha de leitura **não** muda a tensão. O jumper J1 "TRAVA 3,3 V" impede o 5 V por hardware; o fusível F1 (5×20 mm, 500 mA, no suporte de clipes) protege contra curto e se troca sem solda. Alguns flashcarts, cartuchos não licenciados e placas de repro aceitam só 3,3 V: 5 V pode danificá-los **e o dumper**. Confira a placa do cartucho antes; na dúvida, não insira. A GUI mostra esse aviso nesses sistemas (P-07, `docs/historico/pesquisa-comunidade.md`).
-- Com as placas v1.1 (D126): para trocar o cartucho, `dumper.py power off` e espere o LED amarelo; sem isso, desligue o USB.
+- Placas v1.1 com o seletor de tensão: a placa sobe em 3,3 V e o programa passa a 5 V antes da primeira leitura; para um cartucho marcado como 3,3 V use `--voltage 3v3`. Para trocar o cartucho, desligue o USB.
 - Cartuchos SNES com chip especial e jogos raros podem exigir leitura adicional (futura).
 - Gravar save é irreversível para o conteúdo anterior: faça backup antes.
 

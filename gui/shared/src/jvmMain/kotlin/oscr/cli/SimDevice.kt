@@ -7,13 +7,9 @@ import oscr.*
  * Dispositivo simulado e síncrono (modo MOCK, sistemas 0 e 255) para `--simulate` e testes: responde dentro de `write`, sem threads.
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
-class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val powerSwitch: Boolean = false,
-                 val railSensor: Boolean = false, val detectAttempts: Int = 1, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false) : Transport {
-    /** Com o sensor do rail a placa tem a chave de 5V em software (D123: não há chave física). */
-    private val hasPower get() = powerSwitch || railSensor
-    var powered = !(powerSwitch || railSensor)                  // placa com a chave de 5V: começa desligada e recusa comandos de cartucho (D115)
-    val powerCalls = mutableListOf<Int>()
-    var volt = 2                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): padrão 5 V; 3,3 V só quando pedido
+class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false) : Transport {
+    var volt = 1                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): sobe em 3,3 V (estado seguro); o host pede 5 V (padrão)
+    var chosen = false                                          // o usuário escolheu 3,3 V
     val voltCalls = mutableListOf<Int>()
     private val cartReadable get() = voltSelect && cartNeeds5v && volt == 2     // cartucho simulado que só lê a 5 V
     private val dec = FrameDecoder()
@@ -39,35 +35,25 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
         for (f in dec.feed(data)) { seq = f.seq; handle(f) }
     }
 
-    private fun pushPower() = push(Proto.T_POWER_RESP, byteArrayOf(if (powered) 1 else 0, ((if (railSensor) 2 else 0) or (if (voltSelect) 8 else 0)).toByte(),
-        0xFF.toByte(), (if (railSensor) (if (powered) 1 else 0) else 0xFF).toByte(), (if (voltSelect) volt else 0).toByte()))
+    private fun pushVolt() = push(Proto.T_VOLT_RESP, byteArrayOf(if (voltSelect) 1 else 0, (if (voltSelect) volt else 0).toByte(), if (chosen) 1 else 0))
 
     private fun handle(f: Frame) {
-        val needsCart = f.type in setOf(Proto.T_DETECT, Proto.T_DUMP_ROM, Proto.T_READ_SAVE, Proto.T_WRITE_SAVE, Proto.T_WRITE_ROM, Proto.T_ERASE)
         val first = f.payload.getOrNull(0)?.toInt()?.and(0xFF)
-        if (needsCart && first != null && first != 0 && first != 255 && hasPower && !powered) return error(12, "off")    // o MOCK não precisa de cartucho
         when (f.type) {
-            Proto.T_POWER -> {
+            Proto.T_VOLT -> {
                 val action = first ?: 9
                 when {
-                    action > Power.ON_5V -> error(4, "args")
-                    action == Power.ON_3V3 || action == Power.ON_5V -> {
-                        if (!(hasPower && voltSelect)) error(1, "sem seletor")
-                        else { volt = if (action == Power.ON_3V3) 1 else 2; voltCalls += volt; powered = true; pushPower() }
-                    }
-                    action == Power.OFF && !hasPower -> error(1, "sem chave")
-                    else -> {
-                        if (action != Power.STATUS && hasPower) { powerCalls += action; powered = action == Power.ON; if (!powered && voltSelect) volt = 2 }
-                        pushPower()
-                    }
+                    action > Volt.V5V -> error(4, "args")
+                    action != Volt.STATUS && !voltSelect -> error(1, "sem seletor")
+                    else -> { if (action != Volt.STATUS) { volt = action; chosen = action == Volt.V3V3; voltCalls += volt }; pushVolt() }
                 }
             }
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (hasPower) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (voltSelect) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
                 else if (cartReadable) push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 0) + le32(65536) + le32(0) + byteArrayOf(0, 8) + "SIM CART".encodeToByteArray())
-                else push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 1) + ByteArray(8) + byteArrayOf(0, 0) + (if (detectAttempts > 1) byteArrayOf(detectAttempts.toByte()) else ByteArray(0)))
+                else push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 1) + ByteArray(8) + byteArrayOf(0, 0))
             }
             Proto.T_DUMP_ROM, Proto.T_READ_SAVE -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0

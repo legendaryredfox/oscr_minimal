@@ -24,16 +24,17 @@ internal fun confirm5v(io: CliIo, a: Args) {
 }
 
 /**
- * Aplica `--voltage` e liga o 5V dos slots (se `turnOn`). Placa com seletor: padrão 5 V; `3v3` liga a 3,3 V (cartucho marcado como 3,3 V);
- * passar de 3,3 V para 5 V pede confirmação. Falha de leitura nunca muda a tensão sozinha. Devolve o estado depois.
+ * Aplica `--voltage`. A placa sobe em 3,3 V (estado seguro: abrir a porta reinicia o Mega); o padrão é 5 V; `3v3` usa 3,3 V (cartucho marcado como 3,3 V);
+ * passar de 3,3 V (escolhido) para 5 V pede confirmação. Falha de leitura nunca muda a tensão sozinha. Devolve o estado depois.
  */
-internal fun setVoltage(io: CliIo, a: Args, c: Conn, st: PowerState, turnOn: Boolean = true): PowerState {
+internal fun setVoltage(io: CliIo, a: Args, c: Conn, st: VoltState): VoltState {
     val mode = a.opts["voltage"] ?: "auto"
-    val sel = st.voltageSelect
-    if (mode == "3v3" && !sel) throw CliError("no_selector", Msg.t("volt.no_selector"), EXIT_USAGE)
-    if (sel && mode == "5v" && st.on && st.voltage == "3v3") { confirm5v(io, a); return c.client.power(Power.ON_5V) }
-    if (sel && mode == "3v3" && (!st.on || st.voltage != "3v3")) return c.client.power(Power.ON_3V3)
-    if (sel && mode == "5v" && !st.on) return c.client.power(Power.ON_5V)
-    if (turnOn && !st.on) return c.client.power(Power.ON)
+    if (mode == "3v3" && !st.voltageSelect) throw CliError("no_selector", Msg.t("volt.no_selector"), EXIT_USAGE)
+    if (!st.voltageSelect) return st
+    if (mode == "3v3") return if (st.voltage == "3v3" && st.chosen) st else c.client.voltage(Volt.V3V3)
+    if (st.voltage == "3v3" && (mode == "5v" || !st.chosen)) {            // padrão: 5 V. Só a escolha de 3,3 V do usuário pede confirmação
+        if (st.chosen) confirm5v(io, a)
+        return c.client.voltage(Volt.V5V)
+    }
     return st
 }

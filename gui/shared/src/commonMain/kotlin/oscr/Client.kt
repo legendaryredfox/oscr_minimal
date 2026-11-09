@@ -63,13 +63,11 @@ class OscrClient(
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
-    /** POWER: liga, desliga ou consulta o 5V dos slots ([Power]). Desligar espera a descarga no firmware (até ~2 s). */
-    fun power(action: Int = Power.STATUS): PowerState {
-        val p = request(Proto.T_POWER, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_POWER_RESP), longTimeoutMs).payload
-        if (p.size < 4) throw ProtocolError(Fail.SHORT_REPLY, "POWER_RESP")
-        val volt = if (p.size >= 5) p.u8(4) else 0                  // firmware sem seletor (antes da D138) não manda o 5º byte
-        return PowerState(p.u8(0) != 0, p.u8(1) and 2 != 0, p.u8(1) and 4 != 0, if (p.u8(3) == 0xFF) null else p.u8(3) == 0,
-            p.u8(1) and 8 != 0, when (volt) { 1 -> "3v3"; 2 -> "5v"; else -> "5v-fixed" })
+    /** VOLT: consulta ou escolhe a tensão dos slots ([Volt]); seletor 3,3 V/5 V (D138). O firmware espera o rail assentar (~0,2 s). */
+    fun voltage(action: Int = Volt.STATUS): VoltState {
+        val p = request(Proto.T_VOLT, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_VOLT_RESP), longTimeoutMs).payload
+        if (p.size < 3) throw ProtocolError(Fail.SHORT_REPLY, "VOLT_RESP")
+        return VoltState(p.u8(0) != 0, when (p.u8(1)) { 1 -> "3v3"; 2 -> "5v"; else -> "5v-fixed" }, p.u8(2) != 0)
     }
 
     fun detect(system: CartSystem, chip: Int = 0, prgKb: Int = 0, chrKb: Int = 0): DetectResult {
@@ -77,7 +75,7 @@ class OscrClient(
         val p = request(Proto.T_DETECT, byteArrayOf(system.id.toByte()) + opts, nextSeq(), setOf(Proto.T_DETECT_RESP), longTimeoutMs).payload
         if (p.size < 12) throw ProtocolError(Fail.SHORT_REPLY, "DETECT_RESP")
         return DetectResult(p.u8(0), p.u8(1), p.u32(2).toLong() and 0xFFFFFFFFL, p.u32(6).toLong() and 0xFFFFFFFFL,
-            p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString(), if (p.size > 12 + p.u8(11)) p.u8(12 + p.u8(11)) else 1)
+            p.u8(10), p.copyOfRange(12, minOf(p.size, 12 + p.u8(11))).decodeToString())
     }
 
     /** Pode ser chamado de outra thread (botão Cancelar): o `write` do transporte é sincronizado. */

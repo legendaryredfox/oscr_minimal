@@ -42,26 +42,26 @@ offset  tamanho  campo
 | `0x0A` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro (só em `WRITE_SAVE` e `WRITE_ROM`) |
 | `0x0C` | `ERASE` | `u8 sistema`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (as três últimas sempre enviadas). Só o sistema 7 (programador de flash genérico, D85): apaga o chip inteiro e responde `ACK` (offset 0) só no fim, ou `ERRO`. O host espera até 90 s e **nunca reenvia** (reenviar apagaria de novo). `INFO_RESP.flags` bit 4 diz que existe |
 | `0x0B` | `WRITE_ROM` | `u8 sistema`, `u32 tamanho`, `u16 bloco`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (os três últimos são sempre enviados). Grava a **ROM** em cartucho de flash (D77). Só no firmware em modo fluxo (fork do OSCR); `INFO_RESP.flags` bit 3 diz que existe |
-| `0x0D` | `POWER` | `u8 ação`: 0 desliga, 1 liga, 2 consulta o 5V dos slots (chave de 5V da placa, D115), 3 liga a 3,3 V e 4 liga a 5 V (placa com o seletor de tensão, D138; trocar de tensão com o slot ligado desliga, espera a descarga e liga; sem seletor devolve `0x0001`; ligar com 1 usa a tensão atual, 5 V depois de desligar). Responde `POWER_RESP`. Desligar solta todos os pinos de sinal, abre a chave e espera a descarga (até ~2 s; o host espera até 5 s). Sem a chave na placa (`INFO` flag bit 5 = 0), ligar e consultar respondem o estado (sempre ligado) e desligar devolve `0x0001`. Com a chave e o 5V desligado, `DETECT`, `DUMP_ROM`, `READ_SAVE`, `WRITE_SAVE`, `WRITE_ROM` e `ERASE` (qualquer sistema menos o `MOCK`) devolvem `0x000C` |
+| `0x0D` | `VOLT` | `u8 ação`: 0 consulta, 1 escolhe 3,3 V, 2 escolhe 5 V (placa com o seletor de tensão, D138). Responde `VOLT_RESP`. Escolher a tensão solta todos os pinos de sinal, troca o seletor e espera o rail assentar (~0,2 s). O 5V dos slots **nunca é cortado** (o desligamento por software foi retirado, D139). Sem seletor (`INFO` flag bit 5 = 0), a consulta responde 5 V fixo e escolher devolve `0x0001`. A placa sobe em 3,3 V (estado seguro do hardware: abrir a porta reinicia o Mega); o host pede 5 V antes de um comando de cartucho, a menos que o usuário tenha escolhido 3,3 V |
 
 ### Dispositivo → host
 
 | Tipo | Nome | Payload |
 |---|---|---|
 | `0x81` | `INFO_RESP` | `u8 versão_proto`, `u8 maior`, `u8 menor`, `u8 patch` (firmware), `u8 flags`, `u16 sistemas` (máscara de bits, bit = id do sistema), `u16 max_payload` (maior payload que o dispositivo aceita: 1024 no PC/simulador, 520 no AVR; o host usa bloco ≤ `max_payload` − 4; opcional para o host, o campo vem no fim) |
-| `0x82` | `DETECT_RESP` | ver seção 5. **Campo opcional depois do nome (D119):** `u8 tentativas` — só no SNES, só quando o firmware precisou de mais de uma leitura do cabeçalho por causa do ciclo de energia do SA-1 (placa com a chave de 5V); ausente = 1. Hosts antigos ignoram o byte |
+| `0x82` | `DETECT_RESP` | ver seção 5 |
 | `0x83` | `BEGIN` | `u8 tipo_dado` (1 = ROM, 2 = save), `u32 tamanho`, `u16 bloco`. **Tamanho `0xFFFFFFFF` = desconhecido** (firmware baseado nos núcleos do OSCR, modo fluxo: o tamanho real e o CRC32 vêm no `END`; o host aceita qualquer `offset` sequencial até o `END`, e a barra de progresso usa o tamanho do `DETECT`) |
 | `0x84` | `DATA` | `u32 offset` + dados (até `bloco` bytes) |
 | `0x85` | `END` | `u32 total`, `u32 crc32` do arquivo inteiro |
 | `0x86` | `ACK` | `u32 offset` (confirma um pedido ou um bloco de `WRITE_SAVE`) |
 | `0x87` | `ERRO` | `u16 código`, `u8 n`, `n` bytes de texto ASCII (diagnóstico, não traduzido) |
 | `0x88` | `PROGRESSO` | `u32 offset`, `u32 total` (opcional, a cada ~1 s sem `DATA`) |
-| `0x89` | `POWER_RESP` | `u8 estado` (1 = 5V ligado), `u8 recursos` (bit 0 reservado: era a chave física, D123; bit 1 sensor do rail no D53, bit 2 descarga forçada Q2, bit 3 a placa tem o seletor de tensão, D138), `u8 chave` (reservado, sempre `0xFF`: não há chave física, D123), `u8 rail` (0 baixo = seguro trocar, 1 alto, `0xFF` sem sensor). Placa só com o Q1 (v1.2 da `16_bits`): recursos 0, chave e rail `0xFF`. Um 5º byte opcional dá a tensão: 0 fixa em 5 V (sem seletor), 1 = 3,3 V, 2 = 5 V; firmware antigo manda só 4 bytes (D138). Com a chave física a flag `INFO` bit 5 também vale 1 (D119) |
+| `0x89` | `VOLT_RESP` | `u8 seletor` (1 = a placa tem o seletor de tensão, D138), `u8 tensão` (0 fixa em 5 V sem seletor, 1 = 3,3 V, 2 = 5 V), `u8 escolhida` (1 = o usuário escolheu 3,3 V; a placa sobe em 3,3 V sem escolha, e só a escolha explícita exige confirmação do host para subir a 5 V) |
 
 `seq` do host é livre (incremente a cada pedido). O dispositivo repete o `seq` do pedido em todas as respostas daquele pedido (`DATA` do mesmo fluxo repete o `seq` do `DUMP_ROM`/`READ_SAVE`).
 
 ### Flags de `INFO_RESP`
-bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); bit 3: aceita `WRITE_ROM` (D77); bit 5: a placa tem a chave de 5V dos slots (`POWER`; o firmware começa com o 5V desligado, D115); bit 4: tem o programador de flash genérico (sistema 7 e `ERASE`, D85); demais: 0.
+bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); bit 3: aceita `WRITE_ROM` (D77); bit 5: a placa tem o seletor de tensão 3,3 V/5 V (`VOLT`, D138); bit 4: tem o programador de flash genérico (sistema 7 e `ERASE`, D85); demais: 0.
 
 ## 4. Sistemas
 
@@ -188,7 +188,7 @@ O dispositivo só grava na memória do cartucho **depois** do `END` com CRC32 co
 | 0x0009 | abortado |
 | 0x000A | cartucho não tem save |
 | 0x000B | chip de flash não reconhecido (`WRITE_ROM`): nada foi gravado |
-| 0x000C | cartucho desligado: a placa tem a chave de 5V e o 5V dos slots está cortado (`POWER`). Com texto `off` (comando de cartucho com o 5V desligado) |
+| 0x000C | reservado (era `cartucho desligado`, retirado em D139: o 5V dos slots fica sempre ligado) |
 
 ## 9. Vetores de teste
 

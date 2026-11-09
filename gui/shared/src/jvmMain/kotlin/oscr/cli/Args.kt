@@ -6,6 +6,7 @@ import oscr.*
 /** Interpretação dos argumentos da linha de comando. */
 internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: Set<String>, val positional: List<String> = emptyList()) {
     val json get() = "json" in flags
+    fun withOpt(name: String, value: String) = Args(cmd, opts + (name to value), flags, positional)
     fun int(name: String): Int {
         val v = opts[name] ?: return 0
         return v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
@@ -13,9 +14,9 @@ internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: 
 }
 
 internal val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
-internal val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369", "bus", "flash-kb", "color", "power", "voltage", "hex", "env", "avrdude", "wait")
+internal val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369", "bus", "flash-kb", "color", "voltage", "hex", "env", "avrdude", "wait")
 internal val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "flash-id", "raw", "twice", "help", "version", "dry-run", "allow-5v")
-internal val COMMANDS = setOf("ports", "power", "firmware-flash", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write")
+internal val COMMANDS = setOf("ports", "voltage", "firmware-flash", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write")
 internal val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
     "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
 
@@ -43,7 +44,7 @@ internal fun parseArgs(argv: List<String>): Args {
                 opts[VALUED.getValue(a[1].toString())] = argv.getOrNull(i++) ?: throw CliError("usage", Msg.t("args.short_needs_value", "opt" to a), EXIT_USAGE)
             a.startsWith("-") && a.length > 1 -> throw CliError("usage", Msg.t("args.unknown_opt", "opt" to a), EXIT_USAGE)
             cmd == null -> cmd = a
-            cmd == "identify" || cmd == "search" || cmd == "power" -> positional += a
+            cmd == "identify" || cmd == "search" || cmd == "voltage" -> positional += a
             else -> throw CliError("usage", Msg.t("args.unexpected", "arg" to a), EXIT_USAGE)
         }
     }

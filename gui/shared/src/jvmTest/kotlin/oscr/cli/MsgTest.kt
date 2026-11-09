@@ -7,7 +7,7 @@ import kotlin.test.*
 class MsgTest {
     private fun run(env: Map<String, String> = emptyMap(), vararg argv: String): Triple<Int, String, String> {
         val out = StringBuilder(); val err = StringBuilder()
-        val io = CliIo({ out.appendLine(it) }, { err.appendLine(it) }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".", env = { env[it] }, simPower = true)
+        val io = CliIo({ out.appendLine(it) }, { err.appendLine(it) }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".", env = { env[it] })
         return Triple(Cli.run(argv.toList(), io), out.toString().trim(), err.toString())
     }
 
@@ -37,19 +37,19 @@ class MsgTest {
     }
 
     @Test fun erroDeUsoMudaDeTextoMasNaoDeKindNemDeCodigo() {
-        val (c1, o1, _) = run(emptyMap(), "--json", "--lang", "en", "power")
-        val (c2, o2, _) = run(emptyMap(), "--json", "--lang", "pt-BR", "power")
-        val (c3, o3, _) = run(mapOf("OSCR_LANG" to "ru"), "--json", "power")
+        val (c1, o1, _) = run(emptyMap(), "--json", "--lang", "en", "voltage")
+        val (c2, o2, _) = run(emptyMap(), "--json", "--lang", "pt-BR", "voltage")
+        val (c3, o3, _) = run(mapOf("OSCR_LANG" to "ru"), "--json", "voltage")
         assertEquals(64, c1); assertEquals(64, c2); assertEquals(64, c3)
         assertTrue("\"kind\":\"usage\"" in o1 && "\"kind\":\"usage\"" in o2 && "\"kind\":\"usage\"" in o3)
-        assertTrue("power needs one action" in o1); assertTrue("power precisa de uma ação" in o2); assertTrue("power требует" in o3)
+        assertTrue("voltage needs one action" in o1); assertTrue("voltage precisa de uma ação" in o2); assertTrue("voltage требует" in o3)
     }
 
-    @Test fun powerEFirmwareEmOutrosIdiomas() {
-        val (_, pt, _) = run(emptyMap(), "--lang", "pt", "--simulate", "power", "status")
-        assertTrue("5V dos slots" in pt, pt)
-        val (_, zh, _) = run(emptyMap(), "--lang", "zh", "--simulate", "power", "status")
-        assertTrue("5V" in zh && "插槽" in zh, zh)
+    @Test fun voltageEFirmwareEmOutrosIdiomas() {
+        val (_, pt, _) = run(emptyMap(), "--lang", "pt", "--simulate", "voltage", "status")
+        assertTrue("tensão do slot" in pt, pt)
+        val (_, zh, _) = run(emptyMap(), "--lang", "zh", "--simulate", "voltage", "status")
+        assertTrue("5 V" in zh && "插槽" in zh, zh)
         val (c, o, _) = run(emptyMap(), "--lang", "pt-BR", "firmware-flash", "--hex", "/nao/existe.hex", "--json")
         assertEquals(64, c); assertTrue("\"kind\":\"no_hex\"" in o && "arquivo de firmware não encontrado" in o, o)
     }

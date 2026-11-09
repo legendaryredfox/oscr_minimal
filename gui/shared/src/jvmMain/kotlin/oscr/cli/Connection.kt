@@ -7,14 +7,14 @@ import oscr.*
 internal class Conn(val client: OscrClient, val transport: Transport, val info: DeviceInfo)
 
 /**
- * Abre a porta (ou o simulador), faz INFO e, em placa com a chave de 5V, liga o 5V dos slots (`--power auto`, o padrão).
- * `needCart = false` (info, power) nunca mexe no 5V; com `--power keep` o 5V fica como está.
+ * Abre a porta (ou o simulador), faz INFO e, antes de um comando de cartucho, ajusta a tensão do seletor 3,3 V/5 V (D138; placa sem seletor: só recusa `--voltage 3v3`).
+ * O 5V dos slots fica sempre ligado (D139). `needCart = false` (info, voltage) nunca mexe na tensão.
  */
 internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
     val c = open(io, a)
-    if (needCart && c.info.powerSwitch && a.opts["power"] != "keep") {
+    if (needCart) {
         try {
-            setVoltage(io, a, c, c.client.power(Power.STATUS))
+            setVoltage(io, a, c, c.client.voltage(Volt.STATUS))
         } catch (e: Throwable) { c.transport.close(); throw e }
     }
     return c
@@ -22,7 +22,7 @@ internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
 
 private fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(powerSwitch = io.simPower, railSensor = io.simSense, detectAttempts = if (io.simSense) 3 else 1, voltSelect = io.simVolt, cartNeeds5v = io.simCart5v)
+        val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v)
         val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }

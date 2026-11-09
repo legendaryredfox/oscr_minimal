@@ -7,11 +7,11 @@ object Proto {
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
-    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_POWER = 0x0D; const val T_ACK = 0x06
+    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A
     const val T_INFO_RESP = 0x81; const val T_DETECT_RESP = 0x82; const val T_BEGIN = 0x83
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
-    const val T_PROGRESSO = 0x88; const val T_POWER_RESP = 0x89
+    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89
     const val KIND_ROM = 1; const val KIND_SAVE = 2
     /** Maior leitura aceita (GBA: 32 MB). Acima disso o BEGIN é tratado como defeito. */
     const val MAX_STREAM = 64 shl 20
@@ -93,19 +93,18 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     val si5351 get() = flags and 2 != 0
     val writeRom get() = flags and 8 != 0
     val flashProg get() = flags and 16 != 0
-    /** Placa com a chave de 5V dos slots (D115): o firmware começa desligado e recusa comandos de cartucho até o POWER ligar. */
-    val powerSwitch get() = flags and 32 != 0
+    /** Placa com o seletor de tensão 3,3 V/5 V (D138). O 5V dos slots fica sempre ligado (D139). */
+    val voltageSelect get() = flags and 32 != 0
 }
 
-/** Ações do POWER. */
-object Power { const val OFF = 0; const val ON = 1; const val STATUS = 2; const val ON_3V3 = 3; const val ON_5V = 4 }   // 3 e 4: liga na tensão escolhida (seletor 3,3 V/5 V, D138)
+/** Ações do VOLT. */
+object Volt { const val STATUS = 0; const val V3V3 = 1; const val V5V = 2 }
 
-/** POWER_RESP. `railLow` (rail abaixo de ~2 V: seguro trocar) é null sem o sensor. O byte 2 da resposta é reservado (era a chave física, D123). */
-data class PowerState(val on: Boolean, val railSensor: Boolean, val forcedDischarge: Boolean, val railLow: Boolean?,
-                      val voltageSelect: Boolean = false, val voltage: String = "5v-fixed")     // voltage: "3v3", "5v" ou "5v-fixed" (placa sem seletor)
+/** VOLT_RESP (D138). `voltage`: "3v3", "5v" ou "5v-fixed" (placa sem seletor). `chosen`: o usuário escolheu 3,3 V (a placa sobe em 3,3 V sem ninguém ter escolhido;
+ *  só a escolha explícita exige confirmação para subir a 5 V). */
+data class VoltState(val voltageSelect: Boolean = false, val voltage: String = "5v-fixed", val chosen: Boolean = false)
 
-/** `attempts`: leituras do cabeçalho do SNES feitas pelo firmware (> 1 = usou o ciclo de energia do SA-1, D119); 1 se o firmware não diz. */
-data class DetectResult(val system: Int, val status: Int, val romSize: Long, val saveSize: Long, val saveType: Int, val name: String, val attempts: Int = 1)
+data class DetectResult(val system: Int, val status: Int, val romSize: Long, val saveSize: Long, val saveType: Int, val name: String)
 
 class DumpResult(val data: ByteArray, val crc32: Int, val kind: Int) {
     val crcHex get() = (crc32.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')

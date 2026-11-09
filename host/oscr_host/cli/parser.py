@@ -16,7 +16,7 @@ from .cmd_dump import cmd_dump
 from .cmd_firmware import DEFAULT_ENV, cmd_firmware_flash
 from .cmd_flash import cmd_flash_blank, cmd_flash_erase, cmd_flash_id, cmd_flash_read, cmd_flash_write
 from .cmd_info import cmd_errors, cmd_info, cmd_ports, cmd_systems
-from .cmd_power import cmd_power
+from .cmd_voltage import cmd_voltage
 from .cmd_rom import cmd_rom_write
 from .cmd_save import cmd_save_read, cmd_save_write
 from .errors import EXIT_USAGE
@@ -63,8 +63,6 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
                    help=H("json"))
     p.add_argument("--color", choices=("auto", "always", "never"), default=d("auto"),
                    help=H("color"))
-    p.add_argument("--power", choices=("auto", "keep"), default=d("auto"),
-                   help=H("power"))
     p.add_argument("--voltage", choices=("auto", "3v3", "5v"), default=d("auto"), help=H("voltage"))
     p.add_argument("--allow-5v", action="store_true", default=d(False), help=H("allow_5v"))
     p.add_argument("--lang", default=d(None), type=_lang_arg, metavar="LANG",
@@ -78,7 +76,7 @@ def _epilog() -> str:
   dumper --json detect -s snes
   dumper dump -s snes -o jogo --json --progress jsonl
   dumper save-write -s snes -i jogo.sav --yes --json
-  dumper power off            """ + H("epilog_power") + """
+  dumper voltage 3v3          """ + H("epilog_volt") + """
   dumper --simulate --json systems
 """ + H("epilog_guide"))
 
@@ -108,8 +106,8 @@ def build_parser() -> argparse.ArgumentParser:
     add("systems", cmd_systems, H("cmd_systems"), system=False)
     add("errors", cmd_errors, H("cmd_errors"), system=False)
     add("info", cmd_info, H("cmd_info"), system=False)
-    pwp = add("power", cmd_power, H("cmd_power"), system=False)
-    pwp.add_argument("action", choices=("on", "off", "status"), help=H("power_action"))
+    vlp = add("voltage", cmd_voltage, H("cmd_voltage"), system=False)
+    vlp.add_argument("action", choices=("status", "3v3", "5v"), help=H("volt_action"))
     fw = add("firmware-flash", cmd_firmware_flash, H("cmd_firmware_flash"), system=False)
     fw.add_argument("--hex", help=H("fw_hex"))
     fw.add_argument("--env", default=DEFAULT_ENV, help=H("fw_env", envs=H("fw_env_list")))

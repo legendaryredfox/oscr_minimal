@@ -43,8 +43,8 @@ def test_detect_so_manda_o_adaptador_nos_sistemas_sega(monkeypatch, capsys):
     chamadas = []
 
     class FakeClient:
-        def power(self, action=2):                                        # placa sem seletor: o detect não oferece 5 V
-            return {"on": True, "voltage_select": False, "voltage": "5v-fixed"}
+        def voltage(self, action=0):                                        # placa sem seletor: o detect não oferece 5 V
+            return {"voltage_select": False, "voltage": "5v-fixed", "chosen": False}
 
         def detect(self, system, chip=0, prg_kb=0, chr_kb=0):
             chamadas.append((system, chip))
@@ -54,7 +54,7 @@ def test_detect_so_manda_o_adaptador_nos_sistemas_sega(monkeypatch, capsys):
         def close(self):
             pass
 
-    monkeypatch.setattr(CD.common, "connect", lambda args: (FakeClient(), FakeT(), {"power_switch": False}))
+    monkeypatch.setattr(CD.common, "connect", lambda args: (FakeClient(), FakeT(), {"voltage_select": False}))
     p = build_parser()
     for s, esperado in (("sms", 2), ("gg", 2), ("sg1000", 2), ("snes", 0), ("md", 0)):
         a = p.parse_args(["detect", "-s", s, "--mapper", "2"])

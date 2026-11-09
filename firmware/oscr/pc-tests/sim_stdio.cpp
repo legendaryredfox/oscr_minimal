@@ -67,20 +67,20 @@ struct StreamMock : oscr::MockBackend {
   }
 };
 
-// Backend com a chave de 5V (D115): começa desligado, SNES e MOCK. Uso: sim_stdio power
-struct PowerMock : oscr::MockBackend {
-  bool on = false;
+// Backend com o seletor de tensão 3,3 V/5 V (D138): SNES e MOCK. Uso: sim_stdio volt
+struct VoltMock : oscr::MockBackend {
+  uint8_t volt = 2;
   bool supports(uint8_t s) override { return s == 1 || MockBackend::supports(s); }
-  bool power_switch() override { return true; }
-  bool cart_powered() override { return on; }
-  bool cart_power(bool v, uint16_t&) override { usleep(20000); on = v; return true; }   // "espera a descarga"
+  bool volt_select() override { return true; }
+  bool cart_voltage(uint8_t v, uint16_t&) override { usleep(20000); volt = v; return true; }   // "espera o rail assentar"
+  void volt_info(oscr::VoltInfo& p) override { p.select = true; p.volt = volt; }
 };
 
 int main(int argc, char** argv) {
   static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
-  static oscr::MockBackend plain; static StreamMock streamed; static PowerMock powered;
+  static oscr::MockBackend plain; static StreamMock streamed; static VoltMock voltage;
   oscr::Backend& be = (argc > 1 && !strcmp(argv[1], "stream")) ? static_cast<oscr::Backend&>(streamed)
-                    : (argc > 1 && !strcmp(argv[1], "power")) ? static_cast<oscr::Backend&>(powered) : static_cast<oscr::Backend&>(plain);
+                    : (argc > 1 && !strcmp(argv[1], "volt")) ? static_cast<oscr::Backend&>(voltage) : static_cast<oscr::Backend&>(plain);
   oscr::Session s(oscr::Io{nullptr, rd, wr, now}, be, rx, sizeof rx, tx, sizeof tx);
   for (;;) {
     struct pollfd p = {0, POLLIN, 0};

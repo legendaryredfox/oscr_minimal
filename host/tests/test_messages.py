@@ -49,7 +49,7 @@ def test_json_so_muda_o_texto_nao_as_chaves(capsys):
     shapes, kinds = set(), set()
     textos = set()
     for lang in LANGS:
-        code, out, _ = _run(capsys, "--json", "--lang", lang, "--simulate", "detect", "-s", "snes", "--power", "keep", "-p", "/dev/x")
+        code, out, _ = _run(capsys, "--json", "--lang", lang, "--simulate", "detect", "-s", "snes", "-p", "/dev/x")
         # sem cartucho no simulador: o detect sai com 2; o importante é a forma do JSON
         r = json.loads(out)
         shapes.add(tuple(sorted(r))); kinds.add(code)
@@ -73,18 +73,18 @@ def test_errors_traduz_e_mantem_os_codigos(capsys):
 
 
 def test_erro_do_dispositivo_em_ingles(capsys):
-    code, out, _ = _run(capsys, "--json", "--lang", "en", "--simulate", "detect", "-s", "snes", "--power", "keep")
+    code, out, _ = _run(capsys, "--json", "--lang", "en", "--simulate", "detect", "-s", "snes")
     r = json.loads(out)
     assert code == 2 and r["status"] == 1 and r["status_text"] == "no cartridge"       # o código e o número de status não mudam
-    _, out, _ = _run(capsys, "--json", "--lang", "zh", "--simulate", "detect", "-s", "snes", "--power", "keep")
+    _, out, _ = _run(capsys, "--json", "--lang", "zh", "--simulate", "detect", "-s", "snes")
     assert json.loads(out)["status_text"] == "没有卡带"
 
 
-def test_power_em_ingles_e_pt(capsys):
-    _, out, _ = _run(capsys, "--lang", "en", "--simulate", "power", "status")
-    assert out.splitlines()[0] == "slots' 5V: on"
-    _, out, _ = _run(capsys, "--simulate", "power", "status")
-    assert out.splitlines()[0] == "5V dos slots: ligado"
+def test_voltage_em_ingles_e_pt(capsys):
+    _, out, _ = _run(capsys, "--lang", "en", "--simulate", "voltage", "status")
+    assert out.splitlines()[0] == "slot voltage: fixed 5 V (board without selector)"
+    _, out, _ = _run(capsys, "--simulate", "voltage", "status")
+    assert out.splitlines()[0] == "tensão do slot: 5 V fixo (placa sem seletor)"
 
 
 def test_idioma_invalido_e_erro_de_uso(capsys):
@@ -155,10 +155,10 @@ def test_problema_de_imagem_traduzido(capsys, tmp_path):
 
 
 def test_help_em_cada_idioma(capsys):
-    esperado = {"pt-BR": "liga, desliga ou consulta o 5V", "en": "turn the slots' 5V on or off", "ru": "включить, выключить", "zh-CN": "接通、断开或查询插槽 5V"}
+    esperado = {"pt-BR": "consulta ou escolhe a tensão do slot", "en": "query or choose the slot voltage", "ru": "узнать или выбрать напряжение слота", "zh-CN": "查询或选择插槽电压"}
     for lang, trecho in esperado.items():
         with pytest.raises(SystemExit) as e:
-            main(["--lang", lang, "power", "--help"])
+            main(["--lang", lang, "voltage", "--help"])
         assert e.value.code == 0
         assert trecho in capsys.readouterr().out, lang
     with pytest.raises(SystemExit):

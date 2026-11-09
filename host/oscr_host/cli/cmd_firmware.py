@@ -21,8 +21,7 @@ from .output import emit, progress
 
 REPO = Path(__file__).resolve().parents[3]
 DEFAULT_ENV = "SerialASCII"
-ENV_HELP = ("SerialASCII (padrão), SerialASCII_Power (placa com a chave de 5V sem sensor) ou SerialASCII_PowerSense "
-            "(placas v1.1 e 16_bits v1.3, com o bloco de troca)")
+ENV_HELP = "SerialASCII (padrão) ou SerialASCII_Volt (placas com o seletor de tensão 3,3 V/5 V)"
 BOOTLOADER_BAUD = 115_200                                     # bootloader do Mega 2560 (wiring/STK500v2)
 _PCT = re.compile(r"(Writing|Reading)\s*\|[# ]*\|\s*(\d+)%")
 

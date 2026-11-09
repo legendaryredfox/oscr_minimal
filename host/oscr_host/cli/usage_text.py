@@ -57,9 +57,8 @@ options (accepted before or after the command):
   --twice              dump: read the ROM twice and compare; if they differ, write both reads (NAME.leitura1 and NAME.leitura2, as in the Python CLI) and exit with an error (kind mismatch)
   --flash-id           detect -s md: also identify the cartridge's flash chip (the probe writes ID commands to the cartridge; mask ROM ignores them)
   --color MODE         auto (default: only in a terminal, respects NO_COLOR), always or never: colours and ASCII art; --json never has them
-  --power MODE         power-switch boards: auto (default: turn the slots' 5V on before the command and keep it on) or keep (do not touch the 5V)
   --hex FILE           firmware-flash: the firmware .hex (default: env OSCR_FIRMWARE_HEX or firmware/oscr/.pio/build/<env>/firmware.hex)
-  --env NAME           firmware-flash: PlatformIO environment the .hex comes from (default SerialASCII; SerialASCII_Power, SerialASCII_PowerSense)
+  --env NAME           firmware-flash: PlatformIO environment the .hex comes from (default SerialASCII; SerialASCII_Volt)
   --avrdude PATH       firmware-flash: avrdude to use (default: env AVRDUDE, PATH or PlatformIO's)
   --wait S             firmware-flash: seconds waiting for the device to answer INFO after flashing (default 12)
   --dry-run            firmware-flash: only show the avrdude command and the current firmware version
@@ -126,9 +125,8 @@ opções (aceitas antes ou depois do comando):
   --twice              dump: lê a ROM duas vezes e compara; se diferirem, grava as duas leituras (NOME.leitura1 e NOME.leitura2, como na CLI Python) e sai com erro (kind mismatch)
   --flash-id           detect -s md: identifica também o chip de flash do cartucho (a sonda grava comandos de ID no cartucho; ROM de máscara ignora)
   --color MODO         auto (padrão: só em terminal, respeita NO_COLOR), always ou never: cores e arte ASCII; --json nunca tem
-  --power MODO         placas com chave de energia: auto (padrão: liga o 5V dos slots antes do comando e o mantém ligado) ou keep (não mexe no 5V)
   --hex ARQ            firmware-flash: o .hex do firmware (padrão: variável OSCR_FIRMWARE_HEX ou firmware/oscr/.pio/build/<env>/firmware.hex)
-  --env NOME           firmware-flash: ambiente do PlatformIO de onde vem o .hex (padrão SerialASCII; SerialASCII_Power, SerialASCII_PowerSense)
+  --env NOME           firmware-flash: ambiente do PlatformIO de onde vem o .hex (padrão SerialASCII; SerialASCII_Volt)
   --avrdude CAMINHO    firmware-flash: avrdude a usar (padrão: variável AVRDUDE, PATH ou o do PlatformIO)
   --wait S             firmware-flash: segundos esperando o dispositivo responder ao INFO depois da gravação (padrão 12)
   --dry-run            firmware-flash: só mostra o comando do avrdude e a versão atual do firmware
@@ -195,9 +193,8 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --twice              dump: прочитать ROM дважды и сравнить; если различаются, записать оба чтения (ИМЯ.leitura1 и ИМЯ.leitura2, как в CLI на Python) и выйти с ошибкой (kind mismatch)
   --flash-id           detect -s md: также определить flash-микросхему картриджа (зонд записывает в картридж команды ID; масочное ROM их игнорирует)
   --color РЕЖИМ        auto (по умолчанию: только в терминале, учитывает NO_COLOR), always или never: цвета и ASCII-графика; в --json их нет никогда
-  --power РЕЖИМ        платы с выключателем питания: auto (по умолчанию: включает 5V слотов перед командой и оставляет включённым) или keep (5V не трогать)
   --hex ФАЙЛ           firmware-flash: .hex прошивки (по умолчанию: переменная OSCR_FIRMWARE_HEX или firmware/oscr/.pio/build/<env>/firmware.hex)
-  --env ИМЯ            firmware-flash: окружение PlatformIO, откуда берётся .hex (по умолчанию SerialASCII; SerialASCII_Power, SerialASCII_PowerSense)
+  --env ИМЯ            firmware-flash: окружение PlatformIO, откуда берётся .hex (по умолчанию SerialASCII; SerialASCII_Volt)
   --avrdude ПУТЬ       firmware-flash: какой avrdude использовать (по умолчанию: переменная AVRDUDE, PATH или из PlatformIO)
   --wait S             firmware-flash: сколько секунд ждать ответа устройства на INFO после записи (по умолчанию 12)
   --dry-run            firmware-flash: только показать команду avrdude и текущую версию прошивки
@@ -264,9 +261,8 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --twice              dump：读取 ROM 两次并比较；若不同，则写出两次读取的结果（名称.leitura1 和 名称.leitura2，与 Python CLI 相同）并以错误退出（kind mismatch）
   --flash-id           detect -s md：同时识别卡带的 flash 芯片（探测会向卡带写入 ID 命令；掩膜 ROM 会忽略）
   --color 模式         auto（默认：仅在终端中，遵循 NO_COLOR）、always 或 never：颜色和 ASCII 图案；--json 永远没有
-  --power 模式         带电源开关的板子：auto（默认：命令前接通插槽 5V 并保持接通）或 keep（不动 5V）
   --hex 文件           firmware-flash：固件 .hex（默认：环境变量 OSCR_FIRMWARE_HEX 或 firmware/oscr/.pio/build/<env>/firmware.hex）
-  --env 名称           firmware-flash：.hex 所来自的 PlatformIO 环境（默认 SerialASCII；SerialASCII_Power、SerialASCII_PowerSense）
+  --env 名称           firmware-flash：.hex 所来自的 PlatformIO 环境（默认 SerialASCII；SerialASCII_Volt）
   --avrdude 路径       firmware-flash：使用的 avrdude（默认：环境变量 AVRDUDE、PATH 或 PlatformIO 自带的）
   --wait S             firmware-flash：写入后等待设备回应 INFO 的秒数（默认 12）
   --dry-run            firmware-flash：只显示 avrdude 命令和当前固件版本

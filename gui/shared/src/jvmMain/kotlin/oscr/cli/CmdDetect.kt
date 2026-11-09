@@ -17,15 +17,13 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
     val lines = mutableListOf("${CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system}: $text")
     if (r.status == 0) lines += Msg.t("detect.title_line", "name" to r.name.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to r.romSize, "save" to r.saveSize)
     if (wantChip) lines += "  " + mdChipLine(chip)
-    if (r.attempts > 1) lines += Msg.t("detect.attempts", "n" to r.attempts)
     val json = linkedMapOf<String, Any?>("ok" to (r.status == 0), "system" to r.system, "status" to r.status, "rom_size" to r.romSize, "save_size" to r.saveSize,
-        "save_type" to r.saveType, "name" to r.name, "attempts" to r.attempts, "status_text" to text)
+        "save_type" to r.saveType, "name" to r.name, "status_text" to text)
     if (wantChip) json["flash_chip"] = mdChipJson(chip)
     if (!a.json && colorOn(io, a)) {                      // terminal: o cartucho desenhado ao lado dos dados
         val fields = mutableListOf<Pair<String, String>>()
         if (r.status == 0) { fields += Msg.t("detect.field_title") to r.name.ifEmpty { Msg.t("detect.unknown_title") }; fields += "ROM" to "${r.romSize} bytes"; fields += Msg.t("detect.field_save") to "${r.saveSize} bytes" }
         if (wantChip) fields += Msg.t("detect.field_chip") to mdChipLine(chip).substringAfter(": ")
-        if (r.attempts > 1) fields += Msg.t("detect.field_tries") to Msg.t("detect.field_tries_val", "n" to r.attempts)
         val name = CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system.toString()
         val art = mapOf("snes" to 1, "nes" to 2, "famicom" to 3, "md" to 4, "gba" to 5, "gb" to 6)[name] ?: 1
         Ui.detectCard(true, art, "$name: ${text.substringBefore(" (")}", r.status == 0, fields).forEach(io.out)

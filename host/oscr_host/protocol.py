@@ -17,14 +17,13 @@ CRC_LEN = 4
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
 T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/referencia/protocolo.md)
-T_POWER = 0x0D                         # chave de 5V dos slots: liga, desliga ou consulta (docs/referencia/protocolo.md, D115)
+T_VOLT = 0x0D                          # tensão dos slots: consulta ou escolhe 3,3 V/5 V (docs/referencia/protocolo.md, D138)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/referencia/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
-T_POWER_RESP = 0x89
-POWER_OFF, POWER_ON, POWER_STATUS = 0, 1, 2
-POWER_ON_3V3, POWER_ON_5V = 3, 4              # liga na tensão escolhida (seletor 3,3 V/5 V da megadrive_sms v1.1, D138)
+T_VOLT_RESP = 0x89
+VOLT_STATUS, VOLT_3V3, VOLT_5V = 0, 1, 2       # ação do VOLT (seletor 3,3 V/5 V, D138)
 
 KIND_ROM, KIND_SAVE = 1, 2
 
@@ -39,7 +38,7 @@ ERRORS = {
     3: "nenhum cartucho detectado", 4: "argumento inválido", 5: "reenvios excedidos",
     6: "CRC32 do arquivo não confere", 7: "erro de leitura/gravação no cartucho",
     8: "dispositivo ocupado", 9: "abortado", 10: "cartucho não tem save",
-    11: "chip de flash não reconhecido", 12: "cartucho desligado (5V dos slots cortado)",
+    11: "chip de flash não reconhecido",
 }
 
 # o que fazer para cada erro (a GUI tem os mesmos textos traduzidos em I18n.kt)
@@ -55,7 +54,6 @@ ERROR_HINTS = {
     9: "operação cancelada",
     10: "este cartucho não tem save, ou o mapper/tipo informado não tem save",
     11: "o cartucho não é uma flash do tipo escolhido (ou está sujo/mal encaixado): confira o chip, os contatos e o encaixe; nada foi gravado",
-    12: "ligue o 5V dos slots: `dumper power on` (a CLI e a GUI ligam sozinhas, a menos que use --power keep)",
 }
 
 UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
@@ -193,19 +191,16 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "power_switch": bool(flags & 32),
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32),
             "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
 
 
-def parse_power_resp(p: bytes) -> dict:
-    """POWER_RESP: estado do 5V dos slots. `rail_low` é None quando a placa não tem o sensor do rail. O byte 2 é reservado (era a chave física, D123)."""
-    if len(p) < 4:
-        raise ProtocolError("POWER_RESP curto")
-    on, features, sw, rail = p[0], p[1], p[2], p[3]
-    volt = p[4] if len(p) >= 5 else 0                      # firmware sem seletor (antes da D138) não manda o 5º byte
-    return {"on": bool(on), "rail_sensor": bool(features & 2), "forced_discharge": bool(features & 4),
-            "rail_low": None if rail == 0xFF else rail == 0,
-            "voltage_select": bool(features & 8), "voltage": {1: "3v3", 2: "5v"}.get(volt, "5v-fixed")}
+def parse_volt_resp(p: bytes) -> dict:
+    """VOLT_RESP: seletor de tensão dos slots (D138). `voltage`: "3v3", "5v" ou "5v-fixed" (placa sem seletor). `chosen`: o usuário escolheu 3,3 V
+    (a placa sobe em 3,3 V sem ninguém ter escolhido: só a escolha explícita exige confirmação para subir a 5 V)."""
+    if len(p) < 3:
+        raise ProtocolError("VOLT_RESP curto")
+    return {"voltage_select": bool(p[0]), "voltage": {1: "3v3", 2: "5v"}.get(p[1], "5v-fixed"), "chosen": bool(p[2])}
 
 
 def parse_detect_resp(p: bytes) -> dict:
@@ -213,10 +208,8 @@ def parse_detect_resp(p: bytes) -> dict:
         raise ProtocolError("DETECT_RESP curto")
     system, status, rom, save, stype, n = struct.unpack_from("<BBIIBB", p)
     name = p[12:12 + n].decode("ascii", "replace")
-    # depois do nome pode vir 1 byte com as tentativas de leitura do cabeçalho (SNES com ciclo de energia, D119); ausente = 1
-    attempts = p[12 + n] if len(p) > 12 + n else 1
     return {"system": system, "status": status, "rom_size": rom, "save_size": save,
-            "save_type": stype, "name": name, "attempts": attempts}
+            "save_type": stype, "name": name}
 
 
 def parse_begin(p: bytes) -> tuple[int, int, int]:

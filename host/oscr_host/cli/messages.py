@@ -4,7 +4,7 @@
 Idioma: `--lang` (antes ou depois do comando), senão a variável OSCR_LANG, senão a locale (LC_ALL, LC_MESSAGES, LANG); sem nada reconhecível, inglês.
 O que **não** muda de idioma: as chaves do `--json` (`ok`, `error.kind`, nomes dos campos), os códigos de saída e os valores de `kind`.
 Só os textos para pessoas (`message`, `hint` e as linhas de texto) mudam. Cobertura atual: erros do dispositivo e da CLI, recusas de gravação,
-`power`, `firmware-flash` e `errors`; os rótulos da barra de progresso são fixos (`writing`, `verifying`, não mudam com o idioma); o `--help` está em `help_texts.py` (D133).
+`voltage`, `firmware-flash` e `errors`; os rótulos da barra de progresso são fixos (`writing`, `verifying`, não mudam com o idioma); o `--help` está em `help_texts.py` (D133).
 Para acrescentar uma mensagem: uma chave em CATALOG com os quatro idiomas e `tr("chave", campo=valor)`; `tests/test_messages.py` confere que nenhuma tem idioma faltando."""
 from __future__ import annotations
 
@@ -94,8 +94,6 @@ CATALOG: dict[str, dict[str, str]] = {
     "dev.10.hint": _r("este cartucho não tem save, ou o mapper/tipo informado não tem save", "this cartridge has no save, or the given mapper/type has none", "у этого картриджа нет сохранения, или у указанного маппера/типа его нет", "此卡带没有存档，或所给 mapper/类型没有存档"),
     "dev.11.msg": _r("chip de flash não reconhecido", "flash chip not recognized", "флеш-чип не распознан", "未识别闪存芯片"),
     "dev.11.hint": _r("o cartucho não é uma flash do tipo escolhido (ou está sujo/mal encaixado): confira o chip, os contatos e o encaixe; nada foi gravado", "the cartridge is not a flash of the chosen type (or is dirty/badly seated): check the chip, the contacts and the fit; nothing was written", "картридж не является флеш-памятью выбранного типа (или грязный/плохо вставлен): проверьте чип, контакты и посадку; ничего не записано", "卡带不是所选类型的闪存（或有污垢/未插好）：请检查芯片、触点和插入情况；未写入任何内容"),
-    "dev.12.msg": _r("cartucho desligado (5V dos slots cortado)", "cartridge powered off (slots' 5V cut)", "картридж обесточен (5V слотов отключено)", "卡带已断电（插槽 5V 已切断）"),
-    "dev.12.hint": _r("ligue o 5V dos slots: `dumper power on` (a CLI e a GUI ligam sozinhas, a menos que use --power keep)", "turn the slots' 5V on: `dumper power on` (the CLI and the GUI do it by themselves unless you use --power keep)", "включите 5V слотов: `dumper power on` (CLI и GUI делают это сами, если не указан --power keep)", "请打开插槽 5V：`dumper power on`（CLI 和 GUI 会自动打开，除非使用 --power keep）"),
     # ---- erros da CLI
     "err.timeout": _r("o dispositivo parou de responder; confira o cabo e repita", "the device stopped responding; check the cable and retry", "устройство перестало отвечать; проверьте кабель и повторите", "设备停止响应；请检查数据线后重试"),
     "err.interrupted": _r("interrompido", "interrupted", "прервано", "已中断"),
@@ -130,7 +128,7 @@ CATALOG: dict[str, dict[str, str]] = {
     "detect.status.2": _r("não suportado", "not supported", "не поддерживается", "不支持"),
     "detect.status.3": _r("erro de hardware", "hardware error", "ошибка оборудования", "硬件错误"),
     "detect.status.4": _r("cabeçalho inválido ou ilegível (há dados, mas o checksum do cabeçalho não confere; ou, no Mega Drive com a placa v. 1.2, o pino /CART indica cartucho mas o cabeçalho não leu: limpe os contatos e encaixe de novo)", "invalid or unreadable header (there is data, but the header checksum does not match; or, on the Mega Drive with the v. 1.2 board, the /CART pin says there is a cartridge but the header could not be read: clean the contacts and reseat it)", "недопустимый или нечитаемый заголовок (данные есть, но контрольная сумма заголовка не сходится; или на Mega Drive с платой v. 1.2 контакт /CART указывает на картридж, но заголовок не прочитан: очистите контакты и вставьте заново)", "头部无效或无法读取（有数据，但头部校验和不符；或在 Mega Drive 的 v. 1.2 开发板上，/CART 引脚显示有卡带但未能读取头部：请清洁触点并重新插入）"),
-    # ---- power
+    # ---- voltage
     # ---- seletor de tensão do cartucho (megadrive_sms v1.1, D138): alerta antes de passar de 3,3 V para 5 V
     "volt.warn_title": _r("!!! ATENÇÃO: RISCO DE DANIFICAR O CARTUCHO !!!", "!!! WARNING: RISK OF DAMAGING THE CARTRIDGE !!!", "!!! ВНИМАНИЕ: РИСК ПОВРЕДИТЬ КАРТРИДЖ !!!", "!!! 警告：可能损坏卡带 !!!"),
     "volt.warn_1": _r("Você pediu 5 V para um cartucho marcado como 3,3 V (o slot está em 3,3 V). Cartucho de 3,3 V ligado em 5 V pode queimar, e o programa não tem como saber se este cartucho aguenta.", "You asked for 5 V on a cartridge marked as 3.3 V (the slot is at 3.3 V). A 3.3 V cartridge powered at 5 V can burn out, and the program cannot know whether this cartridge can take it.", "Вы выбрали 5 В для картриджа, помеченного как 3,3 В (слот на 3,3 В). Картридж на 3,3 В при 5 В может сгореть, а программа не знает, выдержит ли этот картридж.", "你为标记为 3.3 V 的卡带选择了 5 V（插槽当前为 3.3 V）。3.3 V 的卡带接 5 V 可能烧毁，而程序无法知道这张卡带能否承受。"),
@@ -140,18 +138,10 @@ CATALOG: dict[str, dict[str, str]] = {
     "volt.cancelled": _r("cancelado: o slot continua a 3,3 V", "cancelled: the slot stays at 3.3 V", "отменено: слот остаётся на 3,3 В", "已取消：插槽保持 3.3 V"),
     "volt.need_flag": _r("passar de 3,3 V para 5 V pode danificar um cartucho de 3,3 V; em script, só com --allow-5v depois de ler o aviso acima", "going from 3.3 V to 5 V can damage a 3.3 V cartridge; in a script, only with --allow-5v after reading the warning above", "переход с 3,3 В на 5 В может повредить картридж на 3,3 В; в скрипте — только с --allow-5v после прочтения предупреждения выше", "从 3.3 V 切换到 5 V 可能损坏 3.3 V 卡带；在脚本中只有在阅读上述警告后加 --allow-5v 才会继续"),
     "volt.now_5v": _r("slot a 5 V (confirmado pelo usuário)", "slot at 5 V (confirmed by the user)", "слот на 5 В (подтверждено пользователем)", "插槽已切换到 5 V（用户已确认）"),
-    "volt.no_selector": _r("esta placa não tem o seletor de tensão: o slot fica sempre em 5 V e não dá para ler um cartucho a 3,3 V (--voltage 3v3). Use a megadrive_sms v1.1 ou outra placa com o seletor", "this board has no voltage selector: the slot is always at 5 V and a cartridge cannot be read at 3.3 V (--voltage 3v3). Use the megadrive_sms v1.1 or another board with the selector", "в этой плате нет селектора напряжения: слот всегда на 5 В, читать картридж при 3,3 В (--voltage 3v3) нельзя. Используйте megadrive_sms v1.1 или другую плату с селектором", "此板没有电压选择器：插槽始终为 5 V，无法在 3.3 V 下读取卡带（--voltage 3v3）。请使用 megadrive_sms v1.1 或其他带选择器的板子"),
-    "power.volt_3v3": _r("tensão do slot: 3,3 V", "slot voltage: 3.3 V", "напряжение слота: 3,3 В", "插槽电压：3.3 V"),
-    "power.volt_5v": _r("tensão do slot: 5 V", "slot voltage: 5 V", "напряжение слота: 5 В", "插槽电压：5 V"),
-    "power.volt_fixed": _r("tensão do slot: 5 V fixo (placa sem seletor)", "slot voltage: fixed 5 V (board without selector)", "напряжение слота: фиксированные 5 В (плата без селектора)", "插槽电压：固定 5 V（板上没有选择器）"),
-    "power.state_on": _r("5V dos slots: ligado", "slots' 5V: on", "5V слотов: включено", "插槽 5V：已开"),
-    "power.state_off": _r("5V dos slots: desligado", "slots' 5V: off", "5V слотов: выключено", "插槽 5V：已关"),
-    "power.no_switch": _r("esta placa/firmware não tem a chave de 5V: o 5V fica sempre ligado", "this board/firmware has no 5V switch: the 5V is always on", "в этой плате/прошивке нет ключа 5V: 5V всегда включено", "此开发板/固件没有 5V 开关：5V 始终开启"),
-    "power.rail_low": _r("sensor do rail: baixo (seguro trocar o cartucho)", "rail sensor: low (safe to swap the cartridge)", "датчик шины: низкий (картридж можно менять)", "电源轨传感器：低（可以更换卡带）"),
-    "power.rail_high": _r("sensor do rail: alto (ainda há tensão: não troque o cartucho)", "rail sensor: high (voltage still present: do not swap the cartridge)", "датчик шины: высокий (напряжение ещё есть: не меняйте картридж)", "电源轨传感器：高（仍有电压：请勿更换卡带）"),
-    "power.can_swap": _r("pode trocar o cartucho", "you can swap the cartridge", "можно менять картридж", "可以更换卡带"),
-    "power.no_sensor": _r(" (sem sensor de tensão: o firmware já esperou a descarga; confira com o multímetro)", " (no voltage sensor: the firmware already waited for the discharge; check with a multimeter)", " (нет датчика напряжения: прошивка уже дождалась разряда; проверьте мультиметром)", "（没有电压传感器：固件已等待放电；请用万用表确认）"),
-    "power.then_on": _r("; depois rode `dumper power on`", "; then run `dumper power on`", "; затем выполните `dumper power on`", "；之后运行 `dumper power on`"),
+    "volt.no_selector": _r("esta placa não tem o seletor de tensão: o slot fica sempre em 5 V e não dá para ler um cartucho a 3,3 V (--voltage 3v3). Use uma placa v1.1 com o seletor", "this board has no voltage selector: the slot is always at 5 V and a cartridge cannot be read at 3.3 V (--voltage 3v3). Use a v1.1 board with the selector", "в этой плате нет селектора напряжения: слот всегда на 5 В, читать картридж при 3,3 В (--voltage 3v3) нельзя. Используйте плату v1.1 с селектором", "此板没有电压选择器：插槽始终为 5 V，无法在 3.3 V 下读取卡带（--voltage 3v3）。请使用带选择器的 v1.1 板"),
+    "volt.state_3v3": _r("tensão do slot: 3,3 V", "slot voltage: 3.3 V", "напряжение слота: 3,3 В", "插槽电压：3.3 V"),
+    "volt.state_5v": _r("tensão do slot: 5 V", "slot voltage: 5 V", "напряжение слота: 5 В", "插槽电压：5 V"),
+    "volt.state_fixed": _r("tensão do slot: 5 V fixo (placa sem seletor)", "slot voltage: fixed 5 V (board without selector)", "напряжение слота: фиксированные 5 В (плата без селектора)", "插槽电压：固定 5 V（板上没有选择器）"),
     # ---- firmware-flash
     "fw.no_hex": _r("arquivo de firmware não encontrado: {path}", "firmware file not found: {path}", "файл прошивки не найден: {path}", "未找到固件文件：{path}"),
     "fw.no_hex.hint": _r("use --hex ARQUIVO.hex, ou compile antes: `cd firmware/oscr && pio run -e {env}`", "use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e {env}`", "укажите --hex ФАЙЛ.hex или сначала соберите: `cd firmware/oscr && pio run -e {env}`", "请使用 --hex 文件.hex，或先编译：`cd firmware/oscr && pio run -e {env}`"),
@@ -222,11 +212,8 @@ CATALOG: dict[str, dict[str, str]] = {
     "detect.flash_id_md_only": _r("--flash-id vale só para o Mega Drive (-s md)", "--flash-id only applies to the Mega Drive (-s md)", "--flash-id применим только к Mega Drive (-s md)", "--flash-id 仅适用于 Mega Drive（-s md）"),
     "detect.title_line": _r("  título: {name}  ROM: {rom} bytes  save: {save} bytes", "  title: {name}  ROM: {rom} bytes  save: {save} bytes", "  название: {name}  ПЗУ: {rom} байт  сохранение: {save} байт", "  标题：{name}  ROM：{rom} 字节  存档：{save} 字节"),
     "detect.unknown_title": _r("(desconhecido)", "(unknown)", "(неизвестно)", "（未知）"),
-    "detect.attempts": _r("  {n} tentativas de leitura do cabeçalho (ciclo de energia do SA-1)", "  {n} attempts to read the header (SA-1 power cycle)", "  попыток чтения заголовка: {n} (цикл питания SA-1)", "  读取头部尝试了 {n} 次（SA-1 电源循环）"),
     "detect.field_title": _r("título", "title", "название", "标题"),
     "detect.field_save": _r("save", "save", "сохранение", "存档"),
-    "detect.field_tries": _r("tentativas", "attempts", "попытки", "尝试"),
-    "detect.field_tries_val": _r("{n} (ciclo de energia do SA-1)", "{n} (SA-1 power cycle)", "{n} (цикл питания SA-1)", "{n}（SA-1 电源循环）"),
     "detect.field_chip": _r("chip", "chip", "чип", "芯片"),
     "chip.no_id": _r("chip de flash: este firmware não identifica o chip", "flash chip: this firmware does not identify the chip", "флеш-чип: эта прошивка не определяет чип", "闪存芯片：此固件无法识别芯片"),
     "chip.known": _r("chip de flash: {chip}  ({kb} KB)", "flash chip: {chip}  ({kb} KB)", "флеш-чип: {chip}  ({kb} КБ)", "闪存芯片：{chip}（{kb} KB）"),
@@ -272,10 +259,9 @@ CATALOG: dict[str, dict[str, str]] = {
     "args.unknown_lang": _r("--lang desconhecido: {tag}", "unknown --lang: {tag}", "неизвестное значение --lang: {tag}", "未知的 --lang：{tag}"),
     "args.unknown_cmd": _r("comando desconhecido: {cmd}. Use: {cmds}", "unknown command: {cmd}. Use: {cmds}", "неизвестная команда: {cmd}. Используйте: {cmds}", "未知命令：{cmd}。可用：{cmds}"),
     "args.voltage": _r("--voltage deve ser auto, 3v3 ou 5v", "--voltage must be auto, 3v3 or 5v", "--voltage должно быть auto, 3v3 или 5v", "--voltage 必须是 auto、3v3 或 5v"),
-    "args.power": _r("--power deve ser auto ou keep", "--power must be auto or keep", "--power должно быть auto или keep", "--power 必须是 auto 或 keep"),
     "args.color": _r("--color deve ser auto, always ou never", "--color must be auto, always or never", "--color должно быть auto, always или never", "--color 必须是 auto、always 或 never"),
     "args.progress": _r("--progress deve ser auto, none ou jsonl", "--progress must be auto, none or jsonl", "--progress должно быть auto, none или jsonl", "--progress 必须是 auto、none 或 jsonl"),
-    "args.power_action": _r("power precisa de uma ação: on, off ou status", "power needs one action: on, off or status", "power требует одно действие: on, off или status", "power 需要一个动作：on、off 或 status"),
+    "args.volt_action": _r("voltage precisa de uma ação: status, 3v3 ou 5v", "voltage needs one action: status, 3v3 or 5v", "voltage требует одно действие: status, 3v3 или 5v", "voltage 需要一个动作：status、3v3 或 5v"),
     "args.identify": _r("identify precisa de pelo menos um arquivo", "identify needs at least one file", "identify требует хотя бы один файл", "identify 至少需要一个文件"),
     "args.search": _r("search precisa de uma consulta", "search needs a query", "search требует запрос", "search 需要一个查询"),
     "save.backup": _r("backup do save atual: {path}  CRC32 {crc}", "backup of the current save: {path}  CRC32 {crc}", "резервная копия текущего сохранения: {path}  CRC32 {crc}", "当前存档的备份：{path}  CRC32 {crc}"),

@@ -6,9 +6,8 @@ Números medidos nesta data, depois de ligar o Master System, o Game Gear e o SG
 
 | Parte | Testes | Cobertura de linhas | Como medir |
 |---|---|---|---|
-| Host Python (`host/oscr_host`) | 223 (pytest) | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
+| Host Python (`host/oscr_host`) | 224 (pytest) | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
 | Kotlin compartilhado (`gui/shared`: protocolo, cliente, CLI, banco, regras) | 131 (`jvmTest`) | **91,7 %** das linhas (2673 de 2914), **65,3 %** dos ramos (1661 de 2542) | ver seção 3 |
-| Firmware, núcleos puros em C++ (`firmware/oscr/pc-tests`) | 828 verificações em 5 programas | `MdFlashCore.h` 98 %, `SnesPlan.h` 92,5 %, `PowerCore.h` 89,8 %, `SmsCore.h` 100 %, `oscr_proto.cpp` 100 %, `oscr_session.cpp` 50,7 % (só o `test_proto`) | `make -C firmware/oscr/pc-tests test`; cobertura com `g++ --coverage` e `gcov` (seção 4) |
 | GUI (`gui/desktopApp`, Compose) | 0 testes automáticos; só compila | não medida | abrir a janela (display virtual, ver `docs/continuacao.md` seção 0.4) |
 | Firmware nos núcleos do OSCR e no `Dumper.cpp` | **nenhum teste no PC** | 0 % medido | só roda no AVR |
 
@@ -40,7 +39,6 @@ Menor cobertura por classe (linhas cobertas / total): `ImageMsg` 11/43, `CmdFlas
 | `test_proto` | 36 | quadros, CRC32, sessão (modo MOCK e modo fluxo), `oscr_session.cpp` |
 | `test_mdflash` | 734 | `MdFlashCore.h` contra um modelo de chip de flash de Mega Drive |
 | `test_snes_plan` | 21 | `SnesPlan.h`: plano de gravação do CFI de 1, 2 ou 4 chips |
-| `test_power_core` | 9 | `PowerCore.h`: espera da descarga e repetição do SA-1 |
 | `test_sms` | 28 | `SmsCore.h` (D137): slot vazio, cabeçalho "TMR SEGA", Fantasy Zone, tamanhos, adaptadores Retrode/Retron/Raphnet |
 
 Medida: `g++ -std=c++17 --coverage -O0` em cada teste e `gcov` nos cabeçalhos `include/dumper/*.h` e `src/dumper/oscr_*.cpp`. O `oscr_session.cpp` aparece com 50,7 % porque o `test_proto` só exercita parte dele; o resto roda pelo `host/tests/test_firmware_cpp.py` (o cliente Python contra o C++ real, via `sim_stdio`), que **não entra** nesse número.
@@ -55,7 +53,7 @@ Medida: `g++ -std=c++17 --coverage -O0` em cada teste e `gcov` nos cabeçalhos `
 
 ## 6. Como melhorar
 
-- Mover mais lógica do `Dumper.cpp` para cabeçalhos puros (como `SmsCore.h`, `PowerCore.h` e `SnesPlan.h`) para testá-la no PC.
+- Mover mais lógica do `Dumper.cpp` para cabeçalhos puros (como `SmsCore.h` e `SnesPlan.h`) para testá-la no PC.
 - Testes da GUI (`desktopApp`) com um backend simulado.
 - Pôr a medida de cobertura no CI (hoje o CI do GitHub falha por cobrança, não por código).
 - Primeiro teste em hardware: `docs/referencia/uso.md`, seção 7.

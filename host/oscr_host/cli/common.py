@@ -29,35 +29,35 @@ def auto_port() -> str:
 
 
 def connect(args, need_cart: bool = True) -> tuple[Client, Transport, dict]:
-    """Abre a porta (ou o simulador), faz INFO e, em placa com a chave de 5V, liga o 5V dos slots (`--power auto`, o padrão).
-    `need_cart=False` (info, power) nunca mexe no 5V. Com `--power keep` o 5V fica como está.
-    Placa com o seletor 3,3 V/5 V (D138): o padrão é 5 V; `--voltage 3v3` liga a 3,3 V (cartucho marcado como 3,3 V); passar de 3,3 V para 5 V
-    mostra o alerta e pede confirmação (ou `--allow-5v`). Falha de leitura nunca muda a tensão sozinha."""
+    """Abre a porta (ou o simulador), faz INFO e, em placa com o seletor 3,3 V/5 V (D138), ajusta a tensão antes de um comando de cartucho.
+    O 5V dos slots fica sempre ligado (D139). A placa sobe em 3,3 V (estado seguro: abrir a porta reinicia o Mega); o padrão é 5 V; `--voltage 3v3`
+    usa 3,3 V (cartucho marcado como 3,3 V); passar de 3,3 V (escolhido) para 5 V mostra o alerta e pede confirmação (ou `--allow-5v`).
+    `need_cart=False` (info, voltage) nunca mexe na tensão. Falha de leitura nunca muda a tensão sozinha."""
     c, t, info = _open(args)
-    if need_cart and info.get("power_switch") and getattr(args, "power", "auto") != "keep":
+    if need_cart:                                              # placa sem seletor: só recusa `--voltage 3v3`
         try:
-            set_voltage(args, c, c.power(P.POWER_STATUS))
+            set_voltage(args, c, c.voltage(P.VOLT_STATUS))
         except BaseException:
             t.close()
             raise
     return c, t, info
 
 
-def set_voltage(args, c: Client, st: dict, turn_on: bool = True) -> dict:
-    """Aplica `--voltage` e liga o 5V dos slots (se `turn_on`). `st` é o POWER_STATUS atual. Devolve o estado depois."""
+def set_voltage(args, c: Client, st: dict) -> dict:
+    """Aplica `--voltage`. `st` é o VOLT_STATUS atual. Devolve o estado depois."""
     mode = getattr(args, "voltage", "auto")
     sel = bool(st.get("voltage_select"))
     if mode == "3v3" and not sel:
         raise CliError("no_selector", tr("volt.no_selector"), EXIT_USAGE)           # pediu 3,3 V e a placa só dá 5 V: não segue calado
-    if sel and mode == "5v" and st["on"] and st.get("voltage") == "3v3":
-        confirm_5v(args)                                                              # slot marcado como 3,3 V: alerta e confirmação antes de subir
-        return c.power(P.POWER_ON_5V)
-    if sel and mode == "3v3" and (not st["on"] or st.get("voltage") != "3v3"):
-        return c.power(P.POWER_ON_3V3)                                               # o firmware desliga e espera a descarga antes de trocar
-    if sel and mode == "5v" and not st["on"]:
-        return c.power(P.POWER_ON_5V)
-    if turn_on and not st["on"]:
-        return c.power(P.POWER_ON)
+    if not sel:
+        return st
+    if mode == "3v3":
+        return st if (st.get("voltage") == "3v3" and st.get("chosen")) else c.voltage(P.VOLT_3V3)
+    if st.get("voltage") == "3v3":
+        if mode == "5v" or not st.get("chosen"):                                      # padrão: 5 V. Só a escolha de 3,3 V do usuário pede confirmação
+            if st.get("chosen"):
+                confirm_5v(args)                                                      # slot marcado como 3,3 V: alerta e confirmação antes de subir
+            return c.voltage(P.VOLT_5V)
     return st
 
 
@@ -94,12 +94,8 @@ def _open(args) -> tuple[Client, Transport, dict]:
 
         from .. import sim
 
-        # OSCR_SIM_POWER=1: o simulador finge uma placa com a chave de 5V (começa desligada)
-        # OSCR_SIM_VOLT=1 (com OSCR_SIM_POWER=1): finge o seletor 3,3 V/5 V; OSCR_SIM_5V_CART=1: o cartucho só é lido a 5 V
-        # OSCR_SIM_SENSE=1: finge também o sensor do rail e 3 tentativas do SA-1 (a placa com sensor tem a chave de 5V em software)
-        sense = os.environ.get("OSCR_SIM_SENSE") == "1"
-        dev = sim.MockDevice(power_switch=os.environ.get("OSCR_SIM_POWER") == "1", rail_sensor=sense, detect_attempts=3 if sense else 1,
-                             volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1")        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
+        # OSCR_SIM_VOLT=1: o simulador finge o seletor 3,3 V/5 V (sobe em 3,3 V); OSCR_SIM_5V_CART=1: o cartucho só é lido a 5 V
+        dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1")        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()
