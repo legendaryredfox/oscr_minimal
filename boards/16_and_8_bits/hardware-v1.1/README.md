@@ -25,6 +25,7 @@ Versão **v1.1** da placa [`16_and_8_bits`](../README.md): shield 100% THT para 
 
 | Peça | Referências | Antes | Agora |
 |---|---|---|---|
+| Fusivel 5x20 500mA | F1 | 1 | 0 |
 | LED verde 3mm | D2 | 0 | 1 |
 | LED amarelo 3mm | D3 | 0 | 1 |
 | IRF9540N | Q1 | 0 | 1 |

@@ -4,6 +4,7 @@
 "C2,C3","1u","Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm","2"
 "C4","100n","Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm","1"
 "D1","LED 3mm","LED_THT:LED_D3.0mm","1"
+"F1","Fusivel 5x20 500mA","Fuse:Fuseholder_Littelfuse_100_series_5x20mm","1"
 "FLG1,FLG2","PWR_FLAG","","2"
 "GBA1","GBA_Slot","dumper:GBA_Slot","1"
 "R1","220R","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","1"

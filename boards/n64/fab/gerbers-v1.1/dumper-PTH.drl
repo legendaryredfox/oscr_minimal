@@ -1,7 +1,7 @@
 M48
-; DRILL file KiCad 10.0.8-10.0.8~ubuntu24.04.1 date 2026-11-08T16:02:02
+; DRILL file KiCad 10.0.8-10.0.8~ubuntu24.04.1 date 2026-11-08T21:58:51
 ; FORMAT={-:-/ absolute / metric / decimal}
-; #@! TF.CreationDate,2026-11-08T16:02:02-03:00
+; #@! TF.CreationDate,2026-11-08T21:58:51-03:00
 ; #@! TF.GenerationSoftware,Kicad,Pcbnew,10.0.8-10.0.8~ubuntu24.04.1
 ; #@! TF.FileFunction,Plated,1,2,PTH
 FMAT,2
@@ -11,29 +11,26 @@ T1C0.300
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
 T2C0.700
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T3C0.710
+T3C0.750
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T4C0.750
+T4C0.762
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T5C0.762
+T5C0.800
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T6C0.800
+T6C0.900
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T7C0.900
+T7C1.000
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T8C1.000
+T8C1.016
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T9C1.016
+T9C1.100
 ; #@! TA.AperFunction,Plated,PTH,ComponentDrill
-T10C1.100
+T10C1.300
 %
 G90
 G05
 T1
-X48.074Y-96.653
-X53.39Y-95.229
-X59.715Y-66.935
-X61.728Y-98.335
+X43.893Y-88.935
 T2
 X41.33Y-122.01
 X43.87Y-122.01
@@ -52,9 +49,6 @@ X88.32Y-119.47
 X98.268Y-122.857
 X100.808Y-122.857
 T3
-X68.0Y-124.55
-X73.1Y-125.75
-T4
 X47.68Y-124.55
 X48.95Y-124.55
 X50.22Y-124.55
@@ -64,7 +58,7 @@ X80.7Y-124.55
 X97.0Y-100.0
 X98.27Y-98.73
 X99.54Y-100.0
-T5
+T4
 X31.0Y-82.5
 X31.0Y-87.5
 X33.5Y-82.5
@@ -115,7 +109,7 @@ X88.5Y-82.5
 X88.5Y-87.5
 X91.0Y-82.5
 X91.0Y-87.5
-T6
+T5
 X24.0Y-69.0
 X26.0Y-61.0
 X29.5Y-61.0
@@ -128,14 +122,14 @@ X100.0Y-77.84
 X100.0Y-88.0
 X105.0Y-100.0
 X110.0Y-100.0
-T7
+T6
 X42.0Y-69.0
 X44.54Y-69.0
 X85.78Y-124.55
 X88.32Y-124.55
 X92.13Y-124.55
 X94.67Y-124.55
-T8
+T7
 X53.0Y-69.0
 X55.54Y-69.0
 X58.08Y-69.0
@@ -143,7 +137,7 @@ X60.62Y-69.0
 X63.16Y-69.0
 X65.7Y-69.0
 X68.24Y-69.0
-T9
+T8
 X38.796Y-60.2
 X41.336Y-60.2
 X43.876Y-60.2
@@ -229,8 +223,13 @@ X116.52Y-95.76
 X116.52Y-98.3
 X116.52Y-100.84
 X116.52Y-103.38
-T10
+T9
 X56.57Y-124.55
 X59.11Y-124.55
 X61.65Y-124.55
+T10
+X30.95Y-137.05
+X35.55Y-137.05
+X46.85Y-137.05
+X51.45Y-137.05
 M30

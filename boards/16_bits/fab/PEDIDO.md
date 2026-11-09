@@ -96,3 +96,12 @@ Lista completa e observações: `../docs/bom.md`. Resumo:
 O `dumper-v1.0-jlcpcb.zip` é a v1.0 revisada em D97 e **substitui a v1.0 original** (a que foi encomendada, com todas as trilhas de alimentação em 0,3 mm; D110 tirou os gerbers dela do repositório, o histórico do git os guarda). É a **mesma v1.0, sem `/CART`, sem C5 e C6 e sem pontos de teste**, com duas correções (D97): trilhas do `+5V` alargadas até 0,8 mm onde cabe (22 segmentos em 0,8 mm, 9 em 0,6, 1 em 0,5, 2 em 0,4; 14 ficam em 0,3 mm entre pads) e conexão sólida nos 3 pads de GND que davam `starved_thermal`. Silk, furos (325 metalizados, 4 não metalizados), contorno e netlist iguais à v1.0. SHA-256: `7751339eaaf2d1c663c42653bd9cc5245a8797c110befc729391cefc0172da62`. Fontes em `../hardware-v1.0/`, gerbers em `gerbers-v1.0/`.
 
 DRC: 0 erros, 0 ligações abertas, 5 avisos de biblioteca. `check_netlist --board 16_bits` só reclama dos itens da v. 1.2 (`/CART`, C5, C6, TP1 a TP6), que a v1.0 não tem. Exportar de novo: `HWDIR=hardware-v1.0 GDIR=gerbers-v1.0 tools/export_fab.sh 16_bits v1.0`.
+
+## D138 — F1, J1 e seletor de tensão (2026-11-08)
+
+As versões abaixo foram **refeitas** com o PTC F1 (opcional; sem ele, fio ou ponte de solda nos furos) e, nas v1.1 com slot de 5 V, o seletor 3,3 V/5 V, o jumper J1 e os resistores em série (D138). Os tamanhos e SHA-256 mais acima, de antes do D138, **não valem mais**; valem estes (mude de zip só depois de rever o layout no KiCad: roteamento por autoroteador, nada encomendado):
+
+| Versão | Arquivo | Tamanho | SHA-256 |
+|---|---|---|---|
+| v1.2 | `dumper-v1.2-jlcpcb.zip` | 108,1 × 96,1 mm | `043e74b6e856421651310a5fcf18321d683789cc11c5f2e3dda1acb1d4611b24` |
+| v1.3 | `dumper-v1.3-jlcpcb.zip` | 108,1 × 126,1 mm | `fea7d854bf89ef114661cbd7e005ed13a204cca5a2eaf9f7da151558388ba1ce` |

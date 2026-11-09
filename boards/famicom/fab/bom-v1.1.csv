@@ -6,7 +6,7 @@
 "D1","LED 3mm","LED_THT:LED_D3.0mm","1"
 "D2","LED verde 3mm","LED_THT:LED_D3.0mm","1"
 "D3","LED amarelo 3mm","LED_THT:LED_D3.0mm","1"
-"F1","PTC 0,5 A","Fuse:Fuse_Bourns_MF-RHT050","1"
+"F1","Fusivel 5x20 500mA","Fuse:Fuseholder_Littelfuse_100_series_5x20mm","1"
 "FC1","FC_Slot","dumper:FC_Slot","1"
 "FLG1,FLG2","PWR_FLAG","","2"
 "J1","TRAVA 3,3 V","Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical","1"

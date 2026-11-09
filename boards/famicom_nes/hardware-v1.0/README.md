@@ -10,7 +10,7 @@ Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Ar
 |---|---|
 | Slots | Famicom (60p) e NES (72p) em paralelo, 5 V; **um cartucho por vez, em um slot só** |
 | Circuitos | Si5351, sem PIC. |
-| Tamanho | 117,1 × 79,1 mm |
+| Tamanho | 117,1 × 89,1 mm |
 | Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
@@ -21,6 +21,10 @@ Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Ar
 
 **Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
 
+## Proteção de corrente e tensão (D138)
+
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
+
 ## Lista de peças
 
 | Referências | Valor | Footprint | Qtd |
@@ -29,6 +33,7 @@ Versão **v1.0** da placa [`famicom_nes`](../README.md): shield 100% THT para Ar
 | C1 | 470u/16V | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | 1 |
 | C2,C3 | 100n | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | 2 |
 | D1 | LED 3mm | `LED_THT:LED_D3.0mm` | 1 |
+| F1 | Fusivel 5x20 500mA | `Fuse:Fuseholder_Littelfuse_100_series_5x20mm` | 1 |
 | FC1 | FC_Slot | `dumper:FC_Slot` | 1 |
 | FLG1,FLG2 | PWR_FLAG | `` | 2 |
 | NES1 | NES_Slot | `dumper:NES_Slot` | 1 |

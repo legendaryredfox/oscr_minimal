@@ -16,3 +16,12 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 Se a pré-visualização mostrar outra coisa, **não pague**.
 
 **Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade já justificados em D71); ERC 0 violações; `tools/check_netlist.py --board snes` confere (71 nets, 187 ligações).
+
+## D138 — F1, J1 e seletor de tensão (2026-11-08)
+
+As versões abaixo foram **refeitas** com o PTC F1 (opcional; sem ele, fio ou ponte de solda nos furos) e, nas v1.1 com slot de 5 V, o seletor 3,3 V/5 V, o jumper J1 e os resistores em série (D138). Os tamanhos e SHA-256 mais acima, de antes do D138, **não valem mais**; valem estes (mude de zip só depois de rever o layout no KiCad: roteamento por autoroteador, nada encomendado):
+
+| Versão | Arquivo | Tamanho | SHA-256 |
+|---|---|---|---|
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 107,1 × 75,1 mm | `095ab95bf8e70cc0b21a5f6f7e0cea934a88df0524c0e4ce821d341a6536c570` |
+| v1.1 | `dumper-v1.1-jlcpcb.zip` | 107,1 × 90,1 mm | `096398e9019b0f0cb93c35123c468dee1fdcd68016de1d10ba7f8a9509e9a318` |

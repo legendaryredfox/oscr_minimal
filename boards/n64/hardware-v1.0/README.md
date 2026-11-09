@@ -10,7 +10,7 @@ Versão **v1.0** da placa [`n64`](../README.md): shield 100% THT para Arduino Me
 |---|---|
 | Slots | N64 (50 pinos), 3,3 V |
 | Circuitos | Si5351 só para a EEPROM. |
-| Tamanho | 110,1 × 65,1 mm |
+| Tamanho | 110,1 × 75,1 mm |
 | Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
@@ -21,6 +21,10 @@ Versão **v1.0** da placa [`n64`](../README.md): shield 100% THT para Arduino Me
 
 **Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
 
+## Proteção de corrente e tensão (D138)
+
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
+
 ## Lista de peças
 
 | Referências | Valor | Footprint | Qtd |
@@ -30,6 +34,7 @@ Versão **v1.0** da placa [`n64`](../README.md): shield 100% THT para Arduino Me
 | C2,C3 | 1u | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | 2 |
 | C4 | 100n | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | 1 |
 | D1 | LED 3mm | `LED_THT:LED_D3.0mm` | 1 |
+| F1 | Fusivel 5x20 500mA | `Fuse:Fuseholder_Littelfuse_100_series_5x20mm` | 1 |
 | FLG1,FLG2 | PWR_FLAG | `` | 2 |
 | N64_1 | N64_Slot | `dumper:N64_Slot` | 1 |
 | R1 | 220R | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |

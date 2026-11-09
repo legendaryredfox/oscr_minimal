@@ -4965,6 +4965,159 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:Fuse"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "F"
+				(at 2.032 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Fuse"
+				(at -1.905 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at -1.778 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Fuse"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "fuse"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "*Fuse*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "Fuse_0_1"
+				(rectangle
+					(start -0.762 -2.54)
+					(end 0.762 2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54)
+						(xy 0 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Fuse_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 	)
 	(symbol
 		(lib_id "dumper:Mega2560_R3_Shield")
@@ -10238,7 +10391,7 @@
 		(uuid "63e07498-155f-43b2-b70b-2f58b5bf07fc")
 	)
 	(symbol
-		(lib_id "Device:Polyfuse")
+		(lib_id "Device:Fuse")
 		(at 30.48 424.18 0)
 		(unit 1)
 		(body_style 1)
@@ -10259,7 +10412,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "PTC 0,5 A"
+		(property "Value" "Fusivel 5x20 500mA"
 			(at 32.68 425.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10270,7 +10423,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Fuse:Fuse_Bourns_MF-RHT050"
+		(property "Footprint" "Fuse:Fuseholder_Littelfuse_100_series_5x20mm"
 			(at 30.48 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -10292,7 +10445,7 @@
 				)
 			)
 		)
-		(property "Description" "Fusivel rearmavel (PTC) de furo passante: 0,5 A de retencao, em serie com o 5 V da placa. Queda de 0,1 a 0,2 V a 200 mA"
+		(property "Description" "Fusivel de vidro 5x20 mm de 500 mA (rapido) em suporte de clipes: troca sem solda. Queda de 0,1 a 0,2 V a 200 mA"
 			(at 30.48 424.18 0)
 			(hide yes)
 			(show_name no)
@@ -10320,7 +10473,8 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 420.37) (xy 30.48 415.29)
+			(xy 30.48 420.37)
+			(xy 30.48 415.29)
 		)
 		(stroke
 			(width 0)
@@ -10407,7 +10561,8 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 427.99) (xy 30.48 433.07)
+			(xy 30.48 427.99)
+			(xy 30.48 433.07)
 		)
 		(stroke
 			(width 0)
@@ -10494,7 +10649,8 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 433.07) (xy 35.56 433.07)
+			(xy 30.48 433.07)
+			(xy 35.56 433.07)
 		)
 		(stroke
 			(width 0)
@@ -10666,7 +10822,8 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 425.45) (xy 40.64 425.45)
+			(xy 45.72 425.45)
+			(xy 40.64 425.45)
 		)
 		(stroke
 			(width 0)
@@ -10686,7 +10843,8 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 420.37) (xy 53.34 415.29)
+			(xy 53.34 420.37)
+			(xy 53.34 415.29)
 		)
 		(stroke
 			(width 0)
@@ -10773,7 +10931,8 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 430.53) (xy 53.34 435.61)
+			(xy 53.34 430.53)
+			(xy 53.34 435.61)
 		)
 		(stroke
 			(width 0)
@@ -10938,7 +11097,8 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 415.29) (xy 58.42 415.29)
+			(xy 53.34 415.29)
+			(xy 58.42 415.29)
 		)
 		(stroke
 			(width 0)
@@ -11029,7 +11189,8 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 420.37) (xy 76.2 415.29)
+			(xy 76.2 420.37)
+			(xy 76.2 415.29)
 		)
 		(stroke
 			(width 0)
@@ -11116,7 +11277,8 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 427.99) (xy 76.2 433.07)
+			(xy 76.2 427.99)
+			(xy 76.2 433.07)
 		)
 		(stroke
 			(width 0)
@@ -11217,7 +11379,8 @@
 	)
 	(wire
 		(pts
-			(xy 99.06 420.37) (xy 99.06 415.29)
+			(xy 99.06 420.37)
+			(xy 99.06 415.29)
 		)
 		(stroke
 			(width 0)
@@ -11237,7 +11400,8 @@
 	)
 	(wire
 		(pts
-			(xy 99.06 427.99) (xy 99.06 433.07)
+			(xy 99.06 427.99)
+			(xy 99.06 433.07)
 		)
 		(stroke
 			(width 0)
@@ -11338,7 +11502,8 @@
 	)
 	(wire
 		(pts
-			(xy 121.92 420.37) (xy 121.92 415.29)
+			(xy 121.92 420.37)
+			(xy 121.92 415.29)
 		)
 		(stroke
 			(width 0)
@@ -11506,7 +11671,8 @@
 	)
 	(wire
 		(pts
-			(xy 121.92 427.99) (xy 121.92 435.61)
+			(xy 121.92 427.99)
+			(xy 121.92 435.61)
 		)
 		(stroke
 			(width 0)
@@ -11516,7 +11682,8 @@
 	)
 	(wire
 		(pts
-			(xy 121.92 443.23) (xy 121.92 448.31)
+			(xy 121.92 443.23)
+			(xy 121.92 448.31)
 		)
 		(stroke
 			(width 0)
@@ -11687,7 +11854,8 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 425.45) (xy 132.08 425.45)
+			(xy 137.16 425.45)
+			(xy 132.08 425.45)
 		)
 		(stroke
 			(width 0)
@@ -11707,7 +11875,8 @@
 	)
 	(wire
 		(pts
-			(xy 144.78 430.53) (xy 144.78 435.61)
+			(xy 144.78 430.53)
+			(xy 144.78 435.61)
 		)
 		(stroke
 			(width 0)
@@ -11794,7 +11963,8 @@
 	)
 	(wire
 		(pts
-			(xy 144.78 420.37) (xy 144.78 415.29)
+			(xy 144.78 420.37)
+			(xy 144.78 415.29)
 		)
 		(stroke
 			(width 0)
@@ -11885,7 +12055,8 @@
 	)
 	(wire
 		(pts
-			(xy 144.78 407.67) (xy 144.78 402.59)
+			(xy 144.78 407.67)
+			(xy 144.78 402.59)
 		)
 		(stroke
 			(width 0)
@@ -12053,7 +12224,8 @@
 	)
 	(wire
 		(pts
-			(xy 144.78 415.29) (xy 154.94 415.29)
+			(xy 144.78 415.29)
+			(xy 154.94 415.29)
 		)
 		(stroke
 			(width 0)
@@ -12069,7 +12241,8 @@
 	)
 	(wire
 		(pts
-			(xy 154.94 407.67) (xy 154.94 402.59)
+			(xy 154.94 407.67)
+			(xy 154.94 402.59)
 		)
 		(stroke
 			(width 0)
@@ -12240,7 +12413,8 @@
 	)
 	(wire
 		(pts
-			(xy 193.04 425.45) (xy 187.96 425.45)
+			(xy 193.04 425.45)
+			(xy 187.96 425.45)
 		)
 		(stroke
 			(width 0)
@@ -12250,7 +12424,8 @@
 	)
 	(wire
 		(pts
-			(xy 200.66 430.53) (xy 200.66 435.61)
+			(xy 200.66 430.53)
+			(xy 200.66 435.61)
 		)
 		(stroke
 			(width 0)
@@ -12337,7 +12512,8 @@
 	)
 	(wire
 		(pts
-			(xy 200.66 420.37) (xy 200.66 415.29)
+			(xy 200.66 420.37)
+			(xy 200.66 415.29)
 		)
 		(stroke
 			(width 0)
@@ -12438,7 +12614,8 @@
 	)
 	(wire
 		(pts
-			(xy 180.34 430.53) (xy 180.34 425.45)
+			(xy 180.34 430.53)
+			(xy 180.34 425.45)
 		)
 		(stroke
 			(width 0)
@@ -12448,7 +12625,8 @@
 	)
 	(wire
 		(pts
-			(xy 180.34 425.45) (xy 187.96 425.45)
+			(xy 180.34 425.45)
+			(xy 187.96 425.45)
 		)
 		(stroke
 			(width 0)
@@ -12464,7 +12642,8 @@
 	)
 	(wire
 		(pts
-			(xy 187.96 425.45) (xy 187.96 420.37)
+			(xy 187.96 425.45)
+			(xy 187.96 420.37)
 		)
 		(stroke
 			(width 0)
@@ -12551,7 +12730,8 @@
 	)
 	(wire
 		(pts
-			(xy 180.34 438.15) (xy 180.34 443.23)
+			(xy 180.34 438.15)
+			(xy 180.34 443.23)
 		)
 		(stroke
 			(width 0)
@@ -12719,7 +12899,8 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 420.37) (xy 231.14 415.29)
+			(xy 231.14 420.37)
+			(xy 231.14 415.29)
 		)
 		(stroke
 			(width 0)
@@ -12806,7 +12987,8 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 427.99) (xy 231.14 433.07)
+			(xy 231.14 427.99)
+			(xy 231.14 433.07)
 		)
 		(stroke
 			(width 0)
@@ -12907,7 +13089,8 @@
 	)
 	(wire
 		(pts
-			(xy 254 420.37) (xy 254 415.29)
+			(xy 254 420.37)
+			(xy 254 415.29)
 		)
 		(stroke
 			(width 0)
@@ -12927,7 +13110,8 @@
 	)
 	(wire
 		(pts
-			(xy 254 427.99) (xy 254 433.07)
+			(xy 254 427.99)
+			(xy 254 433.07)
 		)
 		(stroke
 			(width 0)
@@ -13028,7 +13212,8 @@
 	)
 	(wire
 		(pts
-			(xy 276.86 420.37) (xy 276.86 415.29)
+			(xy 276.86 420.37)
+			(xy 276.86 415.29)
 		)
 		(stroke
 			(width 0)
@@ -13048,7 +13233,8 @@
 	)
 	(wire
 		(pts
-			(xy 276.86 427.99) (xy 276.86 433.07)
+			(xy 276.86 427.99)
+			(xy 276.86 433.07)
 		)
 		(stroke
 			(width 0)

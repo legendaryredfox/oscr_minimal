@@ -10,7 +10,7 @@ Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino M
 |---|---|
 | Slots | SNES (62p, 2,5 mm), 5 V |
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC) em soquete. |
-| Tamanho | 107,1 × 65,1 mm |
+| Tamanho | 107,1 × 90,1 mm |
 | Desligar o 5V por software | **sim** |
 | Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
@@ -20,6 +20,10 @@ Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino M
 ## Troca de cartucho
 
 **Com desligamento por software** (bloco de troca de cartucho, D126): o comando `POWER` liga e desliga o 5V dos slots, o rail é descarregado e o LED amarelo "SEGURO TROCAR" acende quando dá para tirar o cartucho. Circuito, peças e testes: [`docs/referencia/bloco-troca.md`](../../../docs/referencia/bloco-troca.md).
+
+## Proteção de corrente e tensão (D138)
+
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
 
 ## O que muda em relação à v1.0
 
@@ -44,6 +48,7 @@ Versão **v1.1** da placa [`snes`](../README.md): shield 100% THT para Arduino M
 | D1 | LED 3mm | `LED_THT:LED_D3.0mm` | 1 |
 | D2 | LED verde 3mm | `LED_THT:LED_D3.0mm` | 1 |
 | D3 | LED amarelo 3mm | `LED_THT:LED_D3.0mm` | 1 |
+| F1 | Fusivel 5x20 500mA | `Fuse:Fuseholder_Littelfuse_100_series_5x20mm` | 1 |
 | FLG1,FLG2 | PWR_FLAG | `` | 2 |
 | Q1 | IRF9540N | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 | Q2,Q3 | 2N7000 | `Package_TO_SOT_THT:TO-92_Inline` | 2 |

@@ -10,7 +10,7 @@ Versão **v1.0** da placa [`16_and_8_bits`](../README.md): shield 100% THT para 
 |---|---|
 | Slots | SNES (62p), NES (72p), Famicom (60p), Mega Drive (64p), todos a 5 V, e GBA (32p, SMD, 1,5 mm) a 3,3 V (regulador U3) |
 | Circuitos | Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete. |
-| Tamanho | 144,1 × 108,0 mm |
+| Tamanho | 144,1 × 118,0 mm |
 | Desligar o 5V por software | **não** |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
@@ -21,6 +21,10 @@ Versão **v1.0** da placa [`16_and_8_bits`](../README.md): shield 100% THT para 
 
 **Sem desligamento por software.** O 5V vai direto do Mega aos slots. Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.
 
+## Proteção de corrente e tensão (D138)
+
+**F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega (nas versões com bloco de troca, antes do Q1). Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
+
 ## Lista de peças
 
 | Referências | Valor | Footprint | Qtd |
@@ -30,6 +34,7 @@ Versão **v1.0** da placa [`16_and_8_bits`](../README.md): shield 100% THT para 
 | C2,C3,C4,C5,C6,C9 | 100n | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | 6 |
 | C7,C8 | 1u | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | 2 |
 | D1 | LED 3mm | `LED_THT:LED_D3.0mm` | 1 |
+| F1 | Fusivel 5x20 500mA | `Fuse:Fuseholder_Littelfuse_100_series_5x20mm` | 1 |
 | FC1 | FC_Slot | `dumper:FC_Slot` | 1 |
 | FLG1,FLG2 | PWR_FLAG | `` | 2 |
 | GBA1 | GBA_Slot | `dumper:GBA_Slot` | 1 |

@@ -16,3 +16,12 @@ Conteúdo (9 arquivos): `dumper-F_Cu.gtl`, `B_Cu.gbl`, `F_Mask.gts`, `B_Mask.gbs
 Se a pré-visualização mostrar outra coisa, **não pague**. Pads SMD de 1 mm a 1,5 mm de passo: HASL é aceitável para solda manual; ENIG sai mais caro.
 
 **Verificação:** DRC sem erros nem ligações abertas (só avisos de biblioteca e paridade, como na `16_and_8_bits`); ERC com 1 aviso (`lib_symbol_mismatch` do U1); `tools/check_netlist.py --board gb_gba` confere (41 nets, 120 ligações).
+
+## D138 — F1, J1 e seletor de tensão (2026-11-08)
+
+As versões abaixo foram **refeitas** com o PTC F1 (opcional; sem ele, fio ou ponte de solda nos furos) e, nas v1.1 com slot de 5 V, o seletor 3,3 V/5 V, o jumper J1 e os resistores em série (D138). Os tamanhos e SHA-256 mais acima, de antes do D138, **não valem mais**; valem estes (mude de zip só depois de rever o layout no KiCad: roteamento por autoroteador, nada encomendado):
+
+| Versão | Arquivo | Tamanho | SHA-256 |
+|---|---|---|---|
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 138,1 × 77,1 mm | `18bb27a6d05a910d61625780a9963b9e25842dc0ba71f65ba2ea15c8c356e588` |
+| v1.1 | `dumper-v1.1-jlcpcb.zip` | 138,1 × 77,1 mm | `0aad96a4d6c8d49c41d321929da1704a842ed89974f87b839b03b2132d8f2fd4` |
