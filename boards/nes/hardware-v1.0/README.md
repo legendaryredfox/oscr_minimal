@@ -10,10 +10,11 @@ Versão **v1.0** da placa [`nes`](../README.md): shield 100% THT para Arduino Me
 |---|---|
 | Slots | NES (72p, 2,5 mm), 5 V |
 | Circuitos | Si5351 (clock do slot), sem PIC. |
-| Tamanho | 110,1 × 75,1 mm |
+| Tamanho | 110,1 × 61,1 mm |
 | Projeto KiCad | [`hardware-v1.0/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
+| Mecânica | Sem os 6 furos M3 do Mega (só os 4 furos de canto); F1 entre o slot e o header do Mega, sem a faixa extra de baixo (D141) |
 | Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
 
 ## Troca de cartucho
