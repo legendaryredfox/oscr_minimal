@@ -71,6 +71,8 @@ Nada disto rodou num RP2040 nem numa placa. Falta, em ordem:
 
 ## Bancada na placa v1.0 (antes de encomendar a v1.3)
 
+**Guia passo a passo para montar na protoboard, com desenhos e roteiro de teste: [`bancada/README.md`](bancada/README.md).** O resumo abaixo é a referência das ligações.
+
 Tire o PIC do soquete U2. Pinos do soquete (do `pinmap.md`): 1 = 5 V, 2 = CLK2, 3 = D41, 4 = D40,
 5 = slot 25, 6 = slot 24, 7 = slot 55, 8 = GND.
 
