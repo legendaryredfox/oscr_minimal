@@ -7,10 +7,11 @@ import oscr.*
  * Dispositivo simulado e síncrono (modo MOCK, sistemas 0 e 255) para `--simulate` e testes: responde dentro de `write`, sem threads.
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
-class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false) : Transport {
+class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false, val selftestReport: List<Triple<Int, Int, Int>> = emptyList()) : Transport {
     var volt = 1                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): sobe em 3,3 V (estado seguro); o host pede 5 V (padrão)
     var chosen = false                                          // o usuário escolheu 3,3 V
     val voltCalls = mutableListOf<Int>()
+    var selftestCalls = 0                                       // achados do autoteste simulado: (tipo, pino a, pino b)
     private val cartReadable get() = voltSelect && cartNeeds5v && volt == 2     // cartucho simulado que só lê a 5 V
     private val dec = FrameDecoder()
     private var out = ByteArray(0)
@@ -48,7 +49,12 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                     else -> { if (action != Volt.STATUS) { volt = action; chosen = action == Volt.V3V3; voltCalls += volt }; pushVolt() }
                 }
             }
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (voltSelect) 57 else 25) + le16(0) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_SELFTEST -> {
+                selftestCalls++
+                val rep = selftestReport.take(24)
+                push(Proto.T_SELFTEST_RESP, byteArrayOf(if (selftestReport.size > 24) 1 else 0, rep.size.toByte()) + rep.flatMap { listOf(it.first.toByte(), it.second.toByte(), it.third.toByte()) }.toByteArray())
+            }
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (voltSelect) 121 else 89) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())

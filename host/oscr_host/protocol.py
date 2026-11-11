@@ -17,12 +17,15 @@ CRC_LEN = 4
 T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04, 0x05
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
 T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/referencia/protocolo.md)
+T_SELFTEST = 0x0E                       # autoteste da placa sem cartucho (P-12, docs/referencia/protocolo.md)
 T_VOLT = 0x0D                          # tensão dos slots: consulta ou escolhe 3,3 V/5 V (docs/referencia/protocolo.md, D138)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/referencia/protocolo.md)
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
 T_VOLT_RESP = 0x89
+T_SELFTEST_RESP = 0x8A
+ST_GND, ST_PAIR, ST_NO_PULLUP, ST_NO_CLOCKGEN = 1, 2, 3, 4   # tipos de achado do SELFTEST
 VOLT_STATUS, VOLT_3V3, VOLT_5V = 0, 1, 2       # ação do VOLT (seletor 3,3 V/5 V, D138)
 
 KIND_ROM, KIND_SAVE = 1, 2
@@ -191,7 +194,7 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32),
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32), "selftest": bool(flags & 64),
             "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
 
 
@@ -251,3 +254,22 @@ def mock_byte(i: int) -> int:
 
 def mock_data(size: int = MOCK_SIZE) -> bytes:
     return bytes(mock_byte(i) for i in range(size))
+
+
+def pin_name(pin: int) -> str:
+    """Nome do pino na numeração do Arduino Mega: 54 em diante são A0... (como o autoteste do OSCR imprime)."""
+    return f"A{pin - 54}" if pin >= 54 else f"D{pin}"
+
+
+def parse_selftest_resp(p: bytes) -> dict:
+    """SELFTEST_RESP: `ok` se nada foi achado; `truncated` se houve mais achados do que cabem na resposta.
+    Cada achado: `{"kind": "gnd"|"pair"|"pullup"|"clockgen", "pins": [nomes]}`."""
+    if len(p) < 2 or len(p) < 2 + p[1] * 3:
+        raise ProtocolError("SELFTEST_RESP curto")
+    kinds = {ST_GND: "gnd", ST_PAIR: "pair", ST_NO_PULLUP: "pullup", ST_NO_CLOCKGEN: "clockgen"}
+    findings = []
+    for i in range(p[1]):
+        k, a, b = p[2 + i * 3: 5 + i * 3]
+        pins = {ST_GND: [a], ST_PAIR: [a, b], ST_NO_PULLUP: [a]}.get(k, [])
+        findings.append({"kind": kinds.get(k, f"unknown{k}"), "pins": [pin_name(x) for x in pins]})
+    return {"ok": not findings and not p[0], "truncated": bool(p[0]), "findings": findings}

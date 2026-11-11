@@ -43,6 +43,7 @@ offset  tamanho  campo
 | `0x0C` | `ERASE` | `u8 sistema`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (as três últimas sempre enviadas). Só o sistema 7 (programador de flash genérico, D85): apaga o chip inteiro e responde `ACK` (offset 0) só no fim, ou `ERRO`. O host espera até 90 s e **nunca reenvia** (reenviar apagaria de novo). `INFO_RESP.flags` bit 4 diz que existe |
 | `0x0B` | `WRITE_ROM` | `u8 sistema`, `u32 tamanho`, `u16 bloco`, `u16 chip`, `u16 prg_kb`, `u16 chr_kb` (os três últimos são sempre enviados). Grava a **ROM** em cartucho de flash (D77). Só no firmware em modo fluxo (fork do OSCR); `INFO_RESP.flags` bit 3 diz que existe |
 | `0x0D` | `VOLT` | `u8 ação`: 0 consulta, 1 escolhe 3,3 V, 2 escolhe 5 V (placa com o seletor de tensão, D138). Responde `VOLT_RESP`. Escolher a tensão solta todos os pinos de sinal, troca o seletor e espera o rail assentar (~0,2 s). O 5V dos slots **nunca é cortado** (o desligamento por software foi retirado, D139). Sem seletor (`INFO` flag bit 5 = 0), a consulta responde 5 V fixo e escolher devolve `0x0001`. A placa sobe em 3,3 V (estado seguro do hardware: abrir a porta reinicia o Mega); o host pede 5 V antes de um comando de cartucho, a menos que o usuário tenha escolhido 3,3 V |
+| `0x0E` | `SELFTEST` | sem payload. Autoteste da placa **sem cartucho** (P-12): roda `OSCR::Cores::SelfTest::run()` do OSCR (curtos entre os pinos 2 a 9, 14 a 17, 22 a 37, 42 a 49 e A0 a A15, curto com GND, pull-up de 1 kΩ no D7, Si5351). Responde `SELFTEST_RESP` só no fim; **demora cerca de 45 s** (o host espera até 90 s). Só existe se `INFO` flag bit 6 = 1; senão devolve `0x0001`. Não mexe na tensão do seletor. Deixa os pinos de sinal soltos e os clocks do Si5351 ligados |
 
 ### Dispositivo → host
 
@@ -57,11 +58,12 @@ offset  tamanho  campo
 | `0x87` | `ERRO` | `u16 código`, `u8 n`, `n` bytes de texto ASCII (diagnóstico, não traduzido) |
 | `0x88` | `PROGRESSO` | `u32 offset`, `u32 total` (opcional, a cada ~1 s sem `DATA`) |
 | `0x89` | `VOLT_RESP` | `u8 seletor` (1 = a placa tem o seletor de tensão, D138), `u8 tensão` (0 fixa em 5 V sem seletor, 1 = 3,3 V, 2 = 5 V), `u8 escolhida` (1 = o usuário escolheu 3,3 V; a placa sobe em 3,3 V sem escolha, e só a escolha explícita exige confirmação do host para subir a 5 V) |
+| `0x8A` | `SELFTEST_RESP` | `u8 cortado` (1 = houve mais achados do que cabem), `u8 n` (0 a 24) e `n` achados de 3 bytes `u8 tipo, u8 pino a, u8 pino b`. Tipos: 1 = pino `a` em curto com GND; 2 = pinos `a` e `b` em curto entre si; 3 = falta o pull-up de 1 kΩ no D7 (`a` = 7; só vale em placa com R2, isto é, com slot de SNES); 4 = o Si5351 não responde. Pinos na numeração do Arduino (54 em diante = A0...). `n` = 0 e `cortado` = 0: nenhum problema |
 
 `seq` do host é livre (incremente a cada pedido). O dispositivo repete o `seq` do pedido em todas as respostas daquele pedido (`DATA` do mesmo fluxo repete o `seq` do `DUMP_ROM`/`READ_SAVE`).
 
 ### Flags de `INFO_RESP`
-bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); bit 3: aceita `WRITE_ROM` (D77); bit 5: a placa tem o seletor de tensão 3,3 V/5 V (`VOLT`, D138); bit 4: tem o programador de flash genérico (sistema 7 e `ERASE`, D85); demais: 0.
+bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detectado; bit 2: PIC (CIC) presente (informativo, pode ser 0 se não houver como detectar); bit 3: aceita `WRITE_ROM` (D77); bit 5: a placa tem o seletor de tensão 3,3 V/5 V (`VOLT`, D138); bit 4: tem o programador de flash genérico (sistema 7 e `ERASE`, D85); bit 6: tem o autoteste (`SELFTEST`, P-12); demais: 0.
 
 ## 4. Sistemas
 

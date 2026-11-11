@@ -19,6 +19,7 @@
 # include "cores/SNES.h"
 # include "cores/NES.h"
 # include "cores/SMS.h"
+# include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
 # include "dumper/SnesFlash.h"
@@ -286,6 +287,7 @@ namespace OSCR::Dumper
     // Sobe em 3,3 V, o estado seguro do hardware (com o Mega em reset o pino solto e o pull-up do gate dão 3,3 V): a CLI e a GUI abrem a porta, o Mega reinicia
     // e um cartucho de 3,3 V no slot não pode receber 5 V antes de o host escolher. O host pede 5 V (padrão, D138) quando o usuário não escolheu 3,3 V.
     uint8_t cartVolt = kVoltSelect ? oscr::volt::kVolt3V3 : oscr::volt::kVoltNone;
+    oscr::SelfTestReport * selfTestOut = nullptr;   // preenchido por noteSelfTest() durante o SELFTEST
     bool voltChosen = false;                    // o usuário escolheu 3,3 V (cartucho marcado como 3,3 V): o host pede confirmação antes de subir para 5 V
 
     /** Pino do seletor (D18 = PD3): alto = Q4 aberto = 3,3 V; baixo = Q4 conduz = 5 V. Com o Mega em reset o pino solto e o pull-up do gate dão 3,3 V. */
@@ -451,6 +453,19 @@ namespace OSCR::Dumper
         delay(OSCR_VOLT_SETTLE_MS);
         return true;
       }
+      // Autoteste do OSCR (cores/SelfTest.cpp, chamado direto): precisa do slot vazio. Os achados chegam por noteSelfTest().
+      bool selftest_supported() override { return true; }
+      bool selftest(oscr::SelfTestReport & r, uint16_t & err) override
+      {
+        releaseCartPins();
+        selfTestOut = &r;
+        bool ok = runCore([] { OSCR::Cores::SelfTest::run(); }, true);   // erros suaves: cada achado só marca o erro e o teste segue
+        selfTestOut = nullptr;
+        releaseCartPins();
+        if (!ok) { err = oscr::E_CARTUCHO_IO; return false; }
+        return true;
+      }
+
       void volt_info(oscr::VoltInfo & p) override
       {
         p.select = kVoltSelect;
@@ -948,6 +963,11 @@ namespace OSCR::Dumper
   void noteError() { errorFlag = true; }
 
   void noteAbort() { abortHit = true; }
+
+  void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
+  {
+    if (selfTestOut != nullptr) selfTestOut->add(kind, a, b);
+  }
 
   [[ noreturn ]] void fatal()
   {

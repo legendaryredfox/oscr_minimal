@@ -113,6 +113,12 @@ Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequênci
 | Escolher o tamanho da ROM no menu | ✅ `--prg` / campo de tamanho |
 | Atualizar a leitura do cartucho (`Refresh`) | ✅ cada comando lê o cabeçalho de novo |
 
+## Ferramentas da placa
+
+| Função do OSCR | Estado |
+|---|---|
+| Autoteste (`SelfTest.cpp`): curtos entre pinos e com GND, pull-up do D7, Si5351 | ✅ `SELFTEST` (P-12, D152): o núcleo é chamado direto; `selftest` nas duas CLIs e cartão na GUI; nunca rodou em hardware. A parte de tensões (`testVoltages`) só existe no HW com ATmega onboard e não entra |
+
 ## Outros sistemas do OSCR (stubs na GUI)
 
 Arcadia 2001, Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, ColecoVision, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Nintendo 64, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, RCA Studio II, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.

@@ -7,7 +7,7 @@ Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware
 | Item | Estado |
 |---|---|
 | Cópia do upstream em `firmware/oscr/` | feita (commit `d9cb26a` do upstream) |
-| Núcleos desligados (`user.ini`) | N64, autoteste (o SMS foi ligado na D137: Master System, Game Gear e SG-1000) |
+| Núcleos desligados (`user.ini`) | N64 (o autoteste foi ligado na D152; o SMS foi ligado na D137: Master System, Game Gear e SG-1000) |
 | Compila para o Mega (`pio run -e SerialASCII`) | sim: 118.572 B de flash (46,7%), 3.147 B de RAM (38,4%) |
 | UI de texto silenciada | feita (`ClockedSerial.mute`, `rawWrite` só para o protocolo) |
 | `OSCR::Storage` sem SD | **feito**: `StreamFile` (arquivo virtual) e `StreamSd` (sem sistema de arquivos); o SD sai do build |

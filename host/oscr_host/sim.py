@@ -22,7 +22,7 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False):
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
@@ -32,6 +32,8 @@ class MockDevice:
         self.volt = 1                         # 1 = 3,3 V, 2 = 5 V
         self.chosen = False                   # o usuário escolheu 3,3 V
         self.volt_calls: list[int] = []
+        self.selftest_report = selftest_report or []   # achados do autoteste simulado: tuplas (tipo, pino a, pino b)
+        self.selftest_calls = 0
         self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
@@ -109,9 +111,13 @@ class MockDevice:
                     self.chosen = action == P.VOLT_3V3
                     self.volt_calls.append(self.volt)
                 self._send(t, P.T_VOLT_RESP, f.seq, self._volt_resp())
+        elif f.type == P.T_SELFTEST:
+            self.selftest_calls += 1
+            rep = self.selftest_report[:24]
+            self._send(t, P.T_SELFTEST_RESP, f.seq, bytes([1 if len(self.selftest_report) > 24 else 0, len(rep)]) + b"".join(bytes(x) for x in rep))
         elif f.type == P.T_INFO:
             # proto, firmware 0.1.0, flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
-            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b11001 | (0b100000 if self.volt_select else 0)]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
+            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, 0, 1, 0, 0b1011001 | (0b100000 if self.volt_select else 0)]) + (0).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little"))
         elif f.type == P.T_DETECT:
             sysid = f.payload[0] if f.payload else 0
             if sysid in (0, 255):

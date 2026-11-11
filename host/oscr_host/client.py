@@ -79,6 +79,11 @@ class Client:
         f = self._request(P.T_VOLT, bytes([action]), self._next_seq(), {P.T_VOLT_RESP}, self.long_timeout)
         return P.parse_volt_resp(f.payload)
 
+    def selftest(self) -> dict:
+        """SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware."""
+        f = self._request(P.T_SELFTEST, b"", self._next_seq(), {P.T_SELFTEST_RESP}, max(self.long_timeout, 90.0))
+        return P.parse_selftest_resp(f.payload)
+
     def detect(self, system: int, chip: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> dict:
         f = self._request(P.T_DETECT, P.build_detect(system, chip, prg_kb, chr_kb), self._next_seq(), {P.T_DETECT_RESP},
                           self.long_timeout)

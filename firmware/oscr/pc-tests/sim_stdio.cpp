@@ -76,11 +76,18 @@ struct VoltMock : oscr::MockBackend {
   void volt_info(oscr::VoltInfo& p) override { p.select = true; p.volt = volt; }
 };
 
+// Backend com o autoteste (P-12). Uso: sim_stdio selftest. Devolve um curto com GND (D30) e um entre dois pinos (D22 e A3).
+struct SelfMock : oscr::MockBackend {
+  bool selftest_supported() override { return true; }
+  bool selftest(oscr::SelfTestReport& r, uint16_t&) override { usleep(20000); r.add(oscr::ST_GND, 30, 0); r.add(oscr::ST_PAIR, 22, 57); return true; }
+};
+
 int main(int argc, char** argv) {
   static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
-  static oscr::MockBackend plain; static StreamMock streamed; static VoltMock voltage;
+  static oscr::MockBackend plain; static StreamMock streamed; static VoltMock voltage; static SelfMock selftest;
   oscr::Backend& be = (argc > 1 && !strcmp(argv[1], "stream")) ? static_cast<oscr::Backend&>(streamed)
-                    : (argc > 1 && !strcmp(argv[1], "volt")) ? static_cast<oscr::Backend&>(voltage) : static_cast<oscr::Backend&>(plain);
+                    : (argc > 1 && !strcmp(argv[1], "volt")) ? static_cast<oscr::Backend&>(voltage)
+                    : (argc > 1 && !strcmp(argv[1], "selftest")) ? static_cast<oscr::Backend&>(selftest) : static_cast<oscr::Backend&>(plain);
   oscr::Session s(oscr::Io{nullptr, rd, wr, now}, be, rx, sizeof rx, tx, sizeof tx);
   for (;;) {
     struct pollfd p = {0, POLLIN, 0};

@@ -2,6 +2,7 @@
 """Coisas que todo comando usa: conexão (porta ou simulador), sistema, base de dados."""
 from __future__ import annotations
 
+import os
 import sys
 
 from .. import database as DB
@@ -13,6 +14,11 @@ from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_REFUSED, EXIT_USA
 
 
 BAUDS = (1_000_000, 115_200)
+
+
+def _sim_selftest_report() -> list:
+    """OSCR_SIM_SELFTEST=1: o simulador acha um curto com GND (D30) e um par em curto (D22 e A3), para ver o texto do `selftest`."""
+    return [(P.ST_GND, 30, 0), (P.ST_PAIR, 22, 57)] if os.environ.get("OSCR_SIM_SELFTEST") == "1" else []
 
 
 def list_ports() -> list[str]:
@@ -95,7 +101,8 @@ def _open(args) -> tuple[Client, Transport, dict]:
         from .. import sim
 
         # OSCR_SIM_VOLT=1: o simulador finge o seletor 3,3 V/5 V (sobe em 3,3 V); OSCR_SIM_5V_CART=1: o cartucho só é lido a 5 V
-        dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1")        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
+        dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1",
+                             selftest_report=_sim_selftest_report())        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()

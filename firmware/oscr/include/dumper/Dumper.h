@@ -22,6 +22,10 @@ namespace OSCR::Dumper
   /// O núcleo desistiu por um prompt de abortar/tentar de novo/continuar (cabeçalho inválido ou sem cartucho).
   void noteAbort();
 
+  /// Achado do autoteste (cores/SelfTest.cpp): 1 = pino `a` em curto com GND, 2 = pinos `a` e `b` em curto, 3 = falta o pull-up de 1 kΩ no D7, 4 = sem Si5351.
+  /// Pinos na numeração do Arduino (54 em diante = A0...). Só vale durante o comando SELFTEST.
+  void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b);
+
   /// Erro fatal dos núcleos (UI::fatalError*): volta ao laço de comandos sem terminar a função do núcleo.
   [[ noreturn ]] void fatal();
 }

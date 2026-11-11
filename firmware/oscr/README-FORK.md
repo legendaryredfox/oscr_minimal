@@ -6,7 +6,7 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 
 | Arquivo | Mudança |
 |---|---|
-| `user.ini` (novo) | Desliga os núcleos N64 e autoteste (`[cores]`). Ficam SNES, NES/Famicom, Mega Drive, SMS/Game Gear/SG-1000 (D137) e GB/GBC/GBA (`gbx`). |
+| `user.ini` (novo) | Desliga o núcleo N64 e liga o autoteste (`[cores]`, D152). Ficam SNES, NES/Famicom, Mega Drive, SMS/Game Gear/SG-1000 (D137) e GB/GBC/GBA (`gbx`). |
 | `include/flags.h` | `OSCR_DUMPER` (ligado): sem SD, saída pelo protocolo serial. |
 | `include/api/Storage.h`, `src/arch/avr/generic/Storage.cpp` | `File` usa `StreamFile` (arquivo virtual) e `sd` vira `StreamSd`; sem inicialização do SD. |
 | `include/arch/avr/generic/interfaces/ClockedSerial.h`, `src/.../ClockedSerial.cpp` | `mute` (a UI de texto não escreve) e `rawWrite` (só o protocolo). |
@@ -15,6 +15,7 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 | `include/cores/MegaDrive.h`, `include/cores/GameBoy.h` | `extern` de `eepSize`, `romBanks` e `sramBanks` (o laço de comandos precisa deles). |
 | `src/cores/GameBoyAdvance.cpp`, `src/cores/GameBoy.cpp` | `readROM` termina depois do último byte (sem reler o arquivo nem a base de dados). |
 | `src/apps/Prompts.cpp`, `src/apps/FileBrowser.cpp` | Sem usuário: os prompts não esperam; `selectFile` abre o arquivo virtual que o PC manda. |
+| `src/cores/SelfTest.cpp`, `include/dumper/Dumper.h` | Com `OSCR_DUMPER`, cada achado (curto com GND, par em curto, falta o pull-up do D7, sem Si5351) vai para `Dumper::noteSelfTest()`, que o devolve ao PC no `SELFTEST_RESP`; o resto é o código do OSCR. |
 | `src/cores/SNES.cpp` | Sem `checkAltConf` (base de dados); o tamanho vem do cabeçalho ou da opção `prg_kb`. |
 | `include/dumper/*`, `src/dumper/*` (novos) | `Dumper` (laço de comandos e backend do Mega Drive), `StreamFile`, e `oscr_proto`/`oscr_session` (o protocolo; vieram de `firmware/arquivo/oscr_serial` e agora evoluem aqui, com testes em `pc-tests/`). |
 | `README-FORK.md` (novo) | Este arquivo. |

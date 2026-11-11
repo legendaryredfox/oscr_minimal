@@ -570,6 +570,25 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
+    /** Autoteste da placa (P-12): sem cartucho, procura curtos entre os pinos, confere o pull-up do D7 e o Si5351. Demora cerca de 45 s. */
+    fun actSelftest() {
+        val c = client ?: return
+        run(S.STAGE_SELFTEST, needsCart = false) {
+            val r = withContext(Dispatchers.IO) { c.selftest() }
+            r.findings.forEach { fd ->
+                say(when (fd.kind) {
+                    "gnd" -> f(S.ST_GND, fd.pins.getOrElse(0) { "" })
+                    "pair" -> f(S.ST_PAIR, fd.pins.getOrElse(0) { "" }, fd.pins.getOrElse(1) { "" })
+                    "pullup" -> t(S.ST_PULLUP)
+                    "clockgen" -> t(S.ST_CLOCKGEN)
+                    else -> f(S.ST_UNKNOWN, fd.kind)
+                })
+            }
+            if (r.truncated) say(t(S.ST_TRUNC))
+            say(if (r.ok) t(S.ST_OK) else f(S.ST_FOUND, r.findings.size))
+        }
+    }
+
     fun actAbort() { client?.abort() }
 
     fun copyLog() {
@@ -629,6 +648,14 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 if (fwHex != null) TextButton(enabled = !busy, onClick = { fwHex = null }) { Text(t(S.FW_HEX_CLEAR)) }
             }
             Button(enabled = !busy && port.isNotEmpty(), onClick = { actFwAsk() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.FW_FLASH)) }
+        }
+    }
+
+    // Cartão "Autoteste": só com o firmware que tem o SELFTEST (INFO bit6)
+    val selftestCard: @Composable () -> Unit = {
+        SectionCard(t(S.ST_TITLE)) {
+            Text(t(S.ST_HINT), style = MaterialTheme.typography.bodyMedium)
+            OutlinedButton(enabled = canRun || (connected && !busy && stub != null), onClick = { actSelftest() }, modifier = Modifier.fillMaxWidth()) { Text(t(S.ST_RUN)) }
         }
     }
 
@@ -848,9 +875,9 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, fontPercent, onFontPercent, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
                     if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
                     if (wide) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); firmwareCard() }
+                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); if (connected && info?.selftest == true) selftestCard(); firmwareCard() }
                         Column(Modifier.weight(0.62f), verticalArrangement = Arrangement.spacedBy(16.dp)) { pendingCard(); cartridgeCard(); readCard(); writeCard() }
-                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard(); firmwareCard() }
+                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard(); if (connected && info?.selftest == true) selftestCard(); firmwareCard() }
                 }
             }
         }

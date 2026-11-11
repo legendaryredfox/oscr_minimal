@@ -67,6 +67,16 @@ volt.no_selector	esta placa não tem o seletor de tensão: o slot fica sempre em
 volt.state_3v3	tensão do slot: 3,3 V	slot voltage: 3.3 V	напряжение слота: 3,3 В	插槽电压：3.3 V
 volt.state_5v	tensão do slot: 5 V	slot voltage: 5 V	напряжение слота: 5 В	插槽电压：5 V
 volt.state_fixed	tensão do slot: 5 V fixo (placa sem seletor)	slot voltage: fixed 5 V (board without selector)	напряжение слота: фиксированные 5 В (плата без селектора)	插槽电压：固定 5 V（板上没有选择器）
+selftest.start	autoteste: tire os cartuchos de todos os slots. Demora cerca de 45 s...	self-test: remove the cartridges from every slot. It takes about 45 s...	самотест: извлеките картриджи из всех слотов. Около 45 с...	自检：请取出所有插槽中的卡带。约需 45 秒……
+selftest.ok	autoteste: nenhum problema encontrado	self-test: no problem found	самотест: проблем не найдено	自检：未发现问题
+selftest.found	autoteste: {n} problema(s) encontrado(s)	self-test: {n} problem(s) found	самотест: найдено проблем: {n}	自检：发现 {n} 个问题
+selftest.gnd	pino {pin} em curto com GND	pin {pin} is shorted to GND	вывод {pin} замкнут на GND	引脚 {pin} 与 GND 短路
+selftest.pair	pinos {a} e {b} em curto entre si	pins {a} and {b} are shorted together	выводы {a} и {b} замкнуты между собой	引脚 {a} 与 {b} 互相短路
+selftest.pullup	falta o pull-up de 1 kΩ no D7 (R2). Placas sem slot de SNES não têm esse resistor: ignore este aviso nelas	the 1 kΩ pull-up on D7 (R2) is missing. Boards without a SNES slot do not have this resistor: ignore this warning on them	нет подтягивающего резистора 1 кОм на D7 (R2). На платах без слота SNES его нет: там это предупреждение можно игнорировать	缺少 D7 上的 1 kΩ 上拉电阻（R2）。没有 SNES 插槽的板子本来就没有此电阻：这类板子可忽略此提示
+selftest.clockgen	o Si5351 não responde no I²C (módulo ausente, mal encaixado ou ligado ao contrário)	the Si5351 does not answer on I²C (module missing, badly seated or reversed)	Si5351 не отвечает по I²C (модуль отсутствует, плохо вставлен или повёрнут наоборот)	Si5351 在 I²C 上无响应（模块缺失、插接不良或插反）
+selftest.truncated	há mais problemas do que os mostrados; corrija estes e rode de novo	there are more problems than shown; fix these and run again	проблем больше, чем показано; исправьте эти и запустите снова	问题多于所列；请先修复这些再重新运行
+selftest.unknown	achado desconhecido ({kind}): atualize o programa	unknown finding ({kind}): update the program	неизвестный результат ({kind}): обновите программу	未知结果（{kind}）：请更新程序
+selftest.unsupported	este firmware não tem o autoteste: grave o firmware atual com firmware-flash	this firmware has no self-test: flash the current firmware with firmware-flash	в этой прошивке нет самотеста: прошейте текущую прошивку командой firmware-flash	此固件没有自检功能：请用 firmware-flash 刷入当前固件
 fw.no_hex	arquivo de firmware não encontrado: {path}	firmware file not found: {path}	файл прошивки не найден: {path}	未找到固件文件：{path}
 fw.no_hex.hint	use --hex ARQUIVO.hex, ou compile antes: `cd firmware/oscr && pio run -e {env}`	use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e {env}`	укажите --hex ФАЙЛ.hex или сначала соберите: `cd firmware/oscr && pio run -e {env}`	请使用 --hex 文件.hex，或先编译：`cd firmware/oscr && pio run -e {env}`
 fw.no_avrdude_given	avrdude não encontrado: {path}	avrdude not found: {path}	avrdude не найден: {path}	未找到 avrdude：{path}

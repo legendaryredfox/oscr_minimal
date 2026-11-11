@@ -155,6 +155,7 @@ O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` 
 
 Faça nesta ordem e anote o resultado em `docs/decisoes.md`:
 
+0. **Autoteste da placa, sem cartucho:** `dumper.py selftest` (ou o cartão "Autoteste da placa" da GUI). Demora cerca de 45 s e aponta curtos entre pinos, o pull-up do D7 e o Si5351. Rode logo depois de montar, antes de colocar qualquer cartucho; se achar problema, volte à inspeção visual (montagem.md, seção 5).
 1. Firmware de teste (`OSCR_MOCK`): `dumper.py dump -s mock` dá CRC32 `D1DF4327`.
 2. Firmware real. `dumper.py info` mostra "sistemas: snes, nes, famicom, md, gba".
 3. **SNES LoROM simples:** `detect -s snes`, depois `dump`. Compare com o No-Intro.

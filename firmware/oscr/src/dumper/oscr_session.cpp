@@ -88,6 +88,7 @@ void Session::handle() {
       break;
     case T_ERASE: do_erase(seq, p, len); break;
     case T_VOLT: do_volt(seq, p, len); break;
+    case T_SELFTEST: do_selftest(seq); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
       do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
@@ -101,7 +102,7 @@ void Session::handle() {
 }
 
 void Session::do_info(uint8_t seq) {
-  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0)), 0, 0, 0, 0};   // bit5: seletor de tensão (D138)
+  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0) | (be_.selftest_supported() ? 64 : 0)), 0, 0, 0, 0};   // bit5: seletor de tensão (D138); bit6: SELFTEST
   put_u16(p + 5, be_.systems());
   put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/referencia/protocolo.md, seção 3)
   send(T_INFO_RESP, seq, p, 9);
@@ -140,6 +141,18 @@ void Session::do_volt(uint8_t seq, const uint8_t* p, uint16_t len) {
   be_.volt_info(vi);
   uint8_t r[3] = {uint8_t(vi.select ? 1 : 0), vi.volt, uint8_t(vi.chosen ? 1 : 0)};
   send(T_VOLT_RESP, seq, r, 3);
+}
+
+void Session::do_selftest(uint8_t seq) {
+  if (!be_.selftest_supported()) { send_error(seq, E_COMANDO, "sem autoteste"); return; }
+  SelfTestReport r;
+  uint16_t err = E_CARTUCHO_IO;
+  if (!be_.selftest(r, err)) { send_error(seq, err); return; }
+  uint8_t p[2 + SelfTestReport::kMax * 3];
+  p[0] = r.truncated ? 1 : 0;
+  p[1] = r.n;
+  memcpy(p + 2, r.item, size_t(r.n) * 3);
+  send(T_SELFTEST_RESP, seq, p, uint16_t(2 + r.n * 3));
 }
 
 int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {

@@ -21,13 +21,16 @@ constexpr uint8_t  MAGIC0 = 0xA5, MAGIC1 = 0x5A;
 
 enum : uint8_t {  // host -> dispositivo
   T_INFO = 0x01, T_DETECT = 0x02, T_DUMP_ROM = 0x03, T_READ_SAVE = 0x04, T_WRITE_SAVE = 0x05,
-  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B, T_ERASE = 0x0C, T_VOLT = 0x0D,
+  T_ACK = 0x06, T_NAK = 0x07, T_ABORT = 0x08, T_H_DATA = 0x09, T_H_END = 0x0A, T_WRITE_ROM = 0x0B, T_ERASE = 0x0C, T_VOLT = 0x0D, T_SELFTEST = 0x0E,
   // dispositivo -> host
   T_INFO_RESP = 0x81, T_DETECT_RESP = 0x82, T_BEGIN = 0x83, T_DATA = 0x84, T_END = 0x85,
-  T_D_ACK = 0x86, T_ERRO = 0x87, T_PROGRESSO = 0x88, T_VOLT_RESP = 0x89,
+  T_D_ACK = 0x86, T_ERRO = 0x87, T_PROGRESSO = 0x88, T_VOLT_RESP = 0x89, T_SELFTEST_RESP = 0x8A,
 };
 
 enum : uint8_t { KIND_ROM = 1, KIND_SAVE = 2 };
+
+// Achados do SELFTEST (P-12): 1 pino em curto com GND (a), 2 curto entre os pinos a e b, 3 sem o pull-up de 1 kΩ no D7, 4 sem Si5351. Pinos na numeração do Arduino (54 = A0).
+enum : uint8_t { ST_GND = 1, ST_PAIR = 2, ST_NO_PULLUP = 3, ST_NO_CLOCKGEN = 4 };
 
 enum : uint8_t { VOLT_STATUS = 0, VOLT_3V3 = 1, VOLT_5V = 2 };   // ação do VOLT: consulta ou escolhe a tensão dos slots (seletor 3,3 V/5 V, D138; docs/referencia/protocolo.md)
 

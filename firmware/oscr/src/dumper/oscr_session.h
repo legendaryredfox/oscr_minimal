@@ -21,6 +21,18 @@ struct VoltInfo {
   bool chosen = false;
 };
 
+// Resultado do autoteste (SELFTEST_RESP, P-12): até `kMax` achados de 3 bytes (tipo, pino a, pino b); `truncated` se houve mais.
+struct SelfTestReport {
+  static constexpr uint8_t kMax = 24;
+  uint8_t n = 0;
+  bool truncated = false;
+  uint8_t item[kMax][3] = {};
+  void add(uint8_t kind, uint8_t a, uint8_t b) {
+    if (n >= kMax) { truncated = true; return; }
+    item[n][0] = kind; item[n][1] = a; item[n][2] = b; n++;
+  }
+};
+
 struct DetectInfo {
   uint8_t status = 1;       // 0 detectado, 1 nenhum, 2 não suportado, 3 erro de hardware, 4 cabeçalho inválido (há dados, checksum errado)
   uint32_t rom_size = 0, save_size = 0;
@@ -77,6 +89,9 @@ class Backend {
   // Muda a tensão dos slots (1 = 3,3 V, 2 = 5 V): solta os pinos de sinal, troca o seletor e espera o rail assentar.
   virtual bool cart_voltage(uint8_t volt, uint16_t& err) { (void)volt; err = E_COMANDO; return false; }
   virtual void volt_info(VoltInfo& p) { p.select = volt_select(); }
+  // Autoteste da placa, sem cartucho (curtos entre os pinos, pull-up do D7, Si5351). Demora cerca de 45 s; o host espera até 90 s. INFO bit6.
+  virtual bool selftest_supported() { return false; }
+  virtual bool selftest(SelfTestReport& r, uint16_t& err) { (void)r; err = E_COMANDO; return false; }
 };
 
 class MockBackend : public Backend {
@@ -120,6 +135,7 @@ class Session {
   void do_detect(uint8_t seq, uint8_t sys);
   void do_erase(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_volt(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_selftest(uint8_t seq);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);
   void do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t block);

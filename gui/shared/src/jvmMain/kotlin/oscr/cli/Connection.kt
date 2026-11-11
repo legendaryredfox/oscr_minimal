@@ -22,7 +22,7 @@ internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
 
 private fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v)
+        val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v, selftestReport = if (io.simSelftest) listOf(Triple(1, 30, 0), Triple(2, 22, 57)) else emptyList())
         val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }

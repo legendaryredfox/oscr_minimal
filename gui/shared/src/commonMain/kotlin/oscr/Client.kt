@@ -63,6 +63,10 @@ class OscrClient(
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
+    /** SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware. */
+    fun selftest(): SelfTestResult =
+        parseSelfTest(request(Proto.T_SELFTEST, ByteArray(0), nextSeq(), setOf(Proto.T_SELFTEST_RESP), maxOf(longTimeoutMs, 90_000L)).payload)
+
     /** VOLT: consulta ou escolhe a tensão dos slots ([Volt]); seletor 3,3 V/5 V (D138). O firmware espera o rail assentar (~0,2 s). */
     fun voltage(action: Int = Volt.STATUS): VoltState {
         val p = request(Proto.T_VOLT, byteArrayOf(action.toByte()), nextSeq(), setOf(Proto.T_VOLT_RESP), longTimeoutMs).payload

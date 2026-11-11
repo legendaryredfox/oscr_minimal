@@ -256,6 +256,46 @@ static void test_volt() {
   CHECK(s2.ask(T_VOLT, bad, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);        // 3 e acima não existem
 }
 
+// ---- SELFTEST: autoteste da placa sem cartucho (P-12)
+struct SelfBackend : MockBackend {
+  bool supported = true, fail = false;
+  int items = 0;                                    // quantos achados o teste simulado devolve
+  int calls = 0;
+  bool selftest_supported() override { return supported; }
+  bool selftest(SelfTestReport& r, uint16_t& err) override {
+    calls++;
+    if (fail) { err = E_CARTUCHO_IO; return false; }
+    for (int i = 0; i < items; i++) r.add(i == 0 ? ST_GND : ST_PAIR, uint8_t(22 + i), i == 0 ? 0 : uint8_t(54 + i));
+    return true;
+  }
+};
+
+static void test_selftest() {
+  uint8_t t; std::vector<uint8_t> p;
+  SelfBackend none; none.supported = false;                                                       // firmware sem o núcleo: INFO sem bit6, comando recusado
+  VoltRun q(none);
+  CHECK(q.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && !(p[4] & 64));
+  CHECK(q.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO && none.calls == 0);
+
+  SelfBackend ok;                                                                                 // tudo certo: resposta vazia
+  VoltRun s(ok);
+  CHECK(s.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && (p[4] & 64));
+  CHECK(s.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_SELFTEST_RESP && p.size() == 2 && p[0] == 0 && p[1] == 0 && ok.calls == 1);
+
+  SelfBackend bad; bad.items = 3;                                                                 // três achados: GND no pino 22 e dois pares
+  VoltRun b(bad);
+  CHECK(b.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_SELFTEST_RESP && p.size() == 2 + 9 && p[0] == 0 && p[1] == 3);
+  CHECK(p[2] == ST_GND && p[3] == 22 && p[4] == 0 && p[5] == ST_PAIR && p[6] == 23 && p[7] == 55 && p[8] == ST_PAIR && p[9] == 24 && p[10] == 56);
+
+  SelfBackend many; many.items = 40;                                                              // acima do limite: corta em 24 e avisa
+  VoltRun m(many);
+  CHECK(m.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_SELFTEST_RESP && p.size() == 2 + SelfTestReport::kMax * 3 && p[0] == 1 && p[1] == SelfTestReport::kMax);
+
+  SelfBackend ioerr; ioerr.fail = true;                                                           // o núcleo falhou: ERRO
+  VoltRun e(ioerr);
+  CHECK(e.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_CARTUCHO_IO);
+}
+
 int main() {
   test_crc();
   test_info_frame_bytes();
@@ -265,6 +305,7 @@ int main() {
   test_session_info_detect();
   test_erase_e_detect_com_opcoes();
   test_volt();
+  test_selftest();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

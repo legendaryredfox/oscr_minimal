@@ -6,6 +6,9 @@
 # include "hardware.h"
 # include "ui.h"
 # include "cores/SelfTest.h"
+# if OSCR_DUMPER
+#   include "dumper/Dumper.h"   // fork oscr_minimal: o PC recebe o que o teste achou (README-FORK.md)
+# endif
 
 namespace OSCR::Cores::SelfTest
 {
@@ -89,6 +92,9 @@ namespace OSCR::Cores::SelfTest
 
   void printShortedPinError(uint8_t pin1, int8_t pin2 = 0)
   {
+# if OSCR_DUMPER
+    OSCR::Dumper::noteSelfTest(pin2 > 0 ? 2 : 1, pin1, pin2 > 0 ? uint8_t(pin2) : 0);
+# endif
     printErrorHeader();
     printShortedPinMessage(pin1, pin2);
     OSCR::UI::error(F(" are shorted!"));
@@ -127,6 +133,9 @@ namespace OSCR::Cores::SelfTest
 
     if (!__multiRead(7, 200, 20))
     {
+# if OSCR_DUMPER
+      OSCR::Dumper::noteSelfTest(3, 7, 0);
+# endif
       printErrorHeader();
       OSCR::UI::error(F("Error: 1K resistor not found."));
     }
@@ -178,6 +187,9 @@ namespace OSCR::Cores::SelfTest
 
     if (!OSCR::ClockGen::initialize())
     {
+# if OSCR_DUMPER
+      OSCR::Dumper::noteSelfTest(4, 0, 0);
+# endif
       printErrorHeader();
       OSCR::UI::error(FS(OSCR::Strings::Errors::ClockGenMissing));
     }

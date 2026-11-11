@@ -7,11 +7,11 @@ object Proto {
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
-    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_ACK = 0x06
+    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A
     const val T_INFO_RESP = 0x81; const val T_DETECT_RESP = 0x82; const val T_BEGIN = 0x83
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
-    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89
+    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A
     const val KIND_ROM = 1; const val KIND_SAVE = 2
     /** Maior leitura aceita (GBA: 32 MB). Acima disso o BEGIN é tratado como defeito. */
     const val MAX_STREAM = 64 shl 20
@@ -95,6 +95,8 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     val flashProg get() = flags and 16 != 0
     /** Placa com o seletor de tensão 3,3 V/5 V (D138). O 5V dos slots fica sempre ligado (D139). */
     val voltageSelect get() = flags and 32 != 0
+    /** O firmware tem o autoteste da placa (SELFTEST, P-12). */
+    val selftest get() = flags and 64 != 0
 }
 
 /** Ações do VOLT. */
@@ -112,3 +114,27 @@ class DumpResult(val data: ByteArray, val crc32: Int, val kind: Int) {
 
 /** Padrão do modo MOCK (docs/referencia/protocolo.md, seção 9). */
 fun mockData(size: Int = 32768) = ByteArray(size) { i -> (i * 7 + (i shr 8)).toByte() }
+
+/** Achado do SELFTEST: `kind` é "gnd", "pair", "pullup" ou "clockgen"; `pins` são nomes como D30 ou A3. */
+data class SelfTestFinding(val kind: String, val pins: List<String>)
+
+/** SELFTEST_RESP (P-12). `truncated`: houve mais achados do que cabem na resposta. */
+data class SelfTestResult(val ok: Boolean, val truncated: Boolean, val findings: List<SelfTestFinding>)
+
+/** Nome do pino na numeração do Arduino Mega: 54 em diante são A0... */
+fun pinName(pin: Int): String = if (pin >= 54) "A${pin - 54}" else "D$pin"
+
+fun parseSelfTest(p: ByteArray): SelfTestResult {
+    if (p.size < 2 || p.size < 2 + p.u8(1) * 3) throw ProtocolError(Fail.SHORT_REPLY, "SELFTEST_RESP")
+    val findings = (0 until p.u8(1)).map { i ->
+        val k = p.u8(2 + i * 3); val a = p.u8(3 + i * 3); val b = p.u8(4 + i * 3)
+        when (k) {
+            1 -> SelfTestFinding("gnd", listOf(pinName(a)))
+            2 -> SelfTestFinding("pair", listOf(pinName(a), pinName(b)))
+            3 -> SelfTestFinding("pullup", listOf(pinName(a)))
+            4 -> SelfTestFinding("clockgen", emptyList())
+            else -> SelfTestFinding("unknown$k", emptyList())
+        }
+    }
+    return SelfTestResult(findings.isEmpty() && p.u8(0) == 0, p.u8(0) != 0, findings)
+}
