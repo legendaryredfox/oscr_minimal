@@ -50,7 +50,7 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   │   ├── hardware-v1.1/    # a versão atual de cada placa está em boards/versoes.json
 │   │   ├── fab/              # gerbers-<versão>/, bom-<versão>.csv e um zip por versão para a JLCPCB
 │   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
-│   ├── 8_bits/               # esqueleto: NES, Famicom, Master System
+│   ├── 8_bits/               # NES, Famicom e Master System (v1.0 mínima com fusível, v1.1 com seletor de tensão; D153)
 │   ├── gb_gba/               # esqueleto: GB, GBC, GBA
 │   └── completa/             # esqueleto: todos os slots do OSCR, sem SD e sem tela (só USB)
 ├── docs/                     # docs gerais (valem para todas as placas)

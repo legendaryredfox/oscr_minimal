@@ -12,7 +12,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`famicom_nes/`](famicom_nes/) | Famicom e NES | Projeto KiCad criado da `16_and_8_bits` (D100), Si5351 sem PIC, 117 × 79 mm (D124), gerbers v1.1 gerados. **v1.1 com o seletor de tensão 3,3 V/5 V (D138).** Nada encomendado |
 | [`16_and_8_bits/`](16_and_8_bits/) | SNES, NES, Famicom, Mega Drive, GBA | Projeto KiCad pronto, só a v1.0 (o seletor de tensão da D138 ainda não foi roteado nesta placa). Nada encomendado |
 | [`megadrive_sms/`](megadrive_sms/) | Mega Drive, Master System | Projeto KiCad criado da `megadrive` v1.0 (D136), 107,1 × 83,1 mm, **v1.0 sem o bloco de troca**, gerbers v1.0 gerados. Nada encomendado. Pendências: direção da etiqueta do SMS, núcleo SMS no firmware |
-| [`8_bits/`](8_bits/) | NES, Famicom, Master System | Esqueleto. Pinagem do Master System ainda não levantada |
+| [`8_bits/`](8_bits/) | NES, Famicom, Master System | Projeto KiCad criado da `famicom_nes` com o slot SMS da `megadrive_sms` (D153), 117,1 × 97,1 mm (v1.0, mínima com fusível) e 117,1 × 109,1 mm (v1.1, com o seletor de tensão). Nada encomendado |
 | [`gb_gba/`](gb_gba/) | GBA; GB e GBC por adaptador | Projeto KiCad criado de `16_and_8_bits` (D94), 138 × 67 mm, gerbers v1.0 gerados. Nada encomendado |
 | [`n64/`](n64/) | N64 | Projeto KiCad criado da `16_and_8_bits` (D121), 3,3 V, Si5351 só para a EEPROM, 110,1 × 65,1 mm, só a v1.0 (placa de 3,3 V: sem seletor). Nada encomendado |
 | [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |

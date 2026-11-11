@@ -48,6 +48,8 @@ BOARD_CFG = {
     "nes": dict(caps=(2,), reg=False, nopic=True, tps={}),
     # Famicom + NES: Si5351 (só o CLK0, no pino 37 do NES), C2 (NES) e C3 (Famicom); sem PIC, R2, regulador nem pontos de teste
     "famicom_nes": dict(caps=(2, 3), reg=False, nopic=True, tps={}),
+    # NES + Famicom + Master System: Si5351 (só o CLK0, no pino 37 do NES), C2 (NES), C3 (Famicom) e C4 (SMS); sem PIC, R2, regulador nem pontos de teste
+    "8_bits": dict(caps=(2, 3, 4), reg=False, nopic=True, tps={}),
     # só Famicom: sem Si5351 (o slot não usa clock), PIC, R2 nem regulador; C2 do slot
     "famicom": dict(caps=(2,), reg=False, mdonly=True, tps={}),
     # só Mega Drive: sem SNES, Si5351, PIC nem R2; C2 do slot e C3/C4 extras
