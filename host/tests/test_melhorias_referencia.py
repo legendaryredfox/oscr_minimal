@@ -14,6 +14,7 @@ def test_sound_um_bel_se_deu_certo_e_tres_se_falhou(capsys):
 
 # ---------------------------------------------------------------- P2: save do GBA pela base do FlashGBX
 import hashlib
+from pathlib import Path
 import json
 import zlib
 
@@ -86,3 +87,77 @@ def test_dump_gba_sugere_o_save_da_base(monkeypatch, capsys, tmp_path):
     o = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert code == 0 and o["gba_save_type"] == 3 and o["gba_save_db"]["save_label"] == "SRAM 32 KB"
     G._cache.clear()
+
+
+# ---------------------------------------------------------------- P9: fotos do Game Boy Camera
+import struct
+
+from oscr_host import gbcamera as C
+
+
+def _tile(rows):
+    """Tile 8x8 de 2 bits: rows = 8 listas de 8 valores (0 a 3) -> 16 bytes (plano baixo e alto por linha)."""
+    b = bytearray()
+    for r in rows:
+        lo = sum(((v & 1) << (7 - j)) for j, v in enumerate(r))
+        hi = sum((((v >> 1) & 1) << (7 - j)) for j, v in enumerate(r))
+        b += bytes([lo, hi])
+    return bytes(b)
+
+
+def _save_com_uma_foto():
+    d = bytearray(C.SAVE_BYTES)
+    tile = _tile([[(i + j) % 4 for j in range(8)] for i in range(8)])
+    foto = tile * (16 * 14) + bytes(0x1000 - 0xE00)
+    d[0x2000:0x2000 + 0x1000] = foto                       # bloco 0
+    d[0x11D7:0x11D7 + 30] = bytes([0]) + bytes([0xFF] * 29)   # o álbum tem só a foto do bloco 0
+    return bytes(d), tile
+
+
+def test_decode_do_tile():
+    tile = _tile([[(i + j) % 4 for j in range(8)] for i in range(8)])
+    px = C.decode(tile * (16 * 14))
+    assert len(px) == 128 * 112
+    assert [px[i * 128 + j] for i in range(8) for j in range(8)] == [(i + j) % 4 for i in range(8) for j in range(8)]
+    assert px[8 * 128 + 8] == (0 + 0) % 4                    # o tile seguinte repete o desenho
+
+
+def test_extract_ordem_apagadas_e_vazias():
+    d, _ = _save_com_uma_foto()
+    fotos = C.extract(d)
+    assert [f.name for f in fotos][:2] == ["photo_01", "photo_02"] and fotos[-2].name == "game_face" and fotos[-1].name == "last_seen"
+    assert not fotos[0].deleted and not fotos[0].empty
+    assert fotos[1].deleted and fotos[1].empty                # o resto do álbum está apagado e em branco
+    assert (fotos[-1].width, fotos[-1].height) == (128, 123)
+    try:
+        C.extract(b"curto")
+        assert False
+    except ValueError:
+        pass
+
+
+def test_png_valido():
+    px = bytes((i % 4) for i in range(128 * 112))
+    for scale in (1, 3):
+        b = C.png(px, 128, 112, "green", scale)
+        assert b[:8] == b"\x89PNG\r\n\x1a\n"
+        w, h, depth, ctype = struct.unpack(">IIBB", b[16:26])
+        assert (w, h, depth, ctype) == (128 * scale, 112 * scale, 8, 3)
+        assert b.rstrip().endswith(b"IEND\xaeB`\x82")
+
+
+def test_comando_gbcamera(tmp_path, capsys):
+    from oscr_host import cli
+    d, _ = _save_com_uma_foto()
+    sav = tmp_path / "camera.sav"
+    sav.write_bytes(d)
+    code = cli.main(["--json", "gbcamera", "-i", str(sav), "-o", str(tmp_path / "fotos"), "--scale", "2", "--palette", "gbc"])
+    o = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    nomes = sorted(Path(f).name for f in o["files"])
+    assert code == 0 and nomes == ["game_face.png", "last_seen.png", "photo_01.png"] and len(o["skipped"]) == 29
+    code = cli.main(["--json", "gbcamera", "-i", str(sav), "-o", str(tmp_path / "todas"), "--all"])
+    o = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert code == 0 and len(o["files"]) == 32 and any(f.endswith("photo_02_apagada.png") for f in o["files"])
+    (tmp_path / "pequeno.sav").write_bytes(b"x" * 100)
+    assert cli.main(["--json", "gbcamera", "-i", str(tmp_path / "pequeno.sav")]) == 1
+    assert cli.main(["--json", "gbcamera", "-i", str(sav), "--scale", "9"]) == 64

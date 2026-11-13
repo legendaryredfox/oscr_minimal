@@ -76,3 +76,52 @@ class GbaSaveDbTest {
         assertNull(GbaSaveDb.lookup(rom(code = "WXYZ"), db))
     }
 }
+
+/** P9 (D160): fotos do Game Boy Camera. Igual a host/tests/test_melhorias_referencia.py. */
+class GbCameraTest {
+    private fun tile(f: (Int, Int) -> Int): ByteArray {
+        val b = ByteArray(16)
+        for (i in 0 until 8) {
+            var lo = 0; var hi = 0
+            for (j in 0 until 8) { val v = f(i, j); lo = lo or ((v and 1) shl (7 - j)); hi = hi or (((v shr 1) and 1) shl (7 - j)) }
+            b[i * 2] = lo.toByte(); b[i * 2 + 1] = hi.toByte()
+        }
+        return b
+    }
+
+    private fun saveComUmaFoto(): ByteArray {
+        val d = ByteArray(GbCamera.SAVE_BYTES)
+        val t = tile { i, j -> (i + j) % 4 }
+        for (k in 0 until 16 * 14) t.copyInto(d, 0x2000 + k * 16)
+        for (i in 0 until 30) d[0x11D7 + i] = 0xFF.toByte()
+        d[0x11D7] = 0
+        return d
+    }
+
+    @Test fun decodeDoTile() {
+        val t = tile { i, j -> (i + j) % 4 }
+        val buf = ByteArray(16 * 16 * 14); for (k in 0 until 16 * 14) t.copyInto(buf, k * 16)
+        val px = GbCamera.decode(buf, 0)
+        assertEquals(128 * 112, px.size)
+        for (i in 0 until 8) for (j in 0 until 8) assertEquals(((i + j) % 4).toByte(), px[i * 128 + j])
+    }
+
+    @Test fun extraiOrdemApagadasEVazias() {
+        val f = GbCamera.extract(saveComUmaFoto())
+        assertEquals("photo_01", f[0].name); assertEquals("game_face", f[30].name); assertEquals("last_seen", f[31].name)
+        assertTrue(!f[0].deleted && !f[0].empty); assertTrue(f[1].deleted && f[1].empty)
+        assertEquals(123, f[31].height)
+        assertFailsWith<IllegalArgumentException> { GbCamera.extract(ByteArray(10)) }
+    }
+
+    @Test fun pngValido() {
+        for (scale in listOf(1, 3)) {
+            val b = GbCameraPng.encode(ByteArray(128 * 112) { (it % 4).toByte() }, 128, 112, "green", scale)
+            assertEquals(0x89, b[0].toInt() and 0xFF); assertEquals("PNG", String(b, 1, 3))
+            val w = ((b[16].toInt() and 0xFF) shl 24) or ((b[17].toInt() and 0xFF) shl 16) or ((b[18].toInt() and 0xFF) shl 8) or (b[19].toInt() and 0xFF)
+            assertEquals(128 * scale, w); assertEquals(3, b[25].toInt())
+            val img = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(b))
+            assertEquals(128 * scale, img.width); assertEquals(112 * scale, img.height)
+        }
+    }
+}

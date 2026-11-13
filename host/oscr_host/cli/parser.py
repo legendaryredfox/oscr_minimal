@@ -11,6 +11,7 @@ from .. import romimage as RI
 from .. import __version__
 from . import messages
 from .cmd_db import cmd_identify, cmd_search
+from .cmd_gbcamera import cmd_gbcamera
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
 from .cmd_firmware import DEFAULT_ENV, cmd_firmware_flash
@@ -122,6 +123,10 @@ def build_parser() -> argparse.ArgumentParser:
     dtp = add("detect", cmd_detect, H("cmd_detect"))
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
     dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
+    gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
+    gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
+    gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))
+    gp.add_argument("--all", action="store_true", help=H("gbcamera_all"))
     ip = add("identify", cmd_identify, H("cmd_identify"))
     ip.add_argument("files", nargs="+", help=H("identify_files"))
     sp_ = add("search", cmd_search, H("cmd_search"), system=False)

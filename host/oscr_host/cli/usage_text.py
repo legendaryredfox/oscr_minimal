@@ -12,6 +12,7 @@ commands:
   firmware-flash  flash the fork's firmware to the Arduino Mega over USB with avrdude (replaces the board's program) [--hex FILE --env NAME --avrdude PATH --yes --dry-run]
   detect       detect the cartridge            (-s SYSTEM)
   identify     identify saved ROMs by CRC32 in the database (--db), without opening the port
+  gbcamera     extracts the photos of a Game Boy Camera save to PNG: -i SAVE.sav [-o FOLDER] [--palette gray|green|gbc] [--scale 1-8] [--all] (does not open the port)
   search       search games by name in the database (--db), without opening the port
   dump         read the ROM                    (-s SYSTEM [-o FILE])
   save-read    read the save                   (-s SYSTEM [-o FILE])
@@ -82,6 +83,7 @@ comandos:
   firmware-flash  grava o firmware do fork no Arduino Mega pela USB com o avrdude (substitui o programa da placa) [--hex ARQ --env NOME --avrdude CAMINHO --yes --dry-run]
   detect       detecta o cartucho              (-s SISTEMA)
   identify     identifica ROMs salvas pelo CRC32 na base de dados (--db), sem abrir a porta
+  gbcamera     extrai as fotos de um save do Game Boy Camera para PNG: -i SAVE.sav [-o PASTA] [--palette gray|green|gbc] [--scale 1-8] [--all] (não abre a porta)
   search       busca jogos pelo nome na base de dados (--db), sem abrir a porta
   dump         lê a ROM                        (-s SISTEMA [-o ARQ])
   save-read    lê o save                       (-s SISTEMA [-o ARQ])
@@ -152,6 +154,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   firmware-flash  записать прошивку форка в Arduino Mega по USB через avrdude (заменяет программу платы) [--hex ФАЙЛ --env ИМЯ --avrdude ПУТЬ --yes --dry-run]
   detect       определить картридж             (-s СИСТЕМА)
   identify     опознать сохранённые ROM по CRC32 в базе (--db), порт не открывается
+  gbcamera     извлекает фотографии из сохранения Game Boy Camera в PNG: -i SAVE.sav [-o ПАПКА] [--palette gray|green|gbc] [--scale 1-8] [--all] (порт не открывается)
   search       искать игры по названию в базе (--db), порт не открывается
   dump         прочитать ROM                   (-s СИСТЕМА [-o ФАЙЛ])
   save-read    прочитать сохранение            (-s СИСТЕМА [-o ФАЙЛ])
@@ -222,6 +225,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   firmware-flash  用 avrdude 通过 USB 把分支固件写入 Arduino Mega（替换板子上的程序）[--hex 文件 --env 名称 --avrdude 路径 --yes --dry-run]
   detect       检测卡带                        (-s 系统)
   identify     按 CRC32 在数据库（--db）中识别已保存的 ROM，不打开串口
+  gbcamera     把 Game Boy Camera 存档中的照片导出为 PNG：-i SAVE.sav [-o 文件夹] [--palette gray|green|gbc] [--scale 1-8] [--all]（不打开端口）
   search       按名称在数据库（--db）中搜索游戏，不打开串口
   dump         读取 ROM                        (-s 系统 [-o 文件])
   save-read    读取存档                        (-s 系统 [-o 文件])
