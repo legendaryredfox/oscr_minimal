@@ -7,7 +7,7 @@ import oscr.*
  * Dispositivo simulado e síncrono (modo MOCK, sistemas 0 e 255) para `--simulate` e testes: responde dentro de `write`, sem threads.
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
-class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false, val selftestReport: List<Triple<Int, Int, Int>> = emptyList()) : Transport {
+class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, val voltSelect: Boolean = false, val cartNeeds5v: Boolean = false, val selftestReport: List<Triple<Int, Int, Int>> = emptyList(), val mdFlashName: String? = null) : Transport {
     var volt = 1                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): sobe em 3,3 V (estado seguro); o host pede 5 V (padrão)
     var chosen = false                                          // o usuário escolheu 3,3 V
     val voltCalls = mutableListOf<Int>()
@@ -57,7 +57,8 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
             Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, 0, 1, 0, if (voltSelect) 121 else 89) + le16(0) + le16(Proto.MAX_PAYLOAD))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
-                if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
+                if (sys == 7 && mdFlashName != null) push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 0) + le32(8 shl 20) + le32(0) + byteArrayOf(0, mdFlashName.length.toByte()) + mdFlashName.encodeToByteArray())   // chip de flash do Mega Drive simulado (testes do limite de 2 MiB)
+                else if (sys == 0 || sys == 255) push(Proto.T_DETECT_RESP, byteArrayOf(255.toByte(), 0) + le32(rom.size) + le32(save.size) + byteArrayOf(1, 4) + "MOCK".encodeToByteArray())
                 else if (cartReadable) push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 0) + le32(65536) + le32(0) + byteArrayOf(0, 8) + "SIM CART".encodeToByteArray())
                 else push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 1) + ByteArray(8) + byteArrayOf(0, 0))
             }
@@ -84,7 +85,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (f.payload.size < 7) return error(4, "args")
                 wSize = f.payload.u32(1)
-                if (sys != 0 && sys != 255) return error(2)
+                if (sys != 0 && sys != 255 && !(sys == 4 && mdFlashName != null)) return error(2)      // MD só com o chip de flash simulado (testes do limite de 2 MiB)
                 if (wSize < 0 || wSize > (1 shl 20)) return error(4)
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true
                 push(Proto.T_D_ACK, le32(0))
@@ -95,7 +96,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 wSize = f.payload.u32(1)
                 val chip = f.payload.u16(7); val prg = f.payload.u16(9); val chr = f.payload.u16(11)
                 lastRomOptions = Triple(chip, prg, chr)
-                if (sys != 0 && sys != 255) return error(2)
+                if (sys != 0 && sys != 255 && !(sys == 4 && mdFlashName != null)) return error(2)      // MD só com o chip de flash simulado (testes do limite de 2 MiB)
                 if (chip == 9) return error(11, "id")
                 if (wSize < 0 || (chip < 0x100 && wSize != (prg + chr) * 1024 && !(chr == 0 && wSize in 1..(prg * 1024) && wSize % 2 == 0))) return error(4, "tamanho")   // NES: PRG+CHR; SNES e MD: ROM dentro do flash
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true; writingRom = true
@@ -116,7 +117,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
             Proto.T_ERASE -> {                      // chip 9 "não é reconhecido"; o simulador só entende o sistema MOCK
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (f.payload.size < 7) return error(4, "args")
-                if (sys != 0 && sys != 255) return error(2)
+                if (sys != 0 && sys != 255 && !(sys == 4 && mdFlashName != null)) return error(2)      // MD só com o chip de flash simulado (testes do limite de 2 MiB)
                 val chip = f.payload.u16(1)
                 if (chip == 9) return error(11, "id")
                 lastErase = Triple(chip, f.payload.u16(3), f.payload.u16(5))

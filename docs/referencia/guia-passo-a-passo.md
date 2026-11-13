@@ -1,6 +1,6 @@
 # Guia passo a passo: da placa montada ao primeiro dump
 
-Modelo: o guia do `md_rewriter` (`md_rewriter/docs/guide/`). Este guia só amarra, na ordem certa, o que já está nos outros documentos; os detalhes ficam lá. Está em português; a versão em inglês é [`guia-passo-a-passo.en.md`](guia-passo-a-passo.en.md). Russo e chinês ainda não foram escritos.
+Modelo: o guia do `md_rewriter` (`md_rewriter/docs/guide/`). Este guia só amarra, na ordem certa, o que já está nos outros documentos; os detalhes ficam lá. Está em português; a versão em inglês é [`guia-passo-a-passo.en.md`](guia-passo-a-passo.en.md). Também em [russo](guia-passo-a-passo.ru.md) e [chinês](guia-passo-a-passo.zh-Hans.md) (traduções sem revisão de falante nativo).
 
 ## 0. Escolha a placa e o que comprar
 

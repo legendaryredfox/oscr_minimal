@@ -1,6 +1,6 @@
 # Step-by-step guide: from the assembled board to the first dump
 
-Modelled on the `md_rewriter` guide (`md_rewriter/docs/guide/`). This guide only strings together, in the right order, what the other documents already say; details live there. Portuguese version: [`guia-passo-a-passo.md`](guia-passo-a-passo.md). Russian and Chinese are not written yet.
+Modelled on the `md_rewriter` guide (`md_rewriter/docs/guide/`). This guide only strings together, in the right order, what the other documents already say; details live there. Portuguese version: [`guia-passo-a-passo.md`](guia-passo-a-passo.md). Also in [Russian](guia-passo-a-passo.ru.md) and [Chinese](guia-passo-a-passo.zh-Hans.md) (not reviewed by native speakers).
 
 ## 0. Pick the board and what to buy
 

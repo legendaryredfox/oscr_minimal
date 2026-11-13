@@ -117,7 +117,7 @@ CATALOG: dict[str, dict[str, str]] = {
     "exit.1": _r("erro do dispositivo, do protocolo, de timeout ou de arquivo", "device, protocol, timeout or file error", "ошибка устройства, протокола, тайм-аут или ошибка файла", "设备、协议、超时或文件错误"),
     "exit.2": _r("nenhum cartucho (detect) ou o dispositivo respondeu 'nenhum cartucho'", "no cartridge (detect) or the device answered 'no cartridge'", "нет картриджа (detect) или устройство ответило «нет картриджа»", "没有卡带（detect），或设备回答“没有卡带”"),
     "exit.3": _r("porta serial não encontrada ou dispositivo sem resposta", "serial port not found or device not responding", "последовательный порт не найден или устройство не отвечает", "未找到串口或设备无响应"),
-    "exit.4": _r("operação recusada: falta --yes fora de um terminal", "operation refused: --yes is missing outside a terminal", "операция отклонена: вне терминала не указан --yes", "操作被拒绝：在终端之外缺少 --yes"),
+    "exit.4": _r("operação recusada: falta --yes fora de um terminal, ou a ROM passa do limite do cartucho (--ignore-cart-limit)", "operation refused: --yes is missing outside a terminal, or the ROM is over the cartridge's limit (--ignore-cart-limit)", "операция отклонена: вне терминала не указан --yes или ROM больше лимита картриджа (--ignore-cart-limit)", "操作被拒绝：在终端之外缺少 --yes，或 ROM 超过卡带限制（--ignore-cart-limit）"),
     "exit.64": _r("argumentos inválidos", "invalid arguments", "неверные аргументы", "参数无效"),
     "exit.130": _r("interrompido (Ctrl+C)", "interrupted (Ctrl+C)", "прервано (Ctrl+C)", "已中断（Ctrl+C）"),
     "errors.exit_line": _r("saída {code}: {text}", "exit {code}: {text}", "выход {code}: {text}", "退出码 {code}：{text}"),

@@ -16,7 +16,7 @@ CLI_EXIT_CODES = {
     EXIT_OK: "sucesso", EXIT_ERROR: "erro do dispositivo, do protocolo, de timeout ou de arquivo",
     EXIT_NO_CART: "nenhum cartucho (detect) ou o dispositivo respondeu 'nenhum cartucho'",
     EXIT_NO_DEVICE: "porta serial não encontrada ou dispositivo sem resposta",
-    EXIT_REFUSED: "operação recusada: falta --yes fora de um terminal", EXIT_USAGE: "argumentos inválidos",
+    EXIT_REFUSED: "operação recusada: falta --yes fora de um terminal, ou a ROM passa do limite do cartucho (--ignore-cart-limit)", EXIT_USAGE: "argumentos inválidos",
     EXIT_INTERRUPTED: "interrompido (Ctrl+C)",
 }
 

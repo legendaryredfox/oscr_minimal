@@ -535,11 +535,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     }
 
     /** Aviso do limite de 2 MiB dos cartuchos KY / FlashKit (S29GL): identifica o chip (o mesmo que a gravação faria) e devolve o texto, ou null. */
-    fun mdBoardLimitWarning(bytes: Int): String? {
+    suspend fun mdBoardLimitWarning(bytes: Int): String? {
         val c = client ?: return null
         val inf = info ?: return null
         return try {
-            val chip = identifyMdFlash(c, inf) ?: return null
+            val chip = withContext(Dispatchers.IO) { identifyMdFlash(c, inf) } ?: return null
             val limit = chip.boardLimitBytes ?: return null
             if (bytes <= limit) null
             else f(S.MD_LIMIT_WARN, if (bytes % (1 shl 20) == 0) (bytes shr 20).toString() else String.format(Locale.ROOT, "%.2f", bytes / 1048576.0), chip.chip ?: "", limit shr 20)
@@ -554,8 +554,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         try {
             val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else if (isGba) FlashChip.GBA_FLASH else chipChoice,
                 if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), block369.toIntOrNull() ?: 0)
-            val limit = if (isMd) mdBoardLimitWarning(img.body.size) else null
-            romReq = RomWriteRequest(file, chip, img, limit)
+            if (isMd) scope.launch { romReq = RomWriteRequest(file, chip, img, mdBoardLimitWarning(img.body.size)) }      // a sondagem do chip sai da thread da interface
+            else romReq = RomWriteRequest(file, chip, img)
         } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
     }
 

@@ -26,7 +26,7 @@ A CLI `dumper` (`host/`) funciona para pessoas e para agentes. Este arquivo é o
 | 1 | erro do dispositivo, do protocolo, timeout ou arquivo | `device_error`, `no_save`, `protocol`, `timeout`, `io` |
 | 2 | nenhum cartucho | `no_cartridge` (ou `detect` com `status` ≠ 0) |
 | 3 | porta serial não encontrada, não abre, ou dispositivo sem resposta | `no_port`, `open_port`, `no_response` |
-| 4 | recusado: `save-write` sem `--yes` fora de um terminal | `refused` |
+| 4 | recusado: gravação sem `--yes` fora de um terminal, ou `rom-write -s md` com ROM acima de 2 MiB num cartucho S29GL (KY / FlashKit; `--ignore-cart-limit` força) | `refused` |
 | 64 | argumentos inválidos | `usage` |
 | 130 | Ctrl+C | `interrupted` |
 
