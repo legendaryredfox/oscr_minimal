@@ -282,7 +282,21 @@ fun splitInesRaw(d: ByteArray): NesRaw? {
 }
 
 /** Chip de flash de um cartucho de Mega Drive, como o firmware o identifica (DETECT do sistema 7, chip 5). Igual a _md_flash_chip em cli.py. */
-class MdFlashChip(val known: Boolean, val ids: String, val chip: String?, val sizeBytes: Long)
+class MdFlashChip(val known: Boolean, val ids: String, val chip: String?, val sizeBytes: Long) {
+    /** Códigos do autoselect (ciclos 1 a 4, ex. 017E1000): o ID de 16 bits não diz o layout dos setores do S29GL064N. */
+    val codes: String get() = if (' ' in ids) ids.substringAfterLast(' ') else ""
+
+    /**
+     * Limite de ROM da placa do cartucho: os cartuchos KY / FlashKit com S29GL selecionam a flash só nos 2 MiB de baixo (74HC139 sem registrador) e o resto é a SRAM
+     * de save (bancada do md_rewriter, 2026-11-13). Só um aviso: outra placa com o mesmo chip pode ligar os 8 MiB. Igual a board_limit_bytes em md_chip.py.
+     */
+    val boardLimitBytes: Long? get() = if (known && chip in BOARD_LIMITED_CHIPS) BOARD_LIMIT_BYTES else null
+
+    companion object {
+        val BOARD_LIMITED_CHIPS = setOf("S29GL064N", "S29GL-7E")
+        const val BOARD_LIMIT_BYTES = 2L shl 20
+    }
+}
 
 /**
  * Identifica o chip de flash do cartucho de Mega Drive; null se o firmware não tem o programador de flash.

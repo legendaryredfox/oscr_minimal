@@ -66,7 +66,7 @@ private class FlashRequest(val file: File?, val job: FlashJob)
 private class FirmwareRequest(val hex: File, val exe: String, val port: String)
 
 /** Gravação de ROM em flash à espera da confirmação (apaga o chip). */
-private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage)
+private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage, val limitWarn: String? = null)
 
 fun main() = application {
     val state = rememberWindowState(size = DpSize(Prefs.winW.dp, Prefs.winH.dp))
@@ -534,6 +534,18 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
+    /** Aviso do limite de 2 MiB dos cartuchos KY / FlashKit (S29GL): identifica o chip (o mesmo que a gravação faria) e devolve o texto, ou null. */
+    fun mdBoardLimitWarning(bytes: Int): String? {
+        val c = client ?: return null
+        val inf = info ?: return null
+        return try {
+            val chip = identifyMdFlash(c, inf) ?: return null
+            val limit = chip.boardLimitBytes ?: return null
+            if (bytes <= limit) null
+            else f(S.MD_LIMIT_WARN, if (bytes % (1 shl 20) == 0) (bytes shr 20).toString() else String.format(Locale.ROOT, "%.2f", bytes / 1048576.0), chip.chip ?: "", limit shr 20)
+        } catch (e: Exception) { null }
+    }
+
     fun actRomWriteChoose() {
         if (planned != null || !canWriteRom) return
         if (isGb && chipChoice == null) { say(t(S.ERR_PREFIX) + ": " + t(S.RIMG_GB_NEEDS_CHIP)); return }
@@ -542,7 +554,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         try {
             val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else if (isGba) FlashChip.GBA_FLASH else chipChoice,
                 if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), block369.toIntOrNull() ?: 0)
-            romReq = RomWriteRequest(file, chip, img)
+            val limit = if (isMd) mdBoardLimitWarning(img.body.size) else null
+            romReq = RomWriteRequest(file, chip, img, limit)
         } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
     }
 
@@ -554,7 +567,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 val chip = withContext(Dispatchers.IO) { identifyMdFlash(c, info ?: return@withContext null) }
                 say(when {
                     chip == null -> t(S.MD_CHIP_NONE)
-                    chip.known -> f(S.MD_CHIP_KNOWN, chip.chip ?: "", chip.sizeBytes / 1024)
+                    chip.known -> f(S.MD_CHIP_KNOWN, chip.chip ?: "", chip.sizeBytes / 1024, chip.codes)
                     else -> f(S.MD_CHIP_UNKNOWN, chip.ids)
                 })
             }
@@ -929,7 +942,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         AlertDialog(
             onDismissRequest = { romReq = null },
             title = { Text(t(S.CONFIRM_ROM_TITLE)) },
-            text = { Text(f(S.CONFIRM_ROM_BODY, req.file.name, "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB", req.chip.label)) },
+            text = { Text(f(S.CONFIRM_ROM_BODY, req.file.name, "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB", req.chip.label) + (req.limitWarn?.let { "\n\n$it" } ?: "")) },
             confirmButton = { Button(onClick = { romReq = null; actRomWriteConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.WRITE_ROM)) } },
             dismissButton = { OutlinedButton(onClick = { romReq = null }) { Text(t(S.CANCEL)) } },
         )

@@ -89,7 +89,13 @@ Firmware, PC e testes feitos; **nada rodou em cartucho**. Detalhe e riscos: `doc
 | MD-7 SST39VF3201/3202 com `50h` | feito |
 | MD-8 teste no PC com modelo de chip | feito: `pc-tests/test_mdflash.cpp` e `md_chip_model.h` |
 | MD-9 mapeadores | pendente (precisa de cartucho) |
-| MD-10 suíte de bancada só leitura | pendente |
+| MD-10 suíte de bancada só leitura | feito (2026-11-13): `tools/boards/megadrive/hwtest_md.py` (fases `host`, `nocart`, `cart`; a fase `host` roda no pytest). Falta rodá-la com a placa e cartuchos |
+
+| MD-11 8 MiB em todas as camadas | conferido: `MdFlash.cpp` aceita até 8 MiB, `MD_MAX_BYTES` do host (Python e Kotlin) e `MAX_STREAM_BYTES` do protocolo (64 MiB) também, e a mensagem cita 8 MB; `test_mdflash` grava e lê o chip inteiro de 64 Mbit nos chips nativos. O S29GL (funções do OSCR, apaga o chip inteiro) não tem modelo no PC |
+| MD-12 apagar e gravar acima de 2 MiB | feito no núcleo (`eraseRange` com limite de tempo por setor, o modelo cobre setores acima de `0x200000`); no S29GL só valem o limite de tempo do `eraseFlash` e agora a conferência de `FFFFh` (`blankRange`) |
+| MD-13 aviso do limite de 2 MiB | feito pelo ID do chip (S29GL, como o `md_rewriter`): CLI Python e Kotlin recusam antes de apagar (`--ignore-cart-limit` força, saída 4), a GUI avisa na confirmação. Detectar pelo padrão de leitura (SRAM de save a partir de `0x200000`) **não** foi feito |
+
+Também de 2026-11-13, vindo da bancada do `md_rewriter`: `MdFlashCore::blankRange` confere `FFFFh` depois de apagar (nativos e S29GL; falha vira `E_CARTUCHO_IO` ou `kNotBlank`), e o nome do chip do `DETECT` traz os quatro bytes do autoselect (`S29GL064N 017E1000`): o ID de 16 bits não diz o layout dos setores.
 
 ## 6. Fontes
 

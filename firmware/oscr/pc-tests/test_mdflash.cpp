@@ -345,6 +345,28 @@ static void testFailures()
     CHECK(C::prepare(bus, p, 65536) == C::kEraseFail);
     CHECK((chip.nowNs - t0) / 1000000ULL < C::kEraseTimeoutMs + 1000);
   }
+  // Apagamento que termina sem erro mas deixa dados: `prepare` acusa kNotBlank e a gravação não segue.
+  {
+    Chip chip(M29W320EB);
+    dirty(chip);
+    chip.keepStart = 0x800; chip.keepLen = 0x100;
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(C::prepare(bus, p, 65536) == C::kNotBlank);
+    CHECK(!C::blankRange(bus, 0x1000));
+    CHECK(C::blankRange(bus, 0x800));
+  }
+  // Intel: o mesmo.
+  {
+    Chip chip(PA28F400B);
+    dirty(chip);
+    chip.keepStart = 0x10; chip.keepLen = 4;
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(C::prepare(bus, p, 65536) == C::kNotBlank);
+  }
   // ROM maior que o chip.
   {
     Chip chip(M29W320EB);
@@ -390,6 +412,9 @@ static void testIdentifyTable()
   C::Chip c;
   CHECK(C::identify(gl064, c) && c.words == C::kW64 && strcmp(c.name, "S29GL064N") == 0 && c.layout == C::kUniform);
   CHECK(C::identify(glOther, c) && c.words == C::kW32 && c.impl == C::kOscrGl);
+  // 017E1000 (KY, oito setores de 8 KB) e 017E1001 (setor uniforme) dão o mesmo `identify`: o ID não diz o layout; o S29GL é apagado como chip inteiro.
+  uint8_t gl064ky[4] = { 0x01, 0x7E, 0x10, 0x00 };
+  CHECK(C::identify(gl064ky, c) && c.impl == C::kOscrGl && c.words == C::kW64);
   uint8_t none[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
   CHECK(!C::identify(none, c));
 }

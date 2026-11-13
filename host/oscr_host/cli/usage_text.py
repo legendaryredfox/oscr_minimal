@@ -53,6 +53,7 @@ options (accepted before or after the command):
   --sector-kb N        rom-write, SNES P0/P1, types 29gl, lh28f0xx, e28fxxxj3a: sector size in KB (power of 2)
   --buffer N           rom-write, SNES P0/P1, same types: write buffer in bytes (power of 2, 2 to 128)
   --begin-timeout S    rom-write: seconds to wait for the erase before the data (default 90)
+  --ignore-cart-limit  rom-write -s md: write even if the ROM is over 2 MiB on an S29GL cartridge (KY / FlashKit boards have only 2 MiB of flash; default: refuse, nothing erased)
   --raw                dump -s nes|famicom: write PRG and CHR as separate files (.prg and .chr), without the iNES header (the OSCR raw read)
   --twice              dump: read the ROM twice and compare; if they differ, write both reads (NAME.leitura1 and NAME.leitura2, as in the Python CLI) and exit with an error (kind mismatch)
   --flash-id           detect -s md: also identify the cartridge's flash chip (the probe writes ID commands to the cartridge; mask ROM ignores them)
@@ -121,6 +122,7 @@ opções (aceitas antes ou depois do comando):
   --sector-kb N        rom-write, SNES P0/P1, tipos 29gl, lh28f0xx, e28fxxxj3a: tamanho do setor em KB (potência de 2)
   --buffer N           rom-write, SNES P0/P1, mesmos tipos: buffer de gravação em bytes (potência de 2, de 2 a 128)
   --begin-timeout S    rom-write: segundos de espera pelo apagamento antes dos dados (padrão 90)
+  --ignore-cart-limit  rom-write -s md: grava mesmo que a ROM passe de 2 MiB num cartucho S29GL (placas KY / FlashKit só têm 2 MiB de flash; padrão: recusa, nada apagado)
   --raw                dump -s nes|famicom: grava PRG e CHR em arquivos separados (.prg e .chr), sem o cabeçalho iNES (a leitura raw do OSCR)
   --twice              dump: lê a ROM duas vezes e compara; se diferirem, grava as duas leituras (NOME.leitura1 e NOME.leitura2, como na CLI Python) e sai com erro (kind mismatch)
   --flash-id           detect -s md: identifica também o chip de flash do cartucho (a sonda grava comandos de ID no cartucho; ROM de máscara ignora)
@@ -189,6 +191,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --sector-kb N        rom-write, SNES P0/P1, типы 29gl, lh28f0xx, e28fxxxj3a: размер сектора в КБ (степень двойки)
   --buffer N           rom-write, SNES P0/P1, те же типы: буфер записи в байтах (степень двойки, от 2 до 128)
   --begin-timeout S    rom-write: сколько секунд ждать стирания перед данными (по умолчанию 90)
+  --ignore-cart-limit  rom-write -s md: записать, даже если ROM больше 2 МиБ на картридже S29GL (платы KY / FlashKit имеют только 2 МиБ флеша; по умолчанию: отказ, ничего не стёрто)
   --raw                dump -s nes|famicom: записать PRG и CHR отдельными файлами (.prg и .chr), без заголовка iNES (raw-чтение OSCR)
   --twice              dump: прочитать ROM дважды и сравнить; если различаются, записать оба чтения (ИМЯ.leitura1 и ИМЯ.leitura2, как в CLI на Python) и выйти с ошибкой (kind mismatch)
   --flash-id           detect -s md: также определить flash-микросхему картриджа (зонд записывает в картридж команды ID; масочное ROM их игнорирует)
@@ -257,6 +260,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --sector-kb N        rom-write，SNES P0/P1，类型 29gl、lh28f0xx、e28fxxxj3a：扇区大小，单位 KB（2 的幂）
   --buffer N           rom-write，SNES P0/P1，同样的类型：写入缓冲区字节数（2 的幂，2 到 128）
   --begin-timeout S    rom-write：写入数据前等待擦除的秒数（默认 90）
+  --ignore-cart-limit  rom-write -s md：即使 ROM 超过 S29GL 卡带的 2 MiB 也写入（KY / FlashKit 板只有 2 MiB 闪存；默认：拒绝，不擦除）
   --raw                dump -s nes|famicom：把 PRG 和 CHR 写成两个文件（.prg 和 .chr），不带 iNES 头（OSCR 的 raw 读取）
   --twice              dump：读取 ROM 两次并比较；若不同，则写出两次读取的结果（名称.leitura1 和 名称.leitura2，与 Python CLI 相同）并以错误退出（kind mismatch）
   --flash-id           detect -s md：同时识别卡带的 flash 芯片（探测会向卡带写入 ID 命令；掩膜 ROM 会忽略）

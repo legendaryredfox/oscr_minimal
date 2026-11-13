@@ -106,11 +106,14 @@ namespace OSCR::Dumper::MdFlash
     }
     else strlcpy(text, "?", 32);
     size_t n = strlen(text);
-    if (n + 6 < 32)
+    if (n + 10 < 32)
     {
       text[n++] = ' ';
       text[n++] = hex[probed.id[0] >> 4]; text[n++] = hex[probed.id[0] & 15];
       text[n++] = hex[probed.id[1] >> 4]; text[n++] = hex[probed.id[1] & 15];
+      // ciclos 3 e 4 do autoselect: o ID de 16 bits não diz o layout dos setores do S29GL064N (017E1001 setor uniforme, 017E1000 oito setores de 8 KB; md_rewriter, 2026-11-13)
+      text[n++] = hex[probed.id[2] >> 4]; text[n++] = hex[probed.id[2] & 15];
+      text[n++] = hex[probed.id[3] >> 4]; text[n++] = hex[probed.id[3] & 15];
       text[n] = 0;
     }
     return probed.known ? 0 : oscr::E_FLASH;
@@ -142,6 +145,7 @@ namespace OSCR::Dumper::MdFlash
       MD::eraseFlash();
       MD::resetFlash();
       if (MD::flashTimedOut) rc = oscr::E_CARTUCHO_IO;
+      else if (!C::blankRange(bus, (sizeBytes + 1) / 2)) rc = oscr::E_CARTUCHO_IO;     // o `blankCheck` do OSCR lê o chip todo e pára na tela: aqui só o que a ROM ocupa
     }
 
     finish();

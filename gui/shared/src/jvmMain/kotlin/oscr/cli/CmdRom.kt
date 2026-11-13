@@ -46,6 +46,12 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
         if (sys == CartSystem.MD) {                       // mostra o chip que vai ser gravado antes de apagar
             mdChip = identifyMdFlash(c.client, c.info)
             if (!a.json) io.out(mdChipLine(mdChip))
+            val limit = mdChip?.boardLimitBytes
+            if (limit != null && img.body.size > limit && "ignore-cart-limit" !in a.flags) {         // KY / FlashKit: só 2 MiB de flash; recusa antes de apagar
+                val mib = img.body.size / (1024.0 * 1024.0)
+                throw CliError("refused", Msg.t("rom.md_limit", "size" to (if (img.body.size % (1 shl 20) == 0) (img.body.size shr 20).toString() else String.format(java.util.Locale.ROOT, "%.2f", mib)),
+                    "chip" to (mdChip?.chip ?: ""), "codes" to (mdChip?.codes ?: ""), "limit" to (MdFlashChip.BOARD_LIMIT_BYTES shr 20)), EXIT_REFUSED, Msg.t("rom.md_limit_hint"))
+            }
         }
         crc = c.client.writeRom(sys, img.body, RomImages.chipCode(chip, img), if (img.flashKb > 0) img.flashKb else img.prgKb, if (img.wireChr != 0) img.wireChr else img.chrKb, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, progress(io, a, "write-rom"), timeout)
     } finally { c.transport.close() }

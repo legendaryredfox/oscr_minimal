@@ -499,9 +499,9 @@ class _FakeMd(_FakeFlash):
         raise AssertionError("conferência deve ser pulada")
 
 
-def _md(monkeypatch, capsys, info, *argv):
+def _md(monkeypatch, capsys, info, *argv, resp=None):
     from oscr_host import cli
-    fake = _FakeMd({"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "MX29F1610 C2F1"})
+    fake = _FakeMd(resp or {"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "MX29F1610 C2F1"})
     monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), info))
     code = cli.main(["--json", *argv])
     return code, json.loads(capsys.readouterr().out), fake
@@ -524,6 +524,40 @@ def test_rom_write_md_mostra_o_chip(monkeypatch, capsys, tmp_path):
     f.write_bytes(md_rom(524288))
     code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(f), "--chip", "md-flash", "--yes", "--no-verify")
     assert code == 0 and o["flash_chip"]["chip"] == "MX29F1610" and len(fake.writes) == 1
+
+
+_GL = {"system": 7, "status": 0, "rom_size": 8 << 20, "save_size": 0, "save_type": 0, "name": "S29GL064N 017E1000"}
+
+
+def test_chip_mostra_os_codigos_do_autoselect(monkeypatch, capsys):
+    code, o, _ = _md(monkeypatch, capsys, {"flash_prog": True}, "detect", "-s", "md", "--flash-id", resp=_GL)
+    assert o["flash_chip"]["codes"] == "017E1000" and o["flash_chip"]["chip"] == "S29GL064N"
+    from oscr_host.cli.md_chip import md_chip_line
+    assert "017E1000" in md_chip_line(o["flash_chip"])
+
+
+def test_rom_write_md_acima_de_2mib_recusa_no_s29gl(monkeypatch, capsys, tmp_path):
+    """Cartuchos KY / FlashKit com S29GL só têm 2 MiB de flash (bancada do md_rewriter): recusa antes de apagar, a menos que --ignore-cart-limit."""
+    f = tmp_path / "jogo.md"
+    f.write_bytes(md_rom(4 << 20))
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(f), "--chip", "md-flash", "--yes", "--no-verify", resp=_GL)
+    assert code == 4 and fake.writes == []
+    assert "2 MiB" in json.dumps(o) and "--ignore-cart-limit" in json.dumps(o)
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(f), "--chip", "md-flash", "--yes", "--no-verify",
+                        "--ignore-cart-limit", resp=_GL)
+    assert code == 0 and len(fake.writes) == 1
+
+
+def test_rom_write_md_limite_so_acima_de_2mib_e_so_no_s29gl(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "jogo.md"
+    f.write_bytes(md_rom(2 << 20))
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(f), "--chip", "md-flash", "--yes", "--no-verify", resp=_GL)
+    assert code == 0 and len(fake.writes) == 1                                          # exatamente 2 MiB passa
+    g = tmp_path / "grande.md"
+    g.write_bytes(md_rom(4 << 20))
+    other = {"system": 7, "status": 0, "rom_size": 4 << 20, "save_size": 0, "save_type": 0, "name": "M29W320EB 0020"}
+    code, o, fake = _md(monkeypatch, capsys, {"flash_prog": True, "write_rom": True}, "rom-write", "-s", "md", "-i", str(g), "--chip", "md-flash", "--yes", "--no-verify", resp=other)
+    assert code == 0 and len(fake.writes) == 1                                          # outro chip: sem limite
 
 
 # ---------------------------------------------------------------- dump --raw (NES: PRG e CHR em arquivos separados)

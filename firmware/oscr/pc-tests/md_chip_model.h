@@ -60,6 +60,7 @@ namespace mdmodel
     bool romOnly = false;       // ROM de máscara: leituras devolvem o conteúdo, escritas são ignoradas
     bool cfi = false;           // o chip responde à consulta CFI (98h no endereço 55h): "QRY" em 10h a 12h e o tamanho em 27h
     bool stuck = false;         // chip travado: apagar e programar nunca terminam
+    uint32_t keepStart = 0, keepLen = 0;   // apagamento "termina sem erro" mas não limpa estas palavras (setores de boot de 8 KB; bancada do md_rewriter)
     uint64_t nowNs = 0;
 
     // contadores
@@ -122,7 +123,7 @@ namespace mdmodel
       start = a & ~(size - 1);
     }
 
-    void eraseWords(uint32_t start, uint32_t n) { for (uint32_t i = 0; i < n; i++) mem[start + i] = 0xFFFF; }
+    void eraseWords(uint32_t start, uint32_t n) { for (uint32_t i = 0; i < n; i++) if (!(keepLen && start + i >= keepStart && start + i < keepStart + keepLen)) mem[start + i] = 0xFFFF; }
 
     void amdWrite(uint32_t addr, uint16_t data)
     {

@@ -49,3 +49,14 @@ O repositório `md_rewriter` tem agora um guia passo a passo (soldagem, montagem
 
 - Cartucho original de máscara: nunca gravar, nunca ler pelo mapeador SSF2 (escreve registros de banco no cartucho).
 - Cada apagamento ou gravação em cartucho só com o aval do usuário naquele momento.
+
+## O que foi aplicado aqui (2026-11-13, D157)
+
+| Achado | Aplicação |
+|---|---|
+| Limite de 2 MiB (4) | `MdFlashChip.boardLimitBytes` / `board_limit_bytes`: CLIs recusam antes de apagar (`--ignore-cart-limit`), GUI avisa na confirmação; MD-13 |
+| Apagar "sem erro" e deixar dado (2) | `blankRange` depois de apagar, nos nativos (`prepare` devolve `kNotBlank`) e no S29GL (`MdFlash.cpp`); teste no PC com o modelo `keepStart/keepLen` |
+| ID não diz o layout (1) | nome do chip do `DETECT` com os 4 bytes do autoselect; teste de que `017E1000` e `017E1001` identificam igual (S29GL apaga o chip inteiro) |
+| Suíte de bancada (hwtest.py) | `tools/boards/megadrive/hwtest_md.py` (MD-10) |
+| Descartar bytes após o detect (5) | não se aplica ao fork (o laço do protocolo não tem o `delay` do firmware 1.0 do dumper STM32) |
+

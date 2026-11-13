@@ -33,8 +33,8 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
 
 internal fun mdChipLine(c: MdFlashChip?): String = when {
     c == null -> Msg.t("chip.no_id")
-    c.known -> Msg.t("chip.known", "chip" to c.chip, "kb" to c.sizeBytes / 1024)
+    c.known -> Msg.t("chip.known", "chip" to c.chip, "kb" to c.sizeBytes / 1024, "codes" to c.codes)
     else -> Msg.t("chip.unknown", "ids" to c.ids) + (if (c.sizeBytes > 0) Msg.t("chip.cfi_size", "kb" to c.sizeBytes / 1024) else "")
 }
 
-internal fun mdChipJson(c: MdFlashChip?): Any? = c?.let { Json.obj("known" to it.known, "ids" to it.ids, "chip" to it.chip, "size" to it.sizeBytes) }
+internal fun mdChipJson(c: MdFlashChip?): Any? = c?.let { Json.obj("known" to it.known, "ids" to it.ids, "chip" to it.chip, "codes" to it.codes, "size" to it.sizeBytes) }

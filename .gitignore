@@ -42,3 +42,4 @@ tools/pic/shield_uno/hardware/*-backups/
 tools/pic/shield_uno/hardware/fp-info-cache
 # Histórico local do KiCad
 boards/*/hardware*/.history/
+test-results/

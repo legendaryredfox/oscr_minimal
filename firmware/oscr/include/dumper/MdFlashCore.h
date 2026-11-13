@@ -38,7 +38,7 @@ enum Layout : uint8_t { kLayoutUnknown = 0, kBottomBoot, kTopBoot, kUniform };
 /// Quem grava o chip: `kNative` = este núcleo; os outros dois = funções do OSCR em MegaDrive.cpp.
 enum Impl : uint8_t { kNative = 0, kOscrF1610, kOscrGl };
 
-enum Result : uint8_t { kOk = 0, kNoChip, kTooBig, kEraseFail, kProgramFail, kShortFile };
+enum Result : uint8_t { kOk = 0, kNoChip, kTooBig, kEraseFail, kProgramFail, kShortFile, kNotBlank };
 
 constexpr uint32_t kPollMax = 2000;             ///< leituras de DQ7 por palavra antes de desistir (cada uma leva alguns µs)
 constexpr uint32_t kEraseTimeoutMs = 15000;     ///< por setor ou bloco; o pior caso dos datasheets é bem menor
@@ -327,6 +327,16 @@ template <class B> bool programWordIntel(B & b, uint32_t a, uint16_t d)
 }
 
 /// Apaga a área da ROM. Só para `kNative`; os dois chips do OSCR são apagados por `MD::eraseFlash`.
+/// Confere que as `words` primeiras palavras leem FFFFh. Lição da bancada do md_rewriter: um apagamento pode "terminar" sem erro e deixar setores
+/// gravados (setores de boot de 8 KB tratados como um de 64 KB); gravar por cima falha no primeiro bit 0 -> 1.
+template <class B> bool blankRange(B & b, uint32_t words)
+{
+  b.in();
+  for (uint32_t a = 0; a < words; a++)
+    if (b.r(a) != 0xFFFF) return false;
+  return true;
+}
+
 template <class B> Result prepare(B & b, Probe const & p, uint32_t sizeBytes)
 {
   if (!p.known || p.chip.impl != kNative) return kNoChip;
@@ -338,6 +348,7 @@ template <class B> Result prepare(B & b, Probe const & p, uint32_t sizeBytes)
     return kEraseFail;
   }
   if (p.chip.cmd == kIntel) { b.out(); b.w(0, 0xFF); } else resetAmd(b, p.u1, p.u2);
+  if (!blankRange(b, words)) return kNotBlank;          // apagou "sem erro" mas sobrou dado: não grava por cima
   return kOk;
 }
 

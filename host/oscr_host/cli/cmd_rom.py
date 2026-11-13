@@ -11,7 +11,7 @@ from . import common
 from .common import system_id
 from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_REFUSED, EXIT_USAGE
-from .md_chip import md_chip_line, md_flash_chip
+from .md_chip import BOARD_LIMIT_BYTES, board_limit_bytes, md_chip_line, md_flash_chip
 from .output import emit, progress
 
 
@@ -88,6 +88,10 @@ def cmd_rom_write(args) -> int:
         md_chip = md_flash_chip(c, info) if args.system == "md" else None          # mostra o chip que vai ser gravado antes de apagar
         if args.system == "md" and not args.json:
             print(md_chip_line(md_chip))
+        limit = board_limit_bytes(md_chip)
+        if limit is not None and len(img.body) > limit and not getattr(args, "ignore_cart_limit", False):
+            raise CliError("refused", tr("rom.md_limit", size=len(img.body) // (1 << 20) if len(img.body) % (1 << 20) == 0 else f"{len(img.body) / (1 << 20):.2f}",
+                                         chip=md_chip["chip"], codes=md_chip.get("codes", ""), limit=BOARD_LIMIT_BYTES >> 20), EXIT_REFUSED, tr("rom.md_limit_hint"))
         crc = c.write_rom(system_id(args.system), img.body, RI.chip_code(chip, img), img.flash_kb or img.prg_kb, img.wire_chr or img.chr_kb, args.block or P.DEFAULT_BLOCK,
                           progress("write-rom", args.progress), args.begin_timeout)
     finally:
