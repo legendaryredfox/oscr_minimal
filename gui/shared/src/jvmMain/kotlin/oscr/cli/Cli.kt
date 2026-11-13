@@ -18,7 +18,14 @@ object Cli {
     const val EXIT_INTERRUPTED = oscr.cli.EXIT_INTERRUPTED
     const val VERSION = oscr.cli.VERSION
 
+    /** --sound (D160): um aviso sonoro (BEL na saída de erro) ao terminar com sucesso e três se falhou. */
     fun run(argv: List<String>, io: CliIo): Int {
+        val rc = runCommand(argv, io)
+        if ("--sound" in argv) io.err("\u0007".repeat(if (rc == EXIT_OK) 1 else 3))
+        return rc
+    }
+
+    private fun runCommand(argv: List<String>, io: CliIo): Int {
         val jsonWanted = "--json" in argv
         val colorMode = argv.zipWithNext().firstOrNull { it.first == "--color" }?.second ?: argv.firstOrNull { it.startsWith("--color=") }?.substringAfter('=')
         val lang = Msg.detect(argv, io.env)

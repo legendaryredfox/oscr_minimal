@@ -15,7 +15,7 @@ internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: 
 
 internal val VALUED = mapOf("p" to "port", "b" to "baud", "s" to "system", "o" to "output", "i" to "input")
 internal val LONG_VALUED = setOf("port", "baud", "system", "output", "input", "progress", "lang", "block", "mapper", "prg", "chr", "ram", "backup-dir", "db", "game", "limit", "chip", "begin-timeout", "capacity", "layout", "flash-type", "flash-mb", "sector-kb", "buffer", "block369", "bus", "flash-kb", "color", "voltage", "hex", "env", "avrdude", "wait")
-internal val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "flash-id", "raw", "twice", "help", "version", "dry-run", "allow-5v", "ignore-cart-limit")
+internal val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "flash-id", "raw", "twice", "help", "version", "dry-run", "allow-5v", "ignore-cart-limit", "sound")
 internal val COMMANDS = setOf("ports", "voltage", "selftest", "firmware-flash", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write")
 internal val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
     "md" to listOf("prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "n64" to listOf("mapper", "prg"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())

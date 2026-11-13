@@ -143,3 +143,12 @@ def test_n64_sai_da_lista_de_planejados_e_entra_nos_sistemas():
     from oscr_host.planned import PLANNED
     assert "n64" not in [k for k, _ in PLANNED]
     assert P.SYSTEMS["n64"] == (11, ".z64") and P.SYSTEM_BY_ID[11] == "n64"
+
+
+def test_dump_traz_md5_e_sha1(monkeypatch, capsys, tmp_path):
+    """P1 (D160): o resultado de dump e save-read traz MD5 e SHA-1 além do CRC32."""
+    import hashlib
+    f = _Fake(f"{SNOWBOARD} NNSE 1080_SNOWBOARDING")
+    code, o, _ = _cli(monkeypatch, capsys, f, "dump", "-s", "n64", "-o", str(tmp_path / "jogo"))
+    data = (tmp_path / "jogo.z64").read_bytes()
+    assert code == 0 and o["md5"] == hashlib.md5(data).hexdigest().upper() and o["sha1"] == hashlib.sha1(data).hexdigest().upper()

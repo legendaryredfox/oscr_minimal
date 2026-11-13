@@ -2,6 +2,8 @@
 """Saída dos comandos: JSON ou texto, barra de progresso, nome e gravação do arquivo."""
 from __future__ import annotations
 
+import hashlib
+
 import json
 import re
 import sys
@@ -68,9 +70,10 @@ def safe_name(title: str, default: str) -> str:
 def save_result(args, res: P.Frame | object, ext: str, default: str, extra: dict | None = None, notes: list[str] | None = None) -> int:
     path = out_path(args, ext, default)
     path.write_bytes(res.data)
-    obj = {"file": str(path), "bytes": len(res.data), "crc32": f"{res.crc32:08X}"}
+    md5, sha1 = hashlib.md5(res.data).hexdigest().upper(), hashlib.sha1(res.data).hexdigest().upper()       # o No-Intro e o Redump catalogam por SHA-1 (D160)
+    obj = {"file": str(path), "bytes": len(res.data), "crc32": f"{res.crc32:08X}", "md5": md5, "sha1": sha1}
     obj.update(extra or {})
-    emit(args, obj, [f"{path}  {len(res.data)} bytes  CRC32 {res.crc32:08X}"] + (notes or []))
+    emit(args, obj, [f"{path}  {len(res.data)} bytes  CRC32 {res.crc32:08X}", f"  SHA-1 {sha1}  MD5 {md5}"] + (notes or []))
     return 0
 
 

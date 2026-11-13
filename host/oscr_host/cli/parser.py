@@ -68,6 +68,7 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
     p.add_argument("--allow-5v", action="store_true", default=d(False), help=H("allow_5v"))
     p.add_argument("--lang", default=d(None), type=_lang_arg, metavar="LANG",
                    help=H("lang"))
+    p.add_argument("--sound", action="store_true", default=d(False), help=H("sound"))
     p.add_argument("--progress", choices=("auto", "none", "jsonl"), default=d("auto"),
                    help=H("progress"))
 

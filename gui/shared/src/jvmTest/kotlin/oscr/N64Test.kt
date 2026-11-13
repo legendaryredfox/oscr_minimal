@@ -36,3 +36,12 @@ class N64Test {
         assertTrue(PLANNED_SYSTEMS.none { it.key == "n64" })
     }
 }
+
+/** P1 (D160): MD5 e SHA-1 dos dumps. */
+class HashesTest {
+    @Test fun valoresConhecidos() {
+        val h = Hashes.of("abc".encodeToByteArray())
+        assertEquals("900150983CD24FB0D6963F7D28E17F72", h.md5)
+        assertEquals("A9993E364706816ABA3E25717850C26C9CD0D89D", h.sha1)
+    }
+}

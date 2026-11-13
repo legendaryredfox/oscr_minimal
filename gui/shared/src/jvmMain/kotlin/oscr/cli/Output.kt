@@ -57,8 +57,9 @@ internal fun saveResult(io: CliIo, a: Args, res: DumpResult, ext: String, defaul
     val f = outPath(a, ext, default)
     f.absoluteFile.parentFile?.mkdirs()
     f.writeBytes(res.data)
-    val obj = linkedMapOf<String, Any?>("file" to f.path, "bytes" to res.data.size, "crc32" to res.crcHex) + extra
-    emit(io, a, obj, listOf("${f.path}  ${res.data.size} bytes  CRC32 ${res.crcHex}") + notes)
+    val h = Hashes.of(res.data)                                    // o No-Intro e o Redump catalogam por SHA-1 (D160)
+    val obj = linkedMapOf<String, Any?>("file" to f.path, "bytes" to res.data.size, "crc32" to res.crcHex, "md5" to h.md5, "sha1" to h.sha1) + extra
+    emit(io, a, obj, listOf("${f.path}  ${res.data.size} bytes  CRC32 ${res.crcHex}", "  SHA-1 ${h.sha1}  MD5 ${h.md5}") + notes)
 }
 
 internal fun hex8(v: Int) = (v.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')

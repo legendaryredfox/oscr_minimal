@@ -19,6 +19,12 @@ class CliTest {
 
     private fun tmp() = kotlin.io.path.createTempDirectory("oscrcli").toFile().also { it.deleteOnExit() }
 
+    @Test fun soundTocaBelNoFim() {                                  // P4 (D160): um BEL se deu certo, três se falhou
+        assertEquals(1, run("detect", "-s", "mock", "--simulate", "--json", "--sound").err.count { it == '\u0007' })
+        assertEquals(3, run("detect", "-s", "snes", "--simulate", "--json", "--sound").err.count { it == '\u0007' })
+        assertEquals(0, run("detect", "-s", "mock", "--simulate", "--json").err.count { it == '\u0007' })
+    }
+
     @Test fun jsonDepoisDoSubcomando() {
         val r = run("detect", "-s", "mock", "--simulate", "--json")
         assertEquals(0, r.code); assertEquals("true", r.json()["ok"]); assertEquals("0", r.json()["status"])

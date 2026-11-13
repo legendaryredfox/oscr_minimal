@@ -17,6 +17,7 @@ object Prefs {
     var saveReport: Boolean get() = safe(true) { p.getBoolean("saveReport", true) }; set(v) = safe(Unit) { p.putBoolean("saveReport", v) }
     /** Bases de dados de jogos (arquivos ou pastas), uma por linha. */
     var dbPaths: List<String> get() = safe(emptyList()) { p.get("dbPaths", "").split("\n").filter { it.isNotEmpty() } }; set(v) = safe(Unit) { p.put("dbPaths", v.joinToString("\n")) }
+    var beepDone: Boolean get() = safe(true) { p.getBoolean("beepDone", true) }; set(v) = safe(Unit) { p.putBoolean("beepDone", v) }
     var verifyRom: Boolean get() = safe(true) { p.getBoolean("verifyRom", true) }; set(v) = safe(Unit) { p.putBoolean("verifyRom", v) }
     /** Zoom da interface em % (100 a 200), para quem precisa de letras maiores. */
     var fontPercent: Int get() = safe(100) { p.getInt("fontPercent", 100).coerceIn(100, 200) }; set(v) = safe(Unit) { p.putInt("fontPercent", v.coerceIn(100, 200)) }

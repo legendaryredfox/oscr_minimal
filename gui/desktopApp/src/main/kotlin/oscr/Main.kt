@@ -143,6 +143,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var nesRaw by remember { mutableStateOf(false) }
     var readTwice by remember { mutableStateOf(false) }               // lê a ROM duas vezes e compara (D125)
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
+    var beepDone by remember { mutableStateOf(Prefs.beepDone) }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
     val log = remember { mutableStateListOf<String>() }
     var lastMessage by remember { mutableStateOf("") }
@@ -210,11 +211,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
 
     fun run(stageKey: S, needsCart: Boolean = true, block: suspend () -> Unit) {
         scope.launch {
+            val started = System.currentTimeMillis()
             busy = true; progress = 0f; speed = ""; stage = stageKey
             try { if (needsCart && stageKey != S.STAGE_IDLE) ensureVoltage(stageKey); block() } catch (e: Exception) {
                 say(describeError(lang, e))
                 if ((e is ProtocolError && e.fail == Fail.DISCONNECTED) || transport?.isOpen == false) { dropConnection(null); say(t(S.STATUS_DISCONNECTED)) }
-            } finally { busy = false; stage = null; speed = ""; slowNote = false }
+            } finally {
+                busy = false; stage = null; speed = ""; slowNote = false
+                if (beepDone && System.currentTimeMillis() - started > 3000) try { Toolkit.getDefaultToolkit().beep() } catch (_: Throwable) { }      // P4 (D160): operação longa terminou
+            }
         }
     }
 
@@ -233,8 +238,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     fun mapperArg() = (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0
     fun ramArg() = if (isNes) ramN else 0
 
-    fun reportText(p: String, crc: String, size: Int, extra: List<String>) =
-        (listOf("oscr_minimal $APP_VERSION", "${t(S.SYSTEM)}: ${system.name}", p, "${t(S.RESULT_SIZE)}: $size ${t(S.BYTES)}", "CRC32: $crc") + extra).joinToString("\n") + "\n"
+    fun reportText(p: String, crc: String, size: Int, extra: List<String>, h: Hashes.Result? = null) =
+        (listOf("oscr_minimal $APP_VERSION", "${t(S.SYSTEM)}: ${system.name}", p, "${t(S.RESULT_SIZE)}: $size ${t(S.BYTES)}", "CRC32: $crc") + (h?.let { listOf("SHA-1: ${it.sha1}", "MD5: ${it.md5}") } ?: emptyList()) + extra).joinToString("\n") + "\n"
 
     fun savePending(file: File) {
         val p = pending ?: return
@@ -519,8 +524,10 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 say(m); extra += m
             }
             val title = game?.entry?.name ?: detectedNames[system].orEmpty()
+            val hashes = Hashes.of(res.data)
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
-            val report = reportText(title, res.crcHex, res.data.size, extra)
+            say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")
+            val report = reportText(title, res.crcHex, res.data.size, extra, hashes)
             val raw = if (nesRaw && (system == CartSystem.NES || system == CartSystem.FAMICOM)) splitInesRaw(res.data) else null
             if (nesRaw && raw == null && (system == CartSystem.NES || system == CartSystem.FAMICOM)) say(t(S.ERR_PREFIX) + ": " + t(S.NES_RAW_FAIL))
             offerSave(Pending(res.data, safeName(title, "rom_${system.name.lowercase()}") + (if (raw != null) ".prg" else ext), if (raw != null) "PRG + CHR" else "ROM", report, raw))
@@ -534,9 +541,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         run(S.STAGE_READING_SAVE) {
             val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
             val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker()) }
+            val hashes = Hashes.of(res.data)
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
+            say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")
             val title = detectedNames[system].orEmpty()
-            offerSave(Pending(res.data, safeName(title, "save_${system.name.lowercase()}") + ".sav", "save", reportText(title, res.crcHex, res.data.size, emptyList())))
+            offerSave(Pending(res.data, safeName(title, "save_${system.name.lowercase()}") + ".sav", "save", reportText(title, res.crcHex, res.data.size, emptyList(), hashes)))
         }
     }
 
@@ -835,6 +844,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }
             CheckRow(saveReport, { saveReport = it; Prefs.saveReport = it }, t(S.SAVE_REPORT))
+            CheckRow(beepDone, { beepDone = it; Prefs.beepDone = it }, t(S.BEEP_DONE))
             if (!isFlash) CheckRow(readTwice, { readTwice = it }, t(S.READ_TWICE))
             if (system == CartSystem.SNES || system == CartSystem.NES || system == CartSystem.FAMICOM || system == CartSystem.MD) Callout(t(S.WARN_5V), Tone.WARN)
             Text(t(S.SHORTCUTS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)

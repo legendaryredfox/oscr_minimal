@@ -15,6 +15,15 @@ from .parser import _Parser, build_parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    """--sound (D160): um aviso sonoro (BEL na saída de erro) ao terminar com sucesso e três se falhou; útil em operações longas (gravar 8 MB, ler N64 de 64 MB)."""
+    raw = sys.argv[1:] if argv is None else argv
+    rc = _main(argv)
+    if "--sound" in raw:
+        print("\a" * (1 if rc == 0 else 3), end="", file=sys.stderr, flush=True)
+    return rc
+
+
+def _main(argv: list[str] | None = None) -> int:
     _Parser.json_mode = "--json" in (sys.argv[1:] if argv is None else argv)
     raw = sys.argv[1:] if argv is None else argv
     messages.set_lang(messages.detect(raw))
