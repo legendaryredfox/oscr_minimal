@@ -36,6 +36,8 @@ import java.awt.FileDialog
 import java.awt.Frame
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
+import oscr.cli.autoDetect
+import oscr.cli.supportedIds
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -466,6 +468,18 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         return mb to st
     }
 
+    /** P5 (D160): descobre o sistema do cartucho só com leituras (N64, GBA, GB, Mega Drive, SNES, Master System e, por último, NES) e escolhe o sistema na lista. */
+    fun actAutoDetect() {
+        val c = client ?: return
+        val ids = info?.supportedIds()
+        run(S.STAGE_DETECTING) {
+            val found = withContext(Dispatchers.IO) { autoDetect(c, ids) }
+            if (found == null) { say(t(S.AUTO_NONE)); return@run }
+            system = found; planned = null; prgKb = "0"; chrKb = "0"; ramKb = "0"; mapper = "0"; Prefs.system = found.name
+            say(f(S.AUTO_FOUND, found.name))
+        }
+    }
+
     fun actDetect() {
         if (planned != null) return
         if (isFlash) { actFpId(); return }
@@ -843,6 +857,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 Button(enabled = canRun && problem == null && !(isFlash && fpBus == "md"), onClick = { actDumpRom() }) { Text(t(S.DUMP_ROM)) }
                 FilledTonalButton(enabled = canRun && ramProblem == null && !isFlash, onClick = { actReadSave() }) { Text(t(S.READ_SAVE)) }
                 OutlinedButton(enabled = canRun, onClick = { actDetect() }) { Text(t(if (isFlash) S.FP_ID else S.DETECT)) }
+                OutlinedButton(enabled = canRun && !isFlash, onClick = { actAutoDetect() }) { Text(t(S.AUTO_DETECT)) }
                 if (isFlash) OutlinedButton(enabled = canRun && fpBus != "md", onClick = { actFpBlank() }) { Text(t(S.FP_BLANK)) }
                 if (busy) Button(onClick = { actAbort() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.ABORT)) }
             }

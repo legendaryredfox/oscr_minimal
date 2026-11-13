@@ -4,10 +4,11 @@ package oscr.cli
 import oscr.*
 
 /** Comando detect e a identificação do chip de flash do Mega Drive. */
-internal fun cmdDetect(io: CliIo, a: Args): Int {
-    val wantChip = "flash-id" in a.flags
-    if (wantChip && a.opts["system"] != "md") throw CliError("usage", Msg.t("detect.flash_id_md_only"), EXIT_USAGE)
-    val c = connect(io, a)
+internal fun cmdDetect(io: CliIo, a0: Args): Int {
+    val wantChip = "flash-id" in a0.flags
+    if (wantChip && a0.opts["system"] != "md") throw CliError("usage", Msg.t("detect.flash_id_md_only"), EXIT_USAGE)
+    val c = connect(io, a0)
+    val a = if (a0.opts["system"] == "auto") resolveAuto(io, c, a0) else a0
     var chip: MdFlashChip? = null
     val adapter = if (a.opts["system"] in setOf("sms", "gg", "sg1000")) (a.opts["mapper"]?.toIntOrNull() ?: 0) else 0     // o adaptador (campo mapper) muda a fiação dos barramentos
     val r = try {

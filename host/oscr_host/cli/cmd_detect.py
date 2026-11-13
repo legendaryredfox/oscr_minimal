@@ -5,6 +5,7 @@ from __future__ import annotations
 from .. import protocol as P
 from . import common, ui
 from .common import system_id
+from .. import autodetect as AUTO
 from .. import n64 as N64
 from .messages import tr
 from .errors import CliError, EXIT_NO_CART, EXIT_OK, EXIT_USAGE
@@ -14,6 +15,14 @@ from .output import emit
 
 def cmd_detect(args) -> int:
     c, t, info = common.connect(args)
+    if args.system == "auto":                              # P5 (D160): descobre o sistema só com leituras e segue como se tivesse sido pedido
+        found = AUTO.autodetect(c, info.get("systems"))
+        if not found:
+            t.close()
+            raise CliError("no_cartridge", tr("auto.none"), EXIT_NO_CART)
+        args.system = found[0]
+        if not args.json:
+            print(tr("auto.found", system=args.system), file=sys.stderr)
     sega = args.system in ("sms", "gg", "sg1000")          # o adaptador (campo mapper) muda a fiação dos barramentos; os outros sistemas ignoram as opções no DETECT
     r = c.detect(system_id(args.system), args.mapper if sega else 0)
     if args.system == "n64" and r["status"] == 0:

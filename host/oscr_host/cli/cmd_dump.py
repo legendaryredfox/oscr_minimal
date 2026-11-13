@@ -6,6 +6,7 @@ import sys
 import zlib
 
 from .. import database as DB
+from .. import autodetect as AUTO
 from .. import gba_db as GBADB
 from .. import n64 as N64
 from .. import protocol as P
@@ -14,12 +15,15 @@ from ..verify import gba_save_hint, verify_rom
 from . import common
 from .common import game_options, load_db, system_id
 from .messages import tr
-from .errors import CliError, EXIT_ERROR, EXIT_USAGE
+from .errors import CliError, EXIT_ERROR, EXIT_NO_CART as P_EXIT_NO_CART, EXIT_USAGE
 from .output import diff_summary, emit, out_path, progress, safe_name, save_result
 
 
 def cmd_dump(args) -> int:
-    sid = system_id(args.system)
+    auto = args.system == "auto"
+    if auto and args.game:
+        raise CliError("usage", tr("auto.needs_system"), EXIT_USAGE)
+    sid = 0 if auto else system_id(args.system)
     db = load_db(args, required=bool(args.game))
     if args.game:
         if sid not in DB.NES_SYSTEMS:
@@ -31,7 +35,15 @@ def cmd_dump(args) -> int:
         args.chr = args.chr or o["chr"]
         if not args.json:
             print(tr("dump.game_base", name=g.name, mapper=o["mapper"], prg=o["prg"], chr=o["chr"], source=g.source), file=sys.stderr)
-    c, t, _ = common.connect(args)
+    c, t, info = common.connect(args)
+    if auto:                                              # P5 (D160): descobre o sistema só com leituras
+        found = AUTO.autodetect(c, info.get("systems"))
+        if not found:
+            t.close()
+            raise CliError("no_cartridge", tr("auto.none"), P_EXIT_NO_CART)
+        args.system, sid = found[0], P.SYSTEMS[found[0]][0]
+        if not args.json:
+            print(tr("auto.found", system=args.system), file=sys.stderr)
     title = ""
     if args.system == "n64":                              # o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
         try:

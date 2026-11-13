@@ -6,6 +6,7 @@ import sys
 import time
 from pathlib import Path
 
+from .. import autodetect as AUTO
 from .. import n64 as N64
 from .. import protocol as P
 from .. import romimage as RI
@@ -32,7 +33,15 @@ def _n64_save_type(c, args) -> int:
 
 
 def cmd_save_read(args) -> int:
-    c, t, _ = common.connect(args)
+    c, t, info = common.connect(args)
+    if args.system == "auto":                             # P5 (D160): descobre o sistema só com leituras (só na leitura; gravar exige o sistema explícito)
+        found = AUTO.autodetect(c, info.get("systems"))
+        if not found:
+            t.close()
+            raise CliError("no_cartridge", tr("auto.none"), 2)
+        args.system = found[0]
+        if not args.json:
+            print(tr("auto.found", system=args.system), file=sys.stderr)
     if args.system == "n64":
         try:
             args.mapper = _n64_save_type(c, args)

@@ -36,6 +36,7 @@ object Cli {
             if ("version" in a.flags) { io.out("dumper-kt $VERSION (protocol ${Proto.VERSION})"); return EXIT_OK }
             if ("help" in a.flags || a.cmd == null) { if (Ui.on(colorMode, io.stdoutTty, jsonWanted)) io.out(Ui.banner(true, VERSION) + "\n"); io.out(helpText()); return if (a.cmd == null && "help" !in a.flags) EXIT_USAGE else EXIT_OK }
             if (a.cmd !in COMMANDS) throw CliError("usage", Msg.t("args.unknown_cmd", "cmd" to a.cmd, "cmds" to COMMANDS.joinToString(" ")), EXIT_USAGE)
+            if (a.opts["system"] == "auto" && a.cmd !in setOf("detect", "dump", "save-read")) throw CliError("usage", Msg.t("auto.only_reads"), EXIT_USAGE)
             a.opts["voltage"]?.let { if (it !in setOf("auto", "3v3", "5v")) throw CliError("usage", Msg.t("args.voltage"), EXIT_USAGE) }
             a.opts["color"]?.let { if (it !in setOf("auto", "always", "never")) throw CliError("usage", Msg.t("args.color"), EXIT_USAGE) }
             a.opts["progress"]?.let { if (it !in setOf("auto", "none", "jsonl")) throw CliError("usage", Msg.t("args.progress"), EXIT_USAGE) }

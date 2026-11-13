@@ -15,6 +15,8 @@ def test_sound_um_bel_se_deu_certo_e_tres_se_falhou(capsys):
 # ---------------------------------------------------------------- P2: save do GBA pela base do FlashGBX
 import hashlib
 from pathlib import Path
+
+import pytest
 import json
 import zlib
 
@@ -161,3 +163,70 @@ def test_comando_gbcamera(tmp_path, capsys):
     (tmp_path / "pequeno.sav").write_bytes(b"x" * 100)
     assert cli.main(["--json", "gbcamera", "-i", str(tmp_path / "pequeno.sav")]) == 1
     assert cli.main(["--json", "gbcamera", "-i", str(sav), "--scale", "9"]) == 64
+
+
+# ---------------------------------------------------------------- P5: detecção automática do sistema
+class _FakeAuto:
+    """DETECT por sistema: só `presente` responde detectado (0); os outros dizem que não há cartucho (1)."""
+    def __init__(self, presente, nes_pega_tudo=False):
+        self.presente, self.nes_pega_tudo, self.chamadas = presente, nes_pega_tudo, []
+
+    def detect(self, system, *a):
+        nome = P.SYSTEM_BY_ID[system]
+        self.chamadas.append(nome)
+        ok = nome == self.presente or (nome == "nes" and self.nes_pega_tudo)
+        return {"system": system, "status": 0 if ok else 1, "rom_size": 32768 if ok else 0, "save_size": 0, "save_type": 0, "name": "JOGO" if ok else ""}
+
+    def dump_rom(self, system, block, progress, mapper, prg, chr_):
+        self.chamadas.append(("dump", P.SYSTEM_BY_ID[system]))
+        return _Res(bytes(range(256)) * 4)
+
+    def read_save(self, system, block, progress, mapper, ram):
+        self.chamadas.append(("save-read", P.SYSTEM_BY_ID[system]))
+        return _Res(bytes(8192))
+
+
+from oscr_host import protocol as P
+
+
+def _cli_auto(monkeypatch, capsys, fake, *argv, systems=("n64", "gba", "gb", "md", "snes", "sms", "nes", "famicom")):
+    from oscr_host import cli
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _T(), {"systems": list(systems)}))
+    code = cli.main(["--json", *argv])
+    return code, json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+
+
+def test_auto_acha_o_sistema_e_para_no_primeiro(monkeypatch, capsys):
+    f = _FakeAuto("md")
+    code, o = _cli_auto(monkeypatch, capsys, f, "detect", "-s", "auto")
+    assert code == 0 and o["ok"] and o["system"] == 4 and f.chamadas[:4] == ["n64", "gba", "gb", "md"] and "snes" not in f.chamadas     # não sonda o resto
+
+
+def test_auto_deixa_o_nes_por_ultimo_e_ele_nao_rouba_os_outros(monkeypatch, capsys):
+    f = _FakeAuto("snes", nes_pega_tudo=True)
+    code, o = _cli_auto(monkeypatch, capsys, f, "detect", "-s", "auto")
+    assert o["system"] == 1 and "nes" not in f.chamadas                                              # o SNES vem antes: o NES nem foi sondado
+    f = _FakeAuto(None, nes_pega_tudo=True)
+    code, o = _cli_auto(monkeypatch, capsys, f, "detect", "-s", "auto")
+    assert o["system"] == 2 and f.chamadas[-1] == "nes"
+
+
+def test_auto_sem_cartucho_sai_com_2_e_so_usa_sistemas_do_firmware(monkeypatch, capsys):
+    f = _FakeAuto(None)
+    code, o = _cli_auto(monkeypatch, capsys, f, "detect", "-s", "auto", systems=("md", "snes"))
+    assert code == 2 and not o["ok"] and f.chamadas == ["md", "snes"]
+
+
+def test_auto_em_dump_e_save_read_mas_nao_em_gravacao(monkeypatch, capsys, tmp_path):
+    from oscr_host import cli
+    f = _FakeAuto("gba")
+    code, o = _cli_auto(monkeypatch, capsys, f, "dump", "-s", "auto", "-o", str(tmp_path / "j"))
+    assert code == 0 and ("dump", "gba") in f.chamadas and o["file"].endswith(".gba")
+    f = _FakeAuto("gba")
+    code, o = _cli_auto(monkeypatch, capsys, f, "save-read", "-s", "auto", "--mapper", "3", "-o", str(tmp_path / "s"))
+    assert code == 0 and ("save-read", "gba") in f.chamadas
+    for cmd in (["save-write", "-s", "auto", "-i", str(tmp_path / "s.sav"), "--yes"], ["rom-write", "-s", "auto", "-i", "x", "--yes"]):
+        with pytest.raises(SystemExit) as e:
+            cli.main(["--json", *cmd])
+        assert e.value.code in (2, 64)                                                                 # o argparse recusa "auto" na gravação
+    capsys.readouterr()

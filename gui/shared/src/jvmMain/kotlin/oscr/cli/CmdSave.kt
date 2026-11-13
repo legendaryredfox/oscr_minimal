@@ -22,8 +22,10 @@ internal fun n64SaveType(c: Conn, a: Args): Int {
     return g.saveType
 }
 
-internal fun cmdSaveRead(io: CliIo, a: Args): Int {
-    val c = connect(io, a); val sys = system(a)
+internal fun cmdSaveRead(io: CliIo, a0: Args): Int {
+    val c = connect(io, a0)
+    val a = if (a0.opts["system"] == "auto") resolveAuto(io, c, a0) else a0      // P5 (D160): só na leitura; gravar exige o sistema explícito
+    val sys = system(a)
     val res = try {
         val mapper = if (sys == CartSystem.N64) n64SaveType(c, a) else a.int("mapper")
         c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"))

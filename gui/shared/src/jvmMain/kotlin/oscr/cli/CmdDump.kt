@@ -8,7 +8,14 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /** Comando dump (ROM), com a leitura raw do NES. */
-internal fun cmdDump(io: CliIo, a: Args): Int {
+internal fun cmdDump(io: CliIo, a0: Args): Int {
+    var a = a0
+    var c0: Conn? = null
+    if (a0.opts["system"] == "auto") {                  // P5 (D160): descobre o sistema só com leituras
+        if (a0.opts["game"] != null) throw CliError("usage", Msg.t("auto.needs_system"), EXIT_USAGE)
+        c0 = connect(io, a0)
+        a = resolveAuto(io, c0, a0)
+    }
     val sys = system(a)
     val db = loadDb(a, required = a.opts["game"] != null)
     var mapper = a.int("mapper"); var prg = a.int("prg"); var chr = a.int("chr")
@@ -20,7 +27,7 @@ internal fun cmdDump(io: CliIo, a: Args): Int {
     }
     val raw = "raw" in a.flags
     if (raw && sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", Msg.t("dump.raw_only_nes"), EXIT_USAGE)
-    val c = connect(io, a)
+    val c = c0 ?: connect(io, a)
     var title = ""
     if (sys == CartSystem.N64) {                      // o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
         try { val r = n64Size(c, a, prg); prg = r.first; title = r.second } catch (e: CliError) { c.transport.close(); throw e }

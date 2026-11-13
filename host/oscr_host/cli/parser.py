@@ -91,12 +91,12 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(ap, True)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    def add(name, fn, help_, system=True, out=False, inp=False):
+    def add(name, fn, help_, system=True, out=False, inp=False, auto=False):
         sp = sub.add_parser(name, help=help_, description=help_, epilog=_epilog(), formatter_class=argparse.RawDescriptionHelpFormatter)
         sp.set_defaults(fn=fn)
         _add_common(sp, False)
         if system:
-            sp.add_argument("-s", "--system", default="mock", choices=sorted(P.SYSTEMS), help=H("system"))
+            sp.add_argument("-s", "--system", default="mock", choices=sorted(P.SYSTEMS) + (["auto"] if auto else []), help=H("system_auto" if auto else "system"))
         if out:
             sp.add_argument("-o", "--output", help=H("output"))
         if inp:
@@ -120,7 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
     fw.add_argument("--no-verify", action="store_true", help=H("fw_no_verify"))
     fw.add_argument("--wait", type=float, default=12.0, help=H("fw_wait"))
     fw.add_argument("--dry-run", action="store_true", help=H("fw_dry_run"))
-    dtp = add("detect", cmd_detect, H("cmd_detect"))
+    dtp = add("detect", cmd_detect, H("cmd_detect"), auto=True)
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
     dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
     gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
@@ -132,14 +132,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp_ = add("search", cmd_search, H("cmd_search"), system=False)
     sp_.add_argument("query", help=H("search_query"))
     sp_.add_argument("--limit", type=int, default=20, help=H("search_limit"))
-    dp = add("dump", cmd_dump, H("cmd_dump"), out=True)
+    dp = add("dump", cmd_dump, H("cmd_dump"), out=True, auto=True)
     dp.add_argument("--mapper", type=int, default=0, help=H("dump_mapper"))
     dp.add_argument("--prg", type=int, default=0, help=H("dump_prg"))
     dp.add_argument("--chr", type=int, default=0, help=H("dump_chr"))
     dp.add_argument("--raw", action="store_true", help=H("dump_raw"))
     dp.add_argument("--twice", action="store_true", help=H("dump_twice"))
     dp.add_argument("--game", help=H("dump_game"))
-    for sp in (add("save-read", cmd_save_read, H("cmd_save_read"), out=True), add("save-write", cmd_save_write, H("cmd_save_write"), inp=True)):
+    for sp in (add("save-read", cmd_save_read, H("cmd_save_read"), out=True, auto=True), add("save-write", cmd_save_write, H("cmd_save_write"), inp=True)):
         sp.add_argument("--mapper", type=int, default=0, help=H("save_mapper"))
         sp.add_argument("--ram", type=int, default=0, help=H("save_ram"))
         if sp.prog.endswith("save-write"):
