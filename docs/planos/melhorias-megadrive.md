@@ -4,6 +4,8 @@ Origem: levantamento feito em 2026-11-04 no projeto `md_rewriter` (dumper STM32F
 
 Os arquivos de origem, para quem quiser detalhe (em `md_rewriter`): `docs/KY_SUPPORT.md`, `docs/CART_SUPPORT.md`, `docs/HARDWARE_REVIEW.md`, `docs/NEW_FIRMWARE_SPEC.md`, `references/ky_technology/REPORT.md` e `RESEARCH.md`. Clones usados: MD_Dumper, FlashKit-MD-Plus, flashkit-md-py, fkmd, MD-Flash-Cart-4MB, open-ed (em `md_rewriter/references/repos/`).
 
+Atualização 2026-11-13: a primeira bancada do `md_rewriter` com cartuchos reais (S29GL064N com setor uniforme e com setores de 8 KiB, ROM de máscara) está em `docs/referencia/megadrive-bancada-md-rewriter.md` (D154). Mostra que ID e CFI não dão o layout dos setores e que o apagamento acima de 2 MiB falhou nos dois cartuchos de flash.
+
 ## 1. O que o `oscr_minimal` já tem para Mega Drive (verificado no código)
 
 | Área | Estado | Onde |
