@@ -22,7 +22,7 @@ O suporte do fusível F1 está em todas as versões (opcional; troca sem solda).
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
-| v1.0 | `dumper-v1.0-jlcpcb.zip` | 110,1 × 75,1 mm | `08e74f7d9f5d29b75b1fa4dcf1405490d5650169480e6ac8f28f136249b1df4c` |
-| v1.1 | `dumper-v1.1-jlcpcb.zip` | 110,1 × 95,1 mm | `7ea06c2f1f36d7e7b78ce308f608154c8bb503f658754d4f81038241fb3cfff3` |
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 110,1 × 75,1 mm | `a906162ae4f79087c277c90c5536acd997b608ea2f5a26e224c134955466fb2f` |
+| v1.1 | `dumper-v1.1-jlcpcb.zip` | 110,1 × 95,1 mm | `59c62a6c02a7532289534022574afa7cfce5f5c42feff3308deeab366ce07eee` |
 
 Verificação: `python3 tools/check_netlist.py --board nes` (versão mais nova); ERC e DRC com `tools/troca/verifica.sh nes v1.1`.

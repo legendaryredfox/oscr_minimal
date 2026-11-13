@@ -22,7 +22,7 @@ O suporte do fusível F1 está em todas as versões (opcional; troca sem solda).
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
-| v1.0 | `dumper-v1.0-jlcpcb.zip` | 107,1 × 75,1 mm | `93c3fd47c6ddc1017cf28b3d0fbfb0596238a8d790fdc5d3ac15ea8b1c1e59e4` |
-| v1.1 | `dumper-v1.1-jlcpcb.zip` | 107,1 × 110,1 mm | `09485bc6d67fb674cd3620fbfc20c3ace786f4225bda41df10a63ba28c1c375e` |
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 107,1 × 75,1 mm | `ab843ab77533e1c0053c13f432a80ea68a1fea2e694f4d1aaa5d91bf018d68ba` |
+| v1.1 | `dumper-v1.1-jlcpcb.zip` | 107,1 × 110,1 mm | `8734a661f48d9e9bd151260f6a8131ce3c07d3476b3d892adcfd8984276e3cac` |
 
 Verificação: `python3 tools/check_netlist.py --board megadrive` (versão mais nova); ERC e DRC com `tools/troca/verifica.sh megadrive v1.1`.

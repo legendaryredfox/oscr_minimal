@@ -1,6 +1,6 @@
-# BOM — oscr_minimal v1.0
+# BOM — oscr_minimal (16_and_8_bits) v1.0 e v1.1
 
-Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_and_8_bits/fab/bom-v1.0.csv` (gerado do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
+Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_and_8_bits/fab/bom-v1.0.csv` ou `bom-v1.1.csv` (gerados do esquemático) mais as peças que não têm símbolo (pinos, espaçadores, cabo).
 
 > **Pendências antes de comprar (conferir quando as peças chegarem):**
 > - Medidas reais dos slots e do módulo Si5351 (estimadas: `docs/decisoes.md` D17, D23).
@@ -11,9 +11,9 @@ Montagem **manual** (sem montagem pela JLCPCB). Esta lista vem de `boards/16_and
 
 | Item | Valor |
 |---|---|
-| Arquivo | `boards/16_and_8_bits/fab/dumper-v1.0-jlcpcb.zip` |
+| Arquivo | `boards/16_and_8_bits/fab/dumper-v1.1-jlcpcb.zip` (v1.1) ou `dumper-v1.0-jlcpcb.zip` (v1.0, mínima) |
 | Camadas | 2 |
-| Dimensões | 144,05 × 108,05 mm (acima de 100 × 100 mm: preço maior) |
+| Dimensões | v1.0: 144,05 × 118,05 mm; v1.1: 144,05 × 134,05 mm (acima de 100 × 100 mm: preço maior) |
 | Espessura | 1,6 mm |
 | Acabamento | HASL (com chumbo ou sem; sem chumbo é mais comum) |
 | Quantidade | 5 |
@@ -69,3 +69,16 @@ Peças opcionais a comprar a mais por placa:
 | F1 | suporte de clipes para fusível 5×20 mm (Littelfuse série 100, 2 clipes) e fusível de vidro 5×20 mm de 500 mA, ação rápida | 1 + 1 (compre fusíveis de reserva) | todas as versões (v1.0) |
 
 **F1**: fusível de vidro **5×20 mm, 500 mA, ação rápida**, em suporte de clipes de furo passante (Littelfuse série 100 ou equivalente): o fusível queimado se troca **sem solda**. Fica em série com o 5 V que a placa recebe do Mega. Queda de 0,1 a 0,2 V a 200 mA. Vale para as versões v1.0 (exceção declarada à regra "a v1.0 é a mais barata que funciona", D138). **Sem o fusível no suporte, a placa fica sem 5 V**: use um fusível de 500 mA (ou um pedaço de fio na falta) e confira o valor ao trocar.
+
+**Só na v1.1 (seletor 3,3 V/5 V nos slots NES, Famicom e Mega Drive; D138, D147):**
+
+| Ref. | Peça | Qtd | Observação |
+|---|---|---|---|
+| U4 | LD1117V33 (TO-220) | 1 | LDO de 3,3 V |
+| Q1 | IRF9540N (P-MOSFET, TO-220) | 1 | bypass do LDO: 5 V |
+| Q2 | 2N7000 (TO-92) | 1 | comando pelo D18 |
+| R3, R4, R5 | 100 kΩ, 1 kΩ e 220 Ω, axiais 1/4 W | 3 | |
+| C10, C11 | 100 nF cerâmico e 10 µF/16 V eletrolítico | 2 | entrada e saída do LDO |
+| J1 | cabeçalho de 2 pinos de 2,54 mm e um jumper ("TRAVA 3,3 V") | 1 | |
+
+O **SNES fica sempre em 5 V** (o SA-1 não funciona a 3,3 V), assim como o PIC e o Si5351; o GBA tem o seu próprio regulador (U3). Preço aproximado das peças extras da v1.1: menos de US$ 3 por placa (estimativa de varejo, não cotada).

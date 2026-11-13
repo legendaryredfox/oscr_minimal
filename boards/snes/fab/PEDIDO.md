@@ -22,6 +22,6 @@ O suporte do fusível F1 está em todas as versões (opcional; troca sem solda).
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
-| v1.0 | `dumper-v1.0-jlcpcb.zip` | 107,1 × 75,1 mm | `095ab95bf8e70cc0b21a5f6f7e0cea934a88df0524c0e4ce821d341a6536c570` |
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 107,1 × 75,1 mm | `2edbd0abe23ab5d7a3bd46889225fb43d7dd3f81c2d020ce7d30c23ada33462d` |
 
 Verificação: `python3 tools/check_netlist.py --board snes` (versão mais nova); ERC e DRC com `tools/troca/verifica.sh snes v1.0`.

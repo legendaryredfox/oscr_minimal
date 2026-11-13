@@ -7,7 +7,7 @@ Pedido do usuário (2026-11-13): registrar, como pendência futura, as **placas 
 - Feita em 2026-11-13 com busca na web (um resumo de busca por sistema). **Não abri os repositórios nem conferi licenças ou arquivos**: tudo que está marcado `[W]` veio de resumos de busca e precisa de conferência na fonte antes de virar decisão. Onde o resumo não disse a licença, está escrito "licença não conferida".
 - `[C]` = conhecimento geral meu, **não verificado nesta pesquisa** (por exemplo, a lista de chips de melhoria do SNES). Conferir em `vendor/oscr/` e na wiki do OSCR antes de usar.
 - "Open source" aqui significa que o projeto declara os arquivos de hardware (KiCad, Gerber) ou o firmware abertos. Produtos comerciais de código fechado (EverDrive, Harmony, Melody, GameDrive etc.) entram só como **referência de mapeadores**, marcados como fechados.
-- O pedido dizia 41 consoles. A lista de "outros cartuchos" que o projeto tem hoje (`gui/shared/src/commonMain/kotlin/oscr/PlannedSystems.kt` e `host/oscr_host/planned.py`) tem **40** entradas; a `docs/continuacao.md` fala em 41 por uma contagem anterior (antes de o Master System virar sistema suportado, ao que parece; não conferi o histórico). A seção 2 cobre as 40. A seção 1 cobre os sistemas já suportados, de onde vieram os exemplos do pedido.
+- Os **41 consoles** são os da tabela de adaptadores de `docs/historico/pesquisa-comunidade.md` (D114): as **40** entradas de "outros cartuchos" que ainda não são suportadas (`PlannedSystems.kt` e `planned.py`, seção 2) mais o **Master System**, que depois virou sistema suportado (seção 1, junto com Game Gear e SG-1000). A seção 1 também cobre SNES, NES/Famicom, Mega Drive e GB/GBC/GBA, de onde vieram os exemplos do pedido.
 - Para cada sistema o que interessa a este projeto é: (a) **como o cartucho original é especial** (chip de melhoria, mapeador, ROM grande, save especial) e portanto **como o dumper deve lê-lo**; (b) **que placas abertas existem** para gravar cópias, usadas como referência de mapeador e de pinagem, e como possível alvo do `rom-write`.
 
 ## 1. Sistemas já suportados (de onde vieram os exemplos)
@@ -20,7 +20,7 @@ Pedido do usuário (2026-11-13): registrar, como pendência futura, as **placas 
 | **Master System / Game Gear / SG-1000** | Mapeador Sega, **Codemasters** (o resumo não achou nada aberto para ele), mapeador 315-5912 do Game Gear `[W]` | **ModestMapper** (flash regravável, mapeador Sega slot 1 e 2, CERN-OHL-S) `[W]` ([GitHub](https://github.com/sverx/ModestMapper)); **SD-1000** (multicart em Raspberry Pi Pico, KiCad e Gerber) `[W]` ([GitHub](https://github.com/aotta/SD-1000)); **sg1000-multicart** do xrip (RP2040, SG-1000, Mark III e SMS PAL) `[W]`; **smscprogr** (leitor e gravador SMS, Mark III, SG-1000 e Game Gear com adaptador) `[W]` ([GitHub](https://github.com/sverx/smscprogr)); placas SC-3000 de 48K em NOR flash e EPROM no PCBWay `[W]`; Game Gear: um flash de 1 MB com o 315-5912, só protótipo `[W]` | Sem placa aberta confirmada para o Codemasters |
 | **Game Boy / GBC / GBA** | MBC1 a MBC7, MBC3 com RTC, HuC, GB Camera, TAMA5 `[C]`; GBA: saves de vários tipos (já tratados no OSCR) | **Adaptadores de flash do Timothy Friez** para GB (PLCC32, TSOP32, TSOP40; 2 MB e RTC com bateria; Apache 2.0) `[W]` ([notícia](https://hackster.io/news/timothy-friez-s-open-hardware-flash-adapters-upcycle-old-game-boy-pcbs-into-modern-flash-carts-6f0d2906c798)); **NekoCart-GB** (CPLD como MBC, GPLv3) `[W]` ([GitHub](https://awesome.ecosyste.ms/projects/github.com%2Fzephray%2FNekoCart-GB)); roybaer/gb_cartridge (vários PCBs) `[W]`; PCBs de multicart MBC3 e MBC5 no PCBWay `[W]`; GBA: a **B-E05-01 da Retrosix** é cópia 1:1 da AGB-E05-01 (KiCad 8, não é flash) `[W]`; adaptador GBA do **UMDv3** (db-electronics, KiCad) é leitor/gravador, não cartucho `[W]` | Não achei um cartucho de flash GBA aberto confirmado |
 
-## 2. Os consoles previstos (as 40 entradas da lista de "outros cartuchos")
+## 2. Os consoles previstos (as 40 entradas ainda não suportadas)
 
 ### Atari
 
@@ -108,7 +108,6 @@ Pedido do usuário (2026-11-13): registrar, como pendência futura, as **placas 
 | PC-4 | Escolher **uma placa de teste aberta de 8 MB para o Mega Drive** (MD-14) e verificar os mapeadores SSF2, Pier Solar e Paprium | Ligado ao D155; nenhuma achada com tudo junto |
 | PC-5 | Para cada sistema que virar suportado, anotar aqui o **mapeador de referência** (e a placa aberta) antes de escrever o núcleo | Regra do projeto: chamar o núcleo do OSCR; esta lista só orienta o teste |
 | PC-6 | Avaliar se o `rom-write` deve ter como alvo as placas abertas mais comuns (COOLGIRL, Open-ED, ASCII-X, FinalGROM 99, Floopy Drive) | Depende de o OSCR ter o núcleo de gravação |
-| PC-7 | Atualizar a contagem de "41 outros cartuchos" (hoje são 40 na lista do projeto) em `docs/continuacao.md` e onde mais aparecer | — |
 
 ## 5. Fontes principais (resumos de busca de 2026-11-13)
 

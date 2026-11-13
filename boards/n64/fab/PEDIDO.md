@@ -22,6 +22,6 @@ O suporte do fusível F1 está em todas as versões (opcional; troca sem solda).
 
 | Versão | Arquivo | Tamanho | SHA-256 |
 |---|---|---|---|
-| v1.0 | `dumper-v1.0-jlcpcb.zip` | 110,1 × 75,1 mm | `47f3ac7b60d2041d8f3dcffce919e33e8c06db024f041eb5e2dd7aca21bc5369` |
+| v1.0 | `dumper-v1.0-jlcpcb.zip` | 110,1 × 75,1 mm | `7e6e0937a36b3c68a5f74f9cc3069589fd5f1b545ce9fbeb18f7fd76db07c6c2` |
 
 Verificação: `python3 tools/check_netlist.py --board n64` (versão mais nova); ERC e DRC com `tools/troca/verifica.sh n64 v1.0`.

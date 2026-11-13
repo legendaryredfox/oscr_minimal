@@ -4,7 +4,7 @@
 
 ![16_and_8_bits v1.0, vista de baixo (render 3D do KiCad)](render-baixo.png)
 
-Versão **v1.0** da placa [`16_and_8_bits`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Esta é a versão mais nova.
+Versão **v1.0** da placa [`16_and_8_bits`](../README.md): shield 100% THT para Arduino Mega 2560 R3, só USB. Versão anterior, mantida ao lado da mais nova.
 
 | | |
 |---|---|
@@ -23,6 +23,10 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 ## Proteção de corrente e tensão (D138)
 
 **F1: fusível de vidro 5×20 mm de 500 mA (ação rápida) em suporte de clipes, opcional.** O suporte é de furo passante (Littelfuse série 100 ou equivalente) e o fusível queimado se troca **sem solda**; fica em série com o 5 V que a placa recebe do Mega Um curto no cartucho queima o fusível e protege a placa, o Mega e a porta USB. A queda é de 0,1 a 0,2 V a 200 mA (o SA-1 do SNES continua abaixo de ~5,2 V). **Sem o fusível no suporte a placa fica sem 5 V** (um fio no lugar dele também serve). Ele limita corrente e não protege contra tensão errada.
+
+## Particularidades desta versão
+
+Mínima que funciona, com o fusível F1 (D144).
 
 ## Lista de peças
 
@@ -55,7 +59,7 @@ python3 tools/check_netlist.py --board 16_and_8_bits boards/16_and_8_bits/hardwa
 kicad-cli sch erc boards/16_and_8_bits/hardware-v1.0/dumper.kicad_sch
 kicad-cli pcb drc boards/16_and_8_bits/hardware-v1.0/dumper.kicad_pcb
 tools/export_fab.sh 16_and_8_bits v1.0
-tools/render_board.sh 16_and_8_bits v1.0
+tools/render_board.sh 16_and_8_bits v1.0 v1.1
 ```
 
 Mais: [README da placa](../README.md), [`docs/`](../docs/).

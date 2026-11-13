@@ -47,7 +47,8 @@ PLACAS = {
     "16_and_8_bits": dict(
         nome="16_and_8_bits", slots="SNES (62p), NES (72p), Famicom (60p), Mega Drive (64p), todos a 5 V, e GBA (32p, SMD, 1,5 mm) a 3,3 V (regulador U3)",
         extra="Si5351 em header fêmea e PIC12F629 (CIC do SNES) em soquete.",
-        versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""),
+        versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, "Mínima que funciona, com o fusível F1 (D144)."),
+                 ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "A v1.0 mais a proteção: seletor de tensão 3,3 V/5 V nos slots NES, Famicom e Mega Drive (o SNES fica em 5 V por causa do SA-1; o GBA tem o U3), J1 (trava de 3,3 V). Seletor transplantado da `8_bits` v1.1; roteada de novo pelo Freerouting (**revisar o layout no KiCad**). Nada montado nem testado."),
                  ]),
     "16_bits": dict(
         nome="16_bits", slots="SNES (62p) e Mega Drive (64p), 5 V",

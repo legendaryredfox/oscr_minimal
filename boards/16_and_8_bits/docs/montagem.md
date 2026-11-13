@@ -1,8 +1,8 @@
-# Montagem — oscr_minimal v1.0
+# Montagem — oscr_minimal (16_and_8_bits) v1.0 e v1.1
 
 Este guia segue a ordem do `CLAUDE.md` (seção 10), do mais baixo para o mais alto, com as adaptações do GBA e do regulador de 3,3 V. Todas as referências (R1, C1...) estão no silkscreen e na `boards/16_and_8_bits/docs/bom.md`.
 
-> **Segurança:** só um cartucho por vez. Nunca insira cartucho no slot GBA com 5V (o slot GBA é 3,3 V). Antes de trocar de cartucho, desligue o 5V dos slots (`dumper.py power off`, espere o LED amarelo acender) ou o USB.
+> **Segurança:** só um cartucho por vez. Nunca insira cartucho no slot GBA com 5V (o slot GBA é 3,3 V). Para trocar de cartucho, **desligue o USB** (o 5V dos slots não é cortado por software; D139).
 
 ## 1. Lista de peças
 
@@ -128,3 +128,6 @@ Use um cartucho simples: SNES LoROM ou NES mapper 0. Escolha o sistema, faça `d
 
 1. **Suporte do F1** (clipes para fusível 5×20 mm, furo passante) entra com os componentes baixos, na faixa de 10 mm acrescentada à borda de baixo da placa; solde os 4 furos (as duas pernas de cada clipe). O fusível **não vai soldado**: encaixe um fusível de vidro 5×20 mm de 500 mA (ação rápida) nos clipes depois dos testes, e troque-o assim quando queimar.
 2. Teste antes de ligar, com o fusível encaixado: continuidade entre os dois clipes (menos de 2 Ω) e nenhuma entre 5 V e GND.
+3. **Só na v1.1, seletor:** solde R3, R4 e R5, C10 e C11 (o eletrolítico C11 com a polaridade do silk), o Q2 (TO-92), o LDO U4 e o Q1 (TO-220 em pé) e o J1 (cabeçalho de 2 pinos, **sem o jumper**), na fileira da faixa de 16 mm acrescentada à borda de baixo.
+4. Gravar `pio run -e SerialASCII_Volt -t upload` (firmware com o seletor no D18). A placa sobe em 3,3 V e os comandos de cartucho passam a **5 V** sozinhos; `dumper voltage 3v3` escolhe 3,3 V.
+5. Medidas sem cartucho: em 5 V, o VCC dos slots NES, Famicom e Mega Drive fica entre 4,6 e 5,1 V; com `--voltage 3v3`, entre 3,2 e 3,4 V. Com o J1 fechado, `--voltage 5v` não passa de 3,3 V. **O SNES, o PIC e o Si5351 ficam sempre em 5 V; o GBA tem o regulador U3.** Confira a tensão que o cartucho suporta antes de inserir (D140).
