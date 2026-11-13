@@ -513,8 +513,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (chk.status == CheckStatus.OK) { val m = "${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})"; say(m); extra += m }
             else if (chk.status == CheckStatus.MISMATCH) { val m = "${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}"; say(m); extra += m }
             if (system == CartSystem.GBA) {
-                val h = gbaSaveHint(res.data)
-                val m = if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE)
+                val known = GbaSaveDb.lookup(res.data)                  // P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX
+                if (known != null) gbaType = known.saveType.toString()   // só preenche o campo: o usuário confere antes de ler ou gravar o save
+                val h = if (known != null) null else gbaSaveHint(res.data)
+                val m = if (known != null) f(S.GBA_SAVE_DB, known.name, known.label, known.saveSize, known.saveType)
+                else if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE)
                 say(m); extra += m
             }
             val ext = if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext

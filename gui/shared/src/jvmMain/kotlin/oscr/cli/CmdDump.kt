@@ -41,8 +41,15 @@ internal fun cmdDump(io: CliIo, a: Args): Int {
     if (chk.status != CheckStatus.NA) notes += if (chk.status == CheckStatus.MISMATCH) Msg.t("dump.warning") + Msg.t("check.mismatch", "name" to chk.name, "expected" to (chk.expected and 0xFFFF), "computed" to (chk.computed and 0xFFFF))
                  else Msg.t("check.ok", "name" to chk.name, "value" to (chk.expected and 0xFFFF))
     if (sys == CartSystem.GBA) {
-        val h = gbaSaveHint(res.data)
-        if (h != null) { extra["gba_save_type"] = h.type; notes += Msg.t("gba.save_hint", "tag" to h.tag, "label" to (if (h.type == 2) Msg.t("gba.label.eeprom") else h.label), "code" to h.type, "more" to (if (h.type == 2) Msg.t("gba.save_hint.eeprom_more") else "")) }
+        val known = GbaSaveDb.lookup(res.data)                    // P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX; a cadeia da biblioteca de save fica de reserva
+        if (known != null) {
+            extra["gba_save_type"] = known.saveType
+            extra["gba_save_db"] = Json.obj("name" to known.name, "crc32" to "%08X".format(known.crc32), "rom_size" to known.romSize, "save_type" to known.saveType, "save_label" to known.label, "save_size" to known.saveSize)
+            notes += Msg.t("gba.save_db", "name" to known.name, "label" to known.label, "size" to known.saveSize, "code" to known.saveType)
+        }
+        val h = if (known != null) null else gbaSaveHint(res.data)
+        if (known != null) { /* já dito */ }
+        else if (h != null) { extra["gba_save_type"] = h.type; notes += Msg.t("gba.save_hint", "tag" to h.tag, "label" to (if (h.type == 2) Msg.t("gba.label.eeprom") else h.label), "code" to h.type, "more" to (if (h.type == 2) Msg.t("gba.save_hint.eeprom_more") else "")) }
         else notes += Msg.t("gba.save_none")
     }
     if (db != null) {

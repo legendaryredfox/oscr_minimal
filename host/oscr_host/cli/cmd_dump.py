@@ -6,6 +6,7 @@ import sys
 import zlib
 
 from .. import database as DB
+from .. import gba_db as GBADB
 from .. import n64 as N64
 from .. import protocol as P
 from ..client import TimeoutError_
@@ -73,8 +74,15 @@ def cmd_dump(args) -> int:
         else:
             notes.append(tr("dump.game_missing", n=len(db)))
     if sid == 5:
-        hint = gba_save_hint(res.data)
-        if hint:
+        known = GBADB.lookup(res.data)                    # P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX; a cadeia da biblioteca de save fica de reserva
+        if known:
+            extra["gba_save_type"] = known.save_type
+            extra["gba_save_db"] = known.to_dict()
+            notes.append(tr("gba.save_db", name=known.name, label=GBADB.SAVE_LABEL.get(known.save_type, "?"), code=known.save_type, size=known.save_size))
+        hint = None if known else gba_save_hint(res.data)
+        if known:
+            pass
+        elif hint:
             code, label, tag = hint
             extra["gba_save_type"] = code
             more = tr("gba.save_hint.eeprom_more") if code == 2 else ""

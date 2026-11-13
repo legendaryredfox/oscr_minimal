@@ -1,0 +1,3 @@
+gba.tsv vem de FlashGBX/config/db_AGB.json (https://github.com/Lesserkuma/FlashGBX, commit 5b2398b, licença GPL-3.0, de Lesserkuma e colaboradores).
+Gerado por tools/importar_flashgbx.py (D160, P2). 2948 jogos de GBA: o SHA-1 dos primeiros 0x180 bytes do cabeçalho dá o tipo e o tamanho do save.
+A base do FlashGBX deriva de listas da comunidade e de conferências do autor; ver o 'Third Party Notices.md' do repositório de origem.

@@ -45,3 +45,34 @@ class HashesTest {
         assertEquals("A9993E364706816ABA3E25717850C26C9CD0D89D", h.sha1)
     }
 }
+
+/** P2 (D160): save do GBA pela base do FlashGBX. Igual a host/tests/test_melhorias_referencia.py. */
+class GbaSaveDbTest {
+    private fun rom(code: String = "ABCD", title: String = "TESTE"): ByteArray = ByteArray(0x400).also {
+        title.encodeToByteArray().copyInto(it, 0xA0); code.encodeToByteArray().copyInto(it, 0xAC)
+    }
+    private fun sha1(b: ByteArray) = java.security.MessageDigest.getInstance("SHA-1").digest(b).joinToString("") { "%02X".format(it) }
+
+    @Test fun baseCarrega() {
+        assertTrue(GbaSaveDb.games.size > 2900)
+        assertTrue(GbaSaveDb.games.values.all { it.saveType in GbaSaveDb.SAVE_LABEL })
+    }
+
+    @Test fun sha1DoCabecalho() {
+        val r = rom()
+        assertEquals(sha1(r.copyOfRange(0, 0x180)), GbaSaveDb.headerSha1(r))
+        val m = rom(code = "MXYZ")
+        assertEquals(sha1(m.copyOfRange(0, 0x100)), GbaSaveDb.headerSha1(m))
+        val y = rom(title = "YJencrypted")
+        assertEquals(sha1(y.copyOfRange(0x0A, 0x180)), GbaSaveDb.headerSha1(y))
+        assertNull(GbaSaveDb.headerSha1(ByteArray(10)))
+    }
+
+    @Test fun lookupComBasePropria() {
+        val r = rom()
+        val db = GbaSaveDb.parse("# x\n${GbaSaveDb.headerSha1(r)}\tDEADBEEF\t8388608\t5\t131072\tJogo de Teste (USA)\n")
+        val g = GbaSaveDb.lookup(r, db)!!
+        assertEquals(5, g.saveType); assertEquals(131072L, g.saveSize); assertEquals("Flash 128 KB", g.label)
+        assertNull(GbaSaveDb.lookup(rom(code = "WXYZ"), db))
+    }
+}
