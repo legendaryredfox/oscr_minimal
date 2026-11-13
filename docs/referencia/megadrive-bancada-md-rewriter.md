@@ -38,6 +38,13 @@ Os dois cartuchos de flash respondem `017E` no ID de 16 bits, que é o que a tab
 
 O repositório `md_rewriter` tem agora um guia passo a passo (soldagem, montagem e desmontagem, instalação do firmware 1.1 por SWD e todos os testes, por GUI e CLI) em quatro idiomas: `md_rewriter/docs/guide/` (`pt-BR.md`, `en.md`, `ru.md`, `zh-Hans.md`). O dono testou os cartuchos gravados pelo md_rewriter num Mega Drive real (informado em 2026-11-13).
 
+## O que o md_rewriter entregou com essas descobertas (para reaproveitar aqui)
+
+- **Release 1.3.0** (GitHub `legendaryredfox/md_rewriter`): firmware 1.1.0 testado em hardware (apagar 2 MiB em 6 a 9 s, gravar e verificar 2 MiB em 1:40 a 1:46, uma passada), app 1.3.0, `.deb` e tar.gz com `mdrewriter-cli`.
+- **Aviso do limite de 2 MiB** (md_rewriter 1.3.1, só no código-fonte até o próximo release): campo `boardLimit` na tabela de chips (`Software/chipdb.cpp`, 2 MiB para o `017E`), aviso com confirmação na GUI ao gravar uma ROM maior ou apagar por tamanho acima do limite, recusa na CLI (`--ignore-cart-limit` para forçar). Vale como modelo para MD-13.
+- **Guia em quatro idiomas** (soldagem, montagem, desmontagem, firmware, testes por GUI e CLI) em `md_rewriter/docs/guide/`.
+- **Requisito do usuário:** aqui o suporte vai até 8 MiB (D155, `docs/planos/melhorias-megadrive.md`, MD-11 a MD-15).
+
 ## Regras que o usuário deu na bancada
 
 - Cartucho original de máscara: nunca gravar, nunca ler pelo mapeador SSF2 (escreve registros de banco no cartucho).

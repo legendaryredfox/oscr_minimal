@@ -99,3 +99,18 @@ Firmware, PC e testes feitos; **nada rodou em cartucho**. Detalhe e riscos: `doc
 - MD_Dumper (X-death25): `flashlist.csv` com IDs, tamanhos e algoritmos
 - open-ed (Krikzz): `open-ed-mapper.txt`, programar o menu exige pull-up em `/VRES`
 - Datasheet SST39VF6401B (`30h` = Block-Erase de 32 KWord): <https://www.farnell.com/datasheets/9872.pdf>
+
+## Requisito do usuário (2026-11-13): cartuchos de Mega Drive de até 8 MiB
+
+O `oscr_minimal` deve **ler, apagar, gravar e verificar cartuchos de Mega Drive de até 8 MiB** (64 Mbit), em todas as camadas: núcleo `MdFlashCore.h`, `MdFlash.cpp`, protocolo, CLI Python, CLI Kotlin e GUI. O `md_rewriter` não serve de modelo para esse limite: os dois cartuchos flash que ele testou (KY e um segundo S29GL064N) guardam **no máximo 2 MiB** por projeto da placa (`docs/referencia/megadrive-bancada-md-rewriter.md`, item 4), então o 8 MiB só pode ser provado aqui com outro cartucho.
+
+| # | Item | Critério |
+|---|------|----------|
+| MD-11 | Conferir cada camada do caminho de gravação e de leitura até 8 MiB (limites de tamanho do `MdFlash.cpp`, do protocolo `WRITE_ROM`/`DUMP`, dos CLIs e da GUI; o núcleo já tem `kW64 = 0x400000` palavras) | teste no PC com modelo de chip de 64 Mbit: apagar, gravar e ler 8 MiB inteiros; a mensagem de erro de tamanho cita 8 MiB |
+| MD-12 | Apagamento e gravação **acima de 2 MiB** com polling e limite de tempo | o modelo cobre setores acima de `0x200000`; a falha de um setor vira erro em segundos, não trava |
+| MD-13 | Detectar a família KY / FlashKit que só deixa 2 MiB (palavra `0x100000` em diante lê a SRAM de save, bytes `0xFF` intercalados com RAM) e **avisar antes de apagar ou gravar** mais de 2 MiB, como o `md_rewriter` 1.3 faz no app e na CLI (`ChipDb::boardLimitBytes`, `--ignore-cart-limit`) | cartucho dessa família: aviso e nada apagado; cartucho sem o limite: segue normal |
+| MD-14 | Cartucho de teste de 8 MiB: S29GL064N com `A22` ligado à flash e `/CE` sem o decodificador do FlashKit, ou Open EverDrive (janelas de 4 MiB com `ROM_BANK` em `$A13000` bit 2, 8 MiB no total) | leitura de 8 MiB com as duas metades diferentes (não repetidas) e gravação verificada nas duas |
+| MD-15 | Mapeadores acima de 4 MiB: SSF2 (até 32 MiB por páginas de 512 KiB, já lido pelo `md_rewriter` só no modelo) e bancos do Open EverDrive | só com cartucho em mãos |
+
+Regras que valem para os testes de 8 MiB: nunca gravar em cartucho original de máscara; cada apagamento ou gravação em cartucho só com o aval do usuário no momento; leitura de conferência sempre ligada (um erro de bit apareceu uma vez numa gravação de 4 MiB do `md_rewriter`).
+
