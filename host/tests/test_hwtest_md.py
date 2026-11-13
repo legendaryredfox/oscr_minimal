@@ -29,3 +29,16 @@ def test_guarda_recusa_o_que_escreve(args):
     m = _load()
     with pytest.raises(m.Guard):
         m.run_cli(args, simulate=True)
+
+
+def test_suite_de_bancada_geral_fase_host(tmp_path):
+    """P3 (D160): tools/hwtest/hwtest.py, a suíte somente leitura de todos os sistemas, roda a fase host sem hardware."""
+    spec = importlib.util.spec_from_file_location("hwtest_geral", SCRIPT.parents[2] / "hwtest" / "hwtest.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    rep = m.Report("host", tmp_path)
+    m.phase_host(rep, types.SimpleNamespace(port=None))
+    assert not rep.failed, [r for r in rep.rows if r["status"] == "FAIL"]
+    with pytest.raises(m.Guard):
+        m.run_cli(["rom-write", "x"], simulate=True)
+    assert m.system_args(types.SimpleNamespace(mapper=5, prg=0), "n64") == ["-s", "n64", "--mapper", "5"]
