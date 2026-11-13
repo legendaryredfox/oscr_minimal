@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Fork oscr_minimal: laço de comandos do protocolo serial (docs/referencia/protocolo.md) ligado aos núcleos do OSCR.
-// Estado: SNES, NES/Famicom, Mega Drive, GBA e GB/GBC (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE), nunca rodados em hardware (docs/referencia/fork-oscr.md).
+// Estado: SNES, NES/Famicom, Mega Drive, GBA, GB/GBC, SMS/GG/SG-1000 e N64 (leitura de ROM e saves; D158) (DETECT, DUMP_ROM, READ_SAVE e WRITE_SAVE), nunca rodados em hardware (docs/referencia/fork-oscr.md).
 #include "syslibinc.h"
 #include "config.h"
 
@@ -19,6 +19,7 @@
 # include "cores/SNES.h"
 # include "cores/NES.h"
 # include "cores/SMS.h"
+# include "cores/N64.h"
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
@@ -29,6 +30,7 @@
 # include "dumper/FlashProg.h"
 # include "dumper/VoltCore.h"
 # include "dumper/SmsCore.h"
+# include "dumper/N64Core.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
 namespace OSCR::Cores::NES { extern bool mmc6; extern bool flashfound; }
@@ -41,6 +43,9 @@ namespace OSCR::Cores::SMS
   extern SMSMode adapterMode;
   extern bool manRomSizeSelected;
 }
+
+// `eepPages` (páginas da EEPROM) e `crc1` (CRC1 do cabeçalho) ficam no .cpp do núcleo N64, sem declaração no cabeçalho.
+namespace OSCR::Cores::N64 { extern uint16_t eepPages; extern OSCR::CRC32::crc32_t crc1; }
 
 # ifndef OSCR_DUMPER_BAUD
 #   define OSCR_DUMPER_BAUD 1000000UL     // 115200 como fallback: compile com -DOSCR_DUMPER_BAUD=115200
@@ -220,6 +225,19 @@ namespace OSCR::Dumper
     }
 
     namespace SM = OSCR::Cores::SMS;
+    namespace N6 = OSCR::Cores::N64;
+
+    /**
+     * Nintendo 64 (D158): lê os 64 primeiros bytes da ROM (`idCart` do OSCR: CRC1, código, versão e nome) e classifica o cabeçalho z64. O `getCartInfo` do OSCR
+     * consulta a base de dados do cartão SD para achar tamanho e tipo de save; aqui o PC consulta a dele e manda os dois nos comandos (`prg_kb` = MB, `mapper` = tipo de save).
+     */
+    uint8_t n64Probe()
+    {
+      N6::cartOn();
+      N6::idCart();
+      N6::cartOff();
+      return oscr::n64::classify(OSCR::Storage::Shared::buffer, 64);
+    }
 
     bool isSega(uint8_t system) { return system == oscr::SYS_SMS || system == oscr::SYS_GG || system == oscr::SYS_SG1000; }
     uint8_t segaConsole(uint8_t system) { return system == oscr::SYS_GG ? oscr::sms::kGg : system == oscr::SYS_SG1000 ? oscr::sms::kSg : oscr::sms::kSms; }
@@ -474,8 +492,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_FLASH; }
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_N64) | (1U << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -550,6 +568,19 @@ namespace OSCR::Dumper
           out.save_size = uint32_t(OSCR::Cores::sramSize) * 128UL;
           out.save_type = out.save_size ? 1 : 0;
           strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
+          return;
+        }
+
+        if (system == oscr::SYS_N64)
+        {
+          uint8_t st = oscr::n64::kNoCart;
+          bool ran = runCore([&st] { st = n64Probe(); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st != oscr::n64::kOk) return;                         // 1 slot vazio; 4 há dados mas o cabeçalho não é de N64
+          oscr::n64::formatName(out.name, sizeof(out.name), uint32_t(N6::crc1), OSCR::Cores::cartID, OSCR::Cores::fileName);
+          out.rom_size = 0;                                         // o cabeçalho não diz o tamanho: o PC acha pelo CRC1 (base de dados) ou o usuário informa
+          out.save_size = 0; out.save_type = 0;                     // nem o tipo de save
           return;
         }
 
@@ -663,6 +694,17 @@ namespace OSCR::Dumper
             if (kind == oscr::KIND_ROM) SM::readROM(); else SM::readSRAM();     // as duas ligam e desligam o cartucho sozinhas
             return;
           }
+          if (system == oscr::SYS_N64)
+          {
+            if (kind == oscr::KIND_ROM) N6::readRom();                          // liga e desliga o cartucho sozinha
+            else
+            {
+              if (!oscr::n64::isEeprom(saveType)) N6::cartOn();                // SRAM e FlashRAM: o menu do OSCR chamava `cartOn` antes; a EEPROM liga sozinha
+              N6::readSave();
+            }
+            N6::cartOff();
+            return;
+          }
           if (kind == oscr::KIND_ROM)
           {
             MD::readROM();
@@ -692,8 +734,9 @@ namespace OSCR::Dumper
         uint32_t expected = isNes(system) ? nesRamBytes
                           : system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
                           : (system == oscr::SYS_GB ? gbSaveBytes()
+                          : (system == oscr::SYS_N64 ? oscr::n64::saveBytes(saveType)
                           : (isSega(system) ? oscr::sms::kSramBytes
-                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize))));
+                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)))));
 
         if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
@@ -730,6 +773,13 @@ namespace OSCR::Dumper
           if (isSega(system))
           {
             SM::writeSRAM();              // a conferência é do PC: relê o save e compara
+            return;
+          }
+          if (system == oscr::SYS_N64)
+          {
+            if (!oscr::n64::isEeprom(saveType)) N6::cartOn();
+            if (!N6::writeSave()) errorFlag = true;     // a conferência do OSCR relê o arquivo (sem rewind no fluxo): o PC lê o save de volta e compara
+            N6::cartOff();
             return;
           }
           if (saveType == 4)
@@ -925,6 +975,26 @@ namespace OSCR::Dumper
           bool ran = runCore([&rc, forSave, m, p, c] { rc = nesProbe(forSave, m, p, c); NE::cartOff(); });
           if (!ran && rc == oscr::E_SEM_CARTUCHO) { err = oscr::E_CARTUCHO_IO; return false; }
           if (rc != 0) { err = rc; return false; }
+          return true;
+        }
+        if (system == oscr::SYS_N64)
+        {
+          uint8_t st = oscr::n64::kNoCart;
+          bool ran = runCore([&st] { st = n64Probe(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::n64::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
+          if (st != oscr::n64::kOk) { err = oscr::E_CARTUCHO_IO; return false; }        // 4: cabeçalho que não é de N64 (limpar os contatos e tentar de novo)
+          if (forSave)
+          {
+            if (!oscr::n64::saveTypeValid(optMapper)) { err = oscr::E_ARGUMENTO; return false; }
+            OSCR::Cores::saveType = uint8_t(optMapper);
+            N6::eepPages = oscr::n64::eepromPages(uint8_t(optMapper));
+          }
+          else
+          {
+            if (!oscr::n64::romMbValid(optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
+            OSCR::Cores::cartSize = optPrgKb;                                           // o `readRom` do OSCR conta em MB
+          }
           return true;
         }
         if (isSega(system))

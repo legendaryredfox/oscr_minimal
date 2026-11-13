@@ -13,13 +13,26 @@ internal fun cmdDetect(io: CliIo, a: Args): Int {
     val r = try {
         c.client.detect(system(a), adapter).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) }
     } finally { c.transport.close() }
+    val n64 = if (a.opts["system"] == "n64" && r.status == 0) N64.info(r, N64Games.byCrc1) else null
     val text = statusText(r.status)
     val lines = mutableListOf("${CartSystem.entries.firstOrNull { it.id == r.system }?.name?.lowercase() ?: r.system}: $text")
-    if (r.status == 0) lines += Msg.t("detect.title_line", "name" to r.name.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to r.romSize, "save" to r.saveSize)
+    if (n64 != null) {
+        val g = n64.game
+        lines += Msg.t("detect.title_line", "name" to (g?.name ?: n64.header.title).ifEmpty { Msg.t("detect.unknown_title") }, "rom" to (g?.let { it.sizeMb.toLong() shl 20 } ?: 0L), "save" to (g?.saveBytes ?: 0L))
+        lines += if (g != null) Msg.t("n64.game_line", "crc1" to n64.crc1Hex, "gid" to n64.header.gameId) else Msg.t("n64.unknown_game", "crc1" to n64.crc1Hex, "gid" to n64.header.gameId)
+        if (g != null && n64.ambiguous) lines += Msg.t("n64.ambiguous", "n" to (n64.others + 1))
+    } else if (r.status == 0) lines += Msg.t("detect.title_line", "name" to r.name.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to r.romSize, "save" to r.saveSize)
     if (wantChip) lines += "  " + mdChipLine(chip)
     val json = linkedMapOf<String, Any?>("ok" to (r.status == 0), "system" to r.system, "status" to r.status, "rom_size" to r.romSize, "save_size" to r.saveSize,
         "save_type" to r.saveType, "name" to r.name, "status_text" to text)
     if (wantChip) json["flash_chip"] = mdChipJson(chip)
+    if (n64 != null) {
+        val g = n64.game
+        json["name"] = g?.name ?: n64.header.title
+        if (g != null) { json["rom_size"] = g.sizeMb.toLong() shl 20; json["save_size"] = g.saveBytes; json["save_type"] = g.saveType }
+        json["n64"] = Json.obj("crc1" to n64.crc1Hex, "game_id" to n64.header.gameId, "title" to n64.header.title, "found" to (g != null), "rom_mb" to g?.sizeMb, "save_type" to g?.saveType,
+            "save_label" to g?.let { N64.SAVE_LABEL[it.saveType] }, "others" to n64.others, "ambiguous" to n64.ambiguous)
+    }
     if (!a.json && colorOn(io, a)) {                      // terminal: o cartucho desenhado ao lado dos dados
         val fields = mutableListOf<Pair<String, String>>()
         if (r.status == 0) { fields += Msg.t("detect.field_title") to r.name.ifEmpty { Msg.t("detect.unknown_title") }; fields += "ROM" to "${r.romSize} bytes"; fields += Msg.t("detect.field_save") to "${r.saveSize} bytes" }

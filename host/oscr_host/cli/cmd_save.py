@@ -6,18 +6,39 @@ import sys
 import time
 from pathlib import Path
 
+from .. import n64 as N64
 from .. import protocol as P
 from .. import romimage as RI
 from ..verify import eeprom_is_4k
 from . import common
 from .common import system_id
 from .messages import tr
-from .errors import CliError, EXIT_ERROR, EXIT_REFUSED
+from .errors import CliError, EXIT_ERROR, EXIT_REFUSED, EXIT_USAGE
 from .output import emit, progress, save_result
+
+
+def _n64_save_type(c, args) -> int:
+    """Tipo de save do N64 (campo mapper): --mapper vale sempre; senão o CRC1 do cabeçalho na base do projeto (D158)."""
+    if args.mapper:
+        if not N64.save_type_valid(args.mapper):
+            raise CliError("usage", tr("n64.save_type_bad", types=", ".join(f"{k} = {v}" for k, v in N64.SAVE_LABEL.items() if k)), EXIT_USAGE)
+        return args.mapper
+    info = N64.enrich_detect(c.detect(11)).get("n64") or {}
+    if not info.get("found"):
+        raise CliError("usage", tr("n64.need_save", crc1=info.get("crc1") or "?", types=", ".join(f"{k} = {v}" for k, v in N64.SAVE_LABEL.items() if k)), EXIT_USAGE)
+    if not info["save_type"]:
+        raise CliError("no_save", tr("n64.no_save"), EXIT_ERROR)
+    return info["save_type"]
 
 
 def cmd_save_read(args) -> int:
     c, t, _ = common.connect(args)
+    if args.system == "n64":
+        try:
+            args.mapper = _n64_save_type(c, args)
+        except CliError:
+            t.close()
+            raise
     res = c.read_save(system_id(args.system), args.block, progress("save", args.progress), args.mapper, args.ram)
     t.close()
     notes = []
@@ -39,6 +60,8 @@ def cmd_save_write(args) -> int:
             return 1
     c, t, _ = common.connect(args)
     try:
+        if sid == 11:
+            args.mapper = _n64_save_type(c, args)
         extra: dict = {}
         if not args.no_backup:                            # backup do save atual antes de gravar
             cur = c.read_save(sid, args.block, progress("backup", args.progress), args.mapper, args.ram)

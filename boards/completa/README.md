@@ -40,7 +40,7 @@ tools/export_fab.sh completa v1.1
 1. **Direção da etiqueta do cartucho SMS** no silk (não confirmada).
 2. Medidas dos seis slots e do módulo Si5351; altura dos espaçadores (o USB-C e o jack do Mega passam por baixo).
 3. Sem furos de fixação no Mega: a força de inserir o cartucho passa pelos pinos dos headers.
-4. **Firmware:** o núcleo `SMS.cpp` nunca rodou em hardware (slot SMS = `--mapper 0`) e **o N64 está desligado no fork** (`n64 = false` no `user.ini`; sem protocolo, host nem GUI): a placa tem o slot, o software ainda não lê N64.
+4. **Firmware:** o núcleo `SMS.cpp` nunca rodou em hardware (slot SMS = `--mapper 0`) e **o N64 está ligado no fork desde a D158** (`n64 = true`; sistema 11 do protocolo, `dumper dump -s n64`; lê ROM e saves, sem gravar ROM em flash repro): nada rodou em hardware.
 5. **N64 e D7:** o R2 puxa o D7 a 5 V (SNES `/IRQ`), e o N64 quer o pull-up da EEPROM em 3,3 V. No OSCR o pull-up acompanha o VCC; aqui fica em 5 V. O Mega já dirige o D7 a 5 V em 3,3 V (D140), então não é um risco novo, mas é uma tensão a mais no pino da EEPROM: se só o N64 for usado, o R2 pode ser retirado. **Corrente do U3 (250 mA) com o N64 não conferida.**
 6. Revisar o layout no KiCad (autoroteador). Placa grande: confira as trilhas de +5V/VCC_CART e o 3,3 V do GBA.
 

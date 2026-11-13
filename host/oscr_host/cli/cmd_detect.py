@@ -5,6 +5,7 @@ from __future__ import annotations
 from .. import protocol as P
 from . import common, ui
 from .common import system_id
+from .. import n64 as N64
 from .messages import tr
 from .errors import CliError, EXIT_NO_CART, EXIT_OK, EXIT_USAGE
 from .md_chip import md_chip_line, md_flash_chip
@@ -15,6 +16,8 @@ def cmd_detect(args) -> int:
     c, t, info = common.connect(args)
     sega = args.system in ("sms", "gg", "sg1000")          # o adaptador (campo mapper) muda a fiação dos barramentos; os outros sistemas ignoram as opções no DETECT
     r = c.detect(system_id(args.system), args.mapper if sega else 0)
+    if args.system == "n64" and r["status"] == 0:
+        r = N64.enrich_detect(r)                                # tamanho e save vêm da base pelo CRC1 do cabeçalho (D158)
     flash = None
     if getattr(args, "flash_id", False):
         if args.system != "md":
@@ -25,6 +28,11 @@ def cmd_detect(args) -> int:
     lines = [f"{P.SYSTEM_BY_ID.get(r['system'], r['system'])}: {status.get(r['status'], r['status'])}"]
     if r["status"] == 0:
         lines.append(tr("detect.title_line", name=r["name"] or tr("detect.unknown_title"), rom=r["rom_size"], save=r["save_size"]))
+    if r.get("n64"):
+        n = r["n64"]
+        lines.append(tr("n64.game_line", crc1=n["crc1"], gid=n["game_id"]) if n["found"] else tr("n64.unknown_game", crc1=n["crc1"], gid=n["game_id"]))
+        if n["found"] and n.get("ambiguous"):
+            lines.append(tr("n64.ambiguous", n=n["others"] + 1))
     if getattr(args, "flash_id", False):
         lines.append("  " + md_chip_line(flash))
     obj = {"ok": r["status"] == 0, **r, "status_text": status.get(r["status"], str(r["status"])),

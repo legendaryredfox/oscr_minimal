@@ -19,7 +19,7 @@ object Proto {
 
 /** Sistemas e extensão do arquivo de ROM. */
 enum class CartSystem(val id: Int, val ext: String) {
-    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), MOCK(255, ".bin");
+    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), N64(11, ".z64"), MOCK(255, ".bin");
 }
 
 /** Motivos de falha do lado do programa. O texto para o usuário vem de `describeError` (traduzido); nenhuma mensagem fixa aqui. */

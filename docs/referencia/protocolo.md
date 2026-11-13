@@ -79,6 +79,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 8 | Master System / Mark III (slot SMS da placa `megadrive_sms`, ou adaptador no slot Mega Drive; D137) | `.sms` |
 | 9 | Game Gear (adaptador Retrode ou Retron no slot Mega Drive; D137) | `.gg` |
 | 10 | SG-1000 (adaptador Raphnet no slot Mega Drive; D137) | `.sg` |
+| 11 | Nintendo 64 (slot N64 da placa `n64` ou da `completa`, 3,3 V; D158) | `.z64` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Master System, Game Gear e SG-1000 (D137)
@@ -93,6 +94,18 @@ Usam o núcleo `SMS.cpp` do OSCR sem alteração de leitura (`getCartInfo`, `rea
 | 10 (SG-1000) | 0 | Raphnet (`SG1000Raphnet`) |
 
 `prg_kb` é o **tamanho da ROM em KB** e vale sempre: SMS e Game Gear 32, 64, 128, 256, 512 ou 1024 (os tamanhos do menu do OSCR); SG-1000 8, 16, 24 ou 32; 0 = pelo cabeçalho. O cabeçalho "TMR SEGA" dá o tamanho (nibble de `$7FFF` e espelhamento); **sem cabeçalho** (Mark III, SG-1000, jogos antigos) o `DETECT` devolve `status` 4 e o `DUMP_ROM` sem `prg_kb` falha com `E_ARGUMENTO`. Slot vazio = o barramento lê um valor só (`$00` ou `$FF`): `status` 1. O save é sempre 32 KB (`READ_SAVE`/`WRITE_SAVE`; o cartucho de 8 KB aparece espelhado); o cabeçalho não diz se há SRAM (`save_type` 255), quem decide é o usuário. Valores fora das tabelas: `E_ARGUMENTO` (ou `status` 2 no `DETECT`). Regras puras em `firmware/oscr/include/dumper/SmsCore.h` (testes em `pc-tests/test_sms.cpp`). O firmware não conhece a tensão: Game Gear a 5 V é problema do adaptador (ver `docs/referencia/uso.md`).
+
+### Opções para Nintendo 64 (D158)
+
+Usa o núcleo `N64.cpp` do OSCR (`cartOn`, `idCart`, `readRom`, `readSave`, `writeSave`). O OSCR achava o tamanho da ROM e o tipo de save numa base de dados no cartão SD (CRC1 do cabeçalho); sem SD, **o PC faz a consulta** (`database/oscr/json/n64.json`, em `host/oscr_host/n64.py` e `gui/.../N64Games.kt`) e manda os dois valores nos comandos.
+
+| Comando | Campos | Resultado |
+|---|---|---|
+| `DETECT` | nenhum | `status` 0 se os 64 primeiros bytes da ROM começam com `80 37 12 40` (z64); 1 slot vazio (um valor só, `$00` ou `$FF`); 4 há dados mas não é cabeçalho de N64. `name` = `CCCCCCCC IIII TÍTULO` (CRC1 do cabeçalho em hexadecimal, código do jogo e título, até 31 caracteres). `rom_size`, `save_size` e `save_type` vêm em 0: o cabeçalho não diz |
+| `DUMP_ROM` | `prg_kb` = **tamanho da ROM em MB** (1 a 64; o campo guarda MB porque 64 MB não cabe em KB de 16 bits) | arquivo z64 (ordem do barramento) |
+| `READ_SAVE`, `WRITE_SAVE` | `mapper` = **tipo de save** do OSCR | arquivo de save do tamanho abaixo |
+
+Tipos de save (`mapper`): 0 nenhum, 1 SRAM de 32 KB, 2 SRAM de 96 KB (768 Kbit), 4 FlashRAM de 128 KB, 5 EEPROM de 4 Kbit (512 bytes, 64 páginas de 8), 6 EEPROM de 16 Kbit (2048 bytes, 256 páginas). Outro valor: `ERRO 0x0004`; tipo 0: `ERRO 0x000A` (sem save). A conferência depois de gravar o save é do PC (relê e compara): o `verifySaveData` e a releitura de `writeEeprom` do OSCR usam `rewind()` do arquivo, que o fluxo serial não tem; o núcleo foi alterado só nesses pontos e no `matchCRC` do fim de `readRom` (sem SD não há base), sob `OSCR_DUMPER`. **Não incluído:** gravação de ROM em flash repro, Gameshark, Xplorer, Controller Pak e teste de controle (a placa não tem o conector do controle).
 
 ### Opções de `DUMP_ROM` para NES/Famicom e Mega Drive
 

@@ -27,7 +27,7 @@ Detalhe em `docs/componentes-opcionais.md`. Resumo:
 ## Pendências
 
 1. Medidas reais do slot N64 comprado (CLAUDE.md, seção 5), contorno do footprint (estimativa) e direção da etiqueta (D27; o silk diz "a confirmar").
-2. Firmware: religar o núcleo em `firmware/oscr/user.ini` (`n64 = true`), id no protocolo, host e GUI.
+2. Firmware: **feito na D158** (`n64 = true`, sistema 11, host e GUI; lê ROM e saves). Falta rodar em hardware e, se um dia for preciso, a gravação de ROM em flash repro.
 3. Revisar o layout no KiCad antes de encomendar.
 
 Montagem: `docs/montagem.md`; compra: `docs/bom.md`.

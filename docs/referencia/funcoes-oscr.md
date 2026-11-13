@@ -105,6 +105,12 @@ Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequênci
 
 ## Família Sega de 8 bits (D137)
 
+| Função do OSCR (`N64.cpp`, D158) | Estado |
+|---|---|
+| N64: ler o cabeçalho (`idCart`: CRC1, código, título), ler a ROM (`readRom`, 1 a 64 MB informados pelo PC) | ✅ código; nunca rodou em hardware |
+| N64: ler e gravar SRAM, FlashRAM e EEPROM (`readSave`, `writeSave`) | ✅ código; nunca rodou em hardware; a conferência é do PC |
+| N64: gravar ROM em flash repro (`flashRepro`), Gameshark, Xplorer 64, Controller Pak (`readMPK`, `writeMPK`), teste de controle | ⬜ (sem protocolo; o Controller Pak precisa do conector do controle, que a placa não tem) |
+
 | Função do OSCR (`SMS.cpp`) | Estado |
 |---|---|
 | Master System / Mark III: ler ROM (tamanho pelo cabeçalho ou informado), ler e gravar SRAM | ✅ código; nunca rodou em hardware |
@@ -121,4 +127,4 @@ Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequênci
 
 ## Outros sistemas do OSCR (stubs na GUI)
 
-Arcadia 2001, Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, ColecoVision, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Nintendo 64, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, RCA Studio II, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.
+Arcadia 2001, Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, ColecoVision, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, RCA Studio II, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.

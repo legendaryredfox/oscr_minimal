@@ -6,6 +6,7 @@ import sys
 import zlib
 
 from .. import database as DB
+from .. import n64 as N64
 from .. import protocol as P
 from ..client import TimeoutError_
 from ..verify import gba_save_hint, verify_rom
@@ -31,7 +32,13 @@ def cmd_dump(args) -> int:
             print(tr("dump.game_base", name=g.name, mapper=o["mapper"], prg=o["prg"], chr=o["chr"], source=g.source), file=sys.stderr)
     c, t, _ = common.connect(args)
     title = ""
-    if not args.output:                                   # sem -o: nome do arquivo pelo título do cartucho
+    if args.system == "n64":                              # o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
+        try:
+            args.prg, title = _n64_size(c, args)
+        except CliError:
+            t.close()
+            raise
+    elif not args.output:                                 # sem -o: nome do arquivo pelo título do cartucho
         try:
             title = c.detect(sid).get("name", "")
         except (P.DeviceError, P.ProtocolError, TimeoutError_):
@@ -77,6 +84,23 @@ def cmd_dump(args) -> int:
     if getattr(args, "raw", False):
         return _save_nes_raw(args, res, safe_name(title, f"rom_{args.system}"), extra, notes)
     return save_result(args, res, ext, safe_name(title, f"rom_{args.system}"), extra, notes)
+
+
+def _n64_size(c, args) -> tuple[int, str]:
+    """Tamanho da ROM do N64 em MB e o título: --prg vale sempre; senão o CRC1 do cabeçalho na base do projeto."""
+    r = N64.enrich_detect(c.detect(11))
+    info = r.get("n64") or {}
+    title = r.get("name", "") if info.get("found") else ""
+    mb = args.prg
+    if not mb:
+        mb = info.get("rom_mb", 0) if info.get("found") else 0
+        if not mb:
+            raise CliError("usage", tr("n64.need_size", crc1=info.get("crc1") or "?", sizes=", ".join(str(x) for x in N64.COMMON_MB)), EXIT_USAGE)
+        if info.get("ambiguous") and not args.json:
+            print(tr("n64.ambiguous", n=info["others"] + 1), file=sys.stderr)
+    if not N64.size_valid(mb):
+        raise CliError("usage", tr("n64.size_range", lo=N64.MIN_MB, hi=N64.MAX_MB), EXIT_USAGE)
+    return mb, title
 
 
 def _save_nes_raw(args, res, default: str, extra: dict, notes: list[str]) -> int:

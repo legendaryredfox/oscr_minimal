@@ -11,7 +11,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("loopy", "Casio Loopy"), ("pv1000", "Casio PV-1000"), ("channelf", "Fairchild Channel F"),
     ("coleco", "ColecoVision"), ("c64", "Commodore 64"), ("vic20", "Commodore VIC-20"),
     ("cps3", "Capcom CPS3"), ("intellivision", "Intellivision"), ("leapster", "Leapster"),
-    ("jammer", "Little Jammer"), ("jammerpro", "Little Jammer Pro"), ("n64", "Nintendo 64"),
+    ("jammer", "Little Jammer"), ("jammerpro", "Little Jammer Pro"),
     ("vb", "Virtual Boy"), ("pokemini", "Pokémon Mini"), ("ngp", "Neo Geo Pocket"),
     ("odyssey2", "Odyssey 2"), ("pce", "PC Engine / TurboGrafx-16"), ("pcw", "Pocket Challenge W"),
     ("rca2", "RCA Studio II"), ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),

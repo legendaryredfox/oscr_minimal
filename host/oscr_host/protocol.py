@@ -32,7 +32,7 @@ KIND_ROM, KIND_SAVE = 1, 2
 
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),
-    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "mock": (255, ".bin"),
+    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "n64": (11, ".z64"), "mock": (255, ".bin"),
 }
 SYSTEM_BY_ID = {v[0]: k for k, v in SYSTEMS.items()}
 

@@ -2079,6 +2079,13 @@ namespace OSCR::Cores::N64
 
     resetEeprom();
 
+# if OSCR_DUMPER
+    // fork oscr_minimal (D158): sem rewind no fluxo; o PC lê o save de volta e compara.
+    OSCR::Storage::Shared::close();
+    cartOff();
+    return true;
+# endif
+
     writeErrors = 0;
 
     OSCR::Storage::Shared::rewind();
@@ -2293,6 +2300,13 @@ namespace OSCR::Cores::N64
 
   bool verifySaveData(uint32_t maxAddress, uint16_t offset, uint16_t bufferSize, bool isFlash)
   {
+# if OSCR_DUMPER
+    // fork oscr_minimal (D158): a conferência do OSCR relê o arquivo (rewind), que no fluxo serial não existe; o PC lê o save de volta e compara.
+    (void)maxAddress; (void)offset; (void)bufferSize; (void)isFlash;
+    cartOff();
+    OSCR::Storage::Shared::close();
+    return true;
+# endif
     OSCR::UI::printSync(FS(OSCR::Strings::Status::Verifying));
 
     writeErrors = 0;
@@ -2773,7 +2787,9 @@ namespace OSCR::Cores::N64
 
     OSCR::Time::printDifference();
 
-    OSCR::Databases::Extended::matchCRC();
+# if !OSCR_DUMPER
+    OSCR::Databases::Extended::matchCRC();   // fork oscr_minimal (D158): sem cartão SD não há base de dados; o PC confere o CRC32 (No-Intro e base do OSCR)
+# endif
   }
 
 # if HAS_FLASH

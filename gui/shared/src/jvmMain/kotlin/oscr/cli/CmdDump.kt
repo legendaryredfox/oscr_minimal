@@ -22,7 +22,9 @@ internal fun cmdDump(io: CliIo, a: Args): Int {
     if (raw && sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", Msg.t("dump.raw_only_nes"), EXIT_USAGE)
     val c = connect(io, a)
     var title = ""
-    if (a.opts["output"] == null) title = try { c.client.detect(sys).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
+    if (sys == CartSystem.N64) {                      // o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
+        try { val r = n64Size(c, a, prg); prg = r.first; title = r.second } catch (e: CliError) { c.transport.close(); throw e }
+    } else if (a.opts["output"] == null) title = try { c.client.detect(sys).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
     val twice = "twice" in a.flags
     var res2: DumpResult? = null
     val res = try {
@@ -52,6 +54,20 @@ internal fun cmdDump(io: CliIo, a: Args): Int {
     if (raw) saveNesRaw(io, a, res, safeName(title, "rom_${sys.name.lowercase()}"), extra, notes)
     else saveResult(io, a, res, ext, safeName(title, "rom_${sys.name.lowercase()}"), extra, notes)
     return EXIT_OK
+}
+
+/** Tamanho da ROM do N64 em MB e o título: --prg vale sempre; senão o CRC1 do cabeçalho na base do projeto. */
+internal fun n64Size(c: Conn, a: Args, prg: Int): Pair<Int, String> {
+    val info = N64.info(c.client.detect(CartSystem.N64), N64Games.byCrc1)
+    val g = info.game
+    var mb = prg
+    if (mb == 0) {
+        mb = g?.sizeMb ?: 0
+        if (mb == 0) throw CliError("usage", Msg.t("n64.need_size", "crc1" to (info.crc1Hex ?: "?"), "sizes" to N64.COMMON_MB.joinToString(", ")), EXIT_USAGE)
+        if (info.ambiguous && !a.json) System.err.println(Msg.t("n64.ambiguous", "n" to (info.others + 1)))
+    }
+    if (!N64.sizeValid(mb)) throw CliError("usage", Msg.t("n64.size_range", "lo" to N64.MIN_MB, "hi" to N64.MAX_MB), EXIT_USAGE)
+    return mb to (g?.name ?: "")
 }
 
 /** --raw (NES/Famicom): PRG e CHR em arquivos separados (.prg e .chr), sem cabeçalho iNES — a leitura "raw" do OSCR. */

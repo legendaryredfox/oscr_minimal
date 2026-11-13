@@ -438,6 +438,29 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
+    /** N64 (D158): tamanho da ROM (MB) e tipo de save. Os campos valem; se estiverem em 0, o CRC1 do cabeçalho na base do projeto. null = faltou informação (a mensagem já foi dita). */
+    suspend fun n64Resolve(c: OscrClient, needSize: Boolean, needSave: Boolean): Pair<Int, Int>? {
+        var mb = prgN; var st = mapN
+        if ((needSize && mb == 0) || (needSave && st == 0)) {
+            val inf = withContext(Dispatchers.IO) { N64.info(c.detect(CartSystem.N64), N64Games.byCrc1) }
+            val g = inf.game
+            if (needSize && mb == 0) {
+                mb = g?.sizeMb ?: 0
+                if (mb == 0) { say(t(S.ERR_PREFIX) + ": " + f(S.N64_NEED_SIZE, inf.crc1Hex ?: "?")); return null }
+                prgKb = mb.toString()
+            }
+            if (needSave && st == 0) {
+                if (g == null) { say(t(S.ERR_PREFIX) + ": " + f(S.N64_NEED_SAVE, inf.crc1Hex ?: "?")); return null }
+                if (g.saveType == 0) { say(t(S.ERR_PREFIX) + ": " + t(S.N64_NO_SAVE)); return null }
+                st = g.saveType; mapper = st.toString()
+            }
+            if (g != null && inf.ambiguous) say(f(S.N64_AMBIGUOUS, inf.others + 1))
+        }
+        if (needSize && !N64.sizeValid(mb)) { say(t(S.ERR_PREFIX) + ": " + f(S.N64_RANGE, N64.MIN_MB, N64.MAX_MB)); return null }
+        if (needSave && !N64.saveTypeValid(st)) { say(t(S.ERR_PREFIX) + ": " + t(S.N64_SAVE_HINT)); return null }
+        return mb to st
+    }
+
     fun actDetect() {
         if (planned != null) return
         if (isFlash) { actFpId(); return }
@@ -445,7 +468,18 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system) }
             val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; 4 -> S.CART_BAD_HEADER; else -> S.CART_HW_ERROR }
-            if (r.status == 0) detectedNames[system] = r.name
+            val n64 = if (system == CartSystem.N64 && r.status == 0) N64.info(r, N64Games.byCrc1) else null
+            if (r.status == 0) detectedNames[system] = n64?.let { it.game?.name ?: it.header.title } ?: r.name
+            if (n64 != null) {                                        // o cabeçalho do N64 não diz o tamanho nem o save: vêm da base pelo CRC1 (D158)
+                val g = n64.game
+                say(t(st) + " — ${t(S.TITLE_LABEL)}: ${(g?.name ?: n64.header.title).ifEmpty { "?" }}, CRC1 ${n64.crc1Hex}, ${n64.header.gameId}")
+                if (g != null) {
+                    prgKb = g.sizeMb.toString(); mapper = g.saveType.toString()
+                    say(f(S.N64_FOUND, g.sizeMb, N64.SAVE_LABEL[g.saveType] ?: "?"))
+                    if (n64.ambiguous) say(f(S.N64_AMBIGUOUS, n64.others + 1))
+                } else say(t(S.N64_NOT_FOUND))
+                return@run
+            }
             say(t(st) + if (r.status == 0) " — ${t(S.TITLE_LABEL)}: ${r.name.ifEmpty { "?" }}, ${t(S.ROM_LABEL)}: ${r.romSize}, ${t(S.SAVE_LABEL)}: ${r.saveSize}" else "")
         }
     }
@@ -456,11 +490,13 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         if (problem != null) { say(describeProblem(lang, problem)); return }
         run(S.STAGE_READING_ROM) {
-            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgN, chrN, ticker()) }
+            val n64 = if (system == CartSystem.N64) (n64Resolve(c, true, false) ?: return@run) else null
+            val prgUse = n64?.first ?: prgN
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, chrN, ticker()) }
             val extra = mutableListOf<String>()
             if (readTwice) {
                 say("2/2")
-                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgN, chrN, ticker()) }
+                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, chrN, ticker()) }
                 if (res2.data.contentEquals(res.data)) { val m = "${t(S.TWICE_OK)} (CRC32 ${res.crcHex})"; say(m); extra += m }
                 else {
                     val (n, first) = diffSummary(res.data, res2.data)
@@ -496,7 +532,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         run(S.STAGE_READING_SAVE) {
-            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapperArg(), ramArg(), ticker()) }
+            val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
+            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker()) }
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             val title = detectedNames[system].orEmpty()
             offerSave(Pending(res.data, safeName(title, "save_${system.name.lowercase()}") + ".sav", "save", reportText(title, res.crcHex, res.data.size, emptyList())))
@@ -514,20 +551,21 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val c = client ?: return
         slowNote = system == CartSystem.GBA || system == CartSystem.MD
         run(S.STAGE_WRITING_SAVE) {
+            val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
             if (backupFirst) {                                   // lê o save atual e guarda uma cópia ANTES de sobrescrever
                 stage = S.BACKUP_SAVED
-                val cur = withContext(Dispatchers.IO) { c.readSave(system, 0, mapperArg(), ramArg(), ticker()) }
+                val cur = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker()) }
                 val dir = File(System.getProperty("user.home"), "oscr_backups").also { it.mkdirs() }
                 val bf = File(dir, "${system.name.lowercase()}_${SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())}.sav")
                 bf.writeBytes(cur.data)
                 say("${t(S.BACKUP_SAVED)}: $bf — CRC32 ${cur.crcHex}")
                 stage = S.STAGE_WRITING_SAVE; progress = 0f
             }
-            val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapperArg(), ramArg(), ticker()) }
+            val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapUse, ramArg(), ticker()) }
             say("${t(S.DONE)}: ${req.data.size} ${t(S.BYTES)}, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
             if (verifySave) {                                    // o WRITE_SAVE não relê: lê o save de volta e compara
                 stage = S.STAGE_VERIFYING_SAVE; progress = 0f
-                val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, req.data, mapperArg(), ramArg(), ticker()) }
+                val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, req.data, mapUse, ramArg(), ticker()) }
                 fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
                 say(if (v.ok) f(S.SAVE_VERIFY_OK, v.readBytes, hex(v.readCrc)) else t(S.ERR_PREFIX) + ": " + f(S.SAVE_VERIFY_BAD, v.firstDiff ?: 0, hex(v.readCrc), hex(v.expectedCrc)))
             }
@@ -729,6 +767,14 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 Callout(t(S.SEGA_HINT), Tone.INFO)
                 OutlinedTextField(mapper, { mapper = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.SEGA_ADAPTER)) }, singleLine = true,
                     supportingText = { Text(t(S.SEGA_ADAPTER_HINT)) }, modifier = Modifier.fillMaxWidth())
+            }
+            if (stub == null && system == CartSystem.N64) {
+                Callout(t(S.N64_HINT), Tone.INFO)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(2) }, label = { Text(t(S.N64_SIZE_MB)) }, singleLine = true, modifier = Modifier.width(160.dp))
+                    OutlinedTextField(mapper, { mapper = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.N64_SAVE_TYPE)) }, singleLine = true,
+                        supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
+                }
             }
             if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
