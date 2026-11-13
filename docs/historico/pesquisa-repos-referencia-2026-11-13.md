@@ -53,3 +53,10 @@ Itens que **não** recomendo agora: leitor de e-Reader e visualizador da câmera
 ## 4. Notas de licença
 
 `FlashGBX`, `famicom-dumper-*` e `SNES_Dumper` (software) são GPL-3.0, a mesma licença do firmware daqui; copiar dados ou código exige manter o aviso de autoria e a licença. Os bancos `db_AGB.json` e `db_DMG.json` do FlashGBX derivam de listas da comunidade e de checagens do autor (Lesserkuma): antes do P2, ler o `Third Party Notices.md` do repositório e citar a origem em `database/` como já se faz com a base do OSCR.
+
+## 5. O que foi feito depois da aprovação (D160)
+
+O usuário aprovou P1, P2, P3, P4, P5, P6 e P9 (não P7, P8 nem P10). Feitos: **P1** (MD5 e SHA-1), **P2** (save do GBA pela base do FlashGBX; do GB não, porque `db_DMG.json` não traz save), **P3** (`tools/hwtest/hwtest.py` e `docs/referencia/teste-de-bancada.md`), **P4** (`--sound` e aviso na GUI), **P5** (`-s auto` e o botão da GUI), **P9** (`gbcamera` nas duas CLIs; **sem GUI**).
+
+**P6 (`peek`) não foi feito, por decisão técnica a confirmar com o usuário:** (a) um `peek` de verdade (ler N bytes de um endereço qualquer) exige, para cada sistema, a preparação do barramento do núcleo do OSCR (`cartOn`, controles, direção dos pinos), diferente em cada um; sem placa para validar, um valor errado seria mostrado como se fosse bom, o pior resultado para um comando de diagnóstico; (b) a alternativa só no PC (um `dump` com poucos KB e `ABORT`) não serve: o firmware, depois do `ABORT`, deixa o núcleo do OSCR terminar a leitura inteira (o `StreamFile` só devolve erro; vários núcleos não param), o que leva minutos em ROMs grandes. Proposta: fazer o `peek` por sistema, começando pelo Mega Drive e pelo GBA, **junto da primeira placa montada**, comparando com um dump completo, e só então generalizar.
+
