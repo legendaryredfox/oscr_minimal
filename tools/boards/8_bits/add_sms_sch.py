@@ -56,7 +56,7 @@ i = sch.index("\t(lib_symbols\n") + len("\t(lib_symbols\n")
 sch = sch[:i] + "\t" + lib_sym + "\n" + sch[i:]
 
 # --- instância ----------------------------------------------------------------
-X, Y = 480.06, 118.11
+X, Y = float(os.environ.get("SMS_X", "480.06")), 118.11
 u = lambda: str(uuid.uuid4())
 root_uuid = re.search(r"\(uuid ([0-9a-f-]{36})\)", sch).group(1)
 pins_xml = "".join(f'\t\t(pin "{n}"\n\t\t\t(uuid "{u()}")\n\t\t)\n' for n in sorted(sym_pins, key=int))
@@ -233,6 +233,7 @@ def clone_cap(sch, new_ref, pwr_refs):
         new = new_ref if r == CAP_SRC else next(pw)
         nb = re.sub(r'\(uuid "[0-9a-f-]{36}"\)', lambda _m: f'(uuid "{u()}")', b)
         nb = nb.replace(f'"{r}"', f'"{new}"')
+        if r != CAP_SRC: nb = nb.replace('(property "Value" "+5V_CART"', f'(property "Value" "{VCC}"')
         for fx in (f"{x:g}", f"{x:.2f}"):
             nb = re.sub(r'(\(at )' + re.escape(fx) + r'( )', lambda mm: mm.group(1) + f"{x + 15.24:g}" + mm.group(2), nb)
         res.append("\t" + nb + "\n")

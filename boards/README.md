@@ -15,7 +15,7 @@ Cada pasta é uma versão mínima de hardware do OSCR, em shield para Arduino Me
 | [`8_bits/`](8_bits/) | NES, Famicom, Master System | Projeto KiCad criado da `famicom_nes` com o slot SMS da `megadrive_sms` (D153), 117,1 × 97,1 mm (v1.0, mínima com fusível) e 117,1 × 109,1 mm (v1.1, com o seletor de tensão). Nada encomendado |
 | [`gb_gba/`](gb_gba/) | GBA; GB e GBC por adaptador | Projeto KiCad criado de `16_and_8_bits` (D94), 138 × 67 mm, gerbers v1.0 gerados. Nada encomendado |
 | [`n64/`](n64/) | N64 | Projeto KiCad criado da `16_and_8_bits` (D121), 3,3 V, Si5351 só para a EEPROM, 110,1 × 65,1 mm, só a v1.0 (placa de 3,3 V: sem seletor). Nada encomendado |
-| [`completa/`](completa/) | Todos os slots do OSCR | Esqueleto |
+| [`completa/`](completa/) | SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA | Projeto KiCad criado da `16_and_8_bits` com os slots SMS e N64 acrescentados (D156), 144,2 × 152,2 mm (v1.0, mínima com fusível) e 144,2 × 168,2 mm (v1.1, com o seletor de tensão nos slots de 5 V, menos o SNES). O N64 está desligado no firmware. Nada encomendado |
 | [`_lib/`](_lib/) | Símbolos e footprints compartilhados | Em uso por todas as placas com projeto KiCad |
 
 Cada placa com projeto tem um `render.png` (render 3D do KiCad, vista de cima, da versão mais nova) e, **dentro da pasta de cada versão** (`hardware-v1.0/` etc.), `render-cima.png` e `render-baixo.png` (1768 × 1064, print do render 3D do KiCad) ao lado do `README.md` da versão; refazer com `tools/render_board.sh <placa> <versões...>` e `docs/componentes-opcionais.md`: peças que podem ficar sem montar, o que deixa de funcionar e quais cartuchos são afetados.

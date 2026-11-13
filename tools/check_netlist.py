@@ -39,6 +39,8 @@ BOARD_CFG = {
     # tps: pontos de teste da v. 1.2 (referência, net)
     # v. 1.2 final (D108; sem os TVS desde a D130; a v. 1.3 também ficou sem R15 em D140): resistores serie R3..R14 nas 12 linhas de controle (net do Mega = <nome>_M), pull-up R15 de /VRES só na v. 1.2,
     # chave de 5V dos slots (Q1, R16..R18, D2; comando no D19), reset (SW1)
+    # SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA: C2 a C6 (SNES, NES, Famicom, Mega Drive, PIC), C10 (SMS), C11 (N64, 3,3 V), regulador U3 de 3,3 V do GBA e do N64 (C7 a C9), PIC, R2 (5 V)
+    "completa": dict(caps=(2, 3, 4, 5, 6, 10), caps3v3=(11,), reg=True, tps={}),
     "16_bits": dict(caps=(2, 3, 4, 5, 6), reg=False, tps={"TP1": "+5V", "TP2": "GND", "TP3": "D6", "TP4": "D9", "TP5": "D8", "TP6": "D7"}, v12b=True),
     # só GBA (GB e GBC por adaptador): regulador de 3,3 V (U1, C2, C3, C4), sem Si5351, PIC e R2
     "gb_gba": dict(caps=(), reg=True, mdonly=True, tps={}, regref=("U1", "C2", "C3", "C4")),
@@ -156,6 +158,8 @@ def expected_nets(pm_nets):
         exp.setdefault("+3V3", set()).update({(ru, "3"), (co, "1"), (cv, "1")})
         if R2_3V3: exp["+3V3"].add(("R2", "1"))
         exp["GND"].update({(ru, "1"), (ci, "2"), (co, "2"), (cv, "2")})
+        for i in CFG.get("caps3v3", ()):
+            exp["+3V3"].add((f"C{i}", "1")); exp["GND"].add((f"C{i}", "2"))
     exp.setdefault("GND", set()).update({(MEGA, p) for p in MEGA_GND})
     exp["GND"].update({("C1", "2"), ("FLG2", "1")})
     if not MDONLY:

@@ -23,7 +23,7 @@ Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
 | Pasta | O que tem |
 |---|---|
 | `CLAUDE.md` | Decisões de projeto e fases (também serve de instrução para assistentes de código) |
-| `boards/` | **Variantes de hardware**, uma pasta cada (índice e estado em `boards/README.md`). Com projeto KiCad e gerbers: `16_and_8_bits/` (5 slots), `16_bits/` (SNES e Mega Drive) e as de um sistema só ou de dois: `megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `8_bits/` (NES, Famicom e Master System), `gb_gba/`. `completa/` é esqueleto |
+| `boards/` | **Variantes de hardware**, uma pasta cada (índice e estado em `boards/README.md`). Com projeto KiCad e gerbers: `16_and_8_bits/` (5 slots), `16_bits/` (SNES e Mega Drive) e as de um sistema só ou de dois: `megadrive/`, `snes/`, `nes/`, `famicom/`, `famicom_nes/`, `8_bits/` (NES, Famicom e Master System), `gb_gba/`, `completa/` (sete slots) |
 | `boards/<placa>/docs/pinmap.md` | **Fonte da verdade** de cada placa: pino do slot → pino do Mega (o da `16_and_8_bits` é gerado por `tools/gen_pinmap.py`; os das outras são recortes dele) |
 | `docs/decisoes.md` | Log de decisões, desvios e pendências |
 | `boards/<placa>/hardware-<versão>/` (uma pasta por versão), `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |

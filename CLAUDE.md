@@ -52,7 +52,7 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
 │   ├── 8_bits/               # NES, Famicom e Master System (v1.0 mínima com fusível, v1.1 com seletor de tensão; D153)
 │   ├── gb_gba/               # esqueleto: GB, GBC, GBA
-│   └── completa/             # esqueleto: todos os slots do OSCR, sem SD e sem tela (só USB)
+│   └── completa/             # SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA (v1.0 mínima com fusível, v1.1 com seletor de tensão; D156)
 ├── docs/                     # docs gerais (valem para todas as placas)
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)
 │   ├── decisoes.md           # log de decisões e desvios
