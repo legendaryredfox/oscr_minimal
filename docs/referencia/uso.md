@@ -171,7 +171,7 @@ Se algum sistema falhar, o ponto a olhar é o HAL em `firmware/oscr/src/cores/*.
 - **MD5 e SHA-1** de cada ROM e save lido, ao lado do CRC32 (o No-Intro e o Redump catalogam por SHA-1).
 - **`--sound`** (CLI) e a caixa "Avisar com um sinal sonoro" (GUI): aviso ao terminar uma operação longa.
 - **`-s auto`** em `detect`, `dump` e `save-read`, e o botão "Descobrir o sistema" da GUI: acham o sistema do cartucho só com leituras. Cuidado: as saídas do Mega são de 5 V em qualquer slot; um cartucho de 3,3 V pode ser sondado como sistema errado antes de ser achado.
-- **`gbcamera`**: fotos de um save do Game Boy Camera para PNG.
+- **`gbcamera`** (CLI) e "Extrair fotos de um save…" (GUI, sistema Game Boy): fotos de um save do Game Boy Camera para PNG, numa pasta ao lado do arquivo.
 - **Suíte de bancada** somente leitura para todos os sistemas: `tools/hwtest/hwtest.py` e `docs/referencia/teste-de-bancada.md`.
 - **Não feito:** o comando `peek` (ler N bytes de um endereço): ver `docs/historico/pesquisa-repos-referencia-2026-11-13.md`, nota da P6.
 

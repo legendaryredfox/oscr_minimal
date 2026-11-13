@@ -146,6 +146,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var readTwice by remember { mutableStateOf(false) }               // lê a ROM duas vezes e compara (D125)
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     var beepDone by remember { mutableStateOf(Prefs.beepDone) }
+    var gbcPalette by remember { mutableStateOf("gray") }                 // fotos do Game Boy Camera (P9, D160)
+    var gbcScale by remember { mutableStateOf("2") }
     val detectedNames = remember { mutableStateMapOf<CartSystem, String>() }
     val log = remember { mutableStateListOf<String>() }
     var lastMessage by remember { mutableStateOf("") }
@@ -468,6 +470,30 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         return mb to st
     }
 
+    /** P9 (D160): extrai as fotos de um save do Game Boy Camera (128 KB) para PNG, numa pasta ao lado do save. Não usa o dispositivo. */
+    fun actGbCamera() {
+        val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
+        val scale = gbcScale.toIntOrNull() ?: 0
+        if (scale !in 1..8) { say(t(S.ERR_PREFIX) + ": " + t(S.GBCAM_SCALE_RANGE)); return }
+        scope.launch {
+            try {
+                val data = withContext(Dispatchers.IO) { file.readBytes() }
+                val photos = try { GbCamera.extract(data) } catch (e: IllegalArgumentException) { say(t(S.ERR_PREFIX) + ": " + f(S.GBCAM_BAD_SIZE, data.size)); return@launch }
+                val dir = File(file.parentFile, file.nameWithoutExtension)
+                val n = withContext(Dispatchers.IO) {
+                    dir.mkdirs()
+                    var count = 0
+                    for (p in photos) {
+                        if (p.deleted || p.empty) continue
+                        File(dir, p.name + ".png").writeBytes(GbCameraPng.encode(p.pixels, p.width, p.height, gbcPalette, scale)); count++
+                    }
+                    count
+                }
+                say(f(S.GBCAM_DONE, n, dir.path))
+            } catch (e: Exception) { say(t(S.ERR_PREFIX) + ": " + (e.message ?: e.toString())) }
+        }
+    }
+
     /** P5 (D160): descobre o sistema do cartucho só com leituras (N64, GBA, GB, Mega Drive, SNES, Master System e, por último, NES) e escolhe o sistema na lista. */
     fun actAutoDetect() {
         val c = client ?: return
@@ -784,6 +810,19 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
             }
             if (stub == null && system == CartSystem.GB) Callout(t(S.GB_WARNING), Tone.WARN)
+            if (stub == null && system == CartSystem.GB) {                       // P9 (D160): fotos do Game Boy Camera, de um save já lido
+                Text(t(S.GBCAM_TITLE), style = MaterialTheme.typography.titleSmall)
+                Text(t(S.GBCAM_HINT), style = MaterialTheme.typography.bodySmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LabeledField(t(S.GBCAM_PALETTE)) {
+                        ComboBox(value = gbcPalette, modifier = Modifier.width(160.dp)) { close ->
+                            GbCamera.PALETTES.keys.forEach { k -> DropdownMenuItem(text = { Text(k) }, onClick = { close(); gbcPalette = k }) }
+                        }
+                    }
+                    OutlinedTextField(gbcScale, { gbcScale = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBCAM_SCALE)) }, singleLine = true, modifier = Modifier.width(120.dp))
+                    OutlinedButton(onClick = { actGbCamera() }) { Text(t(S.GBCAM_EXTRACT)) }
+                }
+            }
             if (stub == null && system == CartSystem.GBA) {
                 Callout(t(S.GBA_WARNING), Tone.WARN)
                 OutlinedTextField(gbaType, { gbaType = it.filter(Char::isDigit).take(1) }, label = { Text(t(S.GBA_SAVE_TYPE)) }, singleLine = true,
