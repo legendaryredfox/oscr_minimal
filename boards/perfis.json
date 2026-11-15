@@ -1,0 +1,259 @@
+{
+  "16_and_8_bits": {
+    "atual": "v1.1",
+    "slots": [
+      "SNES",
+      "NES",
+      "Famicom",
+      "Mega Drive",
+      "GBA"
+    ],
+    "sistemas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "16_bits": {
+    "atual": "v1.3",
+    "slots": [
+      "SNES",
+      "Mega Drive"
+    ],
+    "sistemas": [
+      1,
+      4,
+      7,
+      8,
+      9,
+      10
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.2": {
+        "seletor": false
+      },
+      "v1.3": {
+        "seletor": true
+      }
+    }
+  },
+  "8_bits": {
+    "atual": "v1.1",
+    "slots": [
+      "NES",
+      "Famicom",
+      "Master System"
+    ],
+    "sistemas": [
+      2,
+      3,
+      7,
+      8,
+      10
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "completa": {
+    "atual": "v1.1",
+    "slots": [
+      "SNES",
+      "NES",
+      "Famicom",
+      "Mega Drive",
+      "GBA",
+      "Master System",
+      "N64"
+    ],
+    "sistemas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "famicom": {
+    "atual": "v1.1",
+    "slots": [
+      "Famicom"
+    ],
+    "sistemas": [
+      3,
+      7
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "famicom_nes": {
+    "atual": "v1.1",
+    "slots": [
+      "NES",
+      "Famicom"
+    ],
+    "sistemas": [
+      2,
+      3,
+      7
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "gb_gba": {
+    "atual": "v1.0",
+    "slots": [
+      "GBA"
+    ],
+    "sistemas": [
+      5,
+      6,
+      7
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      }
+    }
+  },
+  "megadrive": {
+    "atual": "v1.1",
+    "slots": [
+      "Mega Drive"
+    ],
+    "sistemas": [
+      4,
+      7,
+      8,
+      9,
+      10
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "megadrive_sms": {
+    "atual": "v1.1",
+    "slots": [
+      "Mega Drive",
+      "Master System"
+    ],
+    "sistemas": [
+      4,
+      7,
+      8,
+      9,
+      10
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "n64": {
+    "atual": "v1.0",
+    "slots": [
+      "N64"
+    ],
+    "sistemas": [
+      7,
+      11
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      }
+    }
+  },
+  "nes": {
+    "atual": "v1.1",
+    "slots": [
+      "NES"
+    ],
+    "sistemas": [
+      2,
+      7
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      },
+      "v1.1": {
+        "seletor": true
+      }
+    }
+  },
+  "snes": {
+    "atual": "v1.0",
+    "slots": [
+      "SNES"
+    ],
+    "sistemas": [
+      1,
+      7
+    ],
+    "versoes": {
+      "v1.0": {
+        "seletor": false
+      }
+    }
+  }
+}

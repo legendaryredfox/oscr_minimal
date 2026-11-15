@@ -256,6 +256,40 @@ static void test_volt() {
   CHECK(s2.ask(T_VOLT, bad, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);        // 3 e acima não existem
 }
 
+// ---- BOARD: perfil da placa guardado pelo PC (D162)
+struct BoardBackend : MockBackend {
+  bool supported = true, stored = false, selector = false;
+  int sets = 0;
+  bool volt_select() override { return selector; }
+  bool board_supported() override { return supported; }
+  bool board_get(uint8_t& f) override { f = selector ? BOARD_VOLT_SELECT : 0; return stored; }
+  bool board_set(uint8_t f, uint16_t& err) override { if (!supported) { err = E_COMANDO; return false; } sets++; stored = true; selector = f & BOARD_VOLT_SELECT; return true; }
+};
+
+static void test_board() {
+  uint8_t t; std::vector<uint8_t> p;
+  uint8_t st[1] = {BOARD_STATUS}, set_v[2] = {BOARD_SET, BOARD_VOLT_SELECT}, set_n[2] = {BOARD_SET, 0}, bad_act[1] = {2}, bad_bits[2] = {BOARD_SET, 2}, short_set[1] = {BOARD_SET};
+
+  BoardBackend none; none.supported = false;                                                       // backend sem perfil: INFO sem bit7, comando recusado
+  VoltRun q(none);
+  CHECK(q.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && !(p[4] & 128));
+  CHECK(q.ask(T_BOARD, st, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO);
+
+  BoardBackend b;                                                                                  // backend com perfil
+  VoltRun s(b);
+  CHECK(s.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && (p[4] & 128) && !(p[4] & 32) && p[2] == 2);   // bit7: tem BOARD; sem seletor; firmware 0.2
+  CHECK(s.ask(T_BOARD, st, 1, t, p) && t == T_BOARD_RESP && p.size() == 2 && p[0] == 0 && p[1] == 0 && b.sets == 0);   // consulta: nada guardado, nada muda
+  CHECK(s.ask(T_BOARD, set_v, 2, t, p) && t == T_BOARD_RESP && p[0] == 1 && p[1] == BOARD_VOLT_SELECT && b.sets == 1);   // grava: placa com seletor
+  CHECK(s.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && (p[4] & 32));                    // o INFO já mostra o seletor (bit5)
+  CHECK(s.ask(T_BOARD, st, 1, t, p) && t == T_BOARD_RESP && p[0] == 1 && p[1] == BOARD_VOLT_SELECT && b.sets == 1);
+  CHECK(s.ask(T_BOARD, set_n, 2, t, p) && t == T_BOARD_RESP && p[0] == 1 && p[1] == 0 && b.sets == 2);   // volta para a placa sem seletor
+  CHECK(s.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && !(p[4] & 32));
+  CHECK(s.ask(T_BOARD, bad_act, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO && b.sets == 2);   // ação desconhecida
+  CHECK(s.ask(T_BOARD, bad_bits, 2, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO && b.sets == 2);  // bit de perfil que não existe: recusa sem gravar
+  CHECK(s.ask(T_BOARD, short_set, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO && b.sets == 2); // gravação sem os flags
+  CHECK(s.ask(T_BOARD, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);
+}
+
 // ---- SELFTEST: autoteste da placa sem cartucho (P-12)
 struct SelfBackend : MockBackend {
   bool supported = true, fail = false;
@@ -305,6 +339,7 @@ int main() {
   test_session_info_detect();
   test_erase_e_detect_com_opcoes();
   test_volt();
+  test_board();
   test_selftest();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;

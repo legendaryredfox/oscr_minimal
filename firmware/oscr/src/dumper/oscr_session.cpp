@@ -88,6 +88,7 @@ void Session::handle() {
       break;
     case T_ERASE: do_erase(seq, p, len); break;
     case T_VOLT: do_volt(seq, p, len); break;
+    case T_BOARD: do_board(seq, p, len); break;
     case T_SELFTEST: do_selftest(seq); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
@@ -102,10 +103,22 @@ void Session::handle() {
 }
 
 void Session::do_info(uint8_t seq) {
-  uint8_t p[9] = {PROTO_VERSION, 0, 1, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0) | (be_.selftest_supported() ? 64 : 0)), 0, 0, 0, 0};   // bit5: seletor de tensão (D138); bit6: SELFTEST
+  uint8_t p[9] = {PROTO_VERSION, 0, 2, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0) | (be_.selftest_supported() ? 64 : 0) | (be_.board_supported() ? 128 : 0)), 0, 0, 0, 0};   // bit5: seletor de tensão (D138); bit6: SELFTEST; bit7: BOARD (D162)
   put_u16(p + 5, be_.systems());
   put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/referencia/protocolo.md, seção 3)
   send(T_INFO_RESP, seq, p, 9);
+}
+
+void Session::do_board(uint8_t seq, const uint8_t* p, uint16_t len) {
+  if (!be_.board_supported()) { send_error(seq, E_COMANDO, "board"); return; }
+  if (len < 1 || p[0] > BOARD_SET || (p[0] == BOARD_SET && (len < 2 || (p[1] & ~uint8_t(BOARD_VOLT_SELECT))))) { send_error(seq, E_ARGUMENTO, "args"); return; }
+  if (p[0] == BOARD_SET) {
+    uint16_t err = E_COMANDO;
+    if (!be_.board_set(p[1], err)) { send_error(seq, err, "board"); return; }
+  }
+  uint8_t flags = 0;
+  uint8_t r[2] = {uint8_t(be_.board_get(flags) ? 1 : 0), flags};
+  send(T_BOARD_RESP, seq, r, 2);
 }
 
 void Session::do_detect(uint8_t seq, uint8_t sys) {

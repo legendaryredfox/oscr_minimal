@@ -282,7 +282,11 @@ namespace OSCR::Dumper
 #ifndef OSCR_VOLT_SETTLE_MS
 # define OSCR_VOLT_SETTLE_MS 200                                        // espera depois de mudar a tensão (o rail de 3,3 V cai pela carga do Q5 e do cartucho)
 #endif
-    constexpr bool kVoltSelect = OSCR_VOLT_SELECT;
+    /** Padrão da compilação; o perfil guardado na EEPROM (BOARD, D162) vale por cima, para uma imagem só servir as placas com e sem o seletor. */
+    bool voltSelect = OSCR_VOLT_SELECT;
+    bool boardStored = false;                                           // há perfil válido na EEPROM
+    constexpr int kBoardEeprom = 4064;                                  // o OSCR só usa o endereço 0 (folderIncrement)
+    constexpr uint8_t kBoardMagic = 0xB5, kBoardVer = 1;                // [magic, versão, flags, ~flags]
 
     /** Solta todos os pinos de sinal dos slots (entrada, sem pull-up). Mudar a tensão com o Mega ainda dirigindo os pinos alimentaria o cartucho por eles.
      *  Não toca na serial (PE0/PE1), no I²C (PD0/PD1), no seletor (D18 = PD3) nem nos LEDs (PB4 a PB7). */
@@ -304,14 +308,24 @@ namespace OSCR::Dumper
 
     // Sobe em 3,3 V, o estado seguro do hardware (com o Mega em reset o pino solto e o pull-up do gate dão 3,3 V): a CLI e a GUI abrem a porta, o Mega reinicia
     // e um cartucho de 3,3 V no slot não pode receber 5 V antes de o host escolher. O host pede 5 V (padrão, D138) quando o usuário não escolheu 3,3 V.
-    uint8_t cartVolt = kVoltSelect ? oscr::volt::kVolt3V3 : oscr::volt::kVoltNone;
+    uint8_t cartVolt = voltSelect ? oscr::volt::kVolt3V3 : oscr::volt::kVoltNone;
+
+    /** Lê o perfil da placa da EEPROM (quatro bytes: magic, versão, flags, flags invertidos). Sem perfil válido, fica o padrão da compilação. */
+    void loadBoardProfile()
+    {
+      uint8_t b[4];
+      for (uint8_t i = 0; i < 4; i++) b[i] = EEPROM.read(kBoardEeprom + i);
+      boardStored = b[0] == kBoardMagic && b[1] == kBoardVer && uint8_t(~b[2]) == b[3] && !(b[2] & ~oscr::BOARD_VOLT_SELECT);
+      if (boardStored) voltSelect = b[2] & oscr::BOARD_VOLT_SELECT;
+      cartVolt = voltSelect ? oscr::volt::kVolt3V3 : oscr::volt::kVoltNone;
+    }
     oscr::SelfTestReport * selfTestOut = nullptr;   // preenchido por noteSelfTest() durante o SELFTEST
     bool voltChosen = false;                    // o usuário escolheu 3,3 V (cartucho marcado como 3,3 V): o host pede confirmação antes de subir para 5 V
 
     /** Pino do seletor (D18 = PD3): alto = Q4 aberto = 3,3 V; baixo = Q4 conduz = 5 V. Com o Mega em reset o pino solto e o pull-up do gate dão 3,3 V. */
     void setVoltPin(uint8_t volt)
     {
-      if (!kVoltSelect) return;
+      if (!voltSelect) return;
       DDRD |= _BV(PD3);
       if (volt == oscr::volt::kVolt5V) PORTD &= ~_BV(PD3);
       else PORTD |= _BV(PD3);
@@ -456,13 +470,35 @@ namespace OSCR::Dumper
     class CoreBackend : public oscr::Backend
     {
     public:
-      bool volt_select() override { return kVoltSelect; }
+      bool volt_select() override { return voltSelect; }
+
+      // Perfil da placa (D162): guarda na EEPROM (update: só grava o que mudou) e vale já. Com o seletor: sobe em 3,3 V (estado seguro) e o host pede 5 V depois;
+      // sem o seletor: o D18 volta a ser entrada, solta.
+      bool board_supported() override { return true; }
+      bool board_get(uint8_t & flags) override { flags = voltSelect ? oscr::BOARD_VOLT_SELECT : 0; return boardStored; }
+      bool board_set(uint8_t flags, uint16_t & err) override
+      {
+        if (flags & ~oscr::BOARD_VOLT_SELECT) { err = oscr::E_ARGUMENTO; return false; }
+        EEPROM.update(kBoardEeprom, kBoardMagic); EEPROM.update(kBoardEeprom + 1, kBoardVer);
+        EEPROM.update(kBoardEeprom + 2, flags); EEPROM.update(kBoardEeprom + 3, uint8_t(~flags));
+        boardStored = true;
+        bool sel = flags & oscr::BOARD_VOLT_SELECT;
+        if (sel != voltSelect)
+        {
+          releaseCartPins();
+          voltSelect = sel;
+          voltChosen = false;
+          if (sel) { cartVolt = oscr::volt::kVolt3V3; setVoltPin(cartVolt); delay(OSCR_VOLT_SETTLE_MS); }
+          else { cartVolt = oscr::volt::kVoltNone; DDRD &= ~_BV(PD3); PORTD &= ~_BV(PD3); }
+        }
+        return true;
+      }
 
       // Seletor 3,3 V/5 V (D138): solta os pinos de sinal, muda o D18 e espera o rail assentar. O 5 V não é cortado: o cartucho continua alimentado,
       // por isso o host só pede 5 V depois do alerta e da confirmação, e o usuário troca o cartucho com o USB desligado.
       bool cart_voltage(uint8_t volt, uint16_t & err) override
       {
-        if (!kVoltSelect || (volt != oscr::volt::kVolt3V3 && volt != oscr::volt::kVolt5V)) { err = oscr::E_COMANDO; return false; }
+        if (!voltSelect || (volt != oscr::volt::kVolt3V3 && volt != oscr::volt::kVolt5V)) { err = oscr::E_COMANDO; return false; }
         voltChosen = volt == oscr::volt::kVolt3V3;
         if (cartVolt == volt) return true;
         releaseCartPins();
@@ -486,7 +522,7 @@ namespace OSCR::Dumper
 
       void volt_info(oscr::VoltInfo & p) override
       {
-        p.select = kVoltSelect;
+        p.select = voltSelect;
         p.volt = cartVolt;
         p.chosen = voltChosen;
       }
@@ -1050,6 +1086,7 @@ namespace OSCR::Dumper
 
   void setup()
   {
+    loadBoardProfile();                       // perfil guardado pelo PC (BOARD); sem ele vale a compilação
     setVoltPin(cartVolt);                     // o seletor começa em 3,3 V (estado seguro, D138); sem seletor não faz nada
     delay(50);                                // o 5V dos slots, o Si5351 e o PIC sobem antes do primeiro comando
     ClockedSerial.begin(OSCR_DUMPER_BAUD);

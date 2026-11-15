@@ -89,6 +89,11 @@ class Backend {
   // Muda a tensão dos slots (1 = 3,3 V, 2 = 5 V): solta os pinos de sinal, troca o seletor e espera o rail assentar.
   virtual bool cart_voltage(uint8_t volt, uint16_t& err) { (void)volt; err = E_COMANDO; return false; }
   virtual void volt_info(VoltInfo& p) { p.select = volt_select(); }
+  // Perfil da placa (BOARD, D162): o PC grava que placa está ligada (hoje, só se tem o seletor de tensão) e o backend guarda (EEPROM no AVR). INFO bit7.
+  // Sem perfil guardado, vale o padrão da compilação (OSCR_VOLT_SELECT). `board_get` devolve false se não há perfil guardado.
+  virtual bool board_supported() { return false; }
+  virtual bool board_get(uint8_t& flags) { flags = 0; return false; }
+  virtual bool board_set(uint8_t flags, uint16_t& err) { (void)flags; err = E_COMANDO; return false; }
   // Autoteste da placa, sem cartucho (curtos entre os pinos, pull-up do D7, Si5351). Demora cerca de 45 s; o host espera até 90 s. INFO bit6.
   virtual bool selftest_supported() { return false; }
   virtual bool selftest(SelfTestReport& r, uint16_t& err) { (void)r; err = E_COMANDO; return false; }
@@ -135,6 +140,7 @@ class Session {
   void do_detect(uint8_t seq, uint8_t sys);
   void do_erase(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_volt(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_board(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_selftest(uint8_t seq);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);

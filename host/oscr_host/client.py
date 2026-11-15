@@ -79,6 +79,12 @@ class Client:
         f = self._request(P.T_VOLT, bytes([action]), self._next_seq(), {P.T_VOLT_RESP}, self.long_timeout)
         return P.parse_volt_resp(f.payload)
 
+    def board(self, action: int = P.BOARD_STATUS, flags: int = 0) -> dict:
+        """BOARD (D162): consulta (0) ou grava (1) o perfil da placa na EEPROM do firmware. Só existe se o `INFO` tiver `board_profile`."""
+        payload = bytes([action]) if action == P.BOARD_STATUS else bytes([action, flags])
+        f = self._request(P.T_BOARD, payload, self._next_seq(), {P.T_BOARD_RESP}, self.long_timeout)
+        return P.parse_board_resp(f.payload)
+
     def selftest(self) -> dict:
         """SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware."""
         f = self._request(P.T_SELFTEST, b"", self._next_seq(), {P.T_SELFTEST_RESP}, max(self.long_timeout, 90.0))

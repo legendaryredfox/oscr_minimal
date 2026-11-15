@@ -1,0 +1,24 @@
+# Gerado por tools/gen_perfis.py (boards/perfis.json). Não edite à mão.
+# placa	versão	atual	slots	sistemas	seletor de tensão
+16_and_8_bits	v1.0	0	SNES,NES,Famicom,Mega Drive,GBA	1,2,3,4,5,6,7,8,9,10	0
+16_and_8_bits	v1.1	1	SNES,NES,Famicom,Mega Drive,GBA	1,2,3,4,5,6,7,8,9,10	1
+16_bits	v1.0	0	SNES,Mega Drive	1,4,7,8,9,10	0
+16_bits	v1.2	0	SNES,Mega Drive	1,4,7,8,9,10	0
+16_bits	v1.3	1	SNES,Mega Drive	1,4,7,8,9,10	1
+8_bits	v1.0	0	NES,Famicom,Master System	2,3,7,8,10	0
+8_bits	v1.1	1	NES,Famicom,Master System	2,3,7,8,10	1
+completa	v1.0	0	SNES,NES,Famicom,Mega Drive,GBA,Master System,N64	1,2,3,4,5,6,7,8,9,10,11	0
+completa	v1.1	1	SNES,NES,Famicom,Mega Drive,GBA,Master System,N64	1,2,3,4,5,6,7,8,9,10,11	1
+famicom	v1.0	0	Famicom	3,7	0
+famicom	v1.1	1	Famicom	3,7	1
+famicom_nes	v1.0	0	NES,Famicom	2,3,7	0
+famicom_nes	v1.1	1	NES,Famicom	2,3,7	1
+gb_gba	v1.0	1	GBA	5,6,7	0
+megadrive	v1.0	0	Mega Drive	4,7,8,9,10	0
+megadrive	v1.1	1	Mega Drive	4,7,8,9,10	1
+megadrive_sms	v1.0	0	Mega Drive,Master System	4,7,8,9,10	0
+megadrive_sms	v1.1	1	Mega Drive,Master System	4,7,8,9,10	1
+n64	v1.0	1	N64	7,11	0
+nes	v1.0	0	NES	2,7	0
+nes	v1.1	1	NES	2,7	1
+snes	v1.0	1	SNES	1,7	0

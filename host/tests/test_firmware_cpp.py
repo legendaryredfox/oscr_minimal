@@ -34,7 +34,7 @@ def client(sim_bin):
 
 def test_info_do_firmware(client):
     info = client.info()
-    assert info["proto"] == 1 and info["mock"] and info["firmware"] == "0.1.0"
+    assert info["proto"] == 1 and info["mock"] and info["firmware"] == "0.2.0"
 
 
 def test_detect(client):

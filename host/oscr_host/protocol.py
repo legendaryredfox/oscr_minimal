@@ -18,6 +18,7 @@ T_INFO, T_DETECT, T_DUMP_ROM, T_READ_SAVE, T_WRITE_SAVE = 0x01, 0x02, 0x03, 0x04
 T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
 T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/referencia/protocolo.md)
 T_SELFTEST = 0x0E                       # autoteste da placa sem cartucho (P-12, docs/referencia/protocolo.md)
+T_BOARD = 0x0F                          # perfil da placa: consulta ou grava na EEPROM do firmware (D162, docs/referencia/protocolo.md)
 T_VOLT = 0x0D                          # tensão dos slots: consulta ou escolhe 3,3 V/5 V (docs/referencia/protocolo.md, D138)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/referencia/protocolo.md)
 # dispositivo -> host
@@ -25,6 +26,9 @@ T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x8
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
 T_VOLT_RESP = 0x89
 T_SELFTEST_RESP = 0x8A
+T_BOARD_RESP = 0x8B
+BOARD_STATUS, BOARD_SET = 0, 1                  # ação do BOARD
+BOARD_VOLT_SELECT = 1                           # bit 0 do perfil: a placa tem o seletor de tensão 3,3 V/5 V (D138)
 ST_GND, ST_PAIR, ST_NO_PULLUP, ST_NO_CLOCKGEN = 1, 2, 3, 4   # tipos de achado do SELFTEST
 VOLT_STATUS, VOLT_3V3, VOLT_5V = 0, 1, 2       # ação do VOLT (seletor 3,3 V/5 V, D138)
 
@@ -35,6 +39,10 @@ SYSTEMS = {  # nome -> (id, extensão)
     "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "n64": (11, ".z64"), "mock": (255, ".bin"),
 }
 SYSTEM_BY_ID = {v[0]: k for k, v in SYSTEMS.items()}
+
+
+def system_name(i: int) -> str:
+    return SYSTEM_BY_ID.get(i, str(i))
 
 ERRORS = {
     1: "comando desconhecido ou não suportado", 2: "sistema desconhecido ou não suportado",
@@ -194,8 +202,16 @@ def parse_info_resp(p: bytes) -> dict:
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
-            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32), "selftest": bool(flags & 64),
-            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)]}
+            "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32), "selftest": bool(flags & 64), "board_profile": bool(flags & 128),
+            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)],
+            "system_ids": [i for i in range(16) if systems & (1 << i)]}
+
+
+def parse_board_resp(p: bytes) -> dict:
+    """BOARD_RESP (D162): `stored` = há perfil guardado na EEPROM do firmware; `voltage_select` = o perfil (ou, sem perfil, o padrão da compilação) tem o seletor."""
+    if len(p) < 2:
+        raise ProtocolError("BOARD_RESP curto")
+    return {"stored": bool(p[0]), "voltage_select": bool(p[1] & BOARD_VOLT_SELECT)}
 
 
 def parse_volt_resp(p: bytes) -> dict:

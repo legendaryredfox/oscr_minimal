@@ -82,11 +82,24 @@ struct SelfMock : oscr::MockBackend {
   bool selftest(oscr::SelfTestReport& r, uint16_t&) override { usleep(20000); r.add(oscr::ST_GND, 30, 0); r.add(oscr::ST_PAIR, 22, 57); return true; }
 };
 
+// Backend com o perfil da placa (D162): guarda em memória. Uso: sim_stdio board. Começa sem seletor; BOARD liga e desliga o seletor (INFO bit5) como o firmware.
+struct BoardMock : oscr::MockBackend {
+  bool stored = false, selector = false; uint8_t volt = 1;
+  bool supports(uint8_t s) override { return s == 1 || MockBackend::supports(s); }
+  bool volt_select() override { return selector; }
+  bool cart_voltage(uint8_t v, uint16_t& err) override { if (!selector) { err = oscr::E_COMANDO; return false; } volt = v; return true; }
+  void volt_info(oscr::VoltInfo& p) override { p.select = selector; p.volt = selector ? volt : 0; }
+  bool board_supported() override { return true; }
+  bool board_get(uint8_t& f) override { f = selector ? oscr::BOARD_VOLT_SELECT : 0; return stored; }
+  bool board_set(uint8_t f, uint16_t&) override { stored = true; selector = f & oscr::BOARD_VOLT_SELECT; volt = 1; return true; }
+};
+
 int main(int argc, char** argv) {
   static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
-  static oscr::MockBackend plain; static StreamMock streamed; static VoltMock voltage; static SelfMock selftest;
+  static oscr::MockBackend plain; static StreamMock streamed; static VoltMock voltage; static SelfMock selftest; static BoardMock board;
   oscr::Backend& be = (argc > 1 && !strcmp(argv[1], "stream")) ? static_cast<oscr::Backend&>(streamed)
                     : (argc > 1 && !strcmp(argv[1], "volt")) ? static_cast<oscr::Backend&>(voltage)
+                    : (argc > 1 && !strcmp(argv[1], "board")) ? static_cast<oscr::Backend&>(board)
                     : (argc > 1 && !strcmp(argv[1], "selftest")) ? static_cast<oscr::Backend&>(selftest) : static_cast<oscr::Backend&>(plain);
   oscr::Session s(oscr::Io{nullptr, rd, wr, now}, be, rx, sizeof rx, tx, sizeof tx);
   for (;;) {
