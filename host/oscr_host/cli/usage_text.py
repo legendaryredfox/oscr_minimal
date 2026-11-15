@@ -10,6 +10,8 @@ commands:
   errors       list device error codes and CLI exit codes (does not open the port)
   info         firmware version and supported systems
   firmware-flash  flash the fork's firmware to the Arduino Mega over USB with avrdude (replaces the board's program) [--hex FILE --env NAME --avrdude PATH --yes --dry-run]
+  boards          list the known boards (current version, slots, voltage selector); does not use the Arduino
+  board           prepare the Arduino for the --board board: check the firmware, write the board profile and, if needed, the firmware (asks first)
   detect       detect the cartridge            (-s SYSTEM)
   identify     identify saved ROMs by CRC32 in the database (--db), without opening the port
   gbcamera     extracts the photos of a Game Boy Camera save to PNG: -i SAVE.sav [-o FOLDER] [--palette gray|green|gbc] [--scale 1-8] [--all] (does not open the port)
@@ -64,6 +66,9 @@ options (accepted before or after the command):
   --env NAME           firmware-flash: PlatformIO environment the .hex comes from (default SerialASCII; SerialASCII_Volt)
   --avrdude PATH       firmware-flash: avrdude to use (default: env AVRDUDE, PATH or PlatformIO's)
   --wait S             firmware-flash: seconds waiting for the device to answer INFO after flashing (default 12)
+  --board BOARD        e.g. 16_bits or completa@v1.1 (list: `dumper boards`): checks that the Arduino firmware fits the board, writes the board profile and, if support is missing, writes the right firmware (asks first)
+  --auto-flash         with --board: accept writing the firmware without asking (scripts)
+  --firmware-dir DIR   folder with manifest.tsv and the firmware image .hex files (default: env OSCR_FIRMWARE_DIR or firmware/images; build: `python3 tools/build_images.py`)
   --dry-run            firmware-flash: only show the avrdude command and the current firmware version
   --no-verify          firmware-flash, rom-write, save-write: do not read the ROM/save back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
@@ -81,6 +86,8 @@ comandos:
   errors       lista os códigos de erro do dispositivo e os códigos de saída da CLI (não abre a porta)
   info         versão do firmware e sistemas suportados
   firmware-flash  grava o firmware do fork no Arduino Mega pela USB com o avrdude (substitui o programa da placa) [--hex ARQ --env NOME --avrdude CAMINHO --yes --dry-run]
+  boards          lista as placas conhecidas (versão atual, slots, seletor de tensão); não usa o Arduino
+  board           prepara o Arduino para a placa de --board: confere o firmware, grava o perfil e, se preciso, o firmware (pede confirmação)
   detect       detecta o cartucho              (-s SISTEMA)
   identify     identifica ROMs salvas pelo CRC32 na base de dados (--db), sem abrir a porta
   gbcamera     extrai as fotos de um save do Game Boy Camera para PNG: -i SAVE.sav [-o PASTA] [--palette gray|green|gbc] [--scale 1-8] [--all] (não abre a porta)
@@ -135,6 +142,9 @@ opções (aceitas antes ou depois do comando):
   --env NOME           firmware-flash: ambiente do PlatformIO de onde vem o .hex (padrão SerialASCII; SerialASCII_Volt)
   --avrdude CAMINHO    firmware-flash: avrdude a usar (padrão: variável AVRDUDE, PATH ou o do PlatformIO)
   --wait S             firmware-flash: segundos esperando o dispositivo responder ao INFO depois da gravação (padrão 12)
+  --board PLACA        ex.: 16_bits ou completa@v1.1 (lista: `dumper boards`): confere se o firmware do Arduino serve para a placa, grava o perfil e, se faltar suporte, grava o firmware certo (pede confirmação)
+  --auto-flash         com --board: aceita gravar o firmware sem perguntar (scripts)
+  --firmware-dir PASTA pasta com o manifest.tsv e os .hex das imagens de firmware (padrão: variável OSCR_FIRMWARE_DIR ou firmware/images; gerar: `python3 tools/build_images.py`)
   --dry-run            firmware-flash: só mostra o comando do avrdude e a versão atual do firmware
   --no-verify          firmware-flash, rom-write, save-write: não lê a ROM/save de volta para conferir depois de gravar (padrão: conferir)
   --yes                não pergunta antes de gravar (obrigatório fora de terminal)
@@ -152,6 +162,8 @@ _RU = """использование: dumper [опции] <команда> [оп�
   errors       список кодов ошибок устройства и кодов возврата CLI (порт не открывается)
   info         версия прошивки и поддерживаемые системы
   firmware-flash  записать прошивку форка в Arduino Mega по USB через avrdude (заменяет программу платы) [--hex ФАЙЛ --env ИМЯ --avrdude ПУТЬ --yes --dry-run]
+  boards          список известных плат (текущая версия, слоты, селектор напряжения); Arduino не используется
+  board           подготовить Arduino для платы из --board: проверить прошивку, записать профиль и при необходимости прошивку (спросит)
   detect       определить картридж             (-s СИСТЕМА)
   identify     опознать сохранённые ROM по CRC32 в базе (--db), порт не открывается
   gbcamera     извлекает фотографии из сохранения Game Boy Camera в PNG: -i SAVE.sav [-o ПАПКА] [--palette gray|green|gbc] [--scale 1-8] [--all] (порт не открывается)
@@ -206,6 +218,9 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --env ИМЯ            firmware-flash: окружение PlatformIO, откуда берётся .hex (по умолчанию SerialASCII; SerialASCII_Volt)
   --avrdude ПУТЬ       firmware-flash: какой avrdude использовать (по умолчанию: переменная AVRDUDE, PATH или из PlatformIO)
   --wait S             firmware-flash: сколько секунд ждать ответа устройства на INFO после записи (по умолчанию 12)
+  --board ПЛАТА        напр. 16_bits или completa@v1.1 (список: `dumper boards`): проверяет, подходит ли прошивка Arduino, записывает профиль платы и при нехватке поддержки записывает нужную прошивку (спросит)
+  --auto-flash         с --board: согласиться записать прошивку без вопроса (скрипты)
+  --firmware-dir ПАПКА папка с manifest.tsv и .hex образов прошивки (по умолчанию: переменная OSCR_FIRMWARE_DIR или firmware/images; сборка: `python3 tools/build_images.py`)
   --dry-run            firmware-flash: только показать команду avrdude и текущую версию прошивки
   --no-verify          firmware-flash, rom-write, save-write: не читать ROM/сохранение обратно для проверки после записи (по умолчанию: проверять)
   --yes                не спрашивать перед записью (обязательно вне терминала)
@@ -223,6 +238,8 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   errors       列出设备错误码和 CLI 退出码（不打开串口）
   info         固件版本和支持的系统
   firmware-flash  用 avrdude 通过 USB 把分支固件写入 Arduino Mega（替换板子上的程序）[--hex 文件 --env 名称 --avrdude 路径 --yes --dry-run]
+  boards          列出已知电路板（当前版本、插槽、电压选择器）；不使用 Arduino
+  board           为 --board 指定的电路板准备 Arduino：检查固件、写入电路板配置，必要时写入固件（会先询问）
   detect       检测卡带                        (-s 系统)
   identify     按 CRC32 在数据库（--db）中识别已保存的 ROM，不打开串口
   gbcamera     把 Game Boy Camera 存档中的照片导出为 PNG：-i SAVE.sav [-o 文件夹] [--palette gray|green|gbc] [--scale 1-8] [--all]（不打开端口）
@@ -277,6 +294,9 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --env 名称           firmware-flash：.hex 所来自的 PlatformIO 环境（默认 SerialASCII；SerialASCII_Volt）
   --avrdude 路径       firmware-flash：使用的 avrdude（默认：环境变量 AVRDUDE、PATH 或 PlatformIO 自带的）
   --wait S             firmware-flash：写入后等待设备回应 INFO 的秒数（默认 12）
+  --board 电路板       如 16_bits 或 completa@v1.1（列表：`dumper boards`）：检查 Arduino 固件是否适用，写入电路板配置，缺少支持时写入合适的固件（会先询问）
+  --auto-flash         配合 --board：无需询问直接写入固件（脚本）
+  --firmware-dir 目录  含 manifest.tsv 和固件镜像 .hex 的文件夹（默认：变量 OSCR_FIRMWARE_DIR 或 firmware/images；生成：`python3 tools/build_images.py`）
   --dry-run            firmware-flash：只显示 avrdude 命令和当前固件版本
   --no-verify          firmware-flash、rom-write、save-write：写入后不回读 ROM/存档校验（默认：校验）
   --yes                写入前不询问（在终端之外必须给出）

@@ -4,14 +4,17 @@ package oscr.cli
 import oscr.*
 
 /** Conexão com o dispositivo (porta serial ou simulador) e leitura do sistema escolhido. */
-internal class Conn(val client: OscrClient, val transport: Transport, val info: DeviceInfo)
+internal class Conn(val client: OscrClient, val transport: Transport, val info: DeviceInfo, val boardResult: Map<String, Any?>? = null)
 
 /**
  * Abre a porta (ou o simulador), faz INFO e, antes de um comando de cartucho, ajusta a tensão do seletor 3,3 V/5 V (D138; placa sem seletor: só recusa `--voltage 3v3`).
  * O 5V dos slots fica sempre ligado (D139). `needCart = false` (info, voltage) nunca mexe na tensão.
  */
 internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
-    val c = open(io, a)
+    var c = if (a.opts["board"] != null) {                              // D162: a placa escolhida decide se o firmware serve ou se precisa gravar
+        val opened = try { open(io, a) } catch (e: CliError) { if (e.kind == "no_response") null else throw e }
+        ensureBoard(io, a, opened)
+    } else open(io, a)
     if (needCart) {
         try {
             setVoltage(io, a, c, c.client.voltage(Volt.STATUS))
@@ -20,9 +23,11 @@ internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
     return c
 }
 
-private fun open(io: CliIo, a: Args): Conn {
+internal fun open(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
-        val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v, selftestReport = if (io.simSelftest) listOf(Triple(1, 30, 0), Triple(2, 22, 57)) else emptyList())
+        val old = io.simOldFw && !io.simFlashed
+        val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v, selftestReport = if (io.simSelftest) listOf(Triple(1, 30, 0), Triple(2, 22, 57)) else emptyList(),
+            boardProfile = !old, firmware = if (old) Triple(0, 1, 0) else Triple(0, 2, 0), systemsMask = if (old) 0 else (1..11).sumOf { 1 shl it })
         val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }

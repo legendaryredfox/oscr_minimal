@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Compila o firmware e gera firmware/images/ (o .hex e o manifest.json) que a GUI e a CLI usam para gravar o Arduino (D162).
 
-O manifest diz, de cada imagem, a versão do firmware, os sistemas que ela lê e o SHA-256 do .hex. A versão e os sistemas saem do código-fonte
+O manifest.json (e a cópia manifest.tsv, para o Kotlin) diz, de cada imagem, a versão do firmware, os sistemas que ela lê e o SHA-256 do .hex. A versão e os sistemas saem do código-fonte
 (`oscr_session.cpp` e `Dumper.cpp`), então não dá para o manifest mentir sobre o que foi compilado. Hoje há uma imagem só (`completa`):
 imagens separadas só se o orçamento de flash estourar (docs/referencia/fork-oscr.md, seção 6).
 
@@ -60,6 +60,8 @@ def main() -> int:
     manifest = {"images": [{"id": "completa", "hex": name, "firmware": ver, "sistemas": system_ids(), "env": ENV,
                             "sha256": hashlib.sha256((out / name).read_bytes()).hexdigest()}]}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    e = manifest["images"][0]                                     # o Kotlin lê esta versão (sem biblioteca de JSON): id, hex, firmware, sistemas, sha256
+    (out / "manifest.tsv").write_text("# id\thex\tfirmware\tsistemas\tsha256\n" + "\t".join([e["id"], e["hex"], e["firmware"], ",".join(map(str, e["sistemas"])), e["sha256"]]) + "\n")
     print(f"{out / name} (firmware {ver}, sistemas {manifest['images'][0]['sistemas']})")
     return 0
 

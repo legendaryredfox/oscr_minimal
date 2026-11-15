@@ -22,12 +22,16 @@ class CliIo(
     val simVolt: Boolean = false,         // OSCR_SIM_VOLT=1: o simulador finge o seletor 3,3 V/5 V (sobe em 3,3 V)
     val simCart5v: Boolean = false,       // OSCR_SIM_5V_CART=1: o cartucho simulado só é lido a 5 V
     val simSelftest: Boolean = false,     // OSCR_SIM_SELFTEST=1: o simulador acha um curto com GND (D30) e um par em curto (D22 e A3)
+    val simOldFw: Boolean = false,        // OSCR_SIM_OLD_FW=1: o simulador finge um firmware 0.1.0 sem BOARD e sem os sistemas novos, até um `--board` mandar gravar (D162)
 ) {
+    /** `--simulate --board`: o "firmware antigo" simulado já foi trocado pelo novo. */
+    var simFlashed = false
+
     companion object {
         fun system() = CliIo(
             env = { System.getenv(it) },
             out = { println(it) }, err = { System.err.println(it) },
-            interactive = System.console() != null, stderrTty = System.console() != null, stdoutTty = System.console() != null, simVolt = System.getenv("OSCR_SIM_VOLT") == "1", simCart5v = System.getenv("OSCR_SIM_5V_CART") == "1", simSelftest = System.getenv("OSCR_SIM_SELFTEST") == "1",
+            interactive = System.console() != null, stderrTty = System.console() != null, stdoutTty = System.console() != null, simVolt = System.getenv("OSCR_SIM_VOLT") == "1", simCart5v = System.getenv("OSCR_SIM_5V_CART") == "1", simSelftest = System.getenv("OSCR_SIM_SELFTEST") == "1", simOldFw = System.getenv("OSCR_SIM_OLD_FW") == "1",
             readLine = { readlnOrNull() },
             listPorts = { SerialTransport.ports().map { it.name } },
             openPort = { p, b -> SerialTransport(p, b) },

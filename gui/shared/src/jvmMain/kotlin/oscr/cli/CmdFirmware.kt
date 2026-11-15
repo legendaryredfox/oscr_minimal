@@ -27,6 +27,14 @@ private fun infoAfter(io: CliIo, a: Args, waitS: Double): DeviceInfo? {
     return null
 }
 
+/** Grava `hex` pelo avrdude (com conferência) e devolve o INFO do firmware novo, ou null se ele não respondeu a tempo (D162). Quem chama já confirmou e soltou a porta. */
+internal fun writeFirmware(io: CliIo, a: Args, hex: File, port: String, waitS: Double = 12.0): DeviceInfo? {
+    val exe = findAvrdude(a)
+    val (code, err) = runAvrdude(avrdudeCmd(exe, port, hex, true)) { label -> progress(io, a, label) }
+    if (code != 0) throw CliError("avrdude", Msg.t("fw.failed", "code" to code, "detail" to err.ifEmpty { Msg.t("fw.failed.no_message") }), if (code == 1 || code == 127) EXIT_NO_DEVICE else EXIT_ERROR, Msg.t("fw.failed.hint"))
+    return infoAfter(io, a, waitS)
+}
+
 internal fun cmdFirmwareFlash(io: CliIo, a: Args): Int {
     val hex = findHex(a)
     val simulate = "simulate" in a.flags

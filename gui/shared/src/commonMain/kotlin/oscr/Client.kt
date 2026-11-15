@@ -63,6 +63,14 @@ class OscrClient(
         return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
+    /** BOARD: consulta ([Board.STATUS]) ou grava ([Board.SET] e os `flags`) o perfil da placa na EEPROM do firmware (D162). Só existe se o INFO tiver `boardProfile`. */
+    fun board(action: Int = Board.STATUS, flags: Int = 0): BoardState {
+        val payload = if (action == Board.STATUS) byteArrayOf(action.toByte()) else byteArrayOf(action.toByte(), flags.toByte())
+        val p = request(Proto.T_BOARD, payload, nextSeq(), setOf(Proto.T_BOARD_RESP), longTimeoutMs).payload
+        if (p.size < 2) throw ProtocolError(Fail.SHORT_REPLY, "BOARD_RESP")
+        return BoardState(p.u8(0) != 0, p.u8(1) and Board.VOLT_SELECT != 0)
+    }
+
     /** SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware. */
     fun selftest(): SelfTestResult =
         parseSelfTest(request(Proto.T_SELFTEST, ByteArray(0), nextSeq(), setOf(Proto.T_SELFTEST_RESP), maxOf(longTimeoutMs, 90_000L)).payload)

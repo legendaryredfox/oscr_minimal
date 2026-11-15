@@ -44,6 +44,8 @@ object Cli {
                 "ports" -> cmdPorts(io, a)
                 "voltage" -> cmdVoltage(io, a)
                 "selftest" -> cmdSelftest(io, a)
+                "boards" -> cmdBoards(io, a)
+                "board" -> cmdBoard(io, a)
                 "firmware-flash" -> cmdFirmwareFlash(io, a)
                 "systems" -> cmdSystems(io, a)
                 "errors" -> cmdErrors(io, a, lang)

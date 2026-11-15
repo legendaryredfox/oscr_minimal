@@ -7,11 +7,11 @@ object Proto {
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
-    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_ACK = 0x06
+    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_BOARD = 0x0F; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A
     const val T_INFO_RESP = 0x81; const val T_DETECT_RESP = 0x82; const val T_BEGIN = 0x83
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
-    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A
+    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A; const val T_BOARD_RESP = 0x8B
     const val KIND_ROM = 1; const val KIND_SAVE = 2
     /** Maior leitura aceita (GBA: 32 MB). Acima disso o BEGIN é tratado como defeito. */
     const val MAX_STREAM = 64 shl 20
@@ -97,7 +97,17 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     val voltageSelect get() = flags and 32 != 0
     /** O firmware tem o autoteste da placa (SELFTEST, P-12). */
     val selftest get() = flags and 64 != 0
+    /** O firmware aceita o perfil da placa (BOARD, D162). */
+    val boardProfile get() = flags and 128 != 0
+    /** Ids dos sistemas que o firmware lê (a máscara `sistemas` do INFO; bit = id do sistema). */
+    val systemIds: Set<Int> get() = (0 until 16).filter { systemsMask and (1 shl it) != 0 }.toSet()
 }
+
+/** Ações do BOARD e o bit do perfil (D162). */
+object Board { const val STATUS = 0; const val SET = 1; const val VOLT_SELECT = 1 }
+
+/** BOARD_RESP (D162). `stored`: há perfil guardado na EEPROM do firmware; `voltageSelect`: o perfil em vigor tem o seletor de tensão. */
+data class BoardState(val stored: Boolean, val voltageSelect: Boolean)
 
 /** Ações do VOLT. */
 object Volt { const val STATUS = 0; const val V3V3 = 1; const val V5V = 2 }
