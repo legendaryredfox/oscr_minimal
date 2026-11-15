@@ -82,5 +82,54 @@ O firmware novo identifica o jogo por uma base (CRDB) lida do cartão SD. Sem SD
 ## 5. Riscos
 
 - Nenhum teste existente no PC cobre o código do OSCR: ele não roda fora do AVR. Os testes com cartucho simulado (990 verificações) são do nosso código e deixam de valer para o fork.
-- O tamanho do firmware com tudo ligado fica perto de 125 KB de flash dos 253 KB; sobra espaço para o protocolo.
+- O tamanho do firmware com tudo ligado era de cerca de 125 KB dos 253 KB (valor de 2026-11-03); hoje, com N64, SMS, flash e autoteste, são 194 KB. Medição atual na seção 6.
 - O firmware do OSCR é grande (SNES 2.921 linhas, NES 5.305, MD 3.065, GBA 3.137, GB 3.619). Cada console precisa de leitura antes de ser ligado ao protocolo.
+
+## 6. Orçamento de flash e RAM (medido em 2026-11-14, D162)
+
+`python3 tools/flash_budget.py measure` compila `SerialASCII` e soma o tamanho dos símbolos do `firmware.elf` por namespace (`avr-nm -S -C`). Código que o compilador embutiu (LTO) conta no chamador, então o valor de cada núcleo é um **piso**. A soma dos símbolos (190.734 B) fica 3,6 KB abaixo do total do `pio` (tabela de vetores, preenchimento e `.data` copiado).
+
+| Origem (namespace do símbolo) | Flash (B) | % do flash do Mega | RAM (B) |
+|---|---|---|---|
+| libc, Arduino e outros | 38077 | 15.0 % | 1031 |
+| núcleo NES | 31156 | 12.3 % | 72 |
+| núcleo N64 | 16747 | 6.6 % | 26 |
+| núcleo MegaDrive | 15444 | 6.1 % | 28 |
+| OSCR::Dumper | 13189 | 5.2 % | 1275 |
+| núcleo SNES | 12600 | 5.0 % | 6 |
+| núcleo GameBoyAdvance | 12527 | 4.9 % | 2 |
+| núcleo GameBoy | 8683 | 3.4 % | 7 |
+| núcleo GameBoyX | 7820 | 3.1 % | 0 |
+| núcleo Flash | 7673 | 3.0 % | 24 |
+| OSCR::UI | 4697 | 1.8 % | 12 |
+| camada dumper (src/dumper) | 4532 | 1.8 % | 89 |
+| núcleo GameBoySmart | 2543 | 1.0 % | 56 |
+| núcleo SMS | 2402 | 0.9 % | 1 |
+| OSCR::Storage | 2204 | 0.9 % | 745 |
+| OSCR::Strings | 1842 | 0.7 % | 0 |
+| OSCR::CRDB | 1452 | 0.6 % | 0 |
+| OSCR::Databases | 1334 | 0.5 % | 16 |
+| OSCR::CRC32 | 1082 | 0.4 % | 4 |
+| núcleo SelfTest | 973 | 0.4 % | 0 |
+| núcleo GameBoyMem | 689 | 0.3 % | 0 |
+| OSCR::Updater | 677 | 0.3 % | 0 |
+| OSCR::Lang | 647 | 0.3 % | 0 |
+| OSCR::Cores | 469 | 0.2 % | 92 |
+| OSCR::Apps | 420 | 0.2 % | 0 |
+| OSCR::Power | 344 | 0.1 % | 0 |
+| OSCR::Util | 188 | 0.1 % | 0 |
+| OSCR::Settings | 144 | 0.1 % | 0 |
+| OSCR::Time | 105 | 0.0 % | 9 |
+| OSCR::Menus | 40 | 0.0 % | 40 |
+| OSCR::Logger | 34 | 0.0 % | 25 |
+| OSCR::Serial | 0 | 0.0 % | 33 |
+| soma dos símbolos | 190734 | | 3593 |
+| **medido pelo `pio` (SerialASCII)** | **194372** | **76.5 %** | **4128** |
+| total do Mega (flash sem bootloader; RAM) | 253952 | | 8192 |
+
+Leitura:
+
+- **Sobram 59.580 B de flash (23,5 %) e 4.064 B de RAM.** A imagem única continua cabendo, então **nenhuma variante foi criada** (regra do usuário, D161). O teste `python3 tools/flash_budget.py check` falha acima de 95 % do flash ou 80 % da RAM (a pilha precisa de folga) e roda para `SerialASCII` e `SerialASCII_Volt`.
+- Os maiores núcleos são NES (31 KB, por causa dos mappers), N64 (17 KB), Mega Drive (15 KB), SNES (13 KB) e GBA (13 KB).  O núcleo `Flash` sozinho tem 7,7 KB; o custo total de `HAS_FLASH` (antes estimado em ~27 KB) inclui as funções de gravação espalhadas nos outros núcleos e nas costuras `*Flash.cpp`, e **não** foi medido aqui.
+- **Folga que dá para recuperar sem tirar função** (nada disso foi feito): `OSCR::UI` (4,7 KB, a interface de texto está muda), `OSCR::Updater`, `OSCR::Lang`, `OSCR::Apps` e `OSCR::Storage` (2,2 KB e 745 B de RAM, o SD que não existe aqui). São cerca de 9 KB de flash e 0,8 KB de RAM.
+- **Não dá para medir "sem o núcleo X" desligando-o no `user.ini`:** a camada `src/dumper/` chama todos os núcleos sem `#if`; as seis compilações tentadas falharam. Se um dia uma variante for necessária, é preciso primeiro condicionar essas chamadas a `#if` (por exemplo `OSCR_HAS_N64`).
