@@ -6,8 +6,8 @@ Números medidos nesta data, depois de ligar o Master System, o Game Gear e o SG
 
 | Parte | Testes | Cobertura de linhas | Como medir |
 |---|---|---|---|
-| Host Python (`host/oscr_host`) | 224 (pytest) | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
-| Kotlin compartilhado (`gui/shared`: protocolo, cliente, CLI, banco, regras) | 131 (`jvmTest`) | **91,7 %** das linhas (2673 de 2914), **65,3 %** dos ramos (1661 de 2542) | ver seção 3 |
+| Host Python (`host/oscr_host`) | 305 em 2026-11-14 (era 224 em 2026-11-08; pytest) | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
+| Kotlin compartilhado (`gui/shared`: protocolo, cliente, CLI, banco, regras) | 182 em 2026-11-14 (era 131; `jvmTest`) | **91,7 %** das linhas (2673 de 2914), **65,3 %** dos ramos (1661 de 2542) | ver seção 3 |
 | GUI (`gui/desktopApp`, Compose) | 0 testes de lógica; só compila. **Teste de fumaça** (D161): `tools/gui_smoke.sh` abre a janela em largura normal e estreita e confere que não está em branco | não medida | `tools/gui_smoke.sh` (display virtual) |
 | Placas (`boards/`) | `tools/check_all_boards.py`: ERC, DRC, netlist, silk e fab das 22 versões (D161) | não se aplica | `python3 tools/check_all_boards.py` |
 | Firmware nos núcleos do OSCR e no `Dumper.cpp` | **nenhum teste no PC** | 0 % medido | só roda no AVR |

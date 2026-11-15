@@ -23,9 +23,9 @@ Feita: itens 1 a 6 abaixo, com K-2 sem trabalho (nenhuma ligação aberta). Fica
 
 Saída: `continuacao.md` curto, relatório de todas as placas, testes de CLI e GUI sem hardware. Nenhuma decisão de protocolo.
 
-## Onda 1: orçamento de flash e troca automática de firmware (bloqueia a Onda 4)
+## Onda 1: orçamento de flash e troca automática de firmware (bloqueia a Onda 4) — FEITA em 2026-11-14 (D162)
 
-Regra do usuário (2026-11-14): imagem única sempre que couber; variantes só se for impossível.
+Regra do usuário (2026-11-14): imagem única sempre que couber; variantes só se for impossível. **Resultado (D162):** cabe tudo (sobram 58,8 KB), então não há variantes; a diferença do seletor de tensão virou perfil em EEPROM (`BOARD`). Itens 1 a 4 e 6 feitos (o item 5, variantes, não foi necessário). Ficou para depois: embutir os `.hex` e o avrdude no instalador (H-7), teste automático do diálogo da GUI.
 
 1. **Medir** (F-0a): `pio run` com um sistema ligado por vez; tabela "sistema → B de flash e RAM" em `docs/referencia/fork-oscr.md`. Medir também a imagem completa de hoje (`SerialASCII`).
 2. **Capacidades** (F-0b): bits no `INFO` com sistemas e recursos; firmware antigo sem os bits = o que existia.

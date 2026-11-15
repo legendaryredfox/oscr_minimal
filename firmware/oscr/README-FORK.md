@@ -25,3 +25,6 @@ Ambiente de compilação: `~/.platformio/penv/bin/pio run -e SerialASCII` (hardw
 **Estado (ver `docs/referencia/fork-oscr.md`):** SNES, Mega Drive, GBA e GB/GBC estão ligados ao protocolo (compila, nunca rodou). NES/Famicom ainda não.
 - `user.ini`: `flash = true` (D77) liga o núcleo de flash do OSCR; `src/dumper/NesFlash.cpp` + `include/dumper/NesFlash.h` gravam ROM em NES Maker e A29040B chamando as funções do `NES.cpp` original (`WRITE_ROM`).
 
+## Perfil da placa (BOARD, D162)
+
+`Dumper.cpp` guarda na EEPROM (endereço 4064, quatro bytes: magic `0xB5`, versão 1, flags, flags invertidos) que placa está ligada, e o PC o grava pelo comando `BOARD` (`docs/referencia/protocolo.md`). Hoje o perfil só diz se a placa tem o seletor de tensão 3,3 V/5 V, que antes era uma opção de compilação (`OSCR_VOLT_SELECT`, ambiente `SerialASCII_Volt`); agora uma imagem só (`SerialASCII`) serve as placas com e sem seletor, e a constante virou a variável `voltSelect`, que só serve de padrão se não houver perfil. O OSCR só usa o endereço 0 da EEPROM. Versão do firmware no `INFO`: 0.2.0. Nenhuma função do núcleo do OSCR mudou.

@@ -15,7 +15,7 @@
 ## 2. 电脑与固件
 
 1. Linux：把用户加入 `dialout` 组（`sudo usermod -aG dialout $USER`，然后注销再登录）。macOS 和 Windows 通常自带 Mega 驱动。
-2. 通过 USB-C 给 Mega 刷入 fork 固件：`python3 host/dumper.py firmware-flash`（或 GUI 的“Arduino 固件”卡片；需要 `avrdude`）。使用 PlatformIO：`cd firmware/oscr && pio run -e SerialASCII -t upload`（带电压选择器的板子：`-e SerialASCII_Volt`）。
+2. 通过 USB-C 给 Mega 刷入 fork 固件：`python3 host/dumper.py firmware-flash`（或 GUI 的“Arduino 固件”卡片；需要 `avrdude`）。使用 PlatformIO：`cd firmware/oscr && pio run -e SerialASCII -t upload`（同一个镜像适用于所有电路板；用 `--board 16_bits` 或 GUI 的“已连接的电路板”字段告诉程序你的板子，程序会检查固件并在征得确认后写入合适的固件）。
 3. `python3 host/dumper.py info` 必须显示协议、固件版本和系统列表。
 
 ## 3. 按顺序做第一批测试

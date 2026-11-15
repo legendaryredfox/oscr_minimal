@@ -130,8 +130,23 @@ Sem o PlatformIO: tenha o `avrdude` instalado e o `.hex` do firmware (compilado 
 ```
 python3 host/dumper.py firmware-flash --dry-run          # só mostra o comando e a versão atual
 python3 host/dumper.py firmware-flash                    # pergunta antes de gravar
-python3 host/dumper.py firmware-flash --env SerialASCII_Volt --yes   # placa com o seletor de tensão 3,3 V/5 V (v1.1)
+python3 host/dumper.py firmware-flash --env SerialASCII_Volt --yes   # só se você quiser a imagem com o seletor ligado por padrão; desde a D162 não é preciso (veja abaixo)
 ```
+
+**Escolher a placa (D162): o programa grava o firmware certo sozinho.** Diga qual placa está ligada e o programa confere o firmware do Arduino:
+
+```
+python3 tools/build_images.py                          # uma vez: compila e cria firmware/images/ (manifest e .hex)
+python3 host/dumper.py boards                          # lista as placas e versões
+python3 host/dumper.py --board 16_bits board           # confere, grava o perfil e, se faltar suporte, grava o firmware (pergunta antes)
+python3 host/dumper.py --board completa@v1.1 detect -s snes    # --board vale em qualquer comando de cartucho
+```
+
+- **Uma imagem de firmware só** serve todas as placas. O que muda de uma placa para outra, o seletor de tensão 3,3 V/5 V, o programa diz ao firmware pelo comando `BOARD`, que o guarda na EEPROM (D162). Trocar de placa ou de versão não pede regravar o firmware.
+- Se o firmware gravado **não tem** um sistema que a placa usa, ou é antigo demais para aceitar o perfil, o programa grava a imagem de `firmware/images/` **depois de pedir a sua confirmação** (a gravação apaga o firmware atual e reinicia o Mega). `--auto-flash` confirma de antemão (scripts); sem ele e sem terminal, a CLI recusa com o código 4. Se o Arduino não responde, o programa propõe o mesmo (pode ser um Arduino novo, sem firmware).
+- Sem as imagens (`firmware/images/` vazia ou `--firmware-dir` apontando para uma pasta sem `manifest.json`), o programa explica o que falta e não grava nada; gere com `tools/build_images.py`.
+- Na **GUI**, o campo **Placa ligada** do cartão Conexão faz o mesmo ao clicar em **Conectar**: grava o perfil sozinho e, se faltar suporte, abre um diálogo de confirmação com os motivos, a versão e a porta. A escolha fica guardada entre execuções.
+- Nada disto rodou em hardware: foi testado com o simulador, com um `avrdude` falso e com o código real do protocolo no PC.
 
 O Mega reinicia no fim e a porta some por um instante; o comando tenta o `INFO` de novo por 12 s e mostra a versão nova. Feche a GUI e o monitor serial antes (a porta precisa estar livre). A CLI Kotlin tem o mesmo comando (`dumper firmware-flash`). Na GUI, o cartão **Firmware do Arduino** (abaixo de Conexão) faz o mesmo: escolha a porta, opcionalmente um `.hex`, clique em **Gravar firmware** e confirme; a GUI fecha a conexão antes, e depois você clica em Conectar. Nada foi testado em um Mega de verdade.
 

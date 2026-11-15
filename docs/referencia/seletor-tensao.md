@@ -19,7 +19,7 @@ Placas com seletor: `megadrive`, `nes`, `famicom`, `famicom_nes`, `megadrive_sms
 
 ## Firmware e programa do PC
 
-- Ambiente `SerialASCII_Volt` (`pio run -e SerialASCII_Volt -t upload` em `firmware/oscr`); as placas sem seletor usam `SerialASCII`.
+- **Desde a D162 uma imagem só (`SerialASCII`) serve as placas com e sem seletor.** O programa diz ao firmware que a placa tem o seletor (comando `BOARD`, `--board` na CLI, campo "Placa ligada" na GUI) e o firmware guarda na EEPROM. O ambiente `SerialASCII_Volt` continua existindo e só muda o padrão de quem nunca recebeu o perfil (seletor ligado).
 - Como o 5V nunca é cortado, **abrir a porta reinicia o Mega** e o seletor sobe em **3,3 V** (o estado de VCC mais baixo: o cartucho não recebe 5 V no VCC antes de o host escolher; os sinais do Mega seguem em 5 V, ver acima). Antes de um comando que precisa do cartucho, a CLI e a GUI passam a **5 V** (padrão dos flashcarts comuns, D138), a menos que o usuário tenha escolhido 3,3 V (`--voltage 3v3`, botão da GUI).
 - Passar de 3,3 V (escolhido) para 5 V mostra um alerta e pede confirmação (`--allow-5v` em script). Falha de leitura nunca muda a tensão sozinha.
 - Protocolo: comando `VOLT` (`docs/referencia/protocolo.md`). CLI: `dumper voltage status|3v3|5v` e a opção `--voltage auto|3v3|5v`.

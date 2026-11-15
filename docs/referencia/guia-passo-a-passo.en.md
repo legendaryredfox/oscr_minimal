@@ -15,7 +15,7 @@ Follow `boards/<board>/docs/montagem.md`: lowest part first (resistors, capacito
 ## 2. Computer and firmware
 
 1. Linux: add your user to the `dialout` group (`sudo usermod -aG dialout $USER`, log out and in). macOS and Windows usually ship the Mega driver.
-2. Flash the fork firmware to the Mega over USB-C: `python3 host/dumper.py firmware-flash` (or the GUI's "Arduino firmware" card; needs `avrdude`). With PlatformIO instead: `cd firmware/oscr && pio run -e SerialASCII -t upload` (boards with the voltage selector: `-e SerialASCII_Volt`).
+2. Flash the fork firmware to the Mega over USB-C: `python3 host/dumper.py firmware-flash` (or the GUI's "Arduino firmware" card; needs `avrdude`). With PlatformIO instead: `cd firmware/oscr && pio run -e SerialASCII -t upload` (one image serves every board; tell the program yours with `--board 16_bits` or in the GUI's "Connected board" field and it checks the firmware and writes the right one, asking first).
 3. `python3 host/dumper.py info` must show the protocol, the firmware version and the systems.
 
 ## 3. First tests, in order

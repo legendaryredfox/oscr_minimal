@@ -1,6 +1,6 @@
 # Spec: pendências que não precisam de placa em mãos
 
-Data: 2026-11-14. Estado (2026-11-14): **aprovada**; o usuário delegou as decisões D-B a D-E ("pode decidir conforme achar melhor") e decidiu D-A. **Onda 0 do plano feita** (D161). Plano de execução: `docs/planos/pendencias-sem-placa-plano.md`.
+Data: 2026-11-14. Estado (2026-11-14): **aprovada**; o usuário delegou as decisões D-B a D-E ("pode decidir conforme achar melhor") e decidiu D-A. **Onda 0 do plano feita** (D161) e **Onda 1 feita** (D162; falta embutir os `.hex` no instalador, H-7, e o teste automático do diálogo da GUI). Plano de execução: `docs/planos/pendencias-sem-placa-plano.md`.
 
 Origem: levantamento de `docs/continuacao.md`, `docs/referencia/funcoes-oscr.md`, `docs/historico/pesquisa-comunidade.md` (P-01 a P-17), D160 e os planos em `docs/planos/`.
 
@@ -56,7 +56,7 @@ Legenda de tamanho: S = menos de um dia, M = 1 a 3 dias, L = mais de 3 dias. "N�
 
 | Id | Item | Aceitação | Tam. |
 |---|---|---|---|
-| F-0a..e | Orçamento de flash e troca automática de firmware (seção 3) | tabela medida; `INFO` traz as capacidades; escolher a placa na GUI ou `--board` na CLI grava a imagem que cobre a placa, com confirmação; teste de tamanho falha ao estourar | M |
+| F-0a..e | **Feito (D162), com limites.** Orçamento de flash e troca automática de firmware (seção 3) | tabela medida; `INFO` traz as capacidades; escolher a placa na GUI ou `--board` na CLI grava a imagem que cobre a placa, com confirmação; teste de tamanho falha ao estourar | M |
 | H-0 | ~~Dispositivo falso na CLI Kotlin~~ **já existe** (`SimDevice`, `MdBoardLimitCliTest`, D157); a nota "não há dispositivo falso lá" estava defasada | nada a fazer | feito |
 | H-0b | **Feito (D161)** `tools/gui_smoke.sh` (janela larga e estreita, captura não em branco; ainda não cobre diálogos, base de dados nem busca do NES). Testes de GUI sem hardware: Xvfb + `SimDevice`, janela estreita, diálogos, base de dados, busca NES | script `tools/gui_smoke.sh` gera capturas e falha se a janela não abrir | M |
 

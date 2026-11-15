@@ -15,7 +15,7 @@
 ## 2. Компьютер и прошивка
 
 1. Linux: добавьте пользователя в группу `dialout` (`sudo usermod -aG dialout $USER`, перезайдите). В macOS и Windows драйвер Mega обычно уже есть.
-2. Прошейте Mega через USB-C: `python3 host/dumper.py firmware-flash` (или карточка «Прошивка Arduino» в GUI; нужен `avrdude`). Через PlatformIO: `cd firmware/oscr && pio run -e SerialASCII -t upload` (платы с переключателем напряжения: `-e SerialASCII_Volt`).
+2. Прошейте Mega через USB-C: `python3 host/dumper.py firmware-flash` (или карточка «Прошивка Arduino» в GUI; нужен `avrdude`). Через PlatformIO: `cd firmware/oscr && pio run -e SerialASCII -t upload` (один образ подходит всем платам; укажите свою через `--board 16_bits` или в поле «Подключённая плата» в GUI — программа проверит прошивку и запишет нужную, предварительно спросив).
 3. `python3 host/dumper.py info` должен показать протокол, версию прошивки и системы.
 
 ## 3. Первые проверки по порядку

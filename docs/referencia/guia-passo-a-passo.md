@@ -15,7 +15,7 @@ Siga `boards/<placa>/docs/montagem.md`: do mais baixo ao mais alto (resistores, 
 ## 2. Computador e firmware
 
 1. Linux: coloque o usuário no grupo `dialout` (`sudo usermod -aG dialout $USER`, saia e entre de novo). macOS e Windows: o driver do Mega já costuma vir no sistema.
-2. Grave o firmware do fork no Mega pela USB-C: `python3 host/dumper.py firmware-flash` (ou o cartão "Firmware do Arduino" da GUI; precisa do `avrdude`). Alternativa para quem usa o PlatformIO: `cd firmware/oscr && pio run -e SerialASCII -t upload` (placas com seletor de tensão: `-e SerialASCII_Volt`).
+2. Grave o firmware do fork no Mega pela USB-C: `python3 host/dumper.py firmware-flash` (ou o cartão "Firmware do Arduino" da GUI; precisa do `avrdude`). Alternativa para quem usa o PlatformIO: `cd firmware/oscr && pio run -e SerialASCII -t upload` (a mesma imagem serve todas as placas; diga qual é a sua com `--board 16_bits` ou no campo "Placa ligada" da GUI e o programa confere o firmware e grava o certo, pedindo confirmação).
 3. `python3 host/dumper.py info` tem que mostrar protocolo, versão do firmware e os sistemas.
 
 ## 3. Primeiros testes, em ordem
