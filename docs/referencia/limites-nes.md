@@ -91,3 +91,7 @@ Ordem sugerida, do menor risco para o maior:
 2. Mapper 34, acrescentando `NesBus::wait_ms` (padrão sem efeito, `delay` no AVR).
 3. VRC2/VRC4/VRC6 só se o usuário informar a variante (precisa de um campo novo no protocolo).
 4. Clones de MMC3 e multicartuchos: só com o cartucho na mão, um de cada vez.
+
+## Onde achar o mapper e os tamanhos (H-2, P-10)
+
+O cartucho de NES não traz cabeçalho, e o firmware não detecta o mapper: quem informa é o usuário. O cabeçalho iNES do OSCR original vem de uma base que pode estar incompleta. Fontes: NESCartDB (`https://nescartdb.com`, a GUI tem o botão "Procurar mapper e tamanhos no NESCartDB" no cartão "Opções NES/Famicom", que abre o navegador), No-Intro e `nes.dnsabr.com`. Confira o CRC32 do dump contra a base depois da leitura. Cartuchos de FamicomBox exigem ligar os pinos 69-71 e 70-36 do conector NES, e adaptador FC-NES que ligue os pinos de som de expansão não deve ser usado (relato da comunidade, não testado aqui).

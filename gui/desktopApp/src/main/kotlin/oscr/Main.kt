@@ -350,7 +350,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     // ---- ações
     fun actConnect() {
         run(S.STAGE_IDLE) {
-            val order = listOf(baud) + listOf(1_000_000, 115_200).filter { it != baud }
+            val order = listOf(baud) + Proto.BAUDS.filter { it != baud }
             var last: Exception? = null
             for (b in order) {
                 var tr: SerialTransport? = null
@@ -824,7 +824,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             TextButton(onClick = { showAdvanced = !showAdvanced }) { Text((if (showAdvanced) "▾ " else "▸ ") + t(S.ADVANCED)) }
             if (showAdvanced) LabeledField(t(S.BAUD)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(1_000_000, 115_200).forEach { b -> FilterChip(selected = baud == b, enabled = !connected, onClick = { baud = b }, label = { Text("$b") }) }
+                    Proto.BAUDS.forEach { b -> FilterChip(selected = baud == b, enabled = !connected, onClick = { baud = b }, label = { Text("$b") }) }
                 }
             }
         }
@@ -982,6 +982,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
                 (problem ?: ramProblem)?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
                 Text(t(S.NES_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                TextButton(onClick = { try { java.awt.Desktop.getDesktop().browse(java.net.URI("https://nescartdb.com")) } catch (_: Throwable) { say("https://nescartdb.com") } }) { Text(t(S.NES_DB_LINK)) }      // H-2: mapper e tamanhos vêm de uma base externa; sem navegador, mostra o endereço no registro
                 CheckRow(nesRaw, { nesRaw = it }, t(S.NES_RAW))
             }
         }

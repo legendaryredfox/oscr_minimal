@@ -24,6 +24,7 @@ T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
+BAUDS = (1_000_000, 500_000, 115_200)           # ordem em que o host tenta conectar (H-3); o firmware abre um só, escolhido na compilação (OSCR_DUMPER_BAUD)
 STAGE_NONE, STAGE_ERASE, STAGE_WRITE, STAGE_READ, STAGE_SELFTEST = 0, 1, 2, 3, 4   # etapa do PROGRESSO (F-1)
 STAGE_NAMES = {STAGE_ERASE: "erasing", STAGE_WRITE: "writing", STAGE_READ: "reading", STAGE_SELFTEST: "selftest"}
 T_VOLT_RESP = 0x89

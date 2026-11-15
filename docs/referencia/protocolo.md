@@ -5,7 +5,7 @@ Versão do protocolo: **1**. Escrito antes da implementação (`CLAUDE.md`, seç
 ## 1. Camada física
 
 - USB serial do Mega (CH340 ou ATmega16U2), 8 bits, sem paridade, 1 stop bit, sem controle de fluxo.
-- **Baud padrão 1.000.000.** Fallback: **115.200**. O host tenta 1.000.000, manda `INFO`, espera 500 ms; se não houver resposta, tenta 115.200. O firmware abre a serial em 1.000.000 (configurável em `firmware/.../oscr_config.h`: `OSCR_BAUD`); uma compilação com `OSCR_BAUD 115200` usa só o fallback.
+- **Baud padrão 1.000.000.** Fallbacks: **500.000** e **115.200** (H-3, D166). O host tenta 1.000.000, manda `INFO`, espera 500 ms; sem resposta, tenta 500.000 e depois 115.200 (`--baud` fixa um só; na GUI o escolhido vai primeiro). O firmware abre a serial em **um** baud, escolhido na compilação (`OSCR_DUMPER_BAUD` em `src/dumper/Dumper.cpp`, padrão 1.000.000); uma compilação com `-DOSCR_DUMPER_BAUD=500000` ou `115200` só é achada pelo fallback correspondente. Os 500.000 bauds são exatos no Mega a 16 MHz; a imagem de `firmware/images/` continua só em 1.000.000.
 - Ordem de bytes: **little-endian** em todos os campos numéricos.
 
 ## 2. Quadro (frame)

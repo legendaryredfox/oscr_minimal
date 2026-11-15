@@ -13,7 +13,7 @@ from .messages import tr
 from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_REFUSED, EXIT_USAGE
 
 
-BAUDS = (1_000_000, 115_200)
+BAUDS = P.BAUDS
 
 
 def _sim_selftest_report() -> list:

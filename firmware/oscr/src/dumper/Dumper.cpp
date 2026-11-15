@@ -49,7 +49,7 @@ namespace OSCR::Cores::SMS
 namespace OSCR::Cores::N64 { extern uint16_t eepPages; extern OSCR::CRC32::crc32_t crc1; }
 
 # ifndef OSCR_DUMPER_BAUD
-#   define OSCR_DUMPER_BAUD 1000000UL     // 115200 como fallback: compile com -DOSCR_DUMPER_BAUD=115200
+#   define OSCR_DUMPER_BAUD 1000000UL     // fallbacks que o host tenta: compile com -DOSCR_DUMPER_BAUD=500000 ou 115200
 # endif
 
 namespace OSCR::Dumper

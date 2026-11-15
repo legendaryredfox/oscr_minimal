@@ -39,7 +39,7 @@ private fun openRaw(io: CliIo, a: Args): Conn {
     }
     val port = a.opts["port"] ?: io.listPorts().firstOrNull { p -> listOf("ttyUSB", "ttyACM", "cu.usb", "COM").any { it in p } }
         ?: throw CliError("no_port", Msg.t("err.no_port"), EXIT_NO_DEVICE, Msg.t("err.no_port.hint"))
-    val bauds = a.opts["baud"]?.let { listOf(a.int("baud")) } ?: listOf(1_000_000, 115_200)
+    val bauds = a.opts["baud"]?.let { listOf(a.int("baud")) } ?: Proto.BAUDS
     var last: Exception? = null
     for (b in bauds) {
         val t = io.openPort(port, b)
