@@ -20,3 +20,6 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"), ("arcadia", "Arcadia 2001"),
     ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),
 )
+
+# Adaptadores de 3,3 V da comunidade (P-16, H-4): não podem ir num slot de 5 V. Conferido contra a tabela de docs/historico/pesquisa-comunidade.md por tools/check_adaptadores.py.
+NEEDS_3V3: frozenset[str] = frozenset({"leapster", "jammerpro", "pokemini", "vsmile"})

@@ -13,10 +13,10 @@ internal fun cmdPorts(io: CliIo, a: Args): Int {
 internal fun cmdSystems(io: CliIo, a: Args): Int {
     val rows = CartSystem.entries.map { Json.obj("name" to it.name.lowercase(), "id" to it.id, "extension" to it.ext,
         "options" to OPTIONS.getValue(it.name.lowercase()), "needs_cartridge" to (it != CartSystem.MOCK)) }
-    val planned = PLANNED_SYSTEMS.map { Json.obj("name" to it.key, "label" to it.label, "supported" to false) }
+    val planned = PLANNED_SYSTEMS.map { Json.obj("name" to it.key, "label" to it.label, "supported" to false, "voltage" to (if (it.needs3v3) "3v3" else null)) }
     emit(io, a, Json.obj("systems" to rows, "planned" to planned),
         rows.map { "${(it["name"] as String).padEnd(8)} id ${it["id"]}  ${it["extension"]}  ${Msg.t("systems.options")}: ${(it["options"] as List<*>).joinToString(", ").ifEmpty { "-" }}" } +
-            listOf("", Msg.t("systems.planned")) + PLANNED_SYSTEMS.map { "  ${it.key.padEnd(13)} ${it.label}" })
+            listOf("", Msg.t("systems.planned")) + PLANNED_SYSTEMS.map { "  ${it.key.padEnd(13)} ${it.label}" + (if (it.needs3v3) "  [${Msg.t("systems.3v3")}]" else "") } + listOf("", Msg.t("systems.3v3_note")))
     return EXIT_OK
 }
 

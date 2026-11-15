@@ -200,6 +200,8 @@ info.line	protocolo {proto}  firmware {fw}  MOCK={mock}  Si5351={si}  sistemas: 
 yes	sim	yes	да	是
 no	não	no	нет	否
 systems.options	opções	options	опции	选项
+systems.3v3	3,3 V	3.3 V	3,3 В	3.3 V
+systems.3v3_note	[3,3 V]: o adaptador da comunidade é de 3,3 V e não pode ir num slot de 5 V; só em slot de 3,3 V (o do GBA, ou o de uma placa com seletor ajustado em 3,3 V). Fonte: discussão 354 do OSCR; confira o adaptador antes	[3.3 V]: the community adapter is 3.3 V and must not go in a 5 V slot; only in a 3.3 V slot (the GBA one, or a board's selector set to 3.3 V). Source: OSCR discussion 354; check the adapter first	[3,3 В]: адаптер сообщества рассчитан на 3,3 В и его нельзя ставить в слот 5 В; только в слот 3,3 В (слот GBA или селектор платы в положении 3,3 В). Источник: обсуждение 354 OSCR; проверьте адаптер	[3.3 V]：社区适配器为 3.3 V，不能插在 5 V 插槽；只能用于 3.3 V 插槽（GBA 插槽，或选择器设为 3.3 V 的板子）。来源：OSCR 讨论 354；请先核对适配器
 systems.planned	em breve (outros cartuchos do OSCR, ainda sem hardware, firmware nem id no protocolo):	coming soon (other OSCR cartridges, no hardware, firmware or protocol id yet):	скоро (другие картриджи OSCR; пока нет оборудования, прошивки и id в протоколе):	即将支持（OSCR 的其他卡带；暂无硬件、固件和协议 id）：
 db.not_found	não encontrado na base	not found in the database	не найдено в базе	数据库中未找到
 check.ok	checksum do cabeçalho ({name}) confere: {value:04X}	header checksum ({name}) matches: {value:04X}	контрольная сумма заголовка ({name}) совпадает: {value:04X}	头部校验和（{name}）一致：{value:04X}

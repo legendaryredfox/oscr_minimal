@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .. import __version__
 from .. import protocol as P
-from ..planned import PLANNED
+from ..planned import NEEDS_3V3, PLANNED
 from . import common, ui
 from .errors import CLI_EXIT_CODES
 from .messages import tr
@@ -25,10 +25,11 @@ SYSTEM_OPTIONS = {"snes": ["prg"], "nes": ["mapper", "prg", "chr", "ram"], "fami
 def cmd_systems(args) -> int:
     rows = [{"name": n, "id": v[0], "extension": v[1], "options": SYSTEM_OPTIONS.get(n, []), "needs_cartridge": n != "mock"}
             for n, v in P.SYSTEMS.items()]
-    planned = [{"name": k, "label": l, "supported": False} for k, l in PLANNED]
+    planned = [{"name": k, "label": l, "supported": False, "voltage": "3v3" if k in NEEDS_3V3 else None} for k, l in PLANNED]
     emit(args, {"systems": rows, "planned": planned},
          [f"{r['name']:8} id {r['id']:3}  {r['extension']:5} {tr('systems.options')}: {', '.join(r['options']) or '-'}" for r in rows]
-         + ["", tr("systems.planned")] + [f"  {p['name']:13} {p['label']}" for p in planned])
+         + ["", tr("systems.planned")] + [f"  {p['name']:13} {p['label']}" + (f"  [{tr('systems.3v3')}]" if p["voltage"] else "") for p in planned]
+         + ["", tr("systems.3v3_note")])
     return 0
 
 
