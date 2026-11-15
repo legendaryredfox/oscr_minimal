@@ -30,8 +30,9 @@ def test_cada_placa_resolve_na_versao_atual_e_numa_versao_dada():
 
 
 def test_placa_ou_versao_desconhecida():
-    with pytest.raises(B.BoardError, match="placa desconhecida"):
+    with pytest.raises(B.BoardError, match="placa desconhecida") as e1:
         B.resolve("zx_spectrum")
+    assert e1.value.kind == "unknown_board" and e1.value.params["name"] == "zx_spectrum"
     with pytest.raises(B.BoardError, match="versão desconhecida"):
         B.resolve("snes@v9.9")
 
@@ -62,13 +63,13 @@ def test_seletor_diferente_com_board_so_grava_o_perfil_sem_gravar_firmware():
 def test_sistema_que_falta_pede_a_gravacao_da_imagem():
     p = B.resolve("n64")
     pl = B.plan(p, info(systems=ALL - {11}), {"stored": True}, [img()])
-    assert pl.action == "flash" and pl.image is not None and any("n64" in r for r in pl.reasons)
+    assert pl.action == "flash" and pl.image is not None and any(r.code == "missing_systems" and "n64" in r.params["systems"] for r in pl.reasons)
 
 
 def test_firmware_sem_board_e_seletor_errado_pede_gravacao():
     p = B.resolve("nes@v1.1")
     pl = B.plan(p, info(board=False, volt=False), None, [img()])
-    assert pl.action == "flash" and any("BOARD" in r for r in pl.reasons)
+    assert pl.action == "flash" and any(r.code == "no_board" for r in pl.reasons)
 
 
 def test_firmware_sem_board_mas_que_serve_nao_regrava():
@@ -78,7 +79,7 @@ def test_firmware_sem_board_mas_que_serve_nao_regrava():
 
 def test_sem_resposta_do_arduino_grava_a_imagem():
     pl = B.plan(B.resolve("snes"), None, None, [img()])
-    assert pl.action == "flash" and "não respondeu" in pl.reasons[0]
+    assert pl.action == "flash" and pl.reasons[0].code == "no_response" and "não respondeu" in pl.reasons[0].text
 
 
 def test_sem_imagem_conhecida_e_sem_resposta_e_nao_suportado():

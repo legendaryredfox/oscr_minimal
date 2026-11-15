@@ -14,6 +14,7 @@ from .cmd_db import cmd_identify, cmd_search
 from .cmd_gbcamera import cmd_gbcamera
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
+from .cmd_board import cmd_board, cmd_boards
 from .cmd_firmware import DEFAULT_ENV, cmd_firmware_flash
 from .cmd_flash import cmd_flash_blank, cmd_flash_erase, cmd_flash_id, cmd_flash_read, cmd_flash_write
 from .cmd_info import cmd_errors, cmd_info, cmd_ports, cmd_systems
@@ -67,6 +68,9 @@ def _add_common(p: argparse.ArgumentParser, top: bool) -> None:
                    help=H("color"))
     p.add_argument("--voltage", choices=("auto", "3v3", "5v"), default=d("auto"), help=H("voltage"))
     p.add_argument("--allow-5v", action="store_true", default=d(False), help=H("allow_5v"))
+    p.add_argument("--board", default=d(None), metavar="PLACA", help=H("board"))
+    p.add_argument("--auto-flash", action="store_true", default=d(False), help=H("auto_flash"))
+    p.add_argument("--firmware-dir", default=d(None), metavar="PASTA", help=H("firmware_dir"))
     p.add_argument("--lang", default=d(None), type=_lang_arg, metavar="LANG",
                    help=H("lang"))
     p.add_argument("--sound", action="store_true", default=d(False), help=H("sound"))
@@ -112,6 +116,8 @@ def build_parser() -> argparse.ArgumentParser:
     vlp = add("voltage", cmd_voltage, H("cmd_voltage"), system=False)
     vlp.add_argument("action", choices=("status", "3v3", "5v"), help=H("volt_action"))
     add("selftest", cmd_selftest, H("cmd_selftest"), system=False)
+    add("boards", cmd_boards, H("cmd_boards"), system=False)
+    add("board", cmd_board, H("cmd_board"), system=False)
     fw = add("firmware-flash", cmd_firmware_flash, H("cmd_firmware_flash"), system=False)
     fw.add_argument("--hex", help=H("fw_hex"))
     fw.add_argument("--env", default=DEFAULT_ENV, help=H("fw_env", envs=H("fw_env_list")))

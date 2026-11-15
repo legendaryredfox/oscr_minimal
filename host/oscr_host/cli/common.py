@@ -34,12 +34,27 @@ def auto_port() -> str:
     return ports[0]
 
 
+SIM_FLASHED = False        # --simulate --board: o "firmware antigo" simulado já foi trocado pelo novo (OSCR_SIM_OLD_FW=1 liga o antigo)
+
+
 def connect(args, need_cart: bool = True) -> tuple[Client, Transport, dict]:
     """Abre a porta (ou o simulador), faz INFO e, em placa com o seletor 3,3 V/5 V (D138), ajusta a tensão antes de um comando de cartucho.
     O 5V dos slots fica sempre ligado (D139). A placa sobe em 3,3 V (estado seguro: abrir a porta reinicia o Mega); o padrão é 5 V; `--voltage 3v3`
     usa 3,3 V (cartucho marcado como 3,3 V); passar de 3,3 V (escolhido) para 5 V mostra o alerta e pede confirmação (ou `--allow-5v`).
     `need_cart=False` (info, voltage) nunca mexe na tensão. Falha de leitura nunca muda a tensão sozinha."""
-    c, t, info = _open(args)
+    if getattr(args, "board", None):                           # D162: a placa escolhida decide se o firmware serve ou se precisa gravar
+        from .cmd_board import ensure_board
+
+        try:
+            c, t, info = _open(args)
+        except CliError as e:
+            if e.kind != "no_response":
+                raise
+            c, t, info = ensure_board(args, None, None, None)
+        else:
+            c, t, info = ensure_board(args, c, t, info)
+    else:
+        c, t, info = _open(args)
     if need_cart:                                              # placa sem seletor: só recusa `--voltage 3v3`
         try:
             set_voltage(args, c, c.voltage(P.VOLT_STATUS))
@@ -101,8 +116,12 @@ def _open(args) -> tuple[Client, Transport, dict]:
         from .. import sim
 
         # OSCR_SIM_VOLT=1: o simulador finge o seletor 3,3 V/5 V (sobe em 3,3 V); OSCR_SIM_5V_CART=1: o cartucho só é lido a 5 V
+        # OSCR_SIM_OLD_FW=1: o simulador finge um firmware 0.1.0 sem BOARD e sem os sistemas novos, até um `--board` mandar gravar (D162)
+        old = os.environ.get("OSCR_SIM_OLD_FW") == "1" and not SIM_FLASHED
         dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1",
-                             selftest_report=_sim_selftest_report())        # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
+                             selftest_report=_sim_selftest_report(),         # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
+                             board_profile=not old, firmware=(0, 1, 0) if old else (0, 2, 0),
+                             systems=0 if old else (os.environ.get("OSCR_SIM_SYSTEMS") and int(os.environ["OSCR_SIM_SYSTEMS"])) or sum(1 << i for i in range(1, 12)))
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)
         return c, t, c.info()

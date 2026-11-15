@@ -35,7 +35,7 @@ def find_hex(args) -> Path:
 
 
 def find_avrdude(args) -> str:
-    cand = args.avrdude or os.environ.get("AVRDUDE")
+    cand = getattr(args, "avrdude", None) or os.environ.get("AVRDUDE")
     if cand:
         if not (shutil.which(cand) or Path(cand).is_file()):
             raise CliError("no_avrdude", tr("fw.no_avrdude_given", path=cand), EXIT_USAGE, tr("fw.no_avrdude_given.hint"))
@@ -92,6 +92,19 @@ def _info_after(args, timeout: float = 12.0) -> dict | None:
         except Exception:
             time.sleep(1.0)
     return None
+
+
+def write_firmware(args, hex_path: Path, port: str, wait: float = 12.0) -> dict | None:
+    """Grava `hex_path` pelo avrdude (com conferência) e devolve o `INFO` do firmware novo, ou None se ele não respondeu a tempo (D162).
+    Quem chama já confirmou com o usuário e soltou a porta."""
+    exe = find_avrdude(args)
+    cmd = avrdude_cmd(exe, port, hex_path, True)
+    mode = getattr(args, "progress", "auto")
+    code, err = run_avrdude(cmd, lambda label: progress(label, mode))
+    if code != 0:
+        raise CliError("avrdude", tr("fw.failed", code=code, detail=err or tr("fw.failed.no_message")), EXIT_NO_DEVICE if code in (1, 127) else EXIT_ERROR,
+                       tr("fw.failed.hint"))
+    return _info_after(args, wait)
 
 
 def cmd_firmware_flash(args) -> int:

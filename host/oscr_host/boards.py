@@ -28,7 +28,11 @@ MANIFEST_NAME = "manifest.json"
 
 
 class BoardError(Exception):
-    """Placa ou versão desconhecida (mensagem em português, para o usuário)."""
+    """Placa ou versão desconhecida. `kind` (`unknown_board` ou `unknown_version`) e `params` deixam a CLI e a GUI traduzirem a mensagem."""
+
+    def __init__(self, kind: str, message: str, **params):
+        super().__init__(message)
+        self.kind, self.params = kind, params
 
 
 @dataclass(frozen=True)
@@ -57,10 +61,27 @@ class Image:
         return ".".join(map(str, self.firmware))
 
 
+@dataclass(frozen=True)
+class Reason:
+    """Um motivo, sem texto: `code` + `params` (a CLI e a GUI traduzem). Códigos: no_response, missing_systems (`systems`), no_board, no_image, not_newer, set_profile."""
+    code: str
+    params: dict = field(default_factory=dict)
+
+    @property
+    def text(self) -> str:
+        """Texto em português, para logs e testes."""
+        return {"no_response": "o Arduino não respondeu (sem firmware, ou firmware que não é deste projeto)",
+                "missing_systems": "o firmware não tem os sistemas {systems}",
+                "no_board": "o firmware não aceita o perfil da placa (BOARD) e o seletor de tensão dele não bate com a placa",
+                "no_image": "nenhuma imagem de firmware conhecida cobre esta placa",
+                "not_newer": "a imagem conhecida não é mais nova que o firmware gravado",
+                "set_profile": "gravar o perfil da placa no firmware"}[self.code].format(**self.params)
+
+
 @dataclass
 class Plan:
     action: str                       # none | set_profile | flash | unsupported
-    reasons: list[str] = field(default_factory=list)
+    reasons: list[Reason] = field(default_factory=list)
     image: Image | None = None
     profile_flags: int = 0            # flags a gravar no BOARD (set_profile, e depois do flash)
 
@@ -82,13 +103,13 @@ def resolve(spec: str, path: Path | None = None) -> Profile:
     profiles = load_profiles(path)
     name, _, ver = spec.partition("@")
     if name not in profiles:
-        raise BoardError(f"placa desconhecida: {name}. Placas: {', '.join(sorted(profiles))}")
+        raise BoardError("unknown_board", f"placa desconhecida: {name}. Placas: {', '.join(sorted(profiles))}", name=name, names=", ".join(sorted(profiles)))
     d = profiles[name]
     ver = ver or d["atual"]
     if not ver.startswith("v"):
         ver = "v" + ver
     if ver not in d["versoes"]:
-        raise BoardError(f"versão desconhecida: {name} {ver}. Versões: {', '.join(d['versoes'])}")
+        raise BoardError("unknown_version", f"versão desconhecida: {name} {ver}. Versões: {', '.join(d['versoes'])}", name=name, version=ver, versions=", ".join(d["versoes"]))
     return Profile(name, ver, tuple(d["slots"]), frozenset(d["sistemas"]), bool(d["versoes"][ver]["seletor"]))
 
 
@@ -99,12 +120,9 @@ def profile_flags(p: Profile) -> int:
 # ---- imagens de firmware
 
 def image_dirs(explicit: str | None = None) -> list[Path]:
-    out = []
-    for c in (explicit, os.environ.get("OSCR_FIRMWARE_DIR")):
-        if c:
-            out.append(Path(c).expanduser())
-    out.append(REPO / "firmware" / "images")
-    return out
+    """Onde procurar o manifest.json: a pasta dada (--firmware-dir) vale sozinha; senão OSCR_FIRMWARE_DIR; senão firmware/images do repositório."""
+    chosen = explicit or os.environ.get("OSCR_FIRMWARE_DIR")
+    return [Path(chosen).expanduser()] if chosen else [REPO / "firmware" / "images"]
 
 
 def load_images(explicit: str | None = None) -> list[Image]:
@@ -142,30 +160,31 @@ def plan(profile: Profile, info: dict | None, board_state: dict | None, images: 
     need = profile.systems
     flags = profile_flags(profile)
     if info is None:
+        reasons = [Reason("no_response")]
         img = best_image(images, need)
         if img is None:
-            return Plan("unsupported", ["o firmware não respondeu e não há imagem de firmware conhecida para gravar"], None, flags)
-        return Plan("flash", ["o Arduino não respondeu (sem firmware, ou firmware que não é deste projeto)"], img, flags)
+            return Plan("unsupported", reasons + [Reason("no_image")], None, flags)
+        return Plan("flash", reasons, img, flags)
 
     reasons = []
     missing = sorted(need - info_system_ids(info))
     if missing:
-        reasons.append("o firmware não tem os sistemas " + ", ".join(P.system_name(i) for i in missing))
+        reasons.append(Reason("missing_systems", {"systems": ", ".join(P.system_name(i) for i in missing)}))
     has_board = bool(info.get("board_profile"))
     selector_ok = bool(info.get("voltage_select")) == profile.voltage_select
     if not has_board and not selector_ok:
-        reasons.append("o firmware não aceita o perfil da placa (BOARD) e o seletor de tensão dele não bate com a placa")
+        reasons.append(Reason("no_board"))
     if reasons:
         img = best_image(images, need)
         if img is None:
-            return Plan("unsupported", reasons + ["nenhuma imagem de firmware conhecida cobre esta placa"], None, flags)
+            return Plan("unsupported", reasons + [Reason("no_image")], None, flags)
         if img.firmware <= _fw(info) and not missing and has_board:
-            return Plan("unsupported", reasons + ["a imagem conhecida não é mais nova que o firmware gravado"], None, flags)
+            return Plan("unsupported", reasons + [Reason("not_newer")], None, flags)
         return Plan("flash", reasons, img, flags)
 
     stored = bool(board_state and board_state.get("stored"))
     if has_board and (not stored or not selector_ok):
-        return Plan("set_profile", ["gravar o perfil da placa no firmware"], None, flags)
+        return Plan("set_profile", [Reason("set_profile")], None, flags)
     return Plan("none", [], None, flags)
 
 
