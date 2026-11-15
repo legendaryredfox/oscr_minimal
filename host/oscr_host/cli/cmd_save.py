@@ -32,6 +32,11 @@ def _n64_save_type(c, args) -> int:
     return info["save_type"]
 
 
+def _stype_kw(args) -> dict:
+    t = common.snes_type_code(args)
+    return {"snes_type": t} if t else {}
+
+
 def cmd_save_read(args) -> int:
     c, t, info = common.connect(args)
     if args.system == "auto":                             # P5 (D160): descobre o sistema só com leituras (só na leitura; gravar exige o sistema explícito)
@@ -48,7 +53,7 @@ def cmd_save_read(args) -> int:
         except CliError:
             t.close()
             raise
-    res = c.read_save(system_id(args.system), args.block, progress("save", args.progress), args.mapper, args.ram)
+    res = c.read_save(system_id(args.system), args.block, progress("save", args.progress), args.mapper, args.ram, **_stype_kw(args))
     t.close()
     notes = []
     if system_id(args.system) == 5 and args.mapper == 2 and eeprom_is_4k(res.data):
@@ -71,9 +76,10 @@ def cmd_save_write(args) -> int:
     try:
         if sid == 11:
             args.mapper = _n64_save_type(c, args)
+        kw = _stype_kw(args)                              # SNES: tipo forçado (F-2); sem --type nada muda na chamada
         extra: dict = {}
         if not args.no_backup:                            # backup do save atual antes de gravar
-            cur = c.read_save(sid, args.block, progress("backup", args.progress), args.mapper, args.ram)
+            cur = c.read_save(sid, args.block, progress("backup", args.progress), args.mapper, args.ram, **kw)
             bdir = Path(args.backup_dir).expanduser()
             bdir.mkdir(parents=True, exist_ok=True)
             bpath = bdir / f"{args.system}_{time.strftime('%Y%m%d-%H%M%S')}.sav"
@@ -81,10 +87,10 @@ def cmd_save_write(args) -> int:
             extra["backup"] = str(bpath)
             if not args.json:
                 print(tr("save.backup", path=bpath, crc=f"{cur.crc32:08X}"))
-        crc = c.write_save(sid, data, args.block or P.DEFAULT_BLOCK, progress("write", args.progress), args.mapper, args.ram)
+        crc = c.write_save(sid, data, args.block or P.DEFAULT_BLOCK, progress("write", args.progress), args.mapper, args.ram, **kw)
         v = None
         if not args.no_verify:                            # o WRITE_SAVE não relê: o PC lê o save de volta e compara
-            v = RI.verify_save_written(c, sid, data, progress("verify", args.progress), args.mapper, args.ram)
+            v = RI.verify_save_written(c, sid, data, progress("verify", args.progress), args.mapper, args.ram, **kw)
     finally:
         t.close()
     extra.update({"bytes": len(data), "crc32": f"{crc:08X}"})

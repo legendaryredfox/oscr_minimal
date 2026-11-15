@@ -315,8 +315,8 @@ class VerifyResult(val ok: Boolean, val readCrc: Int, val expectedCrc: Int, val 
  * Confere a gravação do save: lê o save de volta (READ_SAVE com as mesmas opções) e compara com o que foi enviado. Igual a verify_save_written em romimage.py.
  * O WRITE_SAVE do fork não relê (o OSCR relia o arquivo do cartão SD), então a conferência fica no PC. Tamanho diferente conta como diferença.
  */
-fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null): VerifyResult {
-    val read = client.readSave(system, 0, mapper, ramKb, progress).data
+fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null, snesType: Int = 0): VerifyResult {
+    val read = client.readSave(system, 0, mapper, ramKb, progress, snesType).data
     var diff: Int? = null
     if (!read.contentEquals(data)) {
         val n = minOf(read.size, data.size)

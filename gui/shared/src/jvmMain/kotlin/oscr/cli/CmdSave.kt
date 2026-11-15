@@ -28,7 +28,7 @@ internal fun cmdSaveRead(io: CliIo, a0: Args): Int {
     val sys = system(a)
     val res = try {
         val mapper = if (sys == CartSystem.N64) n64SaveType(c, a) else a.int("mapper")
-        c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"))
+        c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"), snesTypeCode(a))
     } finally { c.transport.close() }
     saveResult(io, a, res, ".sav", "save_${sys.name.lowercase()}")
     return EXIT_OK
@@ -43,6 +43,7 @@ internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
         io.err(Msg.t("save.ask", "n" to data.size, "system" to sys.name.lowercase()))
         if (io.readLine()?.trim()?.lowercase() !in setOf("y", "yes", "s", "sim", "да", "д", "是", "是的")) { io.out(Msg.t("cancelled")); return EXIT_ERROR }
     }
+    val stype = snesTypeCode(a)                                   // SNES: tipo forçado (F-2)
     val c = connect(io, a)
     val extra = linkedMapOf<String, Any?>()
     val crc: Int
@@ -50,7 +51,7 @@ internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
     try {
         val mapper = if (sys == CartSystem.N64) n64SaveType(c, a) else a.int("mapper")
         if ("no-backup" !in a.flags) {
-            val cur = c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "backup"))
+            val cur = c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "backup"), stype)
             val dir = File((a.opts["backup-dir"] ?: "~/oscr_backups").let { if (it.startsWith("~")) io.home + it.substring(1) else it })
             dir.mkdirs()
             val f = File(dir, "${sys.name.lowercase()}_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.sav")
@@ -58,8 +59,8 @@ internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
             extra["backup"] = f.path
             if (!a.json) io.out(Msg.t("save.backup", "path" to f.path, "crc" to cur.crcHex))
         }
-        crc = c.client.writeSave(sys, data, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, mapper, a.int("ram"), progress(io, a, "write"))
-        if ("no-verify" !in a.flags) v = verifySaveWritten(c.client, sys, data, mapper, a.int("ram"), progress(io, a, "verify"))     // o WRITE_SAVE não relê: o PC lê de volta e compara
+        crc = c.client.writeSave(sys, data, a.int("block").let { if (it == 0) Proto.DEFAULT_BLOCK else it }, mapper, a.int("ram"), progress(io, a, "write"), stype)
+        if ("no-verify" !in a.flags) v = verifySaveWritten(c.client, sys, data, mapper, a.int("ram"), progress(io, a, "verify"), stype)     // o WRITE_SAVE não relê: o PC lê de volta e compara
     } finally { c.transport.close() }
     val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
     extra["bytes"] = data.size; extra["crc32"] = hex

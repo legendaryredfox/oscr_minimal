@@ -27,6 +27,8 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
     }
     val raw = "raw" in a.flags
     if (raw && sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", Msg.t("dump.raw_only_nes"), EXIT_USAGE)
+    val stype = snesTypeCode(a)
+    if (sys == CartSystem.SNES) chr = stype                       // SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
     val c = c0 ?: connect(io, a)
     var title = ""
     if (sys == CartSystem.N64) {                      // o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158

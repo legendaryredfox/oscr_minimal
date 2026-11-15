@@ -34,6 +34,9 @@ VOLT_STATUS, VOLT_3V3, VOLT_5V = 0, 1, 2       # ação do VOLT (seletor 3,3 V/5
 
 KIND_ROM, KIND_SAVE = 1, 2
 
+# Tipo de ROM do SNES forçado pelo PC (F-2, D164): vai no terceiro campo opcional (`chr_kb`), que o SNES não usa. 0 = pelo cabeçalho.
+SNES_TYPES = {"lorom": 1, "hirom": 2, "sa1": 3, "exhirom": 4}
+
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),
     "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "n64": (11, ".z64"), "mock": (255, ".bin"),
@@ -172,10 +175,10 @@ def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, ch
     return base
 
 
-def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ram_kb: int = 0) -> bytes:
+def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ram_kb: int = 0, snes_type: int = 0) -> bytes:
     base = struct.pack("<BIH", system, size, block)
-    if mapper or ram_kb:                # NES/Famicom: mapper (1, 4, 5 e 69 têm PRG-RAM com bateria) e RAM em KB (16/32 só nos mappers 1 e 5)
-        base += struct.pack("<HHH", mapper, ram_kb, 0)
+    if mapper or ram_kb or snes_type:   # NES/Famicom: mapper (1, 4, 5 e 69 têm PRG-RAM com bateria) e RAM em KB (16/32 só nos mappers 1 e 5); SNES: tipo forçado no 3º campo (F-2)
+        base += struct.pack("<HHH", mapper, ram_kb, snes_type)
     return base
 
 

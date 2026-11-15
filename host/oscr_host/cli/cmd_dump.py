@@ -60,8 +60,9 @@ def cmd_dump(args) -> int:
         t.close()
         raise CliError("usage", tr("dump.raw_only_nes"), EXIT_USAGE)
     try:
-        res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, args.chr)
-        res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, args.chr) if getattr(args, "twice", False) else None
+        chr_kb = common.snes_type_code(args) or (0 if args.system == "snes" else args.chr)       # SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
+        res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, chr_kb)
+        res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, chr_kb) if getattr(args, "twice", False) else None
     finally:
         t.close()
     ext = P.SYSTEMS[args.system][1]

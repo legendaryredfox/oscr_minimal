@@ -24,6 +24,7 @@
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
 # include "dumper/SnesFlash.h"
+# include "dumper/SnesType.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
 # include "dumper/GbFlash.h"
@@ -334,9 +335,11 @@ namespace OSCR::Dumper
     /**
      * SNES: o `getCartInfo` do OSCR lê o cabeçalho ($FFB0) e preenche romSize (Mbit), numBanks, sramSize (Kbit), romChips, romType e checksum
      * (sem a base de dados: tamanhos fora do padrão, como 6 MB, vêm do PC pela opção `prg_kb`). `sizeKb` > 0 troca o tamanho da ROM.
+     * `forcedType` (F-2, D164; códigos de SnesType.h, 0 = pelo cabeçalho) impõe o tipo de ROM e recalcula os bancos. Com tipo e tamanho informados, um cabeçalho
+     * ilegível não recusa o cartucho (repro multijogo, Sufami Turbo): o PC sabe o que está lendo.
      * Devolve 0 = ok, 1 = sem cartucho, 4 = há dados mas o cabeçalho não confere.
      */
-    uint8_t snesProbe(uint16_t sizeKb)
+    uint8_t snesProbe(uint16_t sizeKb, uint16_t forcedType = 0)
     {
       using namespace OSCR::Cores;
       abortHit = false;
@@ -344,13 +347,17 @@ namespace OSCR::Dumper
       SN::getCartInfo();
       SN::cartOff();
       if (abortHit) return (checksum == 0 || checksum == 0xFFFF) ? 1 : 4;
-      if (romSize == 0 || numBanks < 1) return 1;
+      if ((romSize == 0 || numBanks < 1) && !(forcedType != 0 && sizeKb != 0)) return 1;
 
+      if (forcedType)                                             // tipo imposto pelo PC
+      {
+        romType = OSCR::Dumper::SnesType::romType(forcedType);
+        numBanks = OSCR::Dumper::SnesType::numBanks(romType, romSize);
+      }
       if (sizeKb)                                                 // tamanho informado pelo usuário/PC (Mbit = KB / 128)
       {
         romSize = sizeKb / 128;
-        constexpr uint8_t kSA = 3, kEX = 4;
-        numBanks = (romType == kEX || romType == kSA) ? long(romSize) * 2 : (long(romSize) * 1024 * 1024 / 8) / (32768 + (long(romType) * 32768));
+        numBanks = OSCR::Dumper::SnesType::numBanks(romType, romSize);
       }
       return 0;
     }
@@ -596,8 +603,9 @@ namespace OSCR::Dumper
         if (system == oscr::SYS_SNES)
         {
           uint8_t st = 1;
-          uint16_t kb = 0;                                       // o DETECT ignora as opções
-          runCore([&st, kb] { st = snesProbe(kb); });
+          uint16_t kb = optPrgKb, ty = optChrKb;                 // tamanho e tipo forçados (F-2); sem eles, pelo cabeçalho
+          if (!OSCR::Dumper::SnesType::valid(ty)) { out.status = 2; return; }
+          runCore([&st, kb, ty] { st = snesProbe(kb, ty); });
           out.status = st;
           if (st == 1) return;
           out.rom_size = uint32_t(OSCR::Cores::romSize) * 131072UL;
@@ -998,8 +1006,9 @@ namespace OSCR::Dumper
         if (system == oscr::SYS_SNES)
         {
           uint8_t st = 1;
-          uint16_t kb = forSave ? uint16_t(0) : optPrgKb;
-          runCore([&st, kb] { st = snesProbe(kb); });
+          uint16_t kb = forSave ? uint16_t(0) : optPrgKb, ty = optChrKb;
+          if (!OSCR::Dumper::SnesType::valid(ty)) { err = oscr::E_ARGUMENTO; return false; }
+          runCore([&st, kb, ty] { st = snesProbe(kb, ty); });
           if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }
           if (st != 0) { err = oscr::E_CARTUCHO_IO; return false; }
           return true;

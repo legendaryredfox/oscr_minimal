@@ -121,6 +121,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var gbaType by remember { mutableStateOf("3") }
     var prgKb by remember { mutableStateOf("0") }
     var chrKb by remember { mutableStateOf("0") }
+    var snesTypeSel by remember { mutableStateOf(0) }                 // tipo de ROM do SNES forçado (F-2, D164); 0 = pelo cabeçalho
     var ramKb by remember { mutableStateOf("0") }
     var progress by remember { mutableStateOf(0f) }
     var stage by remember { mutableStateOf<S?>(null) }
@@ -247,6 +248,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
 
     fun mapperArg() = (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0
     fun ramArg() = if (isNes) ramN else 0
+    fun snesTypeArg() = if (system == CartSystem.SNES) snesTypeSel else 0
 
     fun reportText(p: String, crc: String, size: Int, extra: List<String>, h: Hashes.Result? = null) =
         (listOf("oscr_minimal $APP_VERSION", "${t(S.SYSTEM)}: ${system.name}", p, "${t(S.RESULT_SIZE)}: $size ${t(S.BYTES)}", "CRC32: $crc") + (h?.let { listOf("SHA-1: ${it.sha1}", "MD5: ${it.md5}") } ?: emptyList()) + extra).joinToString("\n") + "\n"
@@ -588,7 +590,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (isFlash) { actFpId(); return }
         val c = client ?: return
         run(S.STAGE_DETECTING) {
-            val r = withContext(Dispatchers.IO) { c.detect(system) }
+            val r = withContext(Dispatchers.IO) { c.detect(system, 0, 0, snesTypeArg()) }
             val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; 4 -> S.CART_BAD_HEADER; else -> S.CART_HW_ERROR }
             val n64 = if (system == CartSystem.N64 && r.status == 0) N64.info(r, N64Games.byCrc1) else null
             if (r.status == 0) detectedNames[system] = n64?.let { it.game?.name ?: it.header.title } ?: r.name
@@ -614,11 +616,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         run(S.STAGE_READING_ROM) {
             val n64 = if (system == CartSystem.N64) (n64Resolve(c, true, false) ?: return@run) else null
             val prgUse = n64?.first ?: prgN
-            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, chrN, ticker()) }
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
             val extra = mutableListOf<String>()
             if (readTwice) {
                 say("2/2")
-                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, chrN, ticker()) }
+                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
                 if (res2.data.contentEquals(res.data)) { val m = "${t(S.TWICE_OK)} (CRC32 ${res.crcHex})"; say(m); extra += m }
                 else {
                     val (n, first) = diffSummary(res.data, res2.data)
@@ -660,7 +662,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         run(S.STAGE_READING_SAVE) {
             val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
-            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker()) }
+            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker(), snesTypeArg()) }
             val hashes = Hashes.of(res.data)
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")
@@ -683,18 +685,18 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
             if (backupFirst) {                                   // lê o save atual e guarda uma cópia ANTES de sobrescrever
                 stage = S.BACKUP_SAVED
-                val cur = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker()) }
+                val cur = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker(), snesTypeArg()) }
                 val dir = File(System.getProperty("user.home"), "oscr_backups").also { it.mkdirs() }
                 val bf = File(dir, "${system.name.lowercase()}_${SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())}.sav")
                 bf.writeBytes(cur.data)
                 say("${t(S.BACKUP_SAVED)}: $bf — CRC32 ${cur.crcHex}")
                 stage = S.STAGE_WRITING_SAVE; progress = 0f
             }
-            val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapUse, ramArg(), ticker()) }
+            val crc = withContext(Dispatchers.IO) { c.writeSave(system, req.data, Proto.DEFAULT_BLOCK, mapUse, ramArg(), ticker(), snesTypeArg()) }
             say("${t(S.DONE)}: ${req.data.size} ${t(S.BYTES)}, CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
             if (verifySave) {                                    // o WRITE_SAVE não relê: lê o save de volta e compara
                 stage = S.STAGE_VERIFYING_SAVE; progress = 0f
-                val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, req.data, mapUse, ramArg(), ticker()) }
+                val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, req.data, mapUse, ramArg(), ticker(), snesTypeArg()) }
                 fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
                 say(if (v.ok) f(S.SAVE_VERIFY_OK, v.readBytes, hex(v.readCrc)) else t(S.ERR_PREFIX) + ": " + f(S.SAVE_VERIFY_BAD, v.firstDiff ?: 0, hex(v.readCrc), hex(v.expectedCrc)))
             }
@@ -930,6 +932,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
+            }
+            if (stub == null && system == CartSystem.SNES) {
+                LabeledField(t(S.SNES_TYPE)) {
+                    ComboBox(value = SnesType.CODES.entries.firstOrNull { it.value == snesTypeSel }?.let { SNES_TYPE_NAMES.getValue(it.key) } ?: t(S.SNES_TYPE_AUTO), modifier = Modifier.fillMaxWidth()) { close ->
+                        DropdownMenuItem(text = { Text(t(S.SNES_TYPE_AUTO)) }, onClick = { close(); snesTypeSel = 0 })
+                        SnesType.CODES.forEach { (k, code) -> DropdownMenuItem(text = { Text(SNES_TYPE_NAMES.getValue(k)) }, onClick = { close(); snesTypeSel = code }) }
+                    }
+                }
+                Text(t(S.SNES_TYPE_HINT), style = MaterialTheme.typography.bodySmall)
             }
             if (stub == null && isNes) {
                 Text(t(S.NES_OPTIONS), style = MaterialTheme.typography.titleSmall)
@@ -1282,6 +1293,7 @@ private fun LabeledField(label: String, content: @Composable ColumnScope.() -> U
 private val LocalFieldLabel = compositionLocalOf { "" }
 
 /** Passos do zoom da interface, em %. */
+private val SNES_TYPE_NAMES = mapOf("lorom" to "LoROM", "hirom" to "HiROM", "sa1" to "SA-1", "exhirom" to "ExHiROM")      // nomes próprios: iguais em todos os idiomas
 private val ZOOM_STEPS = listOf(100, 125, 150, 175, 200)
 
 /** Caixa de seleção com o rótulo no mesmo alvo: o leitor de tela lê "rótulo, caixa de seleção, marcada" e o clique no texto também marca. */

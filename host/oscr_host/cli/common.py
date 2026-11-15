@@ -142,6 +142,16 @@ def _open(args) -> tuple[Client, Transport, dict]:
     raise CliError("no_response", tr("err.no_response", port=port, bauds=", ".join(map(str, bauds)), error=last), EXIT_NO_DEVICE, tr("err.no_response.hint"))
 
 
+def snes_type_code(args) -> int:
+    """`--type` do SNES (F-2, D164) como código do protocolo; 0 = pelo cabeçalho. Em outro sistema é erro de uso."""
+    t = getattr(args, "type", None)
+    if not t:
+        return 0
+    if args.system != "snes":
+        raise CliError("usage", tr("snes_type.only_snes"), EXIT_USAGE)
+    return P.SNES_TYPES[t]
+
+
 def system_id(name: str) -> int:
     if name not in P.SYSTEMS:
         raise CliError("usage", tr("sys.unknown", name=name, systems=", ".join(P.SYSTEMS)), EXIT_USAGE)

@@ -24,7 +24,7 @@ def cmd_detect(args) -> int:
         if not args.json:
             print(tr("auto.found", system=args.system), file=sys.stderr)
     sega = args.system in ("sms", "gg", "sg1000")          # o adaptador (campo mapper) muda a fiação dos barramentos; os outros sistemas ignoram as opções no DETECT
-    r = c.detect(system_id(args.system), args.mapper if sega else 0)
+    r = c.detect(system_id(args.system), args.mapper if sega else 0, 0, common.snes_type_code(args))   # SNES: o tipo forçado vai no 3º campo (F-2)
     if args.system == "n64" and r["status"] == 0:
         r = N64.enrich_detect(r)                                # tamanho e save vêm da base pelo CRC1 do cabeçalho (D158)
     flash = None

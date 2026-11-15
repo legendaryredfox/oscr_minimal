@@ -43,6 +43,13 @@ internal fun open(io: CliIo, a: Args): Conn {
     throw CliError("no_response", Msg.t("err.no_response", "port" to port, "bauds" to bauds.joinToString(", "), "error" to last?.message), EXIT_NO_DEVICE, Msg.t("err.no_response.hint"))
 }
 
+/** `--type` do SNES (F-2, D164) como código do protocolo; 0 = pelo cabeçalho. Em outro sistema, ou com valor desconhecido, é erro de uso. */
+internal fun snesTypeCode(a: Args): Int {
+    val t = a.opts["type"] ?: return 0
+    if (a.opts["system"] != "snes") throw CliError("usage", Msg.t("snes_type.only_snes"), EXIT_USAGE)
+    return SnesType.CODES[t] ?: throw CliError("usage", Msg.t("snes_type.bad"), EXIT_USAGE)
+}
+
 internal fun system(a: Args): CartSystem {
     val n = (a.opts["system"] ?: "mock").lowercase()
     return CartSystem.entries.firstOrNull { it.name.lowercase() == n }

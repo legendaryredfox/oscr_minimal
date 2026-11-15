@@ -12,7 +12,7 @@ internal fun cmdDetect(io: CliIo, a0: Args): Int {
     var chip: MdFlashChip? = null
     val adapter = if (a.opts["system"] in setOf("sms", "gg", "sg1000")) (a.opts["mapper"]?.toIntOrNull() ?: 0) else 0     // o adaptador (campo mapper) muda a fiação dos barramentos
     val r = try {
-        c.client.detect(system(a), adapter).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) }
+        c.client.detect(system(a), adapter, 0, snesTypeCode(a)).also { if (wantChip) chip = identifyMdFlash(c.client, c.info) }
     } finally { c.transport.close() }
     val n64 = if (a.opts["system"] == "n64" && r.status == 0) N64.info(r, N64Games.byCrc1) else null
     val text = statusText(r.status)

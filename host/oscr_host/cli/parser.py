@@ -131,6 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     dtp = add("detect", cmd_detect, H("cmd_detect"), auto=True)
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
     dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
+    dtp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
     gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
     gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
     gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))
@@ -147,12 +148,14 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--mapper", type=int, default=0, help=H("dump_mapper"))
     dp.add_argument("--prg", type=int, default=0, help=H("dump_prg"))
     dp.add_argument("--chr", type=int, default=0, help=H("dump_chr"))
+    dp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
     dp.add_argument("--raw", action="store_true", help=H("dump_raw"))
     dp.add_argument("--twice", action="store_true", help=H("dump_twice"))
     dp.add_argument("--game", help=H("dump_game"))
     for sp in (add("save-read", cmd_save_read, H("cmd_save_read"), out=True, auto=True), add("save-write", cmd_save_write, H("cmd_save_write"), inp=True)):
         sp.add_argument("--mapper", type=int, default=0, help=H("save_mapper"))
         sp.add_argument("--ram", type=int, default=0, help=H("save_ram"))
+        sp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
         if sp.prog.endswith("save-write"):
             sp.add_argument("--yes", action="store_true", help=H("yes_write"))
             sp.add_argument("--no-backup", action="store_true", help=H("save_no_backup"))

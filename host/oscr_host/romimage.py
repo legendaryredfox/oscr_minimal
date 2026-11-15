@@ -257,14 +257,14 @@ class VerifyResult:
                 "first_diff": self.first_diff, "read_bytes": self.read_bytes}
 
 
-def verify_save_written(client, system: int, data: bytes, progress=None, mapper: int = 0, ram_kb: int = 0) -> VerifyResult:
+def verify_save_written(client, system: int, data: bytes, progress=None, mapper: int = 0, ram_kb: int = 0, snes_type: int = 0) -> VerifyResult:
     """Confere a gravação do save: lê o save de volta (READ_SAVE com as mesmas opções) e compara byte a byte com o que foi enviado.
 
     O OSCR original relia o arquivo do cartão SD; o WRITE_SAVE do fork não relê, então a conferência fica no PC.
     Tamanho diferente conta como diferença (o primeiro byte além do menor)."""
     import zlib
 
-    res = client.read_save(system, 0, progress, mapper, ram_kb)
+    res = client.read_save(system, 0, progress, mapper, ram_kb, **({"snes_type": snes_type} if snes_type else {}))
     got = res.data
     diff = None
     if got != data:
