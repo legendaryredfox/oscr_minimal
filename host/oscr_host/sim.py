@@ -22,7 +22,7 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None, board_profile: bool = True, firmware: tuple = (0, 2, 0), systems: int = 0, stages: bool = True):
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None, board_profile: bool = True, firmware: tuple = (0, 2, 0), systems: int = 0, stages: bool = True, clock: bool = True, clock_present: bool = True):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
@@ -39,6 +39,12 @@ class MockDevice:
         self.board_calls: list[int] = []       # flags de cada gravação
         self.systems = systems                 # máscara de sistemas que o INFO devolve (0: só o modo MOCK)
         self.firmware = firmware               # (maior, menor, patch) que o INFO devolve
+        self.clock_supported = clock           # o firmware simulado tem o CLOCK (F-3); False imita o antigo (ERRO comando)
+        self.clock_present = clock_present     # o Si5351 simulado responde no I²C
+        self.clock_ppb = 0                     # fator em vigor
+        self.clock_stored = False              # fator guardado na EEPROM simulada
+        self.clock_test = False                # saídas de teste ligadas
+        self.clock_calls: list[tuple[int, int]] = []
         self.stages = stages                   # emite PROGRESSO com etapa (F-1); False imita o firmware antigo, que nunca o emite
         self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
@@ -131,6 +137,26 @@ class MockDevice:
                     if sel != self.volt_select:
                         self.volt_select, self.volt, self.chosen = sel, 1, False
                 self._send(t, P.T_BOARD_RESP, f.seq, bytes([1 if self.board_stored else 0, P.BOARD_VOLT_SELECT if self.volt_select else 0]))
+        elif f.type == P.T_CLOCK:
+            pl = f.payload
+            if not self.clock_supported:
+                self._error(t, f.seq, 1, "sem clock")
+            elif not pl or pl[0] > P.CLOCK_TEST_OFF or (pl[0] == P.CLOCK_SET and len(pl) < 5):
+                self._error(t, f.seq, 4, "args")
+            elif pl[0] == P.CLOCK_SET and abs(int.from_bytes(pl[1:5], "little", signed=True)) > P.CLOCK_MAX_PPB:
+                self._error(t, f.seq, 4, "ppb")
+            elif pl[0] != P.CLOCK_STATUS and not self.clock_present:
+                self._error(t, f.seq, 7, "sem Si5351")
+            else:
+                ppb = int.from_bytes(pl[1:5], "little", signed=True) if pl[0] == P.CLOCK_SET else 0
+                self.clock_calls.append((pl[0], ppb))
+                if pl[0] == P.CLOCK_SET:
+                    self.clock_ppb, self.clock_stored = ppb, True
+                elif pl[0] == P.CLOCK_TEST_ON:
+                    self.clock_test = True
+                elif pl[0] == P.CLOCK_TEST_OFF:
+                    self.clock_test = False
+                self._send(t, P.T_CLOCK_RESP, f.seq, bytes([int(self.clock_present), int(self.clock_stored)]) + self.clock_ppb.to_bytes(4, "little", signed=True) + bytes([int(self.clock_test)]))
         elif f.type == P.T_SELFTEST:
             self.selftest_calls += 1
             rep = self.selftest_report[:24]

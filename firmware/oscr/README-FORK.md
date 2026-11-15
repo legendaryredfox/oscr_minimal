@@ -16,6 +16,7 @@ Regra do fork: **mudanças mínimas e localizadas**. O que mudou em relação ao
 | `src/cores/GameBoyAdvance.cpp`, `src/cores/GameBoy.cpp` | `readROM` termina depois do último byte (sem reler o arquivo nem a base de dados). |
 | `src/apps/Prompts.cpp`, `src/apps/FileBrowser.cpp` | Sem usuário: os prompts não esperam; `selectFile` abre o arquivo virtual que o PC manda. |
 | `src/cores/SelfTest.cpp`, `include/dumper/Dumper.h` | Com `OSCR_DUMPER`, cada achado (curto com GND, par em curto, falta o pull-up do D7, sem Si5351) vai para `Dumper::noteSelfTest()`, que o devolve ao PC no `SELFTEST_RESP`; o resto é o código do OSCR. |
+| `src/hardware/peripherals/ClockGen.cpp`, `include/dumper/Dumper.h`, `user.ini` | `clockgen = true` liga o Si5351 (antes o build o deixava de fora: o `SelfTest` e o SA-1 do SNES nunca o usavam, D167). Com `OSCR_DUMPER`, `ClockGen::initialize()` lê o fator de correção da EEPROM (`Dumper::clockOffset()`, escrito pelo comando `CLOCK`) no lugar do `snes_clk.txt` do cartão SD. A calibração interativa do OSCR (`clkcal`, botões e `FreqCount`) não é usada: o comando `CLOCK` faz as mesmas chamadas da biblioteca. |
 | `src/cores/SNES.cpp` | Sem `checkAltConf` (base de dados); o tamanho vem do cabeçalho ou da opção `prg_kb`. |
 | `include/dumper/*`, `src/dumper/*` (novos) | `Dumper` (laço de comandos e backend do Mega Drive), `StreamFile`, e `oscr_proto`/`oscr_session` (o protocolo; vieram de `firmware/arquivo/oscr_serial` e agora evoluem aqui, com testes em `pc-tests/`). |
 | `README-FORK.md` (novo) | Este arquivo. |

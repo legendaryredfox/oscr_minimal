@@ -33,6 +33,12 @@ struct SelfTestReport {
   }
 };
 
+// Estado do relógio do Si5351 (CLOCK_RESP, F-3). `present`: o Si5351 respondeu no I²C. `stored`: há fator guardado na EEPROM. `ppb`: o fator em vigor. `test`: saídas de teste ligadas.
+struct ClockInfo {
+  bool present = false, stored = false, test = false;
+  int32_t ppb = 0;
+};
+
 struct DetectInfo {
   uint8_t status = 1;       // 0 detectado, 1 nenhum, 2 não suportado, 3 erro de hardware, 4 cabeçalho inválido (há dados, checksum errado)
   uint32_t rom_size = 0, save_size = 0;
@@ -94,6 +100,9 @@ class Backend {
   virtual bool board_supported() { return false; }
   virtual bool board_get(uint8_t& flags) { flags = 0; return false; }
   virtual bool board_set(uint8_t flags, uint16_t& err) { (void)flags; err = E_COMANDO; return false; }
+  // Relógio do Si5351 (CLOCK, F-3): `clock_supported()` diz se o firmware tem o comando; `clock` executa a ação (CLOCK_*) e preenche o estado depois dela.
+  virtual bool clock_supported() { return false; }
+  virtual bool clock(uint8_t action, int32_t ppb, ClockInfo& out, uint16_t& err) { (void)action; (void)ppb; (void)out; err = E_COMANDO; return false; }
   // Autoteste da placa, sem cartucho (curtos entre os pinos, pull-up do D7, Si5351). Demora cerca de 45 s; o host espera até 90 s. INFO bit6.
   virtual bool selftest_supported() { return false; }
   virtual bool selftest(SelfTestReport& r, uint16_t& err) { (void)r; err = E_COMANDO; return false; }
@@ -142,6 +151,7 @@ class Session {
   void do_erase(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_volt(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_board(uint8_t seq, const uint8_t* p, uint16_t len);
+  void do_clock(uint8_t seq, const uint8_t* p, uint16_t len);
   void do_selftest(uint8_t seq);
   void do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, const uint8_t* opt, uint16_t opt_len);
   void do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind = KIND_SAVE);

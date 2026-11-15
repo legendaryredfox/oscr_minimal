@@ -7,11 +7,11 @@ object Proto {
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
-    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_BOARD = 0x0F; const val T_ACK = 0x06
+    const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_BOARD = 0x0F; const val T_CLOCK = 0x10; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A
     const val T_INFO_RESP = 0x81; const val T_DETECT_RESP = 0x82; const val T_BEGIN = 0x83
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
-    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A; const val T_BOARD_RESP = 0x8B
+    const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A; const val T_BOARD_RESP = 0x8B; const val T_CLOCK_RESP = 0x8C
     const val KIND_ROM = 1; const val KIND_SAVE = 2
     /** Ordem em que o host tenta conectar (H-3); o firmware abre um só, escolhido na compilação (OSCR_DUMPER_BAUD). */
     val BAUDS = listOf(1_000_000, 500_000, 115_200)
@@ -152,4 +152,31 @@ fun parseSelfTest(p: ByteArray): SelfTestResult {
         }
     }
     return SelfTestResult(findings.isEmpty() && p.u8(0) == 0, p.u8(0) != 0, findings)
+}
+
+/** Relógio do Si5351 (CLOCK, F-3; docs/referencia/protocolo.md): ações, limite de segurança do projeto e as saídas de teste com onde medir (wiki do OSCR, P-03). */
+object Clock {
+    const val STATUS = 0; const val SET = 1; const val TEST_ON = 2; const val TEST_OFF = 3
+    const val MAX_PPB = 1_000_000
+    val TARGETS = listOf(ClockTarget("CLK0", 4_000_000, "clock.where_ext"), ClockTarget("CLK2", 3_072_000, "clock.where_cic"), ClockTarget("CLK1", 1_000_000, "clock.where_cpu"))
+}
+data class ClockTarget(val output: String, val hz: Int, val whereKey: String)
+data class ClockState(val present: Boolean, val stored: Boolean, val ppb: Int, val test: Boolean)
+
+fun buildClock(action: Int, ppb: Int = 0): ByteArray {
+    if (action != Clock.SET) return byteArrayOf(action.toByte())
+    require(ppb in -Clock.MAX_PPB..Clock.MAX_PPB) { "fator fora de ±${Clock.MAX_PPB} ppb" }
+    return byteArrayOf(action.toByte()) + le32(ppb)
+}
+
+fun parseClock(p: ByteArray): ClockState {
+    if (p.size < 7) throw ProtocolError(Fail.SHORT_REPLY, "CLOCK_RESP")
+    return ClockState(p.u8(0) != 0, p.u8(1) != 0, p.u32(2), p.u8(6) != 0)
+}
+
+/** Fator (ppb) que corrige uma saída medida em [measuredHz] quando o alvo é [targetHz], com [currentPpb] já em vigor na medição.
+ *  A biblioteca trata a referência como ref*(1+c/1e9): medida/alvo = (1+e)/(1+c0/1e9), então c = ((medida/alvo)*(1+c0/1e9) - 1)*1e9. */
+fun clockFactorFromMeasure(measuredHz: Double, targetHz: Double, currentPpb: Int = 0): Long {
+    require(measuredHz > 0 && targetHz > 0) { "frequências devem ser positivas" }
+    return Math.round(((measuredHz / targetHz) * (1 + currentPpb / 1e9) - 1) * 1e9)
 }

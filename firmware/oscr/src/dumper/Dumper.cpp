@@ -320,6 +320,28 @@ namespace OSCR::Dumper
       if (boardStored) voltSelect = b[2] & oscr::BOARD_VOLT_SELECT;
       cartVolt = voltSelect ? oscr::volt::kVolt3V3 : oscr::volt::kVoltNone;
     }
+    // Fator de correção do Si5351 (CLOCK, F-3), em ppb, guardado na EEPROM: [magic, versão, 4 bytes do fator (LE), soma de conferência]. Lê o do endereço 4056 a 4062.
+    constexpr int kClockEeprom = 4056;
+    constexpr uint8_t kClockMagic = 0xC7, kClockVer = 1;
+    uint8_t clockCheck(const uint8_t * b) { return uint8_t(b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] ^ 0x5A); }
+    bool loadClockPpb(int32_t & ppb)
+    {
+      uint8_t b[7];
+      for (uint8_t i = 0; i < 7; i++) b[i] = EEPROM.read(kClockEeprom + i);
+      if (b[0] != kClockMagic || b[1] != kClockVer || b[6] != clockCheck(b)) return false;
+      uint32_t v = uint32_t(b[2]) | (uint32_t(b[3]) << 8) | (uint32_t(b[4]) << 16) | (uint32_t(b[5]) << 24);
+      int32_t p = int32_t(v);
+      if (p > oscr::CLOCK_MAX_PPB || p < -oscr::CLOCK_MAX_PPB) return false;     // EEPROM adulterada: ignora, vale 0
+      ppb = p;
+      return true;
+    }
+    void saveClockPpb(int32_t ppb)
+    {
+      uint8_t b[7] = {kClockMagic, kClockVer, uint8_t(ppb), uint8_t(uint32_t(ppb) >> 8), uint8_t(uint32_t(ppb) >> 16), uint8_t(uint32_t(ppb) >> 24), 0};
+      b[6] = clockCheck(b);
+      for (uint8_t i = 0; i < 7; i++) EEPROM.update(kClockEeprom + i, b[i]);
+    }
+    bool clockTest = false;                     // saídas de teste do CLOCK ligadas
     oscr::SelfTestReport * selfTestOut = nullptr;   // preenchido por noteSelfTest() durante o SELFTEST
     bool voltChosen = false;                    // o usuário escolheu 3,3 V (cartucho marcado como 3,3 V): o host pede confirmação antes de subir para 5 V
 
@@ -514,6 +536,41 @@ namespace OSCR::Dumper
         delay(OSCR_VOLT_SETTLE_MS);
         return true;
       }
+      // Relógio do Si5351 (F-3). As chamadas à biblioteca são as do `clkcal` do OSCR (ClockGen.cpp): `set_correction` e, para o teste, PLL fixo e as três saídas
+      // (CLK0 4 MHz = EXT, CLK1 1 MHz = CPU, CLK2 3,072 MHz = CIC do SNES). O fator em vigor no boot vem de `clockOffset()`.
+#if defined(ENABLE_CLOCKGEN)
+      bool clock_supported() override { return true; }
+      bool clock(uint8_t action, int32_t ppb, oscr::ClockInfo & out, uint16_t & err) override
+      {
+        bool present = OSCR::ClockGen::exists() || OSCR::ClockGen::initialize();   // módulo ligado depois do boot: tenta de novo
+        int32_t cur = 0;
+        bool stored = loadClockPpb(cur);
+        if (action != oscr::CLOCK_STATUS && !present) { err = oscr::E_CARTUCHO_IO; return false; }
+        if (action == oscr::CLOCK_SET)
+        {
+          saveClockPpb(ppb); stored = true; cur = ppb;
+          OSCR::ClockGen::clockgen.set_correction(ppb, SI5351_PLL_INPUT_XO);
+          OSCR::ClockGen::clockgen.set_correction(ppb, SI5351_PLL_INPUT_CLKIN);
+        }
+        if (action == oscr::CLOCK_TEST_ON || (action == oscr::CLOCK_SET && clockTest))     // com o teste ligado, o fator novo vale nas saídas já
+        {
+          OSCR::ClockGen::clockgen.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+          OSCR::ClockGen::clockgen.set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
+          OSCR::ClockGen::clockgen.pll_reset(SI5351_PLLA);
+          OSCR::ClockGen::clockgen.pll_reset(SI5351_PLLB);
+          OSCR::ClockGen::clockgen.set_freq(400000000ULL, SI5351_CLK0);
+          OSCR::ClockGen::clockgen.set_freq(100000000ULL, SI5351_CLK1);
+          OSCR::ClockGen::clockgen.set_freq(307200000ULL, SI5351_CLK2);
+          OSCR::ClockGen::clockgen.output_enable(SI5351_CLK1, 1);
+          OSCR::ClockGen::clockgen.output_enable(SI5351_CLK2, 1);
+          OSCR::ClockGen::clockgen.output_enable(SI5351_CLK0, 1);
+          clockTest = true;
+        }
+        if (action == oscr::CLOCK_TEST_OFF) { OSCR::ClockGen::stop(); clockTest = false; }
+        out.present = present; out.stored = stored; out.ppb = present ? OSCR::ClockGen::clockgen.get_correction(SI5351_PLL_INPUT_XO) : cur; out.test = clockTest;
+        return true;
+      }
+#endif
       // Autoteste do OSCR (cores/SelfTest.cpp, chamado direto): precisa do slot vazio. Os achados chegam por noteSelfTest().
       bool selftest_supported() override { return true; }
       bool selftest(oscr::SelfTestReport & r, uint16_t & err) override
@@ -1078,6 +1135,13 @@ namespace OSCR::Dumper
   void noteError() { errorFlag = true; }
 
   void noteAbort() { abortHit = true; }
+
+  int32_t clockOffset()
+  {
+    int32_t ppb = 0;
+    loadClockPpb(ppb);
+    return ppb;
+  }
 
   void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
   {

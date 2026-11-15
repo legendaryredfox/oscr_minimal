@@ -77,6 +77,25 @@ selftest.clockgen	o Si5351 não responde no I²C (módulo ausente, mal encaixado
 selftest.truncated	há mais problemas do que os mostrados; corrija estes e rode de novo	there are more problems than shown; fix these and run again	проблем больше, чем показано; исправьте эти и запустите снова	问题多于所列；请先修复这些再重新运行
 selftest.unknown	achado desconhecido ({kind}): atualize o programa	unknown finding ({kind}): update the program	неизвестный результат ({kind}): обновите программу	未知结果（{kind}）：请更新程序
 selftest.unsupported	este firmware não tem o autoteste: grave o firmware atual com firmware-flash	this firmware has no self-test: flash the current firmware with firmware-flash	в этой прошивке нет самотеста: прошейте текущую прошивку командой firmware-flash	此固件没有自检功能：请用 firmware-flash 刷入当前固件
+clock.unsupported	este firmware não tem o clock-cal: grave o firmware atual com firmware-flash	this firmware has no clock-cal: flash the current firmware with firmware-flash	в этой прошивке нет clock-cal: запишите актуальную прошивку через firmware-flash	此固件没有 clock-cal：请用 firmware-flash 刷写当前固件
+clock.no_module	o Si5351 não responde no I²C (módulo ausente, mal encaixado ou ligado ao contrário)	the Si5351 does not answer on I²C (module missing, badly seated or reversed)	Si5351 не отвечает по I²C (модуля нет, он плохо вставлен или повёрнут наоборот)	Si5351 在 I²C 上无响应（模块缺失、插得不好或方向反了）
+clock.both	use --factor ou --measured, não os dois	use --factor or --measured, not both	используйте --factor или --measured, но не оба	请使用 --factor 或 --measured，不要同时使用
+clock.range	fator fora do limite de ±{max} ppb	factor outside the ±{max} ppb limit	коэффициент вне предела ±{max} ppb	系数超出 ±{max} ppb 的限制
+clock.range_hint	confira a medida e o alvo (--target); um cristal comum erra dezenas de ppm, ou seja, dezenas de milhares de ppb	check the measurement and the target (--target); a normal crystal is off by tens of ppm, that is tens of thousands of ppb	проверьте измерение и цель (--target); обычный кварц ошибается на десятки ppm, то есть на десятки тысяч ppb	请检查测量值和目标值（--target）；普通晶振误差为几十 ppm，即几万 ppb
+clock.measured_positive	--measured deve ser maior que zero (Hz)	--measured must be greater than zero (Hz)	--measured должно быть больше нуля (Гц)	--measured 必须大于零（Hz）
+clock.state	Si5351: ok. Fator de correção: {ppb} ppb ({saved})	Si5351: ok. Correction factor: {ppb} ppb ({saved})	Si5351: в порядке. Коэффициент коррекции: {ppb} ppb ({saved})	Si5351：正常。校正系数：{ppb} ppb（{saved}）
+clock.state_absent	Si5351: não responde no I²C. Fator guardado: {ppb} ppb ({saved})	Si5351: does not answer on I²C. Stored factor: {ppb} ppb ({saved})	Si5351: не отвечает по I²C. Сохранённый коэффициент: {ppb} ppb ({saved})	Si5351：I²C 上无响应。已存系数：{ppb} ppb（{saved}）
+clock.saved	guardado na EEPROM	saved in the EEPROM	сохранён в EEPROM	已存入 EEPROM
+clock.not_saved	nenhum guardado: vale 0	none saved: 0 is used	ничего не сохранено: действует 0	未保存：使用 0
+clock.applied	fator aplicado e guardado: {ppb} ppb (vale já e nos próximos boots)	factor applied and saved: {ppb} ppb (in effect now and on the next boots)	коэффициент применён и сохранён: {ppb} ppb (действует сразу и при следующих запусках)	系数已应用并保存：{ppb} ppb（立即生效，后续启动也生效）
+clock.test_on	saídas de teste: ligadas (desligue com --test off antes de usar um cartucho)	test outputs: on (turn them off with --test off before using a cartridge)	тестовые выходы: включены (выключите через --test off перед использованием картриджа)	测试输出：已开启（使用卡带前请用 --test off 关闭）
+clock.test_off	saídas de teste: desligadas	test outputs: off	тестовые выходы: выключены	测试输出：已关闭
+clock.targets	alvos para medir com o frequencímetro (saídas de teste ligadas; todas vêm do mesmo cristal, medir uma basta):	targets to measure with the frequency counter (test outputs on; all come from the same crystal, measuring one is enough):	цели для измерения частотомером (тестовые выходы включены; все идут от одного кварца, достаточно измерить один):	用频率计测量的目标（测试输出开启；都来自同一晶振，测一个即可）：
+clock.target	  {hz} Hz  {output}  {where}	  {hz} Hz  {output}  {where}	  {hz} Гц  {output}  {where}	  {hz} Hz  {output}  {where}
+clock.where_ext	pino 1 do SNES (EXT)	SNES pin 1 (EXT)	вывод 1 SNES (EXT)	SNES 引脚 1（EXT）
+clock.where_cic	pino 56 do SNES (clock do CIC)	SNES pin 56 (CIC clock)	вывод 56 SNES (тактовая CIC)	SNES 引脚 56（CIC 时钟）
+clock.where_cpu	pino 57 do SNES (CPU)	SNES pin 57 (CPU)	вывод 57 SNES (CPU)	SNES 引脚 57（CPU）
+clock.how	para calibrar: clock-cal --test on; meça uma saída; clock-cal --measured HZ --target ALVO (ou --factor PPB). Depois: clock-cal --test off	to calibrate: clock-cal --test on; measure one output; clock-cal --measured HZ --target TARGET (or --factor PPB). Then: clock-cal --test off	для калибровки: clock-cal --test on; измерьте один выход; clock-cal --measured ГЦ --target ЦЕЛЬ (или --factor PPB). Затем: clock-cal --test off	校准：clock-cal --test on；测量一个输出；clock-cal --measured HZ --target 目标（或 --factor PPB）。然后：clock-cal --test off
 fw.no_hex	arquivo de firmware não encontrado: {path}	firmware file not found: {path}	файл прошивки не найден: {path}	未找到固件文件：{path}
 fw.no_hex.hint	use --hex ARQUIVO.hex, ou compile antes: `cd firmware/oscr && pio run -e {env}`	use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e {env}`	укажите --hex ФАЙЛ.hex или сначала соберите: `cd firmware/oscr && pio run -e {env}`	请使用 --hex 文件.hex，或先编译：`cd firmware/oscr && pio run -e {env}`
 fw.no_avrdude_given	avrdude não encontrado: {path}	avrdude not found: {path}	avrdude не найден: {path}	未找到 avrdude：{path}
@@ -210,6 +229,7 @@ game.ambiguous.hint	seja mais específico. Exemplos: {examples}	be more specific
 game.example	{name} (mapper {mapper}, PRG {prg} KB, CHR {chr} KB)	{name} (mapper {mapper}, PRG {prg} KB, CHR {chr} KB)	{name} (маппер {mapper}, PRG {prg} КБ, CHR {chr} КБ)	{name}（mapper {mapper}，PRG {prg} KB，CHR {chr} KB）
 args.nonneg	--{name} precisa de um inteiro não negativo, recebi '{value}'	--{name} needs a non-negative integer, got '{value}'	--{name} требует неотрицательное целое число, получено '{value}'	--{name} 需要非负整数，得到的是 '{value}'
 args.no_value	--{name} não recebe valor	--{name} does not take a value	--{name} не принимает значение	--{name} 不接受值
+args.bad_value	valor inválido em --{name}: '{value}'	invalid value for --{name}: '{value}'	недопустимое значение --{name}: '{value}'	--{name} 的值无效：'{value}'
 args.needs_value	--{name} precisa de um valor	--{name} needs a value	--{name} требует значение	--{name} 需要一个值
 args.short_needs_value	{opt} precisa de um valor	{opt} needs a value	{opt} требует значение	{opt} 需要一个值
 args.unknown_opt	opção desconhecida: {opt}	unknown option: {opt}	неизвестная опция: {opt}	未知选项：{opt}

@@ -19,6 +19,7 @@ T_ACK, T_NAK, T_ABORT, T_H_DATA, T_H_END = 0x06, 0x07, 0x08, 0x09, 0x0A
 T_ERASE = 0x0C                         # programador de flash genérico (sistema 7): apaga o chip (docs/referencia/protocolo.md)
 T_SELFTEST = 0x0E                       # autoteste da placa sem cartucho (P-12, docs/referencia/protocolo.md)
 T_BOARD = 0x0F                          # perfil da placa: consulta ou grava na EEPROM do firmware (D162, docs/referencia/protocolo.md)
+T_CLOCK = 0x10                          # relógio do Si5351: consulta, fator de correção (ppb) na EEPROM, saídas de teste (F-3, docs/referencia/protocolo.md)
 T_VOLT = 0x0D                          # tensão dos slots: consulta ou escolhe 3,3 V/5 V (docs/referencia/protocolo.md, D138)
 T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em cartucho de flash (docs/referencia/protocolo.md)
 # dispositivo -> host
@@ -30,6 +31,15 @@ STAGE_NAMES = {STAGE_ERASE: "erasing", STAGE_WRITE: "writing", STAGE_READ: "read
 T_VOLT_RESP = 0x89
 T_SELFTEST_RESP = 0x8A
 T_BOARD_RESP = 0x8B
+T_CLOCK_RESP = 0x8C
+CLOCK_STATUS, CLOCK_SET, CLOCK_TEST_ON, CLOCK_TEST_OFF = 0, 1, 2, 3     # ação do CLOCK
+CLOCK_MAX_PPB = 1_000_000               # limite de segurança do projeto (0,1 %); o firmware recusa acima
+# Saídas de teste do CLOCK (as mesmas do `clkcal` do OSCR) e onde medir com o frequencímetro (wiki do OSCR, P-03). Todas saem do mesmo cristal: medir uma basta.
+CLOCK_TARGETS = (
+    {"output": "CLK0", "hz": 4_000_000, "where": "SNES pin 1 (EXT)"},
+    {"output": "CLK2", "hz": 3_072_000, "where": "SNES pin 56 (CIC)"},
+    {"output": "CLK1", "hz": 1_000_000, "where": "SNES pin 57 (CPU)"},
+)
 BOARD_STATUS, BOARD_SET = 0, 1                  # ação do BOARD
 BOARD_VOLT_SELECT = 1                           # bit 0 do perfil: a placa tem o seletor de tensão 3,3 V/5 V (D138)
 ST_GND, ST_PAIR, ST_NO_PULLUP, ST_NO_CLOCKGEN = 1, 2, 3, 4   # tipos de achado do SELFTEST
@@ -218,6 +228,30 @@ def parse_board_resp(p: bytes) -> dict:
     if len(p) < 2:
         raise ProtocolError("BOARD_RESP curto")
     return {"stored": bool(p[0]), "voltage_select": bool(p[1] & BOARD_VOLT_SELECT)}
+
+
+def build_clock(action: int, ppb: int = 0) -> bytes:
+    """CLOCK: `u8 ação` e, no SET, `i32 fator` em ppb (positivo = a saída roda alta, ver a biblioteca Si5351)."""
+    if action == CLOCK_SET:
+        if abs(ppb) > CLOCK_MAX_PPB:
+            raise ValueError(f"fator fora de ±{CLOCK_MAX_PPB} ppb")
+        return struct.pack("<Bi", action, ppb)
+    return bytes([action])
+
+
+def parse_clock_resp(p: bytes) -> dict:
+    """CLOCK_RESP: `present` = o Si5351 respondeu; `stored` = há fator na EEPROM; `ppb` = fator em vigor; `test` = saídas de teste ligadas."""
+    if len(p) < 7:
+        raise ProtocolError("CLOCK_RESP curto")
+    return {"present": bool(p[0]), "stored": bool(p[1]), "ppb": struct.unpack_from("<i", p, 2)[0], "test": bool(p[6])}
+
+
+def clock_factor_from_measure(measured_hz: float, target_hz: float, current_ppb: int = 0) -> int:
+    """Fator (ppb) que corrige uma saída medida em `measured_hz` quando o alvo é `target_hz`, com `current_ppb` já em vigor durante a medição.
+    A biblioteca trata a referência como ref*(1+c/1e9): medida/alvo = (1+e)/(1+c0/1e9), então c = ((medida/alvo)*(1+c0/1e9) - 1)*1e9."""
+    if measured_hz <= 0 or target_hz <= 0:
+        raise ValueError("frequências devem ser positivas")
+    return round(((measured_hz / target_hz) * (1 + current_ppb / 1e9) - 1) * 1e9)
 
 
 def parse_volt_resp(p: bytes) -> dict:

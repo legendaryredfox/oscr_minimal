@@ -340,6 +340,53 @@ static void test_selftest() {
   CHECK(e.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_CARTUCHO_IO);
 }
 
+// ---- CLOCK: relógio do Si5351 (F-3)
+struct ClockBackend : MockBackend {
+  bool present = true, stored = false, test = false;
+  int32_t ppb = 0;
+  int sets = 0;
+  bool clock_supported() override { return true; }
+  bool clock(uint8_t action, int32_t v, ClockInfo& out, uint16_t& err) override {
+    if (action != CLOCK_STATUS && !present) { err = E_CARTUCHO_IO; return false; }
+    if (action == CLOCK_SET) { ppb = v; stored = true; sets++; }
+    if (action == CLOCK_TEST_ON) test = true;
+    if (action == CLOCK_TEST_OFF) test = false;
+    out.present = present; out.stored = stored; out.ppb = ppb; out.test = test;
+    return true;
+  }
+};
+
+static void test_clock() {
+  uint8_t t; std::vector<uint8_t> p;
+  uint8_t st[1] = {CLOCK_STATUS}, on[1] = {CLOCK_TEST_ON}, off[1] = {CLOCK_TEST_OFF}, bad[1] = {9};
+  uint8_t set[5] = {CLOCK_SET, 0, 0, 0, 0};
+  put_u32(set + 1, uint32_t(int32_t(-1234)));
+
+  VoltRun plain(*new MockBackend);                                                                // firmware sem o comando: ERRO comando (host acusa "firmware antigo")
+  CHECK(plain.ask(T_CLOCK, st, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO);
+
+  ClockBackend be;
+  VoltRun r(be);
+  CHECK(r.ask(T_CLOCK, st, 1, t, p) && t == T_CLOCK_RESP && p.size() == 7 && p[0] == 1 && p[1] == 0 && get_u32(p.data() + 2) == 0 && p[6] == 0);
+  CHECK(r.ask(T_CLOCK, set, 5, t, p) && t == T_CLOCK_RESP && p[1] == 1 && int32_t(get_u32(p.data() + 2)) == -1234 && be.sets == 1);   // fator negativo volta com sinal
+  CHECK(r.ask(T_CLOCK, on, 1, t, p) && t == T_CLOCK_RESP && p[6] == 1);
+  CHECK(r.ask(T_CLOCK, off, 1, t, p) && t == T_CLOCK_RESP && p[6] == 0);
+  CHECK(r.ask(T_CLOCK, bad, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);
+  CHECK(r.ask(T_CLOCK, nullptr, 0, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);
+  CHECK(r.ask(T_CLOCK, set, 3, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO);        // SET sem o fator inteiro
+  uint8_t big[5] = {CLOCK_SET, 0, 0, 0, 0};
+  put_u32(big + 1, uint32_t(CLOCK_MAX_PPB + 1));
+  CHECK(r.ask(T_CLOCK, big, 5, t, p) && t == T_ERRO && get_u16(p.data()) == E_ARGUMENTO && be.sets == 1);   // acima do limite: não chega ao backend
+  put_u32(big + 1, uint32_t(-CLOCK_MAX_PPB));
+  CHECK(r.ask(T_CLOCK, big, 5, t, p) && t == T_CLOCK_RESP && be.sets == 2);                       // o limite em si vale
+
+  ClockBackend none; none.present = false;                                                        // sem o módulo: consulta responde, o resto dá erro
+  VoltRun n(none);
+  CHECK(n.ask(T_CLOCK, st, 1, t, p) && t == T_CLOCK_RESP && p[0] == 0);
+  CHECK(n.ask(T_CLOCK, set, 5, t, p) && t == T_ERRO && get_u16(p.data()) == E_CARTUCHO_IO && none.sets == 0);
+  CHECK(n.ask(T_CLOCK, on, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_CARTUCHO_IO);
+}
+
 int main() {
   test_crc();
   test_info_frame_bytes();
@@ -351,6 +398,7 @@ int main() {
   test_volt();
   test_board();
   test_selftest();
+  test_clock();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

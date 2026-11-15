@@ -44,6 +44,7 @@ object Cli {
                 "ports" -> cmdPorts(io, a)
                 "voltage" -> cmdVoltage(io, a)
                 "selftest" -> cmdSelftest(io, a)
+                "clock-cal" -> cmdClock(io, a)
                 "boards" -> cmdBoards(io, a)
                 "board" -> cmdBoard(io, a)
                 "firmware-flash" -> cmdFirmwareFlash(io, a)

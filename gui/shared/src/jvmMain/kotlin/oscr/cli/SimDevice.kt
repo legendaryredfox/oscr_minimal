@@ -8,13 +8,15 @@ import oscr.*
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
 class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, var voltSelect: Boolean = false, val cartNeeds5v: Boolean = false, val selftestReport: List<Triple<Int, Int, Int>> = emptyList(), val mdFlashName: String? = null,
-    val boardProfile: Boolean = true, val firmware: Triple<Int, Int, Int> = Triple(0, 2, 0), val systemsMask: Int = 0, val stages: Boolean = true) : Transport {
+    val boardProfile: Boolean = true, val firmware: Triple<Int, Int, Int> = Triple(0, 2, 0), val systemsMask: Int = 0, val stages: Boolean = true, val clockSupported: Boolean = true, val clockPresent: Boolean = true) : Transport {
     var boardStored = false                                     // o PC gravou o perfil da placa na EEPROM simulada (D162)
     val boardCalls = mutableListOf<Int>()
     var volt = 1                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): sobe em 3,3 V (estado seguro); o host pede 5 V (padrão)
     var chosen = false                                          // o usuário escolheu 3,3 V
     val voltCalls = mutableListOf<Int>()
     var selftestCalls = 0                                       // achados do autoteste simulado: (tipo, pino a, pino b)
+    var clockPpb = 0; var clockStored = false; var clockTest = false                // relógio do Si5351 simulado (F-3)
+    val clockCalls = mutableListOf<Pair<Int, Int>>()
     private val cartReadable get() = voltSelect && cartNeeds5v && volt == 2     // cartucho simulado que só lê a 5 V
     private val dec = FrameDecoder()
     private var out = ByteArray(0)
@@ -66,6 +68,22 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                             if (sel != voltSelect) { voltSelect = sel; volt = 1; chosen = false }
                         }
                         push(Proto.T_BOARD_RESP, byteArrayOf(if (boardStored) 1 else 0, if (voltSelect) Board.VOLT_SELECT.toByte() else 0))
+                    }
+                }
+            }
+            Proto.T_CLOCK -> {
+                val pl = f.payload
+                val act = if (pl.isNotEmpty()) pl.u8(0) else -1
+                when {
+                    !clockSupported -> error(1, "sem clock")
+                    act !in Clock.STATUS..Clock.TEST_OFF || (act == Clock.SET && pl.size < 5) -> error(4, "args")
+                    act == Clock.SET && Math.abs(pl.u32(1)) > Clock.MAX_PPB -> error(4, "ppb")
+                    act != Clock.STATUS && !clockPresent -> error(7, "sem Si5351")
+                    else -> {
+                        val ppb = if (act == Clock.SET) pl.u32(1) else 0
+                        clockCalls += act to ppb
+                        when (act) { Clock.SET -> { clockPpb = ppb; clockStored = true }; Clock.TEST_ON -> clockTest = true; Clock.TEST_OFF -> clockTest = false }
+                        push(Proto.T_CLOCK_RESP, byteArrayOf(if (clockPresent) 1 else 0, if (clockStored) 1 else 0) + le32(clockPpb) + byteArrayOf(if (clockTest) 1 else 0))
                     }
                 }
             }

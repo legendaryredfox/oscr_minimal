@@ -1,6 +1,9 @@
 
 #include "common.h"
 #include "hardware/peripherals/ClockGen.h"
+#if OSCR_DUMPER
+# include "dumper/Dumper.h"   // fork oscr_minimal: o fator de correção vem da EEPROM (comando CLOCK), no lugar do snes_clk.txt do cartão SD
+#endif
 
 namespace OSCR
 {
@@ -28,6 +31,10 @@ namespace OSCR
           clock_file.close();
         }
       }
+# endif
+
+# if OSCR_DUMPER
+      clock_offset = OSCR::Dumper::clockOffset();
 # endif
 
       i2c_found = clockgen.init(SI5351_CRYSTAL_LOAD_8PF, 0, clock_offset);

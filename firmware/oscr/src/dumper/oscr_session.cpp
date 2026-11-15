@@ -97,6 +97,7 @@ void Session::handle() {
     case T_VOLT: do_volt(seq, p, len); break;
     case T_BOARD: do_board(seq, p, len); break;
     case T_SELFTEST: do_selftest(seq); break;
+    case T_CLOCK: do_clock(seq, p, len); break;
     case T_DUMP_ROM:
     case T_READ_SAVE:
       do_read(seq, dec_.type, len >= 1 ? p[0] : 0, len >= 3 ? get_u16(p + 1) : 0, p + 3, len >= 3 ? len - 3 : 0);
@@ -162,6 +163,21 @@ void Session::do_volt(uint8_t seq, const uint8_t* p, uint16_t len) {
   be_.volt_info(vi);
   uint8_t r[3] = {uint8_t(vi.select ? 1 : 0), vi.volt, uint8_t(vi.chosen ? 1 : 0)};
   send(T_VOLT_RESP, seq, r, 3);
+}
+
+// CLOCK (F-3): `u8 ação` (+ `i32 ppb` no SET). Responde CLOCK_RESP: `u8 presente`, `u8 guardado`, `i32 ppb`, `u8 teste`.
+void Session::do_clock(uint8_t seq, const uint8_t* p, uint16_t len) {
+  if (!be_.clock_supported()) { send_error(seq, E_COMANDO, "sem clock"); return; }
+  if (len < 1 || p[0] > CLOCK_TEST_OFF || (p[0] == CLOCK_SET && len < 5)) { send_error(seq, E_ARGUMENTO, "args"); return; }
+  uint8_t action = p[0];
+  int32_t ppb = action == CLOCK_SET ? int32_t(get_u32(p + 1)) : 0;
+  if (action == CLOCK_SET && (ppb > CLOCK_MAX_PPB || ppb < -CLOCK_MAX_PPB)) { send_error(seq, E_ARGUMENTO, "ppb"); return; }
+  ClockInfo ci;
+  uint16_t err = E_CARTUCHO_IO;
+  if (!be_.clock(action, ppb, ci, err)) { send_error(seq, err, "sem Si5351"); return; }
+  uint8_t r[7] = {uint8_t(ci.present ? 1 : 0), uint8_t(ci.stored ? 1 : 0), 0, 0, 0, 0, uint8_t(ci.test ? 1 : 0)};
+  put_u32(r + 2, uint32_t(ci.ppb));
+  send(T_CLOCK_RESP, seq, r, 7);
 }
 
 void Session::do_selftest(uint8_t seq) {

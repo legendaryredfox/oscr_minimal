@@ -21,6 +21,7 @@ from .cmd_firmware import DEFAULT_ENV, cmd_firmware_flash
 from .cmd_flash import cmd_flash_blank, cmd_flash_erase, cmd_flash_id, cmd_flash_read, cmd_flash_write
 from .cmd_info import cmd_errors, cmd_info, cmd_ports, cmd_systems
 from .cmd_selftest import cmd_selftest
+from .cmd_clock import cmd_clock
 from .cmd_voltage import cmd_voltage
 from .cmd_rom import cmd_rom_write
 from .cmd_save import cmd_save_read, cmd_save_write
@@ -118,6 +119,11 @@ def build_parser() -> argparse.ArgumentParser:
     vlp = add("voltage", cmd_voltage, H("cmd_voltage"), system=False)
     vlp.add_argument("action", choices=("status", "3v3", "5v"), help=H("volt_action"))
     add("selftest", cmd_selftest, H("cmd_selftest"), system=False)
+    ckp = add("clock-cal", cmd_clock, H("cmd_clock"), system=False)
+    ckp.add_argument("--factor", type=int, help=H("clock_factor"))
+    ckp.add_argument("--measured", type=float, help=H("clock_measured"))
+    ckp.add_argument("--target", type=float, default=4_000_000.0, help=H("clock_target"))
+    ckp.add_argument("--test", choices=("on", "off"), help=H("clock_test"))
     add("boards", cmd_boards, H("cmd_boards"), system=False)
     add("board", cmd_board, H("cmd_board"), system=False)
     fw = add("firmware-flash", cmd_firmware_flash, H("cmd_firmware_flash"), system=False)

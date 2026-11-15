@@ -127,7 +127,7 @@ def _open_raw(args) -> tuple[Client, Transport, dict]:
         old = os.environ.get("OSCR_SIM_OLD_FW") == "1" and not SIM_FLASHED
         dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1",
                              selftest_report=_sim_selftest_report(),         # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
-                             board_profile=not old, firmware=(0, 1, 0) if old else (0, 2, 0), stages=not old,
+                             board_profile=not old, firmware=(0, 1, 0) if old else (0, 2, 0), stages=not old, clock=not old,
                              systems=0 if old else (os.environ.get("OSCR_SIM_SYSTEMS") and int(os.environ["OSCR_SIM_SYSTEMS"])) or sum(1 << i for i in range(1, 12)))
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)

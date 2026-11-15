@@ -82,6 +82,10 @@ class OscrClient(
         return BoardState(p.u8(0) != 0, p.u8(1) and Board.VOLT_SELECT != 0)
     }
 
+    /** CLOCK (F-3): consulta, grava o fator do Si5351 na EEPROM (vale já) ou liga/desliga as saídas de teste. Firmware sem o comando: [DeviceError] 1. */
+    fun clock(action: Int = Clock.STATUS, ppb: Int = 0): ClockState =
+        parseClock(request(Proto.T_CLOCK, buildClock(action, ppb), nextSeq(), setOf(Proto.T_CLOCK_RESP), longTimeoutMs).payload)
+
     /** SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware. */
     fun selftest(): SelfTestResult =
         parseSelfTest(request(Proto.T_SELFTEST, ByteArray(0), nextSeq(), setOf(Proto.T_SELFTEST_RESP), maxOf(longTimeoutMs, 90_000L)).payload)

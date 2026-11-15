@@ -118,6 +118,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var showAdvanced by remember { mutableStateOf(false) }
     var firstRun by remember { mutableStateOf(!Prefs.firstRunDone) }
     var mapper by remember { mutableStateOf("0") }
+    var clkMeasured by remember { mutableStateOf("") }
+    var clkTarget by remember { mutableStateOf("4000000") }
     var gbaType by remember { mutableStateOf("3") }
     var prgKb by remember { mutableStateOf("0") }
     var chrKb by remember { mutableStateOf("0") }
@@ -772,6 +774,35 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
+    /** Relógio do Si5351 (F-3, P-03): lê o estado, liga/desliga as saídas de teste ou grava o fator (em ppb, calculado da frequência medida). Sem cartucho. */
+    fun actClock(action: Int, ppb: Int = 0, fromMeasure: Boolean = false) {
+        val c = client ?: return
+        run(S.STAGE_CLOCK, needsCart = false) {
+            try {
+                withContext(Dispatchers.IO) {
+                    var st = c.clock(Clock.STATUS)
+                    var applied = false
+                    var factor = ppb
+                    if (fromMeasure) {
+                        val m = clkMeasured.replace(',', '.').toDoubleOrNull(); val tg = clkTarget.replace(',', '.').toDoubleOrNull()
+                        if (m == null || tg == null || m <= 0 || tg <= 0) { say(t(S.CLK_BAD_MEASURE)); return@withContext }
+                        val fx = clockFactorFromMeasure(m, tg, st.ppb)
+                        if (Math.abs(fx) > Clock.MAX_PPB) { say(f(S.CLK_RANGE, Clock.MAX_PPB)); return@withContext }
+                        factor = fx.toInt()
+                    }
+                    if (fromMeasure || action == Clock.SET) { st = c.clock(Clock.SET, factor); applied = true }
+                    else if (action != Clock.STATUS) st = c.clock(action)
+                    val saved = if (st.stored) "EEPROM" else "0"
+                    val on = if (st.test) "ON" else "OFF"
+                    say(if (st.present) f(S.CLK_STATE, st.ppb, saved, on) else f(S.CLK_STATE_ABSENT, st.ppb, saved))
+                    if (applied) say(f(S.CLK_APPLIED, st.ppb))
+                }
+            } catch (e: DeviceError) {
+                say(when (e.code) { 1 -> t(S.CLK_NO_FW); 7 -> t(S.CLK_NO_MODULE); else -> describeError(lang, e) })
+            }
+        }
+    }
+
     fun actAbort() { client?.abort() }
 
     fun copyLog() {
@@ -848,6 +879,27 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         SectionCard(t(S.ST_TITLE)) {
             Text(t(S.ST_HINT), style = MaterialTheme.typography.bodyMedium)
             OutlinedButton(enabled = canRun || (connected && !busy && stub != null), onClick = { actSelftest() }, modifier = Modifier.fillMaxWidth()) { Text(t(S.ST_RUN)) }
+        }
+    }
+
+    // Cartão "Relógio do Si5351": calibração com frequencímetro (F-3); o firmware sem o comando responde com a mensagem de firmware antigo
+    val clockCard: @Composable () -> Unit = {
+        SectionCard(t(S.CLK_TITLE)) {
+            Text(t(S.CLK_HINT), style = MaterialTheme.typography.bodyMedium)
+            Text(t(S.CLK_TARGETS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(enabled = canRun, onClick = { actClock(Clock.STATUS) }) { Text(t(S.CLK_READ)) }
+                OutlinedButton(enabled = canRun, onClick = { actClock(Clock.TEST_ON) }) { Text(t(S.CLK_TEST_ON)) }
+                OutlinedButton(enabled = canRun, onClick = { actClock(Clock.TEST_OFF) }) { Text(t(S.CLK_TEST_OFF)) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(clkMeasured, { clkMeasured = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(14) }, label = { Text(t(S.CLK_MEASURED)) }, singleLine = true, modifier = Modifier.weight(1f))
+                OutlinedTextField(clkTarget, { clkTarget = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(14) }, label = { Text(t(S.CLK_TARGET)) }, singleLine = true, modifier = Modifier.width(150.dp))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = canRun, onClick = { actClock(Clock.SET, fromMeasure = true) }) { Text(t(S.CLK_APPLY)) }
+                OutlinedButton(enabled = canRun, onClick = { actClock(Clock.SET, 0) }) { Text(t(S.CLK_RESET)) }
+            }
         }
     }
 
@@ -1100,9 +1152,9 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     if (showSettings) SettingsPanel(lang, { lang = it; Prefs.lang = it.tag }, fontPercent, onFontPercent, dbPaths, dbStatus, dbLoading, { addDatabase() }, { loadDatabases(emptyList()) })
                     if (firstRun) FirstRunCard(lang) { firstRun = false; Prefs.firstRunDone = true }
                     if (wide) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); if (connected && info?.selftest == true) selftestCard(); firmwareCard() }
+                        Column(Modifier.weight(0.38f), verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); if (connected && info?.selftest == true) selftestCard(); if (connected) clockCard(); firmwareCard() }
                         Column(Modifier.weight(0.62f), verticalArrangement = Arrangement.spacedBy(16.dp)) { pendingCard(); cartridgeCard(); readCard(); writeCard() }
-                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard(); if (connected && info?.selftest == true) selftestCard(); firmwareCard() }
+                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { connectionCard(); pendingCard(); cartridgeCard(); readCard(); writeCard(); if (connected && info?.selftest == true) selftestCard(); if (connected) clockCard(); firmwareCard() }
                 }
             }
         }

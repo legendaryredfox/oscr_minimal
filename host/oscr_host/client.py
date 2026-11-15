@@ -100,6 +100,11 @@ class Client:
         f = self._request(P.T_BOARD, payload, self._next_seq(), {P.T_BOARD_RESP}, self.long_timeout)
         return P.parse_board_resp(f.payload)
 
+    def clock(self, action: int = P.CLOCK_STATUS, ppb: int = 0) -> dict:
+        """CLOCK (F-3): consulta, grava o fator do Si5351 na EEPROM (vale já) ou liga/desliga as saídas de teste. Firmware sem o comando: DeviceError 1."""
+        f = self._request(P.T_CLOCK, P.build_clock(action, ppb), self._next_seq(), {P.T_CLOCK_RESP}, self.long_timeout)
+        return P.parse_clock_resp(f.payload)
+
     def selftest(self) -> dict:
         """SELFTEST: autoteste da placa sem cartucho (curtos entre pinos, pull-up do D7, Si5351; P-12). Demora cerca de 45 s no firmware."""
         f = self._request(P.T_SELFTEST, b"", self._next_seq(), {P.T_SELFTEST_RESP}, max(self.long_timeout, 90.0))
