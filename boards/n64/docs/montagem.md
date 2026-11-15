@@ -22,6 +22,10 @@ Ferro com ponta chanfrada de 2 mm, solda 0,8 mm, fluxo, malha dessoldadora, mult
 4. **LED D1**, cátodo (lado reto) ligado a R1.
 5. **Eletrolítico C1**, respeitando o `+`.
 6. **Header fêmea do Si5351 (U1)**; ainda sem o módulo. Pino 1 (VIN, quadrado) à esquerda.
+
+> <!-- si5351-aviso -->
+> **Aviso do módulo Si5351 (P-13, C-15), antes de encaixar o módulo:** (1) a orientação importa: o pino VIN (quadrado) vai no pino 1 do header; **ligar ao contrário pode queimar o módulo**. (2) O header da placa tem 7 pinos (VIN, GND, SDA, SCL, 2, 1, 0); se o seu módulo tiver o pino "3V BAT" ou 8 pinos, não force: nada pode ligar nesse pino. (3) Módulos baratos variam: o da Adafruit tem regulador e conversor de nível no I²C; os genéricos podem não ter, e o Mega põe 5 V em SDA e SCL. Confira no esquema do seu módulo antes de encaixar; na dúvida, não encaixe. (Fonte: wiki do OSCR, `Build-Guide`; não conferido com o seu módulo.)
+
 7. **Slot N64_1**: solde os dois pinos das pontas, confira se está reto e assentado, depois o resto (50 pinos, passo 2,5 mm).
 8. **Pinos macho longos por último, com o shield encaixado no Mega**, que serve de gabarito: solde 2 pinos das pontas de cada tira, confira e solde o resto. Depois fixe os espaçadores.
 

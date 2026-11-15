@@ -41,6 +41,10 @@ Ver `boards/snes/docs/bom.md` (quantidades e referências). Resumo:
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).
 5. **Capacitor eletrolítico de 470 µF (C1)**, respeitando a polaridade (o `+` está no silkscreen).
 6. **Header fêmea do Si5351 (U1)** (1x7), deitado na horizontal. O pino 1 (VIN, quadrado) fica à esquerda. **Ainda sem o módulo**, que fica solto sobre o header (sem furos de fixação nesta placa).
+
+> <!-- si5351-aviso -->
+> **Aviso do módulo Si5351 (P-13, C-15), antes de encaixar o módulo:** (1) a orientação importa: o pino VIN (quadrado) vai no pino 1 do header; **ligar ao contrário pode queimar o módulo**. (2) O header da placa tem 7 pinos (VIN, GND, SDA, SCL, 2, 1, 0); se o seu módulo tiver o pino "3V BAT" ou 8 pinos, não force: nada pode ligar nesse pino. (3) Módulos baratos variam: o da Adafruit tem regulador e conversor de nível no I²C; os genéricos podem não ter, e o Mega põe 5 V em SDA e SCL. Confira no esquema do seu módulo antes de encaixar; na dúvida, não encaixe. (Fonte: wiki do OSCR, `Build-Guide`; não conferido com o seu módulo.)
+
 7. **Pontos de teste TP1, TP2, TP3, TP4, TP5** (fileira junto à borda de baixo, a 2,54 mm um do outro, rótulo na vertical acima de cada furo): solde, se quiser, uma tira de pinos macho 1x5 padrão. **Opcional.**
 8. **Slot SNES1.** Solde os dois pinos das pontas, confira se o slot está reto e assentado, depois o resto. A direção da etiqueta está nas setas `v v ETIQUETA v v` do silk; ver a pendência abaixo.
 9. **Pinos macho longos (85 posições) por último, com o shield encaixado no Mega**, que serve de gabarito de alinhamento:
