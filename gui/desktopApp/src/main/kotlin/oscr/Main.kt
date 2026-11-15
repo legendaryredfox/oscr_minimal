@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.FileDialog
@@ -66,6 +67,9 @@ private class FlashRequest(val file: File?, val job: FlashJob)
 
 /** Gravação do firmware do Arduino à espera da confirmação (substitui o programa da placa). */
 private class FirmwareRequest(val hex: File, val exe: String, val port: String)
+
+/** Gravação do firmware pedida pela escolha da placa (D162), à espera da confirmação: o que a placa precisa, o que falta e a imagem que será gravada. */
+private class BoardRequest(val profile: BoardProfile, val plan: BoardPlan, val port: String, val reasons: String)
 
 /** Gravação de ROM em flash à espera da confirmação (apaga o chip). */
 private class RomWriteRequest(val file: File, val chip: FlashChip, val image: RomImage, val limitWarn: String? = null)
@@ -137,6 +141,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var fpReq by remember { mutableStateOf<FlashRequest?>(null) }
     var fwHex by remember { mutableStateOf<File?>(null) }                // firmware do Arduino: .hex escolhido; null = a compilação do projeto
     var fwReq by remember { mutableStateOf<FirmwareRequest?>(null) }
+    var boardSpec by remember { mutableStateOf(Prefs.board.takeIf { sp -> runCatching { BoardPlanner.resolve(sp) }.isSuccess } ?: "") }   // placa ligada (D162); vazio = não informar
+    var boardReq by remember { mutableStateOf<BoardRequest?>(null) }
     var block369 by remember { mutableStateOf("0") }                    // GBA 369-in-1: bloco de 4 MB onde a gravação começa
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
@@ -269,6 +275,75 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (f != null) savePending(f)          // se cancelar, a leitura continua na memória, com o botão "Salvar como..."
     }
 
+    // ---- placa escolhida (D162): confere o firmware, grava o perfil e, se faltar suporte, pede confirmação para gravar o firmware certo
+    fun reasonText(r: Reason): String = when (r.code) {
+        "no_response" -> t(S.BOARD_R_NO_RESPONSE)
+        "missing_systems" -> f(S.BOARD_R_MISSING_SYSTEMS, r.params["systems"] ?: "")
+        "no_board" -> t(S.BOARD_R_NO_BOARD)
+        "no_image" -> t(S.BOARD_R_NO_IMAGE)
+        "not_newer" -> t(S.BOARD_R_NOT_NEWER)
+        else -> t(S.BOARD_R_SET_PROFILE)
+    }
+    fun reasonsText(rs: List<Reason>) = rs.joinToString("; ") { reasonText(it) }
+
+    /** Roda o plano da placa escolhida. `c`/`i` nulos = o Arduino não respondeu. Devolve true se a conexão pode seguir. */
+    suspend fun applyBoard(c: OscrClient?, i: DeviceInfo?): Boolean {
+        val profile = try { BoardPlanner.resolve(boardSpec) } catch (e: BoardException) { say(t(S.ERR_PREFIX) + ": " + e.message); return i != null }
+        val images = withContext(Dispatchers.IO) { BoardPlanner.loadImages(null) }
+        val st = if (c != null && i != null && i.boardProfile) withContext(Dispatchers.IO) { try { c.board() } catch (e: DeviceError) { null } } else null
+        val plan = BoardPlanner.plan(profile, i, st, images)
+        when (plan.action) {
+            BoardAction.NONE -> if (i != null) say(f(S.BOARD_OK, profile.label, i.firmware))
+            BoardAction.SET_PROFILE -> {
+                val ci = c!!
+                withContext(Dispatchers.IO) { ci.board(Board.SET, plan.profileFlags) }
+                val ni = withContext(Dispatchers.IO) { ci.info() }
+                info = ni; voltSt = if (ni.voltageSelect) withContext(Dispatchers.IO) { ci.voltage(Volt.STATUS) } else null
+                say(f(S.BOARD_PROFILE_SET, profile.label))
+            }
+            BoardAction.FLASH -> { boardReq = BoardRequest(profile, plan, port, reasonsText(plan.reasons)); return i != null }
+            BoardAction.UNSUPPORTED -> say(t(S.ERR_PREFIX) + ": " + f(S.BOARD_UNSUPPORTED, profile.label, reasonsText(plan.reasons)))
+        }
+        return i != null
+    }
+
+    /** Confirmado: solta a porta, grava a imagem, espera o Arduino reiniciar e confere de novo (grava o perfil se preciso). */
+    fun actBoardConfirmed(req: BoardRequest) {
+        run(S.STAGE_FLASHING_FW, needsCart = false) {
+            val img = req.plan.image ?: return@run
+            val exe = try { FirmwareFlash.findAvrdude(null) } catch (e: FirmwareException) { say(t(S.ERR_PREFIX) + ": " + t(S.FW_NO_AVRDUDE)); return@run }
+            dropConnection(null)
+            val (code, err) = withContext(Dispatchers.IO) {
+                FirmwareFlash.run(FirmwareFlash.command(exe, req.port, img.hex, true)) { label, pct -> stage = if (label == "writing") S.STAGE_FLASHING_FW else S.STAGE_VERIFYING_FW; progress = pct / 100f }
+            }
+            if (code != 0) { say(t(S.ERR_PREFIX) + ": " + f(S.FW_FAILED, err.ifEmpty { "código $code" })); return@run }
+            stage = S.STAGE_BOARD; progress = 0f
+            var opened: Triple<SerialTransport, OscrClient, DeviceInfo>? = null
+            for (attempt in 1..12) {                                              // o Mega reinicia: a porta some por um instante
+                delay(1000)
+                var x: SerialTransport? = null
+                try { opened = withContext(Dispatchers.IO) { val tx = SerialTransport(req.port, 1_000_000); x = tx; val cl = OscrClient(tx, 500); Triple(tx, cl, cl.info()) }; break }
+                catch (e: Exception) { x?.close() }
+            }
+            val got = opened
+            if (got == null) { say(t(S.ERR_PREFIX) + ": " + t(S.BOARD_FLASH_NO_ANSWER)); return@run }
+            val (tx, cl, ni) = got
+            transport = tx; client = cl; info = ni; baud = 1_000_000
+            val st = if (ni.boardProfile) withContext(Dispatchers.IO) { try { cl.board() } catch (e: DeviceError) { null } } else null
+            val again = BoardPlanner.plan(req.profile, ni, st, BoardPlanner.loadImages(null))
+            when (again.action) {
+                BoardAction.FLASH, BoardAction.UNSUPPORTED -> say(t(S.ERR_PREFIX) + ": " + f(S.BOARD_STILL_MISSING, req.profile.label, reasonsText(again.reasons)))
+                BoardAction.SET_PROFILE -> {
+                    withContext(Dispatchers.IO) { cl.board(Board.SET, again.profileFlags) }
+                    val ni2 = withContext(Dispatchers.IO) { cl.info() }
+                    info = ni2; voltSt = if (ni2.voltageSelect) withContext(Dispatchers.IO) { cl.voltage(Volt.STATUS) } else null
+                    say(f(S.BOARD_PROFILE_SET, req.profile.label))
+                }
+                BoardAction.NONE -> { voltSt = if (ni.voltageSelect) withContext(Dispatchers.IO) { cl.voltage(Volt.STATUS) } else null; say(f(S.BOARD_OK, req.profile.label, ni.firmware)) }
+            }
+        }
+    }
+
     // ---- ações
     fun actConnect() {
         run(S.STAGE_IDLE) {
@@ -287,10 +362,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     voltSt = if (i.voltageSelect) withContext(Dispatchers.IO) { c.voltage(Volt.STATUS) } else null
                     Prefs.port = port; Prefs.baud = baud; Prefs.firstRunDone = true; firstRun = false
                     say("${t(S.CONNECTED)}: ${t(S.DEVICE_INFO)} ${i.firmware}" + if (i.mock) " — ${t(S.MOCK_MODE)}" else "")
+                    if (boardSpec.isNotEmpty()) applyBoard(c, i)
                     return@run
                 } catch (e: TimeoutError) { last = e; tr?.close() }
                 catch (e: Exception) { tr?.close(); throw e }
             }
+            if (boardSpec.isNotEmpty()) { applyBoard(null, null); return@run }     // sem resposta: a placa escolhida pode mandar gravar o firmware (diálogo) ou explicar por que não dá
             throw last ?: TimeoutError()
         }
     }
@@ -725,6 +802,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
             }
             if (ports.isEmpty()) Callout(t(S.NO_PORTS), Tone.ERROR)
+            LabeledField(t(S.BOARD_LABEL)) {
+                ComboBox(value = boardSpec.takeIf { it.isNotEmpty() }?.let { runCatching { BoardPlanner.resolve(it).label }.getOrNull() } ?: t(S.BOARD_NONE), enabled = !connected && !busy, modifier = Modifier.fillMaxWidth()) { close ->
+                    DropdownMenuItem(text = { Text(t(S.BOARD_NONE)) }, onClick = { boardSpec = ""; Prefs.board = ""; close() })
+                    BoardPlanner.boards.forEach { b -> b.versions.keys.forEach { v ->
+                        DropdownMenuItem(text = { Text("${b.board} $v" + if (v == b.current) "  ★" else "") }, onClick = { boardSpec = "${b.board}@$v"; Prefs.board = boardSpec; close() })
+                    } }
+                }
+            }
+            Text(t(S.BOARD_HINT), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
             if (!connected) {
                 Button(enabled = port.isNotEmpty() && !busy, onClick = { actConnect() }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                     Text(if (lastMessage.startsWith(t(S.ERR_PREFIX)) && info == null && log.isNotEmpty()) t(S.RECONNECT) else t(S.CONNECT))
@@ -1068,6 +1154,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             text = { Text(if (req.file == null) f(S.FP_CONFIRM_ERASE, req.job.prgKb) else f(S.FP_CONFIRM_WRITE, req.file.name, "${req.job.rom.size / 1024} KB")) },
             confirmButton = { Button(onClick = { fpReq = null; actFpConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(if (req.file == null) S.FP_ERASE else S.FP_WRITE)) } },
             dismissButton = { OutlinedButton(onClick = { fpReq = null }) { Text(t(S.CANCEL)) } },
+        )
+    }
+
+    boardReq?.let { req ->
+        AlertDialog(
+            onDismissRequest = { boardReq = null; say(t(S.BOARD_CANCELLED)) },
+            title = { Text(f(S.BOARD_CONFIRM_TITLE, req.profile.label)) },
+            text = { Text(f(S.BOARD_CONFIRM_BODY, req.profile.label, req.reasons, req.plan.image?.firmwareStr ?: "", req.plan.image?.hex?.name ?: "", req.port)) },
+            confirmButton = { Button(onClick = { boardReq = null; actBoardConfirmed(req) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.BOARD_CONFIRM_YES)) } },
+            dismissButton = { OutlinedButton(onClick = { boardReq = null; say(t(S.BOARD_CANCELLED)) }) { Text(t(S.CANCEL)) } },
         )
     }
 
