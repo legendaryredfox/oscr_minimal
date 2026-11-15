@@ -58,9 +58,10 @@ object BoardPlanner {
         return BoardProfile(name, ver, b.slots, b.systems, sel)
     }
 
-    /** Onde procurar o manifest.tsv: a pasta dada vale sozinha; senão OSCR_FIRMWARE_DIR; senão `firmware/images` procurada da pasta atual para cima. */
+    /** Onde procurar o manifest.tsv: a pasta dada vale sozinha; senão OSCR_FIRMWARE_DIR; senão a `firmware/` do instalador; senão `firmware/images` procurada da pasta atual para cima. */
     fun imageDir(explicit: String?): File? {
         (explicit ?: System.getenv("OSCR_FIRMWARE_DIR"))?.let { return File(it.replaceFirst("~", System.getProperty("user.home") ?: "~")) }
+        AppResources.firmwareDir()?.let { return it }               // programa instalado: as imagens vêm no instalador (H-7)
         var d: File? = File(".").absoluteFile.normalize()
         while (d != null) { File(d, "firmware/images").takeIf { it.isDirectory }?.let { return it }; d = d.parentFile }
         return null

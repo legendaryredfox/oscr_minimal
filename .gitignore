@@ -44,3 +44,6 @@ tools/pic/shield_uno/hardware/fp-info-cache
 boards/*/hardware*/.history/
 test-results/
 firmware/images/
+
+# avrdude por sistema para o instalador (H-7): binários de terceiros, baixados à mão, ver docs/referencia/empacotamento.md
+gui/desktopApp/avrdude/

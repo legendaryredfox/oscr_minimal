@@ -9,7 +9,7 @@ class FirmwareException(val kind: String, message: String, val hint: String? = n
 /**
  * Gravação do firmware do fork (`firmware/oscr`) no Arduino Mega pela USB, com o avrdude (D131). Usada pela CLI (`firmware-flash`) e pela GUI.
  * O `.hex` vem de `given`, de OSCR_FIRMWARE_HEX ou da compilação do projeto (`firmware/oscr/.pio/build/<env>/firmware.hex`, procurada da pasta atual para cima);
- * o avrdude, de `given`, de AVRDUDE, do PATH ou do PlatformIO.
+ * o avrdude, de `given`, de AVRDUDE, do instalador, do PATH ou do PlatformIO. Instalado, o `.hex` sem a compilação do projeto vem do instalador (H-7).
  */
 object FirmwareFlash {
     const val DEFAULT_ENV = "SerialASCII"
@@ -22,9 +22,12 @@ object FirmwareFlash {
         return null
     }
 
+    /** O `.hex` que cobre mais sistemas entre os do instalador (a imagem "completa"), ou null fora do programa instalado. */
+    fun bundledHex(): File? = AppResources.firmwareDir()?.let { BoardPlanner.loadImages(it.path) }?.maxByOrNull { it.systems.size }?.hex
+
     fun findHex(given: String?, env: String = DEFAULT_ENV): File {
         val g = given ?: System.getenv("OSCR_FIRMWARE_HEX")
-        val f = if (g != null) File(g.replaceFirst("~", System.getProperty("user.home") ?: "~")) else projectHex(env) ?: File("firmware/oscr/.pio/build/$env/firmware.hex")
+        val f = if (g != null) File(g.replaceFirst("~", System.getProperty("user.home") ?: "~")) else projectHex(env) ?: bundledHex() ?: File("firmware/oscr/.pio/build/$env/firmware.hex")
         if (!f.isFile) throw FirmwareException("no_hex", "firmware file not found: ${f.path}", "use --hex FILE.hex, or build first: `cd firmware/oscr && pio run -e $env`", args = mapOf("path" to f.path, "env" to env))
         return f
     }
@@ -35,6 +38,7 @@ object FirmwareFlash {
             if (File(it).isFile || onPath(it) != null) return it
             throw FirmwareException("no_avrdude", "avrdude not found: $it", "check the path given in --avrdude", key = "fw.no_avrdude_given", args = mapOf("path" to it))
         }
+        AppResources.avrdude()?.let { return it.path }              // programa instalado: o avrdude vem no instalador (H-7)
         onPath("avrdude")?.let { return it }
         onPath("avrdude.exe")?.let { return it }
         val pio = File(System.getProperty("user.home") ?: ".", ".platformio/packages").listFiles { f -> f.name.startsWith("tool-avrdude") }
