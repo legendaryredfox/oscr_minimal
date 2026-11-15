@@ -54,6 +54,7 @@ object Cli {
                 "dump" -> cmdDump(io, a)
                 "save-read" -> cmdSaveRead(io, a)
                 "gbcamera" -> cmdGbCamera(io, a)
+                "save-convert" -> cmdSaveConv(io, a)
                 "identify" -> cmdIdentify(io, a)
                 "search" -> cmdSearch(io, a)
                 "rom-write" -> cmdRomWrite(io, a)

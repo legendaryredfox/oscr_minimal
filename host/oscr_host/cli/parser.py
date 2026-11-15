@@ -8,10 +8,12 @@ import sys
 
 from .. import protocol as P
 from .. import romimage as RI
+from .. import saveconv as SC
 from .. import __version__
 from . import messages
 from .cmd_db import cmd_identify, cmd_search
 from .cmd_gbcamera import cmd_gbcamera
+from .cmd_saveconv import cmd_saveconv
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
 from .cmd_board import cmd_board, cmd_boards
@@ -133,6 +135,9 @@ def build_parser() -> argparse.ArgumentParser:
     gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
     gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))
     gp.add_argument("--all", action="store_true", help=H("gbcamera_all"))
+    cp = add("save-convert", cmd_saveconv, H("cmd_saveconv"), system=False, out=True, inp=True)
+    cp.add_argument("--op", required=True, choices=SC.OPS, help=H("saveconv_op"))
+    cp.add_argument("--fill", default="0xFF", metavar="BYTE", help=H("saveconv_fill"))
     ip = add("identify", cmd_identify, H("cmd_identify"))
     ip.add_argument("files", nargs="+", help=H("identify_files"))
     sp_ = add("search", cmd_search, H("cmd_search"), system=False)
