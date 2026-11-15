@@ -51,7 +51,8 @@ Placa atual: shield **100% THT** para **Arduino Mega 2560 (tamanho normal, R3)**
 │   │   ├── fab/              # gerbers-<versão>/, bom-<versão>.csv e um zip por versão para a JLCPCB
 │   │   └── docs/             # pinmap.md (FONTE DA VERDADE da placa), bom.md, montagem.md
 │   ├── 8_bits/               # NES, Famicom e Master System (v1.0 mínima com fusível, v1.1 com seletor de tensão; D153)
-│   ├── gb_gba/               # esqueleto: GB, GBC, GBA
+│   ├── gb_gba/               # GBA; GB e GBC por adaptador (v1.0, 3,3 V)
+│   ├── snes/ nes/ famicom/ famicom_nes/ megadrive/ megadrive_sms/ n64/   # placas de um ou dois sistemas (versão atual de cada uma em boards/versoes.json)
 │   └── completa/             # SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA (v1.0 mínima com fusível, v1.1 com seletor de tensão; D156)
 ├── docs/                     # docs gerais (valem para todas as placas)
 │   ├── continuacao.md        # estado atual, como retomar, pendências (ler logo depois deste arquivo)

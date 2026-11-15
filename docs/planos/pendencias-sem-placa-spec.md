@@ -1,6 +1,6 @@
 # Spec: pendências que não precisam de placa em mãos
 
-Data: 2026-11-14. Estado: **proposta, aguardando confirmação do usuário** (itens marcados `DECIDIR`). Plano de execução: `docs/planos/pendencias-sem-placa-plano.md`.
+Data: 2026-11-14. Estado (2026-11-14): **aprovada**; o usuário delegou as decisões D-B a D-E ("pode decidir conforme achar melhor") e decidiu D-A. **Onda 0 do plano feita** (D161). Plano de execução: `docs/planos/pendencias-sem-placa-plano.md`.
 
 Origem: levantamento de `docs/continuacao.md`, `docs/referencia/funcoes-oscr.md`, `docs/historico/pesquisa-comunidade.md` (P-01 a P-17), D160 e os planos em `docs/planos/`.
 
@@ -38,14 +38,15 @@ Fechar tudo o que pode ser **escrito, compilado e testado no PC** sem uma placa 
 
 `SerialASCII` já usa **194.466 B de flash (76,6 %)** e 4.129 B de RAM (50,4 %) com N64, SMS, flash e selftest ligados. Sobram cerca de **59 KB**; `HAS_FLASH` sozinho custou ~27 KB. Os núcleos pendentes (SF Memory, Satellaview, Sufami Turbo, GPRAM, Test RAM, flash repro do N64, mais mappers do NES, Sega CD, RTC, GB Smart, NPower etc.) provavelmente **não cabem juntos**.
 
-**Requisito:** antes de ligar qualquer núcleo novo, existe um **orçamento medido** e um mecanismo para não estourar:
+**Decisão do usuário (2026-11-14): imagem única primeiro; variantes só se for impossível caber tudo.** O firmware completo (`SerialASCII`) continua sendo o alvo. Só se a medição provar que um núcleo não cabe junto dos outros é que ele entra numa variante separada. Em qualquer caso, **o programa grava a variante certa sozinho** quando o usuário escolhe uma placa e o firmware que está no Arduino não dá suporte ao que a placa precisa.
 
-- **F-0a. Imagens por placa.** Um ambiente PlatformIO por placa (`Board_<placa>`), gerado de `boards/versoes.json`, ligando só os sistemas que os slots daquela placa têm. A `completa` é o caso difícil.
-- **F-0b. Capacidades no `INFO`.** O firmware informa que sistemas e recursos tem; CLIs e GUI escondem ou desabilitam o que a imagem gravada não traz (hoje o `INFO` já tem bits, o bit 6 é o `SELFTEST`).
-- **F-0c. `firmware-flash` escolhe o `.hex` pela placa** e avisa se a imagem gravada não tem o sistema pedido.
-- **F-0d. Relatório de tamanho no teste** (`tools/` + etapa no `pio`): falha se alguma imagem passar de 95 % do flash ou 80 % da RAM (a pilha precisa de folga).
+- **F-0a. Medir antes de decidir.** Tabela "sistema → B de flash e de RAM" medida com `pio run`, ligando um núcleo por vez. Cada núcleo novo é medido antes de entrar.
+- **F-0b. Capacidades no `INFO`.** O firmware informa os sistemas e recursos que tem (hoje o `INFO` já tem bits; o bit 6 é o `SELFTEST`). Firmware antigo sem os bits: o PC assume o que existia até então.
+- **F-0c. Troca automática de firmware.** O PC conhece, por placa (`boards/versoes.json`), quais sistemas e recursos ela precisa. Ao escolher a placa (combo da GUI, `--board` na CLI), compara com as capacidades do `INFO`. Se faltar algo, escolhe a menor imagem que cobre a placa e grava com o `firmware-flash` (avrdude, já existente). Antes de gravar, **pede confirmação** (diálogo na GUI; `--yes` ou `--auto-flash` na CLI), porque gravar apaga o firmware atual e reinicia o Mega. Depois de gravar, lê o `INFO` de novo e confere. Se não houver imagem que cubra a placa, avisa e não grava.
+- **F-0d. Imagens.** Enquanto couber tudo, existe uma imagem só e a F-0c apenas grava o firmware ausente ou antigo. Variantes (`Board_<placa>` ou `Sistemas_<grupo>`) só são criadas se o teste de orçamento falhar; elas ficam em `firmware/oscr/` e o `.hex` de cada uma é embutido (H-7).
+- **F-0e. Relatório de tamanho no teste** (`tools/check_flash_budget.py`): falha se alguma imagem passar de 95 % do flash ou 80 % da RAM (a pilha precisa de folga).
 
-`DECIDIR` D-A: aceitar o caminho acima (uma imagem por placa) ou preferir cortar funções de uma imagem única.
+Decisão D-A: **resolvida** como acima (a recomendação de "uma imagem por placa" da primeira versão desta spec foi trocada).
 
 ## 4. Itens (cada um com critério de aceitação)
 
@@ -55,11 +56,11 @@ Legenda de tamanho: S = menos de um dia, M = 1 a 3 dias, L = mais de 3 dias. "N�
 
 | Id | Item | Aceitação | Tam. |
 |---|---|---|---|
-| F-0a..d | Orçamento de flash (seção 3) | uma imagem por placa compila; `INFO` traz as capacidades; hex certo por placa; teste de tamanho falha ao estourar | M |
-| H-0 | Simulador com dispositivo falso na CLI Kotlin (falta hoje) | teste da recusa de 2 MiB (D157) e dos novos comandos na CLI Kotlin | S |
-| H-0b | Testes de GUI sem hardware: Xvfb + `SimDevice`, janela estreita, diálogos, base de dados, busca NES | script `tools/gui_smoke.sh` gera capturas e falha se a janela não abrir | M |
+| F-0a..e | Orçamento de flash e troca automática de firmware (seção 3) | tabela medida; `INFO` traz as capacidades; escolher a placa na GUI ou `--board` na CLI grava a imagem que cobre a placa, com confirmação; teste de tamanho falha ao estourar | M |
+| H-0 | ~~Dispositivo falso na CLI Kotlin~~ **já existe** (`SimDevice`, `MdBoardLimitCliTest`, D157); a nota "não há dispositivo falso lá" estava defasada | nada a fazer | feito |
+| H-0b | **Feito (D161)** `tools/gui_smoke.sh` (janela larga e estreita, captura não em branco; ainda não cobre diálogos, base de dados nem busca do NES). Testes de GUI sem hardware: Xvfb + `SimDevice`, janela estreita, diálogos, base de dados, busca NES | script `tools/gui_smoke.sh` gera capturas e falha se a janela não abrir | M |
 
-### 4.2 Protocolo e comandos novos (mudam protocolo e firmware; `DECIDIR` D-B)
+### 4.2 Protocolo e comandos novos (mudam protocolo e firmware; D-B (decidida))
 
 | Id | Item | Aceitação | Tam. |
 |---|---|---|---|
@@ -86,7 +87,7 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 | F-19 | N64: gravar ROM em flash repro (`flashRepro`), Gameshark, Xplorer 64 | `N64.cpp` | M |
 | F-20 | Outros sistemas (os 41 stubs: Atari, PC Engine, WonderSwan, MSX etc.) | um núcleo por sistema | L, em lotes |
 
-`DECIDIR` D-C: a F-20 é a maior e a que mais gasta flash. Proposta: **só** os sistemas que cabem nos slots das placas existentes (via adaptador do slot SNES ou GBA) e só como um lote por vez; o restante fica registrado como "precisa de adaptador próprio".
+D-C (decidida): a F-20 é a maior e a que mais gasta flash. Proposta: **só** os sistemas que cabem nos slots das placas existentes (via adaptador do slot SNES ou GBA) e só como um lote por vez; o restante fica registrado como "precisa de adaptador próprio".
 
 ### 4.4 PC: CLIs, GUI e empacotamento
 
@@ -95,27 +96,27 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 | H-2 | Link do NESCartDB na GUI e nota em `limites-nes.md` (P-10) | link abre; texto nos 4 idiomas | S |
 | H-3 | Baud intermediário de 500000 no fallback (P-14) | CLI e GUI tentam 1.000.000, 500000, 115200; teste com porta falsa | S |
 | H-4 | Aviso e checagem: `-s auto` e `detect` sugerem o sistema certo para adaptadores 3,3 V (P-16) | `tools/check_adaptadores.py` cruza adaptadores da pesquisa com `boards/*/docs/pinmap.md` e lista conflitos | M |
-| H-5 | Guia passo a passo: conferir ru e zh (arquivos já existem; a nota da D157 está desatualizada) e travar a paridade | `test_docs_sync` compara títulos e números de passos nos 4 | S |
+| H-5 | **Feito (D161)** `host/tests/test_guia_sync.py`. Guia passo a passo: conferir ru e zh (arquivos já existem; a nota da D157 está desatualizada) e travar a paridade | `test_docs_sync` compara títulos e números de passos nos 4 | S |
 | H-6 | Empacotamento: `.deb` e AppImage geráveis aqui; **dmg e msi só em runner macOS e Windows** | `.deb` e AppImage embutem `.hex` por placa e o avrdude; dmg e msi com receita pronta e não testada | L |
-| H-7 | Embutir `.hex` e avrdude no instalador (resto do `firmware-flash`) | `firmware-flash` funciona sem PlatformIO instalado, no simulador do bootloader | M |
+| H-7 | Embutir os `.hex` (imagem completa e variantes, se existirem) e o avrdude no instalador; o arquivo do firmware que o usuário já tem é só uma segunda opção | `firmware-flash` e a troca automática da F-0c funcionam sem PlatformIO instalado, no simulador do bootloader | M |
 
-`DECIDIR` D-D: dmg e msi precisam de CI com runner macOS e Windows. O GitHub está bloqueado por cobrança. Alternativas: Codeberg (Forgejo Actions, runners próprios) ou deixar só as receitas.
+D-D (decidida): dmg e msi precisam de CI com runner macOS e Windows. O GitHub está bloqueado por cobrança. Alternativas: Codeberg (Forgejo Actions, runners próprios) ou deixar só as receitas.
 
 ### 4.5 Hardware sem tocar em hardware (KiCad, scripts)
 
 | Id | Item | Aceitação | Tam. |
 |---|---|---|---|
-| K-1 | Verificação automática de todas as placas e versões: ERC, DRC (sem ligação aberta), `check_netlist --board`, SHA-256 dos zips contra `PEDIDO.md`, silk em pt-BR, versões em `versoes.json` | `tools/check_all_boards.sh` roda tudo e lista ligações abertas (as da `famicom_nes` v1.1 e `16_bits` v1.3 da D139); sai com 1 se algo estiver errado | M |
-| K-2 | Fechar à mão as ligações abertas que o K-1 achar (com confirmação do usuário antes de qualquer `delete_*` do MCP) | DRC sem ligação aberta nas placas atuais | M |
+| K-1 | **Feito (D161)** `tools/check_all_boards.py`. Verificação automática de todas as placas e versões: ERC, DRC (sem ligação aberta), `check_netlist --board`, SHA-256 dos zips contra `PEDIDO.md`, silk em pt-BR, versões em `versoes.json` | `tools/check_all_boards.py` roda tudo e lista ligações abertas (as da `famicom_nes` v1.1 e `16_bits` v1.3 da D139); sai com 1 se algo estiver errado | M |
+| K-2 | **Sem trabalho:** o K-1 não achou nenhuma ligação aberta (as da D139 já estavam fechadas). Fechar à mão as ligações abertas que o K-1 achar (com confirmação do usuário antes de qualquer `delete_*` do MCP) | DRC sem ligação aberta nas placas atuais | M |
 | K-3 | Estimar a corrente do U3 (MCP1700, 250 mA) com GBA e N64 a partir de folhas de dados e medidas publicadas | cálculo em `docs/historico/`; **a medição fica para a bancada** | S |
-| K-4 | Atualizar o resumo de `boards/README.md` e `CLAUDE.md` seção 2 (`gb_gba` ainda aparece como esqueleto) | texto bate com `boards/versoes.json` | S |
+| K-4 | **Feito (D161)**. Atualizar o resumo de `boards/README.md` e `CLAUDE.md` seção 2 (`gb_gba` ainda aparece como esqueleto) | texto bate com `boards/versoes.json` | S |
 
 ### 4.6 Documentação e pesquisa
 
 | Id | Item | Aceitação | Tam. |
 |---|---|---|---|
-| D-1 | Reescrever `docs/continuacao.md`: hoje tem 300 linhas em ordem cronológica inversa, seções 2 a 5 descrevem o firmware arquivado e há texto defasado (o SMS **já está ligado**, `sms = true`; o guia em ru e zh já existe) | arquivo curto: estado, como retomar, pendências; história vai para `docs/historico/` | M |
-| D-2 | Registrar **D159** (ordem de encomenda, etiqueta do SMS, furos no Mega, R2/U3 do N64) **somente depois da confirmação do usuário** | entrada em `decisoes.md` | S |
+| D-1 | **Feito (D161)**. Reescrever `docs/continuacao.md`: hoje tem 300 linhas em ordem cronológica inversa, seções 2 a 5 descrevem o firmware arquivado e há texto defasado (o SMS **já está ligado**, `sms = true`; o guia em ru e zh já existe) | arquivo curto: estado, como retomar, pendências; história vai para `docs/historico/` | M |
+| D-2 | **Feito (D159)**. Registrar **D159** (ordem de encomenda, etiqueta do SMS, furos no Mega, R2/U3 do N64) **somente depois da confirmação do usuário** | entrada em `decisoes.md` | S |
 | D-3 | P-15: acompanhar `oscartreader/oscr-firmware` e trazer correções do upstream para o fork | diff do topo atual contra `d9cb26a`; lista do que vale trazer; nada aplicado sem OK | M |
 | D-4 | PC-1 a PC-6: pesquisar de novo Little Jammer, Little Jammer Pro, Super A'Can, SF Memory, Pocket Challenge W, PV-1000 **e conferir nos repositórios** o que hoje é só resumo de busca | `docs/planos/placas-cartuchos-...md` com fonte e licença conferidas | M |
 | D-5 | P-09 (Mega Drive: PAL, Codemasters, EEPROM só em originais) conferido contra `MegaDrive.cpp` | tabela "tratado / não tratado" em `limites-md.md` (novo) | S |
@@ -125,11 +126,11 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 
 | Id | Pergunta | Recomendação |
 |---|---|---|
-| D-A | Uma imagem de firmware por placa? | Sim; é a única forma de caber F-10 a F-19 |
-| D-B | Aprovar os campos novos do protocolo (PROGRESSO, tipo SNES, clock-cal)? Antes de adicionar, perguntar (regra da D160) | Aprovar F-1 e F-2 já; F-3 por último |
-| D-C | Escopo da F-20 (41 sistemas) | Só os que cabem em slots existentes, um lote por vez |
-| D-D | Onde rodar o CI para dmg e msi | Receita pronta agora; CI depois |
-| D-E | Registrar D159 como está na `continuacao.md`? | Sim, se concorda com a ordem de encomenda |
+| D-A | ~~Uma imagem por placa?~~ **Resolvida pelo usuário:** imagem única; variantes só se não couber; troca automática ao escolher a placa | feito |
+| D-B | Campos novos do protocolo (PROGRESSO, tipo SNES, clock-cal) | **Decidido:** aprovados; F-1 e F-2 primeiro, F-3 por último. Cada campo é documentado em `protocolo.md` antes de implementar |
+| D-C | Escopo da F-20 (41 sistemas) | **Decidido:** só os que cabem em slots existentes, um lote por vez |
+| D-D | Onde rodar o CI para dmg e msi | **Decidido:** receita pronta agora, marcada não testada; CI depois |
+| D-E | Registrar D159 | **Feito** (D159 em `decisoes.md`) |
 
 ## 6. Riscos
 

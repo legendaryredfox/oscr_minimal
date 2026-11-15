@@ -10,28 +10,31 @@ Data: 2026-11-14. Spec (itens, aceitação, decisões): `docs/planos/pendencias-
 - **Ordem dentro de cada item:** protocolo documentado → `oscr_proto.h` → costura do firmware → `pc-tests` → Python → Kotlin (CLI e GUI, 4 idiomas) → simuladores → docs.
 - **Sem hardware, sem afirmar.** Toda entrada termina com "nada rodou em hardware".
 
-## Onda 0: organizar o terreno (sem mudar firmware)
+## Onda 0: organizar o terreno (sem mudar firmware) — FEITA em 2026-11-14 (D161)
 
-Barata, reduz o risco das outras. Pode começar já.
+Feita: itens 1 a 6 abaixo, com K-2 sem trabalho (nenhuma ligação aberta). Fica de fora, por ser maior, a parte de diálogos, base de dados e busca do NES no `gui_smoke.sh`.
 
 1. **D-1** reescrever `docs/continuacao.md` (estado, retomada, pendências; história para `docs/historico/continuacao-2026-11.md`). Corrige o que está defasado: SMS ligado, guia ru e zh existentes.
 2. **K-4** corrigir `CLAUDE.md` seção 2 e `boards/README.md` contra `boards/versoes.json`.
-3. **K-1** `tools/check_all_boards.sh` (ERC, DRC, `check_netlist`, SHA-256 dos zips, silk em pt-BR) e rodar uma vez; o resultado vira a lista real de ligações abertas.
-4. **H-0** dispositivo falso na CLI Kotlin e **H-0b** `tools/gui_smoke.sh` (Xvfb + simulador).
+3. **K-1** `tools/check_all_boards.py` (ERC, DRC, `check_netlist`, SHA-256 dos zips, silk em pt-BR) e rodar uma vez; o resultado vira a lista real de ligações abertas.
+4. **H-0b** `tools/gui_smoke.sh` (Xvfb + simulador). H-0 (dispositivo falso na CLI Kotlin) já existia.
 5. **H-5** paridade do guia nos 4 idiomas no `test_docs_sync`.
 6. **D-2** D159: só depois de o usuário confirmar o texto.
 
 Saída: `continuacao.md` curto, relatório de todas as placas, testes de CLI e GUI sem hardware. Nenhuma decisão de protocolo.
 
-## Onda 1: orçamento de flash (bloqueia a Onda 4)
+## Onda 1: orçamento de flash e troca automática de firmware (bloqueia a Onda 4)
 
-1. Medir cada sistema: `pio run` com um sistema ligado por vez, tabela "sistema → B de flash e RAM" em `docs/referencia/fork-oscr.md`.
-2. **F-0a** ambientes `Board_<placa>` gerados de `boards/versoes.json` (script em `firmware/oscr/scripts/`), cada um com `[cores]` próprio. `SerialASCII` continua como imagem completa.
-3. **F-0b** bits de capacidade no `INFO` (sistemas e recursos); host e GUI desabilitam o que a imagem não traz. Compatível com firmware antigo: sem os bits, assume o que existe hoje.
-4. **F-0c** `firmware-flash` escolhe o `.hex` pela placa e confere o `INFO` depois de gravar.
-5. **F-0d** `tools/check_flash_budget.py`: falha acima de 95 % de flash ou 80 % de RAM por imagem; entra no `pio` e no resumo de testes.
+Regra do usuário (2026-11-14): imagem única sempre que couber; variantes só se for impossível.
 
-Saída: tabela de orçamento, uma imagem por placa, capacidade visível no PC. **Gate:** nenhuma onda de núcleo começa sem esta tabela. Decisão D-A confirmada antes.
+1. **Medir** (F-0a): `pio run` com um sistema ligado por vez; tabela "sistema → B de flash e RAM" em `docs/referencia/fork-oscr.md`. Medir também a imagem completa de hoje (`SerialASCII`).
+2. **Capacidades** (F-0b): bits no `INFO` com sistemas e recursos; firmware antigo sem os bits = o que existia.
+3. **Mapa placa → necessidades** em `boards/versoes.json` (ou arquivo vizinho): sistemas por placa, lido por Python e Kotlin (um só arquivo, com teste de paridade).
+4. **Troca automática** (F-0c): GUI (combo de placa, diálogo de confirmação, barra de progresso) e CLI (`--board`, `--yes`/`--auto-flash`) gravam a imagem que cobre a placa pelo `firmware-flash`, conferem o `INFO` depois e recusam se nenhuma imagem cobre. Testado com o simulador do bootloader e o `SimDevice`, **sem Mega real**.
+5. **Variantes** (F-0d) só se a medição mostrar que a imagem completa não comporta o plano da Onda 4. Nesse caso o teste de orçamento (F-0e) indica quais núcleos saem da imagem completa e quais variantes nascem.
+6. **Teste de orçamento** (F-0e): `tools/check_flash_budget.py`, falha acima de 95 % de flash ou 80 % de RAM.
+
+Saída: tabela medida, capacidades visíveis, troca automática funcionando contra o simulador. **Gate:** nenhuma onda de núcleo começa sem esta tabela.
 
 ## Onda 2: protocolo e comandos novos (após D-B)
 
@@ -47,7 +50,7 @@ Saída: protocolo versionado com testes de compatibilidade (host novo + firmware
 
 ## Onda 3: PC, empacotamento e pesquisa (paralela à 2)
 
-1. **H-7** embutir `.hex` por placa e avrdude no instalador; teste com o simulador do bootloader.
+1. **H-7** embutir os `.hex` (imagem completa e variantes, se houver) e avrdude no instalador; teste com o simulador do bootloader.
 2. **H-6** `.deb` e AppImage gerados nesta máquina; receitas de dmg e msi escritas, **marcadas como não testadas** até haver runner (D-D).
 3. **H-4** `tools/check_adaptadores.py`.
 4. **D-3** diff do upstream `oscr-firmware` contra `d9cb26a` e lista do que trazer.
@@ -71,7 +74,7 @@ Em cada item: ler o menu do OSCR, mapear os `case`/`_clk`/pinos contra `boards/*
 
 ## Onda 5: fechamento
 
-1. Rodar a suíte completa e `tools/check_all_boards.sh`.
+1. Rodar a suíte completa e `tools/check_all_boards.py`.
 2. Atualizar `docs/referencia/cobertura-testes.md`.
 3. Atualizar `continuacao.md` (D-1) com o que sobrou: só o que depende de placa, cartucho, medição, falante nativo ou CI.
 4. Entrada final em `decisoes.md` com a lista "o que rodou em hardware: nada" e o roteiro de bancada na ordem de risco do `uso.md` seção 7.
@@ -87,7 +90,7 @@ Onda 0 ──► Onda 1 ──► Onda 4 ──► Onda 5
 
 ## Primeira entrega proposta (cabe numa sessão)
 
-Onda 0 inteira, menos D-2: `continuacao.md` enxuto, `check_all_boards.sh` com o relatório, teste de CLI Kotlin com dispositivo falso e smoke da GUI. Sem mudança de protocolo, firmware nem hardware, então não pede aprovação de D-A a D-E.
+Onda 0 inteira, menos D-2: `continuacao.md` enxuto, `check_all_boards.py` com o relatório, teste de CLI Kotlin com dispositivo falso e smoke da GUI. Sem mudança de protocolo, firmware nem hardware, então não pede aprovação de D-A a D-E.
 
 ## Critério de encerramento do plano
 

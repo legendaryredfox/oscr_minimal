@@ -7,6 +7,8 @@ Scripts de apoio ao hardware. Todos rodam a partir da raiz do repositório. Os g
 | Script | Para quê | Precisa de |
 |---|---|---|
 | `check_netlist.py` | Confere a netlist do esquemático com `boards/<placa>/docs/pinmap.md` (`--board <placa>`: `16_bits`, `megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`; na `16_bits` v. 1.2 vêm C5, C6, TPs e D50) (nets, VCC no 5V, GND). **Rode ao fim das fases 3 e 5.** Sai com código 1 se algo diverge. | `kicad-cli` 10 no PATH, Python 3.11 |
+| `check_all_boards.py` | Verifica **todas as placas e versões** de uma vez (K-1, D161): ERC e DRC com paridade pelo `kicad-cli` (falha com ligação aberta, curto, folga, via solta, peça faltando), silk obrigatório (CC BY 4.0, versão, lado da etiqueta, "UM CARTUCHO POR VEZ"), e na versão atual de cada placa a netlist (`check_netlist.py`), README, renders, gerbers, BOM e o SHA-256 do zip contra o `PEDIDO.md`. `--board <placa>`, `--no-drc` (rápido), `--json`, `-j N`. Cerca de 90 s para as 22 versões. | `kicad-cli` 10, Python 3.11 |
+| `gui_smoke.sh` | Abre a GUI num display virtual (Xvfb `:97`), confere que a janela aparece e não está em branco em largura normal e estreita e guarda as capturas (H-0b, D161). Sem placa e sem tela. | Xvfb, xdotool, ImageMagick, Java |
 | `gen_pinmap.py` | Gera `boards/16_and_8_bits/docs/pinmap.md` a partir do clone do OSCR em `vendor/oscr/` (não versionado; ver o README da raiz para recriar). | `vendor/oscr/`, Python 3.11 |
 | `build_lib.py` | Gera os símbolos e footprints de `boards/_lib/` (slots do OSCR, Mega R3, Si5351). | Python 3.11 |
 | `gen_connections.py`, `sync_net_names.py` | Geram e sincronizam as ligações e nomes de net do esquemático. | Python 3.11 |

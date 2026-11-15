@@ -38,6 +38,6 @@ boards/<variante>/
 └── docs/            # pinmap.md, bom.md, montagem.md da variante
 ```
 
-As tabelas de bibliotecas apontam para `${KIPRJMOD}/../../_lib/`. Pinagem idêntica ao OSCR HW5 continua regra de ouro (`CLAUDE.md`, seção 3). Uma variante nova nasce copiando o esqueleto e gerando o próprio `docs/pinmap.md`; `tools/check_netlist.py` aceita `--board <pasta>` e `tools/export_fab.sh <pasta> <versão>` gera os arquivos da fábrica; `gen_pinmap.py` e os demais scripts gerais de `tools/` apontam para `16_and_8_bits/`. As placas de um sistema só têm scripts próprios em `tools/<placa>/` (receita completa em `boards/nes/README.md` e na D96).
+As tabelas de bibliotecas apontam para `${KIPRJMOD}/../../_lib/`. Pinagem idêntica ao OSCR HW5 continua regra de ouro (`CLAUDE.md`, seção 3). Uma variante nova nasce copiando o esqueleto e gerando o próprio `docs/pinmap.md`; `tools/check_netlist.py` aceita `--board <pasta>` e `tools/export_fab.sh <pasta> <versão>` gera os arquivos da fábrica; `gen_pinmap.py` e os demais scripts gerais de `tools/` apontam para `16_and_8_bits/`. As placas de um sistema só têm scripts próprios em `tools/boards/<placa>/` (receita completa em `boards/nes/README.md` e na D96).
 
 Todas as placas novas (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`, `n64`) e as v1.1 foram roteadas por autoroteador (na v1.1, o roteamento inteiro foi refeito) e **não foram revisadas à mão no KiCad**; nenhuma foi encomendada, montada ou testada com cartucho.
