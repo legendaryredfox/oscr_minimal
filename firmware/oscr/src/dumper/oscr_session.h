@@ -135,6 +135,7 @@ class Session {
   void send(uint8_t type, uint8_t seq, const uint8_t* payload, uint16_t len);
   void send_error(uint8_t seq, uint16_t code, const char* text = "");
   void send_offset(uint8_t type, uint8_t seq, uint32_t off);
+  void send_stage(uint8_t seq, uint8_t stage, uint32_t off, uint32_t total);   // PROGRESSO com etapa (F-1)
   void handle();
   void do_info(uint8_t seq);
   void do_detect(uint8_t seq, uint8_t sys);

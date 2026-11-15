@@ -198,6 +198,11 @@ static void test_erase_e_detect_com_opcoes() {
     if (d.type == T_ERRO && d.seq == 5 && get_u16(d.payload()) == E_ARGUMENTO) err5 = true;
   }
   CHECK(det_ok && ack2 && err3 && err4 && err5);
+  // F-1: ERASE avisa a etapa (seq 2 e 3) antes de bloquear; comando recusado antes do trabalho (seq 4 e 5) não avisa
+  int st[6] = {0};
+  Decoder d2(dbuf, sizeof dbuf);
+  for (uint8_t b : out) if (d2.push(b) && d2.type == T_PROGRESSO && d2.len == 9 && d2.seq < 6 && d2.payload()[8] == STAGE_ERASE) st[d2.seq]++;
+  CHECK(st[2] == 1 && st[3] == 1 && st[4] == 0 && st[5] == 0);
 }
 
 // ---- VOLT: seletor de tensão dos slots (D138); o 5V fica sempre ligado (D139)
@@ -223,11 +228,15 @@ struct VoltRun {
        [](void* x) { return lnow(((C*)x)->l); }},
     s(io, be, rx, sizeof rx, tx, sizeof tx) {}
   uint8_t seq = 0;
-  // envia um comando e devolve o quadro de resposta (tipo e payload)
+  uint8_t stage = 0xFF;   // etapa do último PROGRESSO que veio antes da resposta (0xFF = nenhum)
+  // envia um comando e devolve o quadro de resposta (tipo e payload); os PROGRESSO (F-1) ficam em `stage`
   bool ask(uint8_t type, const uint8_t* pl, uint16_t n, uint8_t& rtype, std::vector<uint8_t>& rp) {
-    out.clear(); seq++; l.cur_seq = seq; l.host_send(type, pl, n); s.poll();
+    out.clear(); seq++; stage = 0xFF; l.cur_seq = seq; l.host_send(type, pl, n); s.poll();
     uint8_t dbuf[128]; Decoder d(dbuf, sizeof dbuf);
-    for (uint8_t b : out) if (d.push(b) && d.seq == seq) { rtype = d.type; rp.assign(d.payload(), d.payload() + d.len); return true; }
+    for (uint8_t b : out) if (d.push(b) && d.seq == seq) {
+      if (d.type == T_PROGRESSO) { if (d.len == 9) stage = d.payload()[8]; continue; }
+      rtype = d.type; rp.assign(d.payload(), d.payload() + d.len); return true;
+    }
     return false;
   }
 };
@@ -315,6 +324,7 @@ static void test_selftest() {
   VoltRun s(ok);
   CHECK(s.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && (p[4] & 64));
   CHECK(s.ask(T_SELFTEST, nullptr, 0, t, p) && t == T_SELFTEST_RESP && p.size() == 2 && p[0] == 0 && p[1] == 0 && ok.calls == 1);
+  CHECK(s.stage == STAGE_SELFTEST);                                                               // F-1: avisa a etapa antes do trabalho longo
 
   SelfBackend bad; bad.items = 3;                                                                 // três achados: GND no pino 22 e dois pares
   VoltRun b(bad);

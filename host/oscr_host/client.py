@@ -31,6 +31,7 @@ class Client:
         self.timeout, self.long_timeout, self.retries = timeout, long_timeout, retries
         self._seq = 0
         self._queue: list[P.Frame] = []
+        self.on_stage: Optional[Callable[[int, int, int], None]] = None   # F-1: (etapa, offset, total) do PROGRESSO do firmware
 
     # ---------------------------------------------------------------- baixo nível
     def _next_seq(self) -> int:
@@ -65,9 +66,23 @@ class Client:
                     break
                 if f.type == P.T_ERRO:
                     raise P.parse_error(f.payload)
+                if f.type == P.T_PROGRESSO:
+                    self._stage(f)
+                    continue
                 if f.type in expect and (accept is None or accept(f)):
                     return f
         raise TimeoutError_(f"sem resposta ao comando 0x{type_:02X}")
+
+    def _stage(self, f: P.Frame) -> None:
+        """PROGRESSO: avisa a etapa (apagando, gravando...) a quem escuta; um quadro torto não derruba o comando."""
+        if self.on_stage is None:
+            return
+        try:
+            off, total, stage = P.parse_progress(f.payload)
+        except P.ProtocolError:
+            return
+        if stage != P.STAGE_NONE:
+            self.on_stage(stage, off, total)
 
     # ---------------------------------------------------------------- comandos
     def info(self) -> dict:
@@ -158,7 +173,9 @@ class Client:
                 raise P.parse_error(f.payload)
             elif f.type == P.T_BEGIN:
                 self._send(P.T_ACK, P.build_offset(0), seq)
-            # T_PROGRESSO e outros: ignorados
+            elif f.type == P.T_PROGRESSO:
+                self._stage(f)
+            # outros tipos: ignorados
 
     def dump_rom(self, system: int, block: int = 0, progress: Optional[Progress] = None,
                  mapper: int = 0, prg_kb: int = 0, chr_kb: int = 0) -> DumpResult:

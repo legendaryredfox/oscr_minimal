@@ -224,11 +224,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         scope.launch {
             val started = System.currentTimeMillis()
             busy = true; progress = 0f; speed = ""; stage = stageKey
+            client?.onStage = { st, _, _ -> if (st == Proto.STAGE_ERASE) stage = S.STAGE_ERASING else if (st == Proto.STAGE_WRITE || st == Proto.STAGE_READ) stage = stageKey }     // F-1: o firmware avisa que apaga antes de bloquear; depois volta à etapa da operação
             try { if (needsCart && stageKey != S.STAGE_IDLE) ensureVoltage(stageKey); block() } catch (e: Exception) {
                 say(describeError(lang, e))
                 if ((e is ProtocolError && e.fail == Fail.DISCONNECTED) || transport?.isOpen == false) { dropConnection(null); say(t(S.STATUS_DISCONNECTED)) }
             } finally {
-                busy = false; stage = null; speed = ""; slowNote = false
+                busy = false; stage = null; speed = ""; slowNote = false; client?.onStage = null
                 if (beepDone && System.currentTimeMillis() - started > 3000) try { Toolkit.getDefaultToolkit().beep() } catch (_: Throwable) { }      // P4 (D160): operação longa terminou
             }
         }

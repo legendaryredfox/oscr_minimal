@@ -110,6 +110,13 @@ def confirm_5v(args) -> None:
 
 
 def _open(args) -> tuple[Client, Transport, dict]:
+    c, t, info = _open_raw(args)
+    from .output import stage_notifier
+    c.on_stage = stage_notifier(getattr(args, "progress", "auto"))     # F-1: etapa avisada pelo firmware (apagando, gravando...)
+    return c, t, info
+
+
+def _open_raw(args) -> tuple[Client, Transport, dict]:
     if args.simulate:
         import os
 
@@ -120,7 +127,7 @@ def _open(args) -> tuple[Client, Transport, dict]:
         old = os.environ.get("OSCR_SIM_OLD_FW") == "1" and not SIM_FLASHED
         dev = sim.MockDevice(volt_select=os.environ.get("OSCR_SIM_VOLT") == "1", cart_needs_5v=os.environ.get("OSCR_SIM_5V_CART") == "1",
                              selftest_report=_sim_selftest_report(),         # seletor 3,3 V/5 V e cartucho que só lê a 5 V (D138)
-                             board_profile=not old, firmware=(0, 1, 0) if old else (0, 2, 0),
+                             board_profile=not old, firmware=(0, 1, 0) if old else (0, 2, 0), stages=not old,
                              systems=0 if old else (os.environ.get("OSCR_SIM_SYSTEMS") and int(os.environ["OSCR_SIM_SYSTEMS"])) or sum(1 << i for i in range(1, 12)))
         t, _dev, _stop, _th = sim.start(dev)
         c = Client(t, timeout=0.5, long_timeout=5.0)

@@ -26,6 +26,18 @@ internal fun emit(io: CliIo, a: Args, obj: Map<String, Any?>, lines: List<String
     if (a.json) io.out(Json.encode(if ("ok" in obj) obj else linkedMapOf<String, Any?>("ok" to true) + obj)) else { val on = colorOn(io, a); lines.forEach { io.out(Ui.decorate(on, it)) } }
 }
 
+/** Etapa do PROGRESSO (F-1) em stderr: jsonl = {"event":"stage","stage":"erasing"}; auto = uma linha de texto só se for terminal. Nomes fixos, como os rótulos da barra. */
+internal fun stageNotifier(io: CliIo, a: Args): (Int, Long, Long) -> Unit {
+    val mode = a.opts["progress"] ?: "auto"
+    return { stage, done, total ->
+        val name = Proto.STAGE_NAMES[stage]
+        if (name != null && mode != "none") {
+            if (mode == "jsonl") io.err(Json.encode(Json.obj("event" to "stage", "stage" to name, "done" to done, "total" to total)))
+            else if (io.stderrTty) System.err.print("\r$name...\u001b[K")
+        }
+    }
+}
+
 internal fun progress(io: CliIo, a: Args, label: String): Progress {
     val mode = a.opts["progress"] ?: "auto"
     var last = -1

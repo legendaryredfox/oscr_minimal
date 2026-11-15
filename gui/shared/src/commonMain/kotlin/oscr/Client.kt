@@ -24,6 +24,16 @@ class OscrClient(
     private val queue = ArrayDeque<Frame>()
     private var seqCounter = 0
 
+    /** F-1: etapa avisada pelo firmware (apagando, gravando...), com o offset e o total (0 = desconhecido). Firmware sem o aviso nunca chama. */
+    var onStage: ((stage: Int, done: Long, total: Long) -> Unit)? = null
+
+    private fun noteStage(p: ByteArray) {
+        val cb = onStage ?: return
+        if (p.size < 9) return                                  // sem o byte da etapa (firmware antigo): nada a avisar
+        val stage = p.u8(8)
+        if (stage != Proto.STAGE_NONE) cb(stage, p.u32(0).toLong() and 0xFFFFFFFFL, p.u32(4).toLong() and 0xFFFFFFFFL)
+    }
+
     private fun nextSeq(): Int { seqCounter = (seqCounter + 1) and 0xFF; return seqCounter }
     private fun send(type: Int, payload: ByteArray, seq: Int) = t.write(encodeFrame(type, seq, payload))
 
@@ -46,6 +56,7 @@ class OscrClient(
             while (true) {
                 val f = recv(maxOf(0, timeout - start.elapsedNow().inWholeMilliseconds), seq) ?: break
                 if (f.type == Proto.T_ERRO) throw parseError(f.payload)
+                if (f.type == Proto.T_PROGRESSO) { noteStage(f.payload); continue }
                 if (f.type in expect && accept(f)) return f
             }
         }
@@ -137,6 +148,7 @@ class OscrClient(
                 }
                 Proto.T_ERRO -> throw parseError(f.payload)
                 Proto.T_BEGIN -> send(Proto.T_ACK, le32(0), seq)
+                Proto.T_PROGRESSO -> noteStage(f.payload)
             }
         }
     }

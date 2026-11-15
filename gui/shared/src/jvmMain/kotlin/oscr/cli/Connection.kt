@@ -24,10 +24,16 @@ internal fun connect(io: CliIo, a: Args, needCart: Boolean = true): Conn {
 }
 
 internal fun open(io: CliIo, a: Args): Conn {
+    val conn = openRaw(io, a)
+    conn.client.onStage = stageNotifier(io, a)                  // F-1: etapa avisada pelo firmware (apagando, gravando...)
+    return conn
+}
+
+private fun openRaw(io: CliIo, a: Args): Conn {
     if ("simulate" in a.flags) {
         val old = io.simOldFw && !io.simFlashed
         val t = SimDevice(voltSelect = io.simVolt, cartNeeds5v = io.simCart5v, selftestReport = if (io.simSelftest) listOf(Triple(1, 30, 0), Triple(2, 22, 57)) else emptyList(),
-            boardProfile = !old, firmware = if (old) Triple(0, 1, 0) else Triple(0, 2, 0), systemsMask = if (old) 0 else (1..11).sumOf { 1 shl it })
+            boardProfile = !old, firmware = if (old) Triple(0, 1, 0) else Triple(0, 2, 0), systemsMask = if (old) 0 else (1..11).sumOf { 1 shl it }, stages = !old)
         val c = OscrClient(t, 500, 5000)
         return Conn(c, t, c.info())
     }

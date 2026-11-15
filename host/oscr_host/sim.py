@@ -22,7 +22,7 @@ class _Aborted(Exception):
 
 
 class MockDevice:
-    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None, board_profile: bool = True, firmware: tuple = (0, 2, 0), systems: int = 0):
+    def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None, board_profile: bool = True, firmware: tuple = (0, 2, 0), systems: int = 0, stages: bool = True):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
         self.written_save: Optional[bytes] = None
@@ -39,6 +39,7 @@ class MockDevice:
         self.board_calls: list[int] = []       # flags de cada gravação
         self.systems = systems                 # máscara de sistemas que o INFO devolve (0: só o modo MOCK)
         self.firmware = firmware               # (maior, menor, patch) que o INFO devolve
+        self.stages = stages                   # emite PROGRESSO com etapa (F-1); False imita o firmware antigo, que nunca o emite
         self.last_erase = None         # (chip, prg_kb, chr_kb) do último ERASE
         self.last_rom_options = None   # (chip, prg_kb, chr_kb) do último WRITE_ROM
         self.corrupt_data = 0      # quantos DATA enviados terão 1 byte alterado (CRC ruim)
@@ -133,6 +134,7 @@ class MockDevice:
         elif f.type == P.T_SELFTEST:
             self.selftest_calls += 1
             rep = self.selftest_report[:24]
+            self._stage(t, f.seq, P.STAGE_SELFTEST)
             self._send(t, P.T_SELFTEST_RESP, f.seq, bytes([1 if len(self.selftest_report) > 24 else 0, len(rep)]) + b"".join(bytes(x) for x in rep))
         elif f.type == P.T_INFO:
             # proto, firmware (0.2.0 por padrão), flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
@@ -179,11 +181,17 @@ class MockDevice:
                 self._error(t, f.seq, 11, "id")
             else:
                 self.last_erase = tuple(int.from_bytes(f.payload[1 + 2 * i:3 + 2 * i], "little") for i in range(3))
+                self._stage(t, f.seq, P.STAGE_ERASE)
                 self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
         elif f.type == P.T_ABORT:
             self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
         else:
             self._error(t, f.seq, 1, "comando")
+
+    def _stage(self, t: Transport, seq: int, stage: int, total: int = 0) -> None:
+        """PROGRESSO com etapa (F-1), como o firmware: avisa antes do trabalho longo."""
+        if self.stages:
+            self._send(t, P.T_PROGRESSO, seq, (0).to_bytes(4, "little") + total.to_bytes(4, "little") + bytes([stage]))
 
     def _error(self, t: Transport, seq: int, code: int, text: str = "") -> None:
         tb = text.encode()
@@ -197,6 +205,7 @@ class MockDevice:
                 break
         else:
             return self._error(t, seq, 5, "begin")
+        self._stage(t, seq, P.STAGE_READ, len(data))
         for off in range(0, len(data), block):
             chunk = data[off:off + block]
             for attempt in range(4):
@@ -232,7 +241,10 @@ class MockDevice:
                 return self._error(t, f.seq, 4, "tamanho")
         if sysid not in (0, 255) or size > 1 << 20:
             return self._error(t, f.seq, 2 if sysid not in (0, 255) else 4)
+        if rom:
+            self._stage(t, f.seq, P.STAGE_ERASE, size)
         self._send(t, P.T_D_ACK, f.seq, P.build_offset(0))
+        self._stage(t, f.seq, P.STAGE_WRITE, size)
         buf, expected = bytearray(size), 0
         deadline = time.monotonic() + 5.0
         while time.monotonic() < deadline:

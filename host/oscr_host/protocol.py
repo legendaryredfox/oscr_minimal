@@ -24,6 +24,8 @@ T_WRITE_ROM = 0x0B                     # igual ao WRITE_SAVE, mas grava a ROM em
 # dispositivo -> host
 T_INFO_RESP, T_DETECT_RESP, T_BEGIN, T_DATA, T_END = 0x81, 0x82, 0x83, 0x84, 0x85
 T_D_ACK, T_ERRO, T_PROGRESSO = 0x86, 0x87, 0x88
+STAGE_NONE, STAGE_ERASE, STAGE_WRITE, STAGE_READ, STAGE_SELFTEST = 0, 1, 2, 3, 4   # etapa do PROGRESSO (F-1)
+STAGE_NAMES = {STAGE_ERASE: "erasing", STAGE_WRITE: "writing", STAGE_READ: "reading", STAGE_SELFTEST: "selftest"}
 T_VOLT_RESP = 0x89
 T_SELFTEST_RESP = 0x8A
 T_BOARD_RESP = 0x8B
@@ -250,6 +252,14 @@ def parse_end(p: bytes) -> tuple[int, int]:
     if len(p) < 8:
         raise ProtocolError("END curto")
     return struct.unpack_from("<II", p)
+
+
+def parse_progress(p: bytes) -> tuple[int, int, int]:
+    """PROGRESSO: (offset, total, etapa). O 9º byte é opcional (firmware sem etapa: 0); total 0 = desconhecido."""
+    if len(p) < 8:
+        raise ProtocolError("PROGRESSO curto")
+    off, total = struct.unpack_from("<II", p)
+    return off, total, p[8] if len(p) >= 9 else STAGE_NONE
 
 
 def parse_offset(p: bytes) -> int:

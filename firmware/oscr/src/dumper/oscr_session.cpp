@@ -46,6 +46,13 @@ void Session::send_offset(uint8_t type, uint8_t seq, uint32_t off) {
   send(type, seq, p, 4);
 }
 
+// PROGRESSO: `u32 offset`, `u32 total` (0 = desconhecido), `u8 etapa`. Sai antes do trabalho que bloqueia o laço; o host antigo ignora o tipo 0x88.
+void Session::send_stage(uint8_t seq, uint8_t stage, uint32_t off, uint32_t total) {
+  uint8_t p[9];
+  put_u32(p, off); put_u32(p + 4, total); p[8] = stage;
+  send(T_PROGRESSO, seq, p, 9);
+}
+
 bool Session::next_frame(uint32_t timeout_ms) {
   uint32_t start = io_.now_ms(io_.ctx);
   for (;;) {
@@ -140,6 +147,7 @@ void Session::do_erase(uint8_t seq, const uint8_t* p, uint16_t len) {
   if (!be_.supports(sys)) { send_error(seq, E_SISTEMA); return; }
   be_.set_options(get_u16(p + 1), get_u16(p + 3), get_u16(p + 5));
   uint16_t err = E_CARTUCHO_IO;
+  send_stage(seq, STAGE_ERASE, 0, 0);
   if (!be_.erase(sys, err)) { send_error(seq, err); return; }
   send_offset(T_D_ACK, seq, 0);
 }
@@ -160,6 +168,7 @@ void Session::do_selftest(uint8_t seq) {
   if (!be_.selftest_supported()) { send_error(seq, E_COMANDO, "sem autoteste"); return; }
   SelfTestReport r;
   uint16_t err = E_CARTUCHO_IO;
+  send_stage(seq, STAGE_SELFTEST, 0, 0);
   if (!be_.selftest(r, err)) { send_error(seq, err); return; }
   uint8_t p[2 + SelfTestReport::kMax * 3];
   p[0] = r.truncated ? 1 : 0;
@@ -203,6 +212,7 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
     r = wait_ack(seq, 0, 500);
   }
   if (r <= 0) { be_.close_read(); send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+  send_stage(seq, STAGE_READ, 0, size);
 
   uint32_t crc = 0;
   for (uint32_t off = 0; off < size; off += block) {
@@ -318,6 +328,7 @@ void Session::do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t bl
     r = wait_ack(seq, 0, 500);
   }
   if (r <= 0) { send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+  send_stage(seq, STAGE_READ, 0, 0);
   StreamOut out(*this, seq, block);
   uint16_t err = E_CARTUCHO_IO;
   bool ok = be_.stream_read(sys, kind, out, err);
@@ -379,8 +390,12 @@ struct StreamIn : StreamSource {
 
 void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t kind) {
   uint16_t err = E_CARTUCHO_IO;
-  if (kind == KIND_ROM && !be_.rom_prepare(sys, size, err)) { send_error(seq, err); return; }   // conferir o chip e apagar: só depois o PC manda os dados
+  if (kind == KIND_ROM) {
+    send_stage(seq, STAGE_ERASE, 0, size);
+    if (!be_.rom_prepare(sys, size, err)) { send_error(seq, err); return; }   // conferir o chip e apagar: só depois o PC manda os dados
+  }
   send_offset(T_D_ACK, seq, 0);
+  send_stage(seq, STAGE_WRITE, 0, size);
   StreamIn in(*this, seq, size);
   bool ok = kind == KIND_ROM ? be_.stream_write_rom(sys, in, err) : be_.stream_write(sys, in, err);
   if (in.dead) { send_error(seq, E_REENVIOS, "timeout"); return; }

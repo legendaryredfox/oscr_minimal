@@ -44,6 +44,20 @@ def progress(label: str, mode: str = "auto"):
 
 
 
+def stage_notifier(mode: str = "auto"):
+    """Etapa do PROGRESSO (F-1) em stderr: jsonl = {"event": "stage", "stage": "erasing"}; auto = uma linha de texto só se for terminal.
+    Os nomes da etapa são fixos, como os rótulos da barra (erasing, writing, reading, selftest)."""
+    def cb(stage: int, done: int, total: int) -> None:
+        name = P.STAGE_NAMES.get(stage)
+        if name is None or mode == "none":
+            return
+        if mode == "jsonl":
+            print(json.dumps({"event": "stage", "stage": name, "done": done, "total": total}), file=sys.stderr, flush=True)
+        elif sys.stderr.isatty():
+            print(f"\r{name}...\x1b[K", file=sys.stderr, flush=True)
+    return cb
+
+
 def out_path(args, ext: str, default: str) -> Path:
     p = Path(args.output) if args.output else Path(default)
     if p.suffix == "":

@@ -29,6 +29,9 @@ enum : uint8_t {  // host -> dispositivo
 
 enum : uint8_t { KIND_ROM = 1, KIND_SAVE = 2 };
 
+// Etapa do PROGRESSO (F-1): o firmware avisa antes de um trabalho longo que bloqueia o laço (os núcleos do OSCR não devolvem o controle). 0 = não informada.
+enum : uint8_t { STAGE_NONE = 0, STAGE_ERASE = 1, STAGE_WRITE = 2, STAGE_READ = 3, STAGE_SELFTEST = 4 };
+
 // Achados do SELFTEST (P-12): 1 pino em curto com GND (a), 2 curto entre os pinos a e b, 3 sem o pull-up de 1 kΩ no D7, 4 sem Si5351. Pinos na numeração do Arduino (54 = A0).
 enum : uint8_t { ST_GND = 1, ST_PAIR = 2, ST_NO_PULLUP = 3, ST_NO_CLOCKGEN = 4 };
 

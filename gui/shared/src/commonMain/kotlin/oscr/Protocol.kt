@@ -13,6 +13,9 @@ object Proto {
     const val T_DATA = 0x84; const val T_END = 0x85; const val T_D_ACK = 0x86; const val T_ERRO = 0x87
     const val T_PROGRESSO = 0x88; const val T_VOLT_RESP = 0x89; const val T_SELFTEST_RESP = 0x8A; const val T_BOARD_RESP = 0x8B
     const val KIND_ROM = 1; const val KIND_SAVE = 2
+    /** Etapa do PROGRESSO (F-1): o firmware avisa antes de um trabalho longo; 0 = não informada. */
+    const val STAGE_NONE = 0; const val STAGE_ERASE = 1; const val STAGE_WRITE = 2; const val STAGE_READ = 3; const val STAGE_SELFTEST = 4
+    val STAGE_NAMES = mapOf(STAGE_ERASE to "erasing", STAGE_WRITE to "writing", STAGE_READ to "reading", STAGE_SELFTEST to "selftest")
     /** Maior leitura aceita (GBA: 32 MB). Acima disso o BEGIN é tratado como defeito. */
     const val MAX_STREAM = 64 shl 20
 }

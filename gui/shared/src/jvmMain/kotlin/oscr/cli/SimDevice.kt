@@ -8,7 +8,7 @@ import oscr.*
  * Igual em comportamento a host/oscr_host/sim.py (sem injeção de falhas). O comportamento por sistema real é testado no firmware C++.
  */
 class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray(8192) { ((it * 3 + 1) and 0xFF).toByte() }, var voltSelect: Boolean = false, val cartNeeds5v: Boolean = false, val selftestReport: List<Triple<Int, Int, Int>> = emptyList(), val mdFlashName: String? = null,
-    val boardProfile: Boolean = true, val firmware: Triple<Int, Int, Int> = Triple(0, 2, 0), val systemsMask: Int = 0) : Transport {
+    val boardProfile: Boolean = true, val firmware: Triple<Int, Int, Int> = Triple(0, 2, 0), val systemsMask: Int = 0, val stages: Boolean = true) : Transport {
     var boardStored = false                                     // o PC gravou o perfil da placa na EEPROM simulada (D162)
     val boardCalls = mutableListOf<Int>()
     var volt = 1                                                // 1 = 3,3 V, 2 = 5 V (seletor, D138): sobe em 3,3 V (estado seguro); o host pede 5 V (padrão)
@@ -32,6 +32,8 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
     var lastErase: Triple<Int, Int, Int>? = null
 
     private fun push(type: Int, payload: ByteArray = ByteArray(0)) { out += encodeFrame(type, seq, payload) }
+    /** PROGRESSO com etapa (F-1), como o firmware; `stages = false` imita o firmware antigo, que nunca o emite. */
+    private fun stage(stage: Int, total: Int = 0) { if (stages) push(Proto.T_PROGRESSO, le32(0) + le32(total) + byteArrayOf(stage.toByte())) }
     private fun error(code: Int, text: String = "") = push(Proto.T_ERRO, le16(code) + byteArrayOf(text.length.toByte()) + text.encodeToByteArray())
     private fun sendData(off: Int) { val n = minOf(block, data.size - off); push(Proto.T_DATA, le32(off) + data.copyOfRange(off, off + n)) }
 
@@ -69,6 +71,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
             }
             Proto.T_SELFTEST -> {
                 selftestCalls++
+                stage(Proto.STAGE_SELFTEST)
                 val rep = selftestReport.take(24)
                 push(Proto.T_SELFTEST_RESP, byteArrayOf(if (selftestReport.size > 24) 1 else 0, rep.size.toByte()) + rep.flatMap { listOf(it.first.toByte(), it.second.toByte(), it.third.toByte()) }.toByteArray())
             }
@@ -94,7 +97,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 val off = f.payload.u32(0)
                 if (f.type == Proto.T_NAK) { if (phase >= 2) sendData(off); return }
                 when (phase) {
-                    1 -> { phase = 2; if (data.isEmpty()) { phase = 3; push(Proto.T_END, le32(0) + le32(crc32(data))) } else sendData(0) }
+                    1 -> { phase = 2; stage(Proto.STAGE_READ, data.size); if (data.isEmpty()) { phase = 3; push(Proto.T_END, le32(0) + le32(crc32(data))) } else sendData(0) }
                     2 -> { val next = off + block; if (next < data.size) sendData(next) else { phase = 3; push(Proto.T_END, le32(data.size) + le32(crc32(data))) } }
                     3 -> phase = 0
                 }
@@ -107,6 +110,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 if (wSize < 0 || wSize > (1 shl 20)) return error(4)
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true
                 push(Proto.T_D_ACK, le32(0))
+                stage(Proto.STAGE_WRITE, wSize)
             }
             Proto.T_WRITE_ROM -> {                  // chip, PRG e CHR em KB; no simulador o chip 9 "não é reconhecido"
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
@@ -118,7 +122,9 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 if (chip == 9) return error(11, "id")
                 if (wSize < 0 || (chip < 0x100 && wSize != (prg + chr) * 1024 && !(chr == 0 && wSize in 1..(prg * 1024) && wSize % 2 == 0))) return error(4, "tamanho")   // NES: PRG+CHR; SNES e MD: ROM dentro do flash
                 wBuf = ByteArray(wSize); wExpected = 0; writing = true; writingRom = true
+                stage(Proto.STAGE_ERASE, wSize)
                 push(Proto.T_D_ACK, le32(0))
+                stage(Proto.STAGE_WRITE, wSize)
             }
             Proto.T_H_DATA -> if (writing) {
                 val off = f.payload.u32(0); val n = f.payload.size - 4
@@ -139,6 +145,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 val chip = f.payload.u16(1)
                 if (chip == 9) return error(11, "id")
                 lastErase = Triple(chip, f.payload.u16(3), f.payload.u16(5))
+                stage(Proto.STAGE_ERASE)
                 push(Proto.T_D_ACK, le32(0))
             }
             Proto.T_ABORT -> { phase = 0; writing = false; push(Proto.T_D_ACK, le32(0)) }
