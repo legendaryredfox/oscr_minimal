@@ -83,7 +83,7 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 | F-15 | NES: detecção de cartucho ausente melhor que a heurística de 64 bytes iguais — **feito** (D173; só a regra, validação em bancada) | `NES.cpp` + costura | S |
 | F-16 | Mega Drive: Sega CD RAM (BRAM), Realtec, Sharp LH28F320BJE, 2 chips no mesmo cartucho, 29F800, gravar por CFI, detectar o limite de 2 MiB pelo padrão de leitura (resto do MD-13), conjunto de chips MD-1 a MD-8 que ainda faltarem | `MegaDrive.cpp`, `Flash.cpp` | L |
 | F-17 | GB/GBC: RTC do MBC3, flash do MBC6, ROM do TAMA5; GB Smart, NPower, Mega Memory, GameShark, Datel, Codebreaker, Pelican | `GBX`, `Flash.cpp` | L |
-| F-18 | GBA: 369-in-1 (ler 256 MB e por offset) — **feito** (D174); GBA repro via slot GB — **falta** | `GBA.cpp` | M |
+| F-18 | GBA: 369-in-1 (ler 256 MB e por offset) — **feito** (D174); GBA repro via slot GB — **já coberto** (D175) | `GBA.cpp` | M |
 | F-19 | N64: gravar ROM em flash repro (`flashRepro`), Gameshark, Xplorer 64 | `N64.cpp` | M |
 | F-20 | Outros sistemas (os 41 stubs: Atari, PC Engine, WonderSwan, MSX etc.) | um núcleo por sistema | L, em lotes |
 
