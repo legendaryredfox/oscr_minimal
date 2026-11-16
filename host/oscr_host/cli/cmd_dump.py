@@ -46,6 +46,9 @@ def cmd_dump(args) -> int:
         if not args.json:
             print(tr("auto.found", system=args.system), file=sys.stderr)
     title = ""
+    acc = getattr(args, "accessory", None)
+    if acc:
+        common.snes_type_code(args)                       # valida (só no SNES, ROM só do Sufami Turbo) antes de falar com o cartucho
     if args.system == "n64":                              # o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
         try:
             args.prg, title = _n64_size(c, args)
@@ -54,7 +57,7 @@ def cmd_dump(args) -> int:
             raise
     elif not args.output:                                 # sem -o: nome do arquivo pelo título do cartucho
         try:
-            title = c.detect(sid).get("name", "")
+            title = c.detect(sid, 0, 0, common.snes_type_code(args)).get("name", "")
         except (P.DeviceError, P.ProtocolError, TimeoutError_):
             title = ""
     if getattr(args, "raw", False) and sid not in DB.NES_SYSTEMS:
@@ -72,12 +75,12 @@ def cmd_dump(args) -> int:
         res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, chr_kb) if getattr(args, "twice", False) else None
     finally:
         t.close()
-    ext = P.SYSTEMS[args.system][1]
+    ext = ".st" if acc else P.SYSTEMS[args.system][1]      # Sufami Turbo: extensão do OSCR
     if sid == 6 and len(res.data) > 0x143 and res.data[0x143] & 0x80:
         ext = ".gbc"                                      # cabeçalho com a flag de Game Boy Color
     if res2 is not None and res2.data != res.data:
         _twice_mismatch(args, res, res2, ext, safe_name(title, f"rom_{args.system}"))
-    chk = verify_rom(sid, res.data)
+    chk = verify_rom(sid, res.data) if not acc else verify_rom(0, b"")      # o cabeçalho do Sufami Turbo não é o do SNES
     notes = []
     extra: dict = {"checksum": chk.status}
     if res2 is not None:

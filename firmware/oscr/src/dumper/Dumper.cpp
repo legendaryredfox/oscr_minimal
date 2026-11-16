@@ -25,6 +25,10 @@
 # include "dumper/NesFlash.h"
 # include "dumper/NesCore.h"
 # include "dumper/Gba369.h"
+# include "dumper/SnesAcc.h"
+# include "dumper/SnesAccIo.h"
+# include "cores/ST.h"
+# include "cores/GPC.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
 # include "dumper/MdFlash.h"
@@ -661,6 +665,20 @@ namespace OSCR::Dumper
           return;
         }
 
+        if (system == oscr::SYS_SNES && oscr::snesacc::isAcc(optChrKb))
+        {
+          // Acessório do SNES (F-10, D178): o Sufami Turbo tem cabeçalho; o GPC não (sem DETECT)
+          if (!oscr::snesacc::isSufami(optChrKb)) { out.status = 2; return; }
+          uint16_t rc = oscr::E_SEM_CARTUCHO; uint32_t bytes = 0; bool slotB = oscr::snesacc::sufamiSlotB(optChrKb);
+          bool ran = runCore([&rc, &bytes, slotB] { rc = SnesAcc::probeSufami(slotB, bytes); OSCR::Cores::ST::cartOff(); });
+          out.status = (ran && rc == 0) ? 0 : 1;
+          if (out.status != 0) return;
+          out.rom_size = bytes;
+          out.save_size = 0; out.save_type = 0;
+          strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
+          return;
+        }
+
         if (system == oscr::SYS_SNES)
         {
           uint8_t st = 1;
@@ -733,6 +751,7 @@ namespace OSCR::Dumper
       bool stream_read(uint8_t system, uint8_t kind, oscr::StreamSink & sink, uint16_t & err) override
       {
         if (!supports(system)) { err = oscr::E_SISTEMA; return false; }
+        if (system == oscr::SYS_SNES && oscr::snesacc::isAcc(optChrKb)) return accRead(kind, sink, err);
 
         if (system == oscr::SYS_FLASH)                            // programador genérico: ler o chip inteiro (o conteúdo vai ao PC; "em branco" é conferido lá)
         {
@@ -838,6 +857,7 @@ namespace OSCR::Dumper
       bool stream_write(uint8_t system, oscr::StreamSource & in, uint16_t & err) override
       {
         if (!supports(system)) { err = oscr::E_SISTEMA; return false; }
+        if (system == oscr::SYS_SNES && oscr::snesacc::isAcc(optChrKb)) return accWrite(in, err);
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1055,6 +1075,18 @@ namespace OSCR::Dumper
       // ERASE (programador genérico): apaga o chip inteiro. 8 bits: o tipo é obrigatório (identifica o chip antes e escolhe a rotina de apagar).
       bool erase(uint8_t system, uint16_t & err) override
       {
+        if (system == oscr::SYS_SNES)
+        {
+          // Test RAM do SNES (F-10, D178): o `eraseSRAM` do OSCR sobrescreve a SRAM inteira com o byte dado (`chip`). O OSCR lê o save antes, escreve 0x0F e 0xF0 e o grava de volta;
+          // aqui o PC faz o backup e a restauração (a SRAM não cabe na RAM do Arduino) e este comando só preenche.
+          if (optMapper > 0xFF) { err = oscr::E_ARGUMENTO; return false; }
+          if (!prepare(system, true, err)) return false;                // lê o cabeçalho: tipo de ROM e tamanho da SRAM
+          if (OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; }
+          uint8_t pattern = uint8_t(optMapper);
+          bool ran = runCore([pattern] { OSCR::Cores::SNES::eraseSRAM(pattern); OSCR::Cores::SNES::cartOff(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          return true;
+        }
         if (system != oscr::SYS_FLASH) { err = oscr::E_COMANDO; return false; }
         uint16_t code = optMapper, prg = optPrgKb, chr = optChrKb;
         uint16_t rc = FlashProg::check(code, prg, chr, 0);
@@ -1075,6 +1107,44 @@ namespace OSCR::Dumper
 
     private:
       uint16_t optMapper = 0, optPrgKb = 0, optChrKb = 0;
+
+      /** Leitura de acessório do SNES (F-10, D178): Sufami Turbo (ROM do slot A ou B) e GPC (os 512 KB da RAM, como "save"). */
+      bool accRead(uint8_t kind, oscr::StreamSink & sink, uint16_t & err)
+      {
+        uint16_t f = optChrKb;
+        if (!oscr::snesacc::valid(f)) { err = oscr::E_ARGUMENTO; return false; }
+        bool sufami = oscr::snesacc::isSufami(f);
+        if ((sufami && kind != oscr::KIND_ROM) || (!sufami && kind != oscr::KIND_SAVE)) { err = oscr::E_ARGUMENTO; return false; }
+
+        bool slotB = oscr::snesacc::sufamiSlotB(f);
+        if (sufami)
+        {
+          uint16_t rc = oscr::E_SEM_CARTUCHO; uint32_t bytes = 0;
+          bool ran = runCore([&rc, &bytes, slotB] { rc = SnesAcc::probeSufami(slotB, bytes); OSCR::Cores::ST::cartOff(); });
+          if (!ran || rc) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        }
+
+        countingSink.inner = &sink; countingSink.bytes = 0;
+        activeSink = &countingSink;
+        bool ok = runCore([sufami, slotB] { if (sufami) OSCR::Cores::ST::readSlot(slotB); else OSCR::Cores::GPC::readRAM(); }, true);
+        activeSink = nullptr;
+        err = oscr::E_CARTUCHO_IO;
+        return ok || (!fatalHit && countingSink.bytes > 0);
+      }
+
+      /** Gravação dos 512 KB do GPC (WRITE_SAVE com o acessório). */
+      bool accWrite(oscr::StreamSource & in, uint16_t & err)
+      {
+        if (optChrKb != oscr::snesacc::kGpc) { err = oscr::E_ARGUMENTO; return false; }     // o Sufami Turbo não tem gravação
+        if (in.size() != oscr::snesacc::kGpcBytes) { err = oscr::E_ARGUMENTO; return false; }
+        countingSource.inner = &in; countingSource.bytes = 0;
+        activeSource = &countingSource;
+        OSCR::Storage::Shared::sharedFile.open("save", O_RDONLY);
+        bool ok = runCore([] { SnesAcc::writeGpc(); });
+        activeSource = nullptr;
+        err = oscr::E_CARTUCHO_IO;
+        return ok || (!fatalHit && countingSource.bytes == oscr::snesacc::kGpcBytes);
+      }
       uint32_t romWriteSize = 0;      // tamanho do arquivo do último WRITE_ROM (rom_prepare -> stream_write_rom)
 
       /** Lê o cabeçalho do cartucho (preenche cartSize, saveType, sramSize...) antes de ler ou gravar. */

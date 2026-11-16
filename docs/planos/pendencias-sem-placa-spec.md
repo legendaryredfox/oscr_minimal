@@ -75,7 +75,7 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 
 | Id | Item | Núcleo OSCR | Tam. |
 |---|---|---|---|
-| F-10 | SNES: Test RAM, Game Processor RAM, Sufami Turbo (slot A e B) | `SNES.cpp` | M |
+| F-10 | SNES: Test RAM, Game Processor RAM, Sufami Turbo (slot A e B) — **feito** (D178) | `SNES.cpp` | M |
 | F-11 | SNES: SF Memory (SFM) e Satellaview BS-X (Memory Pack e SRAM) | `SNES.cpp`, `SFM`, `BSX` | L |
 | F-12 | SNES: chips raros (Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110) | `SNES.cpp` | M |
 | F-13 | NES: leitura raw (PRG e CHR separados) — **feito** (D173) | `NES.cpp` | S |

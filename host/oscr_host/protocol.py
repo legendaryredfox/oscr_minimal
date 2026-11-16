@@ -49,6 +49,9 @@ KIND_ROM, KIND_SAVE = 1, 2
 
 # Tipo de ROM do SNES forçado pelo PC (F-2, D164): vai no terceiro campo opcional (`chr_kb`), que o SNES não usa. 0 = pelo cabeçalho.
 SNES_TYPES = {"lorom": 1, "hirom": 2, "sa1": 3, "exhirom": 4}
+# Acessórios do SNES (F-10, D178): vão no mesmo 3º campo, a partir de 0x8000 (firmware/oscr/include/dumper/SnesAcc.h). Sufami Turbo: só ROM; GPC: só save de 512 KB.
+SNES_ACCESSORIES = {"sufami-a": 0x8001, "sufami-b": 0x8002, "gpc": 0x8003}
+GPC_BYTES = 0x80000
 
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),

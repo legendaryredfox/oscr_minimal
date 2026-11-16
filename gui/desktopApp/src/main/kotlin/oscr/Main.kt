@@ -132,6 +132,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var pending by remember { mutableStateOf<Pending?>(null) }
     var voltReq by remember { mutableStateOf(false) }                       // alerta de 3,3 V -> 5 V aberto (D138)
     var writeReq by remember { mutableStateOf<WriteRequest?>(null) }
+    var ramTestAsk by remember { mutableStateOf(false) }               // confirmação do Test RAM do SNES (F-10, D178)
     var romReq by remember { mutableStateOf<RomWriteRequest?>(null) }
     var verifyRom by remember { mutableStateOf(Prefs.verifyRom) }
     var romChip by remember { mutableStateOf<FlashChip?>(null) }          // null = automático (pelo mapper do cabeçalho)
@@ -256,6 +257,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     fun mapperArg() = (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0
     fun ramArg() = if (isNes) ramN else 0
     fun snesTypeArg() = if (system == CartSystem.SNES) snesTypeSel else 0
+    val accGpc = system == CartSystem.SNES && snesTypeSel == Proto.SNES_ACCESSORIES.getValue("gpc")                  // acessórios do SNES (F-10, D178), no mesmo campo do tipo de ROM
+    val accSufami = system == CartSystem.SNES && snesTypeSel in setOf(Proto.SNES_ACCESSORIES.getValue("sufami-a"), Proto.SNES_ACCESSORIES.getValue("sufami-b"))
 
     fun reportText(p: String, crc: String, size: Int, extra: List<String>, h: Hashes.Result? = null) =
         (listOf("oscr_minimal $APP_VERSION", "${t(S.SYSTEM)}: ${system.name}", p, "${t(S.RESULT_SIZE)}: $size ${t(S.BYTES)}", "CRC32: $crc") + (h?.let { listOf("SHA-1: ${it.sha1}", "MD5: ${it.md5}") } ?: emptyList()) + extra).joinToString("\n") + "\n"
@@ -623,6 +626,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
 
     fun actDumpRom() {
         if (planned != null) return
+        if (accGpc) { say(t(S.ERR_PREFIX) + ": " + t(S.ACC_GPC_IS_SAVE)); return }
         if (isFlash) { actFpRead(); return }
         val c = client ?: return
         if (problem != null) { say(describeProblem(lang, problem)); return }
@@ -644,7 +648,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     say(t(S.ERR_PREFIX) + ": " + m); extra += m
                 }
             }
-            val chk = verifyRom(system, res.data)
+            val chk = if (accSufami) verifyRom(CartSystem.MOCK, ByteArray(0)) else verifyRom(system, res.data)      // o cabeçalho do Sufami Turbo não é o do SNES
             if (chk.status == CheckStatus.OK) { val m = "${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})"; say(m); extra += m }
             else if (chk.status == CheckStatus.MISMATCH) { val m = "${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}"; say(m); extra += m }
             if (system == CartSystem.GBA && !r369) {                    // o 369-in-1 tem vários jogos: sem tipo de save pela base nem pela ROM
@@ -655,7 +659,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 else if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE)
                 say(m); extra += m
             }
-            val ext = if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
+            val ext = if (accSufami) ".st" else if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
             val game = db?.identify(system, res.data)
             if (db != null) {
                 val m = if (game != null) "${t(S.GAME_LABEL)}: ${game.entry.name} (${game.entry.source})" else t(S.GAME_NOT_FOUND)
@@ -675,6 +679,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     fun actReadSave() {
         if (planned != null) return
         val c = client ?: return
+        if (accSufami) { say(t(S.ERR_PREFIX) + ": " + t(S.ACC_SUFAMI_IS_ROM)); return }
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         run(S.STAGE_READING_SAVE) {
             val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
@@ -683,14 +688,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")
             val title = detectedNames[system].orEmpty()
-            offerSave(Pending(res.data, safeName(title, "save_${system.name.lowercase()}") + ".sav", "save", reportText(title, res.crcHex, res.data.size, emptyList(), hashes)))
+            offerSave(Pending(res.data, safeName(title, if (accGpc) "save_snes_gpc" else "save_${system.name.lowercase()}") + (if (accGpc) ".bin" else ".sav"), "save", reportText(title, res.crcHex, res.data.size, emptyList(), hashes)))
         }
     }
 
     fun actWriteChoose() {
         if (planned != null) return
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
+        if (accSufami) { say(t(S.ERR_PREFIX) + ": " + t(S.ACC_SUFAMI_IS_ROM)); return }
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
+        if (accGpc && file.length() != Proto.GPC_BYTES.toLong()) { say(t(S.ERR_PREFIX) + ": " + f(S.ACC_GPC_SIZE, file.length())); return }
         writeReq = WriteRequest(file, file.readBytes())
     }
 
@@ -774,6 +781,25 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 fun hex(x: Int) = (x.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
                 say(if (v.ok) f(S.ROM_VERIFY_OK, v.readBytes, hex(v.readCrc)) else t(S.ERR_PREFIX) + ": " + f(S.ROM_VERIFY_BAD, v.firstDiff ?: 0, hex(v.readCrc), hex(v.expectedCrc)))
             } else say(t(S.ROM_VERIFY_HINT))
+        }
+    }
+
+    /** Test RAM do SNES (F-10, D178): guarda o save, sobrescreve a SRAM com 0x0F e 0xF0, grava o save de volta e confere. Restaura mesmo se o preenchimento falhar. */
+    fun actRamTest() {
+        val c = client ?: return
+        if (system != CartSystem.SNES) return
+        run(S.STAGE_RAMTEST) {
+            val saved = withContext(Dispatchers.IO) { c.readSave(system, 0, 0, 0, ticker(), 0) }
+            val dir = File(System.getProperty("user.home"), "oscr_backups").also { it.mkdirs() }
+            val bf = File(dir, "snes_ramtest_${SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())}.sav")
+            bf.writeBytes(saved.data)
+            say("${t(S.BACKUP_SAVED)}: $bf — CRC32 ${saved.crcHex}")
+            var failure: Throwable? = null
+            try { for (p in listOf(0x0F, 0xF0)) withContext(Dispatchers.IO) { c.erase(system, p, 0, 0) } } catch (e: Exception) { failure = e }
+            withContext(Dispatchers.IO) { c.writeSave(system, saved.data, Proto.DEFAULT_BLOCK, 0, 0, ticker(), 0) }
+            val v = withContext(Dispatchers.IO) { verifySaveWritten(c, system, saved.data, 0, 0, ticker(), 0) }
+            failure?.let { throw it }
+            say(if (v.ok) f(S.RAMTEST_OK, saved.crcHex) else t(S.ERR_PREFIX) + ": " + f(S.RAMTEST_BAD, v.firstDiff ?: 0))
         }
     }
 
@@ -1010,9 +1036,10 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             }
             if (stub == null && system == CartSystem.SNES) {
                 LabeledField(t(S.SNES_TYPE)) {
-                    ComboBox(value = SnesType.CODES.entries.firstOrNull { it.value == snesTypeSel }?.let { SNES_TYPE_NAMES.getValue(it.key) } ?: t(S.SNES_TYPE_AUTO), modifier = Modifier.fillMaxWidth()) { close ->
+                    ComboBox(value = SnesType.CODES.entries.firstOrNull { it.value == snesTypeSel }?.let { SNES_TYPE_NAMES.getValue(it.key) } ?: Proto.SNES_ACCESSORIES.entries.firstOrNull { it.value == snesTypeSel }?.let { SNES_ACC_NAMES.getValue(it.key) } ?: t(S.SNES_TYPE_AUTO), modifier = Modifier.fillMaxWidth()) { close ->
                         DropdownMenuItem(text = { Text(t(S.SNES_TYPE_AUTO)) }, onClick = { close(); snesTypeSel = 0 })
                         SnesType.CODES.forEach { (k, code) -> DropdownMenuItem(text = { Text(SNES_TYPE_NAMES.getValue(k)) }, onClick = { close(); snesTypeSel = code }) }
+                        Proto.SNES_ACCESSORIES.forEach { (k, code) -> DropdownMenuItem(text = { Text(SNES_ACC_NAMES.getValue(k)) }, onClick = { close(); snesTypeSel = code }) }
                     }
                 }
                 Text(t(S.SNES_TYPE_HINT), style = MaterialTheme.typography.bodySmall)
@@ -1089,6 +1116,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 OutlinedButton(enabled = canRun && fpBus != "md", onClick = { actFpWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.FP_WRITE)) }
             }
             if (!isFlash) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (system == CartSystem.SNES) OutlinedButton(enabled = canRun && !accSufami && !accGpc, onClick = { ramTestAsk = true }, border = dangerBorder, colors = dangerColors) { Text(t(S.RAMTEST_BUTTON)) }
                 OutlinedButton(enabled = canRun && ramProblem == null, onClick = { actWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_SAVE)) }
                 OutlinedButton(enabled = canRun && canWriteRom && info?.writeRom == true, onClick = { actRomWriteChoose() }, border = dangerBorder, colors = dangerColors) { Text(t(S.WRITE_ROM)) }
             }
@@ -1269,6 +1297,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         )
     }
 
+    if (ramTestAsk) {
+        AlertDialog(
+            onDismissRequest = { ramTestAsk = false },
+            title = { Text(t(S.RAMTEST_BUTTON)) },
+            text = { Text(t(S.RAMTEST_BODY)) },
+            confirmButton = { Button(onClick = { ramTestAsk = false; actRamTest() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(t(S.RAMTEST_BUTTON)) } },
+            dismissButton = { OutlinedButton(onClick = { ramTestAsk = false }) { Text(t(S.CANCEL)) } },
+        )
+    }
     writeReq?.let { req ->
         AlertDialog(
             onDismissRequest = { writeReq = null },
@@ -1374,6 +1411,7 @@ private fun LabeledField(label: String, content: @Composable ColumnScope.() -> U
 private val LocalFieldLabel = compositionLocalOf { "" }
 
 /** Passos do zoom da interface, em %. */
+private val SNES_ACC_NAMES = mapOf("sufami-a" to "Sufami Turbo (A)", "sufami-b" to "Sufami Turbo (B)", "gpc" to "Game Processor RAM (GPC)")      // nomes próprios
 private val SNES_TYPE_NAMES = mapOf("lorom" to "LoROM", "hirom" to "HiROM", "sa1" to "SA-1", "exhirom" to "ExHiROM")      // nomes próprios: iguais em todos os idiomas
 private val ZOOM_STEPS = listOf(100, 125, 150, 175, 200)
 

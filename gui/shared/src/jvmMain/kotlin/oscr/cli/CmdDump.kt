@@ -27,6 +27,8 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
     }
     val raw = "raw" in a.flags
     if (raw && sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", Msg.t("dump.raw_only_nes"), EXIT_USAGE)
+    val acc = a.opts["accessory"]
+    if (acc != null) snesTypeCode(a)                              // valida (só no SNES, ROM só do Sufami Turbo) antes de falar com o cartucho
     val b369 = a.opts["block369"]?.let { v -> v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to "block369", "value" to v), EXIT_USAGE) }
     if (b369 != null) {                                           // GBA 369-in-1: "Read 256MB" e "Read Offset" do OSCR (F-18, D174); --prg é o tamanho em MB
         val bad = if (sys != CartSystem.GBA) "gba369.only_gba" else Gba369.errorKey(b369, prg)
@@ -34,12 +36,12 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
         mapper = Gba369.code(b369)
     }
     val stype = snesTypeCode(a)
-    if (sys == CartSystem.SNES) chr = stype                       // SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
+    if (sys == CartSystem.SNES) chr = stype                       // SNES: o 3º campo é o tipo forçado (F-2) ou o acessório (F-10), nunca CHR
     val c = c0 ?: connect(io, a)
     var title = ""
     if (sys == CartSystem.N64) {                      // o tamanho vem da base (CRC1 do cabeçalho) ou de --prg (em MB); D158
         try { val r = n64Size(c, a, prg); prg = r.first; title = r.second } catch (e: CliError) { c.transport.close(); throw e }
-    } else if (a.opts["output"] == null) title = try { c.client.detect(sys).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
+    } else if (a.opts["output"] == null) title = try { c.client.detect(sys, 0, 0, stype).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
     val twice = "twice" in a.flags
     var res2: DumpResult? = null
     val res = try {
@@ -47,9 +49,9 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
             if (twice) res2 = c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom 2"))
         }
     } finally { c.transport.close() }
-    val ext = if (sys == CartSystem.GB && res.data.size > 0x143 && res.data[0x143].toInt() and 0x80 != 0) ".gbc" else sys.ext
+    val ext = if (acc != null) ".st" else if (sys == CartSystem.GB && res.data.size > 0x143 && res.data[0x143].toInt() and 0x80 != 0) ".gbc" else sys.ext
     res2?.let { if (!it.data.contentEquals(res.data)) twiceMismatch(a, res, it, ext, safeName(title, "rom_${sys.name.lowercase()}")) }
-    val chk = verifyRom(sys, res.data)
+    val chk = if (acc != null) verifyRom(CartSystem.MOCK, ByteArray(0)) else verifyRom(sys, res.data)      // o cabeçalho do Sufami Turbo não é o do SNES
     val extra = linkedMapOf<String, Any?>("checksum" to chk.status.name.lowercase())
     val notes = mutableListOf<String>()
     if (res2 != null) { extra["twice"] = true; notes += Msg.t("dump.twice_ok", "crc" to res.crcHex) }

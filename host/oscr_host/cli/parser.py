@@ -25,6 +25,7 @@ from .cmd_clock import cmd_clock
 from .cmd_voltage import cmd_voltage
 from .cmd_rom import cmd_rom_write
 from .cmd_save import cmd_save_read, cmd_save_write
+from .cmd_ramtest import cmd_ram_test
 from .errors import EXIT_USAGE
 from .messages import tr
 
@@ -138,6 +139,7 @@ def build_parser() -> argparse.ArgumentParser:
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
     dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
     dtp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
+    dtp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))
     gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
     gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
     gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))
@@ -155,6 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--prg", type=int, default=0, help=H("dump_prg"))
     dp.add_argument("--chr", type=int, default=0, help=H("dump_chr"))
     dp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
+    dp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))
     dp.add_argument("--raw", action="store_true", help=H("dump_raw"))
     dp.add_argument("--block369", type=int, default=None, help=H("rom_block369"))
     dp.add_argument("--twice", action="store_true", help=H("dump_twice"))
@@ -163,11 +166,18 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--mapper", type=int, default=0, help=H("save_mapper"))
         sp.add_argument("--ram", type=int, default=0, help=H("save_ram"))
         sp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
+        sp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))
         if sp.prog.endswith("save-write"):
             sp.add_argument("--yes", action="store_true", help=H("yes_write"))
             sp.add_argument("--no-backup", action="store_true", help=H("save_no_backup"))
             sp.add_argument("--no-verify", action="store_true", help=H("save_no_verify"))
             sp.add_argument("--backup-dir", default="~/oscr_backups", help=H("save_backup_dir"))
+    rt = add("ram-test", cmd_ram_test, H("cmd_ram_test"))
+    rt.set_defaults(system="snes")
+    rt.add_argument("--yes", action="store_true", help=H("yes_write"))
+    rt.add_argument("--backup-dir", default="~/oscr_backups", help=H("save_backup_dir"))
+    rt.add_argument("--block", type=int, default=0, help=H("block"))
+    rt.add_argument("--begin-timeout", type=float, default=90.0, help=H("begin_timeout_erase"))
     rp = add("rom-write", cmd_rom_write, H("cmd_rom_write"), inp=True)
     rp.set_defaults(system="nes")
     rp.add_argument("--chip", choices=sorted(RI.CHIPS), help=H("rom_chip"))

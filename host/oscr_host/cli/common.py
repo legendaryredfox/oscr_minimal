@@ -152,10 +152,19 @@ def _open_raw(args) -> tuple[Client, Transport, dict]:
 def snes_type_code(args) -> int:
     """`--type` do SNES (F-2, D164) como código do protocolo; 0 = pelo cabeçalho. Em outro sistema é erro de uso."""
     t = getattr(args, "type", None)
-    if not t:
+    acc = getattr(args, "accessory", None)
+    if not t and not acc:
         return 0
     if args.system != "snes":
-        raise CliError("usage", tr("snes_type.only_snes"), EXIT_USAGE)
+        raise CliError("usage", tr("snes_type.only_snes" if t else "snes_acc.only_snes"), EXIT_USAGE)
+    if t and acc:
+        raise CliError("usage", tr("snes_acc.with_type"), EXIT_USAGE)
+    if acc:                                                # F-10: Sufami Turbo (ROM) e GPC (save); o comando confere se o acessório serve a ele
+        gpc = acc == "gpc"
+        cmd = getattr(args, "cmd", "")
+        if (gpc and cmd in ("dump", "detect")) or (not gpc and cmd in ("save-read", "save-write")):
+            raise CliError("usage", tr("snes_acc.gpc_is_save" if gpc else "snes_acc.sufami_is_rom"), EXIT_USAGE)
+        return P.SNES_ACCESSORIES[acc]
     return P.SNES_TYPES[t]
 
 

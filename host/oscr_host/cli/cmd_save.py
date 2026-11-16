@@ -58,12 +58,17 @@ def cmd_save_read(args) -> int:
     notes = []
     if system_id(args.system) == 5 and args.mapper == 2 and eeprom_is_4k(res.data):
         notes.append(tr("save.eeprom_warn"))
-    return save_result(args, res, ".sav", f"save_{args.system}", None, notes)
+    gpc = getattr(args, "accessory", None) == "gpc"
+    return save_result(args, res, ".bin" if gpc else ".sav", "save_snes_gpc" if gpc else f"save_{args.system}", None, notes)
 
 
 def cmd_save_write(args) -> int:
     data = Path(args.input).read_bytes()
     sid = system_id(args.system)
+    if getattr(args, "accessory", None):
+        common.snes_type_code(args)                       # valida o acessório antes de qualquer coisa
+        if len(data) != P.GPC_BYTES:
+            raise CliError("bad_rom", tr("gpc.size", n=len(data), want=P.GPC_BYTES), EXIT_USAGE)
     if not args.yes:                                      # gravar sobrescreve (ou apaga) a memória do cartucho: sempre confirmar
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.save"),

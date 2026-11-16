@@ -30,7 +30,8 @@ internal fun cmdSaveRead(io: CliIo, a0: Args): Int {
         val mapper = if (sys == CartSystem.N64) n64SaveType(c, a) else a.int("mapper")
         c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"), snesTypeCode(a))
     } finally { c.transport.close() }
-    saveResult(io, a, res, ".sav", "save_${sys.name.lowercase()}")
+    val gpc = a.opts["accessory"] == "gpc"
+    saveResult(io, a, res, if (gpc) ".bin" else ".sav", if (gpc) "save_snes_gpc" else "save_${sys.name.lowercase()}")
     return EXIT_OK
 }
 
@@ -38,6 +39,10 @@ internal fun cmdSaveWrite(io: CliIo, a: Args): Int {
     val input = a.opts["input"] ?: throw CliError("usage", Msg.t("args.needs_input", "cmd" to "save-write"), EXIT_USAGE)
     val data = File(input).readBytes()
     val sys = system(a)
+    if (a.opts["accessory"] != null) {
+        snesTypeCode(a)                                          // valida o acessório antes de qualquer coisa
+        if (data.size != Proto.GPC_BYTES) throw CliError("bad_rom", Msg.t("gpc.size", "n" to data.size, "want" to Proto.GPC_BYTES), EXIT_USAGE)
+    }
     if ("yes" !in a.flags) {
         if (!io.interactive) throw CliError("refused", Msg.t("refused.save"), EXIT_REFUSED, Msg.t("refused.save.hint"))
         io.err(Msg.t("save.ask", "n" to data.size, "system" to sys.name.lowercase()))

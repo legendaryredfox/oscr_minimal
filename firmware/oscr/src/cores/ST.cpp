@@ -203,8 +203,10 @@ namespace OSCR::Cores::ST
     // Close file:
     OSCR::Storage::Shared::close();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     // Compare dump CRC with db values
     OSCR::Databases::Basic::matchCRC();
+# endif /* !OSCR_DUMPER */
   }
 } /* namespace OSCR::Cores::ST */
 

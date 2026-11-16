@@ -51,6 +51,15 @@ private fun openRaw(io: CliIo, a: Args): Conn {
 
 /** `--type` do SNES (F-2, D164) como código do protocolo; 0 = pelo cabeçalho. Em outro sistema, ou com valor desconhecido, é erro de uso. */
 internal fun snesTypeCode(a: Args): Int {
+    val acc = a.opts["accessory"]
+    if (acc != null) {                                                // F-10: Sufami Turbo (ROM) e GPC (save), no mesmo 3º campo
+        if (a.opts["system"] != "snes") throw CliError("usage", Msg.t("snes_acc.only_snes"), EXIT_USAGE)
+        if (a.opts["type"] != null) throw CliError("usage", Msg.t("snes_acc.with_type"), EXIT_USAGE)
+        val code = Proto.SNES_ACCESSORIES[acc] ?: throw CliError("usage", Msg.t("args.chip_unknown", "chip" to acc, "chips" to Proto.SNES_ACCESSORIES.keys.joinToString(", ")), EXIT_USAGE)
+        val gpc = acc == "gpc"
+        if ((gpc && a.cmd in setOf("dump", "detect")) || (!gpc && a.cmd in setOf("save-read", "save-write"))) throw CliError("usage", Msg.t(if (gpc) "snes_acc.gpc_is_save" else "snes_acc.sufami_is_rom"), EXIT_USAGE)
+        return code
+    }
     val t = a.opts["type"] ?: return 0
     if (a.opts["system"] != "snes") throw CliError("usage", Msg.t("snes_type.only_snes"), EXIT_USAGE)
     return SnesType.CODES[t] ?: throw CliError("usage", Msg.t("snes_type.bad"), EXIT_USAGE)
