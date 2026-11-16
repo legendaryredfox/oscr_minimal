@@ -11,10 +11,10 @@ import java.time.format.DateTimeFormatter
 internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val input = a.opts["input"] ?: throw CliError("usage", Msg.t("args.needs_input", "cmd" to "rom-write"), EXIT_USAGE)
     val sys = if (a.opts["system"] != null) system(a) else CartSystem.NES
-    if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.GB && sys != CartSystem.MOCK)
+    if (sys != CartSystem.NES && sys != CartSystem.FAMICOM && sys != CartSystem.SNES && sys != CartSystem.MD && sys != CartSystem.GBA && sys != CartSystem.GB && sys != CartSystem.N64 && sys != CartSystem.MOCK)
         throw CliError("usage", Msg.t("rom.usage.system"), EXIT_USAGE)
     val chipOpt0 = a.opts["chip"]?.let { FlashChip.byKey(it) ?: throw CliError("usage", Msg.t("args.chip_unknown", "chip" to it, "chips" to FlashChip.entries.joinToString(", ") { c -> c.key }), EXIT_USAGE) }
-    val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else if (sys == CartSystem.GBA && chipOpt0 == null) FlashChip.GBA_FLASH else chipOpt0
+    val chipOpt = if (sys == CartSystem.MD && chipOpt0 == null) FlashChip.MD_FLASH else if (sys == CartSystem.GBA && chipOpt0 == null) FlashChip.GBA_FLASH else if (sys == CartSystem.N64 && chipOpt0 == null) FlashChip.N64_FLASH else chipOpt0
     if (chipOpt != null && sys != CartSystem.MOCK && chipOpt !in FlashChip.forSystem(sys)) throw CliError("usage", Msg.t("rom.usage.chip_not_system", "chip" to chipOpt.key, "system" to (a.opts["system"] ?: "nes")), EXIT_USAGE)
     if (sys == CartSystem.SNES && chipOpt == null) throw CliError("usage", Msg.t("rom.usage.snes_wiring"), EXIT_USAGE)
     if (sys == CartSystem.GB && chipOpt == null) throw CliError("usage", Msg.t("rom.usage.gb_chip", "chips" to FlashChip.forSystem(CartSystem.GB).joinToString(", ") { it.key }), EXIT_USAGE)
@@ -30,7 +30,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err(Msg.t("rom.mapper_warn", "file" to img.mapper, "chip" to chip.key, "chipmapper" to chip.mapper))
     val layoutName = if (img.layout == SnesLayouts.GENERIC) "8-bit flash of chosen type" else SnesLayouts.NAMES.entries.firstOrNull { it.value == img.layout }?.key ?: "?"
     val what = if (img.flashKb > 0) Msg.t("rom.what_flash", "label" to chip.label, "prg" to img.prgKb, "flash" to img.flashKb, "layout" to layoutName, "n" to img.body.size)
-               else if (chip.md || chip.gba || chip.gb) (if (img.block != 0) Msg.t("rom.what_block", "label" to chip.label, "n" to img.body.size, "block" to img.block) else Msg.t("rom.what_plain", "label" to chip.label, "n" to img.body.size))
+               else if (chip.md || chip.gba || chip.gb || chip.n64) (if (img.block != 0) Msg.t("rom.what_block", "label" to chip.label, "n" to img.body.size, "block" to img.block) else Msg.t("rom.what_plain", "label" to chip.label, "n" to img.body.size))
                else Msg.t("rom.what_prgchr", "label" to chip.label, "prg" to img.prgKb, "chr" to img.chrKb, "n" to img.body.size)
     if ("yes" !in a.flags) {
         if (!io.interactive) throw CliError("refused", Msg.t("refused.rom"), EXIT_REFUSED, Msg.t("refused.repeat"))
@@ -42,7 +42,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     var mdChip: MdFlashChip? = null
     try {
         if (!c.info.writeRom) throw CliError("unsupported_firmware", Msg.t("fw.unsupported_write_rom"), EXIT_ERROR, Msg.t("fw.unsupported.hint"))
-        val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: 90.0) * 1000).toLong()
+        val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: if (sys == CartSystem.N64) 600.0 else 90.0) * 1000).toLong()
         if (sys == CartSystem.MD) {                       // mostra o chip que vai ser gravado antes de apagar
             mdChip = identifyMdFlash(c.client, c.info)
             if (!a.json) io.out(mdChipLine(mdChip))

@@ -46,6 +46,12 @@ namespace oscr { namespace n64
 
   inline bool romMbValid(uint16_t mb) { return mb >= kMinRomMb && mb <= kMaxRomMb; }
 
+  /// Gravação em flash repro (F-19, D176): o `flashRepro` do OSCR lê o arquivo em setores de 128 KB (32 KB no MX29LV640), então o tamanho é múltiplo de 128 KB, de 128 KB a 64 MB.
+  constexpr uint32_t kFlashSector = 0x20000UL, kFlashMaxBytes = 64UL << 20;
+  inline bool flashBytesValid(uint32_t bytes) { return bytes >= kFlashSector && bytes <= kFlashMaxBytes && bytes % kFlashSector == 0; }
+  /// O arquivo cabe no chip? `chipMb` é o tamanho que o `idFlashrom` achou (1 a 64 MB). O OSCR divide por 1 MB e arredonda para baixo; aqui a conta é em bytes.
+  inline bool flashFits(uint32_t bytes, uint32_t chipMb) { return chipMb != 0 && bytes <= (chipMb << 20); }
+
   inline bool allSame(uint8_t const * p, uint8_t n)
   {
     for (uint8_t i = 1; i < n; i++) if (p[i] != p[0]) return false;

@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """WRITE_ROM no host: preparo do arquivo (iNES, chip), comando rom-write com o simulador, erros estruturados."""
 import json
+import types
+import zlib
 
 import pytest
 
@@ -328,6 +330,92 @@ def test_rom_write_gba_simulado(tmp_path, capsys):
     assert code == 0
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "gba", "-i", str(f), "--chip", "nesmaker", "--yes")
     assert code == 64
+
+
+# ---------------------------------------------------------------- N64 (flash repro, F-19, D176)
+def n64_z64(kb: int) -> bytes:
+    return b"\x80\x37\x12\x40" + bytes((i * 11 + 3) & 0xFF for i in range(kb * 1024 - 4))
+
+
+def _n64_swap_v64(z: bytes) -> bytes:
+    b = bytearray(z)
+    b[0::2], b[1::2] = z[1::2], z[0::2]
+    return bytes(b)
+
+
+def _n64_swap_n64(z: bytes) -> bytes:
+    b = bytearray(z)
+    b[0::4], b[1::4], b[2::4], b[3::4] = z[3::4], z[2::4], z[1::4], z[0::4]
+    return bytes(b)
+
+
+def test_split_n64_converte_a_ordem_e_completa_o_setor():
+    z = n64_z64(1024)
+    assert RI.split_n64(z).body == z
+    assert RI.split_n64(_n64_swap_v64(z)).body == z and RI.split_n64(_n64_swap_n64(z)).body == z
+    img = RI.split_n64(z[:1024 * 1024 - 100])                     # 100 bytes a menos: completa com $FF até o setor de 128 KB
+    assert len(img.body) == 1024 * 1024 and img.body[-100:] == b"\xff" * 100 and img.prg_kb == 1024 and img.mapper is None
+    assert RI.chip_code("n64-flash", img) == 1
+
+
+def test_split_n64_erros():
+    for data in (b"", bytes(100), bytes(8192), b"\x00\x01\x02\x03" + bytes(8192), n64_z64(65 * 1024)):     # vazio, pequena, sem cabeçalho, 65 MB
+        with pytest.raises(ValueError):
+            RI.split_n64(data)
+    assert len(RI.split_n64(n64_z64(64 * 1024)).body) == 64 * 1024 * 1024
+
+
+class _FakeN64:
+    """Cliente falso do rom-write do N64: guarda o WRITE_ROM e devolve a ROM gravada no DUMP_ROM (uma leitura de MB inteiros, como o firmware)."""
+    def __init__(self, readback=None):
+        self.written, self.dumps, self.readback = None, [], readback
+
+    def write_rom(self, system, data, chip, prg_kb, chr_kb, block, progress, begin_timeout):
+        self.written = (system, len(data), chip, prg_kb, chr_kb, begin_timeout)
+        self.data = data
+        return zlib.crc32(data)
+
+    def dump_rom(self, system, block, progress, mapper, prg, chr_):
+        self.dumps.append((system, mapper, prg))
+        data = self.readback if self.readback is not None else self.data
+        mb = prg << 20
+        return types.SimpleNamespace(data=data + b"\xff" * (mb - len(data)) if len(data) < mb else data[:mb], crc32=0)
+
+
+def _n64_cli(monkeypatch, capsys, fake, *argv):
+    from oscr_host import cli
+    monkeypatch.setattr(cli.common, "connect", lambda a: (fake, _FakeT(), {"write_rom": True, "flash_prog": False}))
+    code = cli.main(["--json", *argv])
+    return code, json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+
+
+def test_rom_write_n64_envia_o_codigo_e_confere_pelo_prefixo(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "jogo.v64"
+    z = n64_z64(1024 + 128)                                       # 1,125 MB: a conferência lê 2 MB e compara só o que foi gravado
+    f.write_bytes(_n64_swap_v64(z))
+    fake = _FakeN64()
+    code, o = _n64_cli(monkeypatch, capsys, fake, "rom-write", "-s", "n64", "-i", str(f), "--yes")
+    assert code == 0 and o["chip"] == "n64-flash" and o["bytes"] == len(z) and o["verify"]["ok"]
+    assert fake.written[:5] == (11, len(z), 1, len(z) // 1024, 0) and fake.dumps == [(11, 0, 2)] and fake.data == z
+
+
+def test_rom_write_n64_conferencia_acusa_diferenca(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "jogo.z64"
+    z = n64_z64(1024)
+    f.write_bytes(z)
+    bad = bytearray(z); bad[5000] ^= 0xFF
+    code, o = _n64_cli(monkeypatch, capsys, _FakeN64(bytes(bad)), "rom-write", "-s", "n64", "-i", str(f), "--yes")
+    assert code == 1 and o["error"]["kind"] == "verify_failed" and o["error"]["first_diff"] == 5000
+
+
+def test_rom_write_n64_recusas(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "x.z64"
+    f.write_bytes(n64_z64(1024))
+    code, o = _n64_cli(monkeypatch, capsys, _FakeN64(), "rom-write", "-s", "n64", "-i", str(f), "--chip", "gba-flash", "--yes")
+    assert code == 64
+    f.write_bytes(bytes(8192))
+    code, o = _n64_cli(monkeypatch, capsys, _FakeN64(), "rom-write", "-s", "n64", "-i", str(f), "--yes")
+    assert code == 64 and o["error"]["kind"] == "bad_rom"
 
 
 # ---------------------------------------------------------------- Game Boy (29F, 39SF, CFI)

@@ -25,15 +25,16 @@ class ImageError(ValueError):
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip pelo ID (MX29F1610, S29GL064N, chips AMD de 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF).
 # No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
-         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1,
+         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1, "n64-flash": 1,
          "gb-diy-mbc3": 1, "gb-diy-mbc5": 2, "gb-hdr-mbc30": 3, "gb-cam-first": 4, "gb-cam-second": 5, "gb-orange-fm": 6, "gb-39sf-mbc5": 7, "gb-cfi": 8}
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
-               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0,
+               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0, "n64-flash": 0,
                "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)",
               "gba-flash": "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)",
+              "n64-flash": "N64 flash (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512)",
               "gb-diy-mbc3": "GB flash 29F, DIY MBC3 (WR)", "gb-diy-mbc5": "GB flash 29F, DIY MBC5 (WR)", "gb-hdr-mbc30": "GB flash 29F, HDR MBC30 (WE no pino de áudio)",
               "gb-cam-first": "GB flash 29F, HDR GameBoy Cam, 1º jogo (apaga)", "gb-cam-second": "GB flash 29F, HDR GameBoy Cam, 2º jogo (sem apagar)",
               "gb-orange-fm": "GB flash 39SF010 sem MBC, Orange FM (32 KB)", "gb-39sf-mbc5": "GB flash 39SF040, MBC5 (WE no pino de áudio)", "gb-cfi": "GB flash CFI",
@@ -206,6 +207,40 @@ def split_gba(data: bytes, block: int = 0) -> RomImage:
     return RomImage(data, min(len(data) // 1024, 65535), 0, None, block=block)
 
 
+N64_SECTOR = 128 * 1024               # o `flashRepro` do OSCR lê o arquivo em setores de 128 KB (firmware/oscr/include/dumper/N64Core.h)
+N64_MAX_BYTES = 64 * 1024 * 1024
+N64_ORDERS = {b"\x80\x37\x12\x40": "z64", b"\x37\x80\x40\x12": "v64", b"\x40\x12\x37\x80": "n64"}
+
+
+def n64_to_z64(data: bytes) -> bytes:
+    """ROM de N64 em qualquer ordem de bytes (z64, v64 ou n64) para z64 (big-endian), que é a ordem do barramento. Levanta ImageError."""
+    order = N64_ORDERS.get(data[:4])
+    if order is None:
+        raise ImageError("n64_header")
+    if order == "v64":                     # pares de bytes trocados
+        b = bytearray(data)
+        b[0::2], b[1::2] = data[1::2], data[0::2]
+        return bytes(b)
+    if order == "n64":                     # palavras de 4 bytes invertidas
+        b = bytearray(data)
+        b[0::4], b[1::4], b[2::4], b[3::4] = data[3::4], data[2::4], data[1::4], data[0::4]
+        return bytes(b)
+    return data
+
+
+def split_n64(data: bytes) -> RomImage:
+    """ROM de N64 para o flash repro (o firmware identifica o chip pelo ID): converte v64 e n64 para z64 e completa com $FF até um múltiplo de 128 KB
+    (o tamanho de um setor; $FF é o que o flash apagado já tem). Até 64 MB. `prg_kb` é o tamanho em KB (limitado a 65535). Levanta ValueError."""
+    if len(data) < 4096:
+        raise ImageError("n64_size")
+    z = n64_to_z64(data)
+    pad = -len(z) % N64_SECTOR
+    if len(z) + pad > N64_MAX_BYTES:
+        raise ImageError("n64_too_big", mb=(len(z) + pad) // (1024 * 1024))
+    body = z + b"\xff" * pad
+    return RomImage(body, min(len(body) // 1024, 65535), 0, None)
+
+
 def split_gb(data: bytes, chip: str) -> RomImage:
     """ROM de Game Boy para o flash repro: tamanho múltiplo de 16 KB (um banco), de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB.
     O número de bancos o firmware tira do tamanho. Levanta ValueError."""
@@ -279,9 +314,13 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
     o que mudou depois (um setor apagado por engano, um banco que não responde)."""
     import zlib
 
-    res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], img.prg_kb, img.chr_kb)     # SNES: prg_kb = tamanho da ROM; sem cabeçalho iNES
+    n64 = chip == "n64-flash"
+    # N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo
+    res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], -(-len(img.body) // (1 << 20)) if n64 else img.prg_kb, img.chr_kb)     # SNES: prg_kb = tamanho da ROM; sem cabeçalho iNES
     data = res.data[16:] if res.data[:4] == b"NES\x1a" else res.data      # o firmware acrescenta um cabeçalho iNES sintético
     exp = img.rom if img.rom is not None else img.body
+    if n64:
+        data = data[:len(exp)]
     diff = None
     if data != exp:
         diff = next((i for i in range(min(len(data), len(exp))) if data[i] != exp[i]), min(len(data), len(exp)))

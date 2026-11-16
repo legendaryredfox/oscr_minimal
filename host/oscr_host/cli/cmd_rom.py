@@ -15,6 +15,9 @@ from .md_chip import BOARD_LIMIT_BYTES, board_limit_bytes, md_chip_line, md_flas
 from .output import emit, progress
 
 
+N64_BEGIN_TIMEOUT = 600.0        # apagar e conferir em branco até 64 MB leva minutos (o apagamento vem antes do primeiro ACK)
+
+
 def _layout_name(img) -> str:
     if img.layout == RI.SNES_GENERIC:
         return "flash de 8 bits de tipo informado"
@@ -23,7 +26,7 @@ def _layout_name(img) -> str:
 
 def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
-    if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "mock"):
+    if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "n64", "mock"):
         raise CliError("usage", tr("rom.usage.system"), EXIT_USAGE)
     try:
         data = Path(args.input).read_bytes()
@@ -50,11 +53,16 @@ def cmd_rom_write(args) -> int:
                 raise CliError("usage", tr("rom.usage.not_gba", chip=chip), EXIT_USAGE)
             chip = "gba-flash"
             img = RI.split_gba(data, args.block369)
+        elif args.system == "n64" or (args.system == "mock" and chip == "n64-flash"):
+            if chip not in (None, "n64-flash"):
+                raise CliError("usage", tr("rom.usage.not_n64", chip=chip), EXIT_USAGE)
+            chip = "n64-flash"
+            img = RI.split_n64(data)
         elif args.system == "gb" or (args.system == "mock" and chip in RI.GB_CHIPS):
             if chip not in RI.GB_CHIPS:
                 raise CliError("usage", tr("rom.usage.gb_chip", chips=", ".join(RI.GB_CHIPS)), EXIT_USAGE)
             img = RI.split_gb(data, chip)
-        elif snes_chip or chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
+        elif snes_chip or chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.GB_CHIPS:
             raise CliError("usage", tr("rom.usage.chip_other_system", chip=chip), EXIT_USAGE)
         else:
             img = RI.split_image(data, chip or "nesmaker")
@@ -69,7 +77,7 @@ def cmd_rom_write(args) -> int:
         print(tr("rom.mapper_warn", file=img.mapper, chip=chip, chipmapper=RI.CHIP_MAPPER[chip]), file=sys.stderr)
     if img.flash_kb:
         what = tr("rom.what_flash", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, flash=img.flash_kb, layout=_layout_name(img), n=len(img.body))
-    elif chip in ("md-flash", "gba-flash") or chip in RI.GB_CHIPS:
+    elif chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.GB_CHIPS:
         what = tr("rom.what_block" if img.block else "rom.what_plain", label=RI.CHIP_LABEL[chip], n=len(img.body), block=img.block)
     else:
         what = tr("rom.what_prgchr", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, chr=img.chr_kb, n=len(img.body))
@@ -93,7 +101,7 @@ def cmd_rom_write(args) -> int:
             raise CliError("refused", tr("rom.md_limit", size=len(img.body) // (1 << 20) if len(img.body) % (1 << 20) == 0 else f"{len(img.body) / (1 << 20):.2f}",
                                          chip=md_chip["chip"], codes=md_chip.get("codes", ""), limit=BOARD_LIMIT_BYTES >> 20), EXIT_REFUSED, tr("rom.md_limit_hint"))
         crc = c.write_rom(system_id(args.system), img.body, RI.chip_code(chip, img), img.flash_kb or img.prg_kb, img.wire_chr or img.chr_kb, args.block or P.DEFAULT_BLOCK,
-                          progress("write-rom", args.progress), args.begin_timeout)
+                          progress("write-rom", args.progress), args.begin_timeout if args.begin_timeout is not None else (N64_BEGIN_TIMEOUT if args.system == "n64" else 90.0))
     finally:
         t.close()
     out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}

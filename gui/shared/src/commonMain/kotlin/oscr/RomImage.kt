@@ -5,7 +5,7 @@ package oscr
  * Prepara um arquivo para o WRITE_ROM: tira o cabeçalho iNES e acha chip, PRG e CHR. Igual a host/oscr_host/romimage.py.
  * No OSCR original isso era feito pelo firmware lendo o arquivo do SD; aqui é o PC.
  */
-enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false) {
+enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false, val n64: Boolean = false) {
     NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF040, mapper 30)"),
     A29040B("a29040b", 2, 0, "A29040B (mapper 0)"),
     /** SNES: flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR). */
@@ -27,13 +27,15 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GB_CFI("gb-cfi", 8, 0, "GB flash CFI", gb = true),
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
+    /** N64: o firmware identifica o chip pelo ID (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512). */
+    N64_FLASH("n64-flash", 1, 0, "N64 flash (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512)", n64 = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
     MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)", md = true);
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
         /** Chips que o sistema aceita ([CartSystem.MOCK] aceita todos, para o simulador). */
-        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD) && it.gba == (s == CartSystem.GBA) && it.gb == (s == CartSystem.GB)) }
+        fun forSystem(s: CartSystem) = entries.filter { s == CartSystem.MOCK || (it.snes == (s == CartSystem.SNES) && it.md == (s == CartSystem.MD) && it.gba == (s == CartSystem.GBA) && it.gb == (s == CartSystem.GB) && it.n64 == (s == CartSystem.N64)) }
     }
 }
 
@@ -116,7 +118,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -217,6 +219,34 @@ object RomImages {
         return RomImage(data, data.size / 1024, 0, null)
     }
 
+    const val N64_SECTOR = 128 * 1024               // o `flashRepro` do OSCR lê o arquivo em setores de 128 KB (firmware/oscr/include/dumper/N64Core.h)
+    const val N64_MAX_BYTES = 64 * 1024 * 1024
+
+    /** ROM de N64 em qualquer ordem de bytes (z64, v64 ou n64) para z64 (big-endian, a ordem do barramento). Igual a n64_to_z64 em romimage.py. */
+    fun n64ToZ64(d: ByteArray): ByteArray {
+        if (d.size < 4) throw RomImageException(RomImageProblem.N64_HEADER)
+        val h = (0 until 4).map { d[it].toInt() and 0xFF }
+        return when (h) {
+            listOf(0x80, 0x37, 0x12, 0x40) -> d
+            listOf(0x37, 0x80, 0x40, 0x12) -> ByteArray(d.size) { i -> if (i % 2 == 0) (if (i + 1 < d.size) d[i + 1] else d[i]) else d[i - 1] }     // pares de bytes trocados
+            listOf(0x40, 0x12, 0x37, 0x80) -> ByteArray(d.size) { i -> val j = i - i % 4 + (3 - i % 4); if (j < d.size) d[j] else d[i] }          // palavras de 4 bytes invertidas
+            else -> throw RomImageException(RomImageProblem.N64_HEADER)
+        }
+    }
+
+    /**
+     * ROM de N64 para o flash repro: converte v64 e n64 para z64 e completa com $FF até um múltiplo de 128 KB (o tamanho de um setor), até 64 MB.
+     * [RomImage.prgKb] é o tamanho em KB limitado a 65535. Igual a split_n64 em romimage.py.
+     */
+    fun splitN64(data: ByteArray): RomImage {
+        if (data.size < 4096) throw RomImageException(RomImageProblem.N64_SIZE)
+        val z = n64ToZ64(data)
+        val pad = (N64_SECTOR - z.size % N64_SECTOR) % N64_SECTOR
+        if (z.size.toLong() + pad > N64_MAX_BYTES) throw RomImageException(RomImageProblem.N64_TOO_BIG, ((z.size.toLong() + pad) / (1024 * 1024)).toInt())
+        val body = z.copyOf(z.size + pad).also { for (i in z.size until it.size) it[i] = 0xFF.toByte() }
+        return RomImage(body, minOf(body.size / 1024, 65535), 0, null)
+    }
+
     const val GBA_369_MAX_BYTES = 256 * 1024 * 1024
     const val GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024      // prg_kb do DUMP_ROM é u16 (KB)
 
@@ -260,6 +290,7 @@ object RomImages {
         if (chip != null && chip.snes) return chip to splitSnes(data, capacityKb, layout)
         if (chip != null && chip.md) return chip to splitMd(data)
         if (chip != null && chip.gba) return chip to splitGba(data, block)
+        if (chip != null && chip.n64) return chip to splitN64(data)
         if (chip != null && chip.gb) return chip to splitGb(data, chip)
         if (chip != null) return chip to split(data, chip)
         val first = split(data, FlashChip.NESMAKER)
@@ -330,11 +361,13 @@ fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, m
  * O OSCR original só confere cada byte durante a gravação; esta leitura completa pega também o que mudou depois. Igual a verify_written em romimage.py.
  */
 fun verifyWritten(client: OscrClient, system: CartSystem, chip: FlashChip, img: RomImage, progress: Progress? = null): VerifyResult {
-    val res = client.dumpRom(system, 0, chip.mapper, img.prgKb, img.chrKb, progress)
+    // N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo
+    val res = client.dumpRom(system, 0, chip.mapper, if (chip.n64) (img.body.size + (1 shl 20) - 1) shr 20 else img.prgKb, img.chrKb, progress)
     val d = res.data
     val hasHeader = d.size >= 4 && d[0] == 'N'.code.toByte() && d[1] == 'E'.code.toByte() && d[2] == 'S'.code.toByte() && d[3] == 0x1A.toByte()
-    val read = if (hasHeader) d.copyOfRange(16, d.size) else d       // o firmware acrescenta um cabeçalho iNES sintético
+    val read0 = if (hasHeader) d.copyOfRange(16, d.size) else d       // o firmware acrescenta um cabeçalho iNES sintético
     val exp = img.rom ?: img.body
+    val read = if (chip.n64 && read0.size > exp.size) read0.copyOf(exp.size) else read0
     var diff: Int? = null
     if (!read.contentEquals(exp)) {
         val n = minOf(read.size, exp.size)

@@ -109,7 +109,9 @@ Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequênci
 |---|---|
 | N64: ler o cabeçalho (`idCart`: CRC1, código, título), ler a ROM (`readRom`, 1 a 64 MB informados pelo PC) | ✅ código; nunca rodou em hardware |
 | N64: ler e gravar SRAM, FlashRAM e EEPROM (`readSave`, `writeSave`) | ✅ código; nunca rodou em hardware; a conferência é do PC |
-| N64: gravar ROM em flash repro (`flashRepro`), Gameshark, Xplorer 64, Controller Pak (`readMPK`, `writeMPK`), teste de controle | ⬜ (sem protocolo; o Controller Pak precisa do conector do controle, que a placa não tem) |
+| N64: gravar ROM em flash repro (`flashRepro`) | ✅ `WRITE_ROM` (D176; nunca rodou em chip); conferência por leitura de volta |
+| N64: Gameshark e Xplorer 64 (`flashGameshark`, `flashXplorer`) | ⬜ |
+| N64: Controller Pak (`readMPK`, `writeMPK`), teste de controle | ⬜ (sem protocolo; o Controller Pak precisa do conector do controle, que a placa não tem) |
 
 | Função do OSCR (`SMS.cpp`) | Estado |
 |---|---|

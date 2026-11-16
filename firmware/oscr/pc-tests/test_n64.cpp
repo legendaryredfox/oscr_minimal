@@ -34,6 +34,10 @@ int main()
   formatName(n, 12, 0xFFFFFFFFUL, "ABCD", "X");                                              // buffer pequeno: sempre termina em zero
   CHECK(strlen(n) == 11);
 
+  CHECK(flashBytesValid(128UL << 10) && flashBytesValid(8UL << 20) && flashBytesValid(12UL << 20) && flashBytesValid(64UL << 20));
+  CHECK(!flashBytesValid(0) && !flashBytesValid(64UL << 10) && !flashBytesValid((8UL << 20) + 1) && !flashBytesValid((64UL << 20) + (128UL << 10)) && !flashBytesValid(1UL << 20 | 0x8000));
+  CHECK(flashFits(16UL << 20, 16) && !flashFits((16UL << 20) + 0x20000, 16) && !flashFits(1, 0) && flashFits(64UL << 20, 64));
+
   printf("test_n64: %d verificações, %d falhas\n", checks, failures);
   return failures ? 1 : 0;
 }

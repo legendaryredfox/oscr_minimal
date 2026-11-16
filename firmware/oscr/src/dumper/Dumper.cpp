@@ -29,6 +29,7 @@
 # include "dumper/SnesType.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
+# include "dumper/N64Flash.h"
 # include "dumper/GbFlash.h"
 # include "dumper/FlashProg.h"
 # include "dumper/VoltCore.h"
@@ -943,6 +944,13 @@ namespace OSCR::Dumper
           rc = oscr::E_FLASH;                                           // o `idFlashrom` do OSCR faz fatalError se não reconhece o chip
           ran = runCore([&rc, code, size] { rc = GbaFlash::prepare(code, size); GBA::cartOff(); });
         }
+        else if (system == oscr::SYS_N64)
+        {
+          rc = N64Flash::check(optMapper, size);                        // N64: `mapper` = 1 (flash repro); o firmware identifica o chip pelo ID
+          if (rc) { err = rc; return false; }
+          rc = oscr::E_FLASH;                                           // chip desconhecido, ROM de máscara ou apagamento que não fica em branco
+          ran = runCore([&rc, size] { rc = N64Flash::prepare(N64Flash::kRepro, size); N6::cartOff(); });
+        }
         else if (system == oscr::SYS_GB)
         {
           rc = GbFlash::check(chip, size);
@@ -1013,6 +1021,17 @@ namespace OSCR::Dumper
           uint32_t n = romWriteSize;
           ran = runCore([&rc, &in, chip, n] { rc = GbFlash::program(chip, n, in); GB::cartOff(); });
           GB::audioWE = 0;
+        }
+        else if (system == oscr::SYS_N64)
+        {
+          // As funções do OSCR leem o "arquivo" (sharedFile): ligá-lo ao fluxo, como no WRITE_SAVE.
+          uint32_t n = romWriteSize;
+          countingSource.inner = &in; countingSource.bytes = 0;
+          activeSource = &countingSource;
+          OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+          ran = runCore([&rc, n] { rc = N64Flash::program(N64Flash::kRepro, n); N6::cartOff(); });
+          activeSource = nullptr;
+          if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;
         }
         else if (system == oscr::SYS_FLASH)
         {
