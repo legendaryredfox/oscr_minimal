@@ -23,6 +23,7 @@
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
+# include "dumper/NesCore.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
 # include "dumper/MdFlash.h"
@@ -439,11 +440,12 @@ namespace OSCR::Dumper
     uint16_t nesProbe(bool forSave, uint16_t m, uint16_t prgKb, uint16_t chrKb)
     {
       using namespace OSCR::Cores;
-      uint8_t a[64], b[64], ch[64];
+      uint8_t a[64], b[64], ch[64], mid[16], vec[16];
 
       NE::cartOn();
       for (uint8_t i = 0; i < 64; i++) { a[i] = NE::read_prg_byte(0x8000 + i); b[i] = NE::read_prg_byte(0xC000 + i); ch[i] = NE::read_chr_byte(i); }
-      if (allSame(a, 64) && allSame(b, 64) && (a[0] == 0xFF || a[0] == 0x00)) return oscr::E_SEM_CARTUCHO;
+      for (uint8_t i = 0; i < 16; i++) { mid[i] = NE::read_prg_byte(0xA000 + i); vec[i] = NE::read_prg_byte(0xFFC0 + i); }   // F-15 (D173): mais janelas, incluindo os vetores
+      if (oscr::nes::cartAbsent(a, 64, mid, 16, b, 64, vec, 16)) return oscr::E_SEM_CARTUCHO;
 
       nesRec = NE::crdbNESRecord{};
       NE::romDetail = &nesRec;

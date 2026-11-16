@@ -78,9 +78,9 @@ Cada um entra **depois** de F-0 e só se couber no orçamento da placa que o tem
 | F-10 | SNES: Test RAM, Game Processor RAM, Sufami Turbo (slot A e B) | `SNES.cpp` | M |
 | F-11 | SNES: SF Memory (SFM) e Satellaview BS-X (Memory Pack e SRAM) | `SNES.cpp`, `SFM`, `BSX` | L |
 | F-12 | SNES: chips raros (Derby Stallion 96, S-RTC, OBC1, ST018, MSU-1, RTC do SPC7110) | `SNES.cpp` | M |
-| F-13 | NES: leitura raw (PRG e CHR separados) | `NES.cpp` | S |
+| F-13 | NES: leitura raw (PRG e CHR separados) — **feito** (D173) | `NES.cpp` | S |
 | F-14 | NES: EEPROM dos mappers 16 e 159, saves de Namco 163 e Sunsoft/Taito, mais mappers (os do upstream além dos 37), flash de CHR em outros chips | `NES.cpp` | L |
-| F-15 | NES: detecção de cartucho ausente melhor que a heurística de 64 bytes iguais | `NES.cpp` + costura | S |
+| F-15 | NES: detecção de cartucho ausente melhor que a heurística de 64 bytes iguais — **feito** (D173; só a regra, validação em bancada) | `NES.cpp` + costura | S |
 | F-16 | Mega Drive: Sega CD RAM (BRAM), Realtec, Sharp LH28F320BJE, 2 chips no mesmo cartucho, 29F800, gravar por CFI, detectar o limite de 2 MiB pelo padrão de leitura (resto do MD-13), conjunto de chips MD-1 a MD-8 que ainda faltarem | `MegaDrive.cpp`, `Flash.cpp` | L |
 | F-17 | GB/GBC: RTC do MBC3, flash do MBC6, ROM do TAMA5; GB Smart, NPower, Mega Memory, GameShark, Datel, Codebreaker, Pelican | `GBX`, `Flash.cpp` | L |
 | F-18 | GBA: 369-in-1 (ler 256 MB e por offset), GBA repro via slot GB | `GBA.cpp` | M |

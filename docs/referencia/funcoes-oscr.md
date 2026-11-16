@@ -38,7 +38,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 
 | Função do OSCR | Onde | Estado |
 |---|---|---|
-| Ler ROM iNES (PRG + CHR) e ler PRG/CHR separados (raw) | firmware (+ PC monta o iNES) | ✅ iNES; ⬜ raw |
+| Ler ROM iNES (PRG + CHR) e ler PRG/CHR separados (raw) | firmware (+ PC monta o iNES) | ✅ iNES e raw (`dump --raw`, D173) |
 | Ler e gravar PRG-RAM (save) | firmware | ✅ mappers 1, 4, 5, 69, 118; ⬜ o resto (EEPROM mappers 16 e 159, Namco 163, Sunsoft/Taito...) |
 | Escolher mapper, tamanhos e RAM (menu + banco CRDB) | **PC** (campos e base NES 2.0) | ✅ |
 | Identificar por CRC32 | **PC** (base No-Intro / NES 2.0) | ✅ |
