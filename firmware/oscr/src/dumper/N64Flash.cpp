@@ -36,12 +36,48 @@ namespace OSCR::Dumper::N64Flash
 
   uint16_t check(uint16_t chip, uint32_t sizeBytes)
   {
+    if (chip == kGameshark) return oscr::n64::gamesharkBytesValid(sizeBytes) ? 0 : oscr::E_ARGUMENTO;
+    if (chip == kXplorer) return oscr::n64::xplorerBytesValid(sizeBytes) ? 0 : oscr::E_ARGUMENTO;
     if (chip != kRepro || !oscr::n64::flashBytesValid(sizeBytes)) return oscr::E_ARGUMENTO;
     return 0;
   }
 
-  uint16_t prepare(uint16_t, uint32_t sizeBytes)
+  uint16_t probe(uint16_t chip)
   {
+    N::cartOn();
+    if (chip == kGameshark) { N::unlockGSAddressRanges(); return N::idGameshark() ? 0 : oscr::E_FLASH; }
+    if (chip == kXplorer) return N::idXplorer() ? 0 : oscr::E_FLASH;
+    return oscr::E_ARGUMENTO;
+  }
+
+  uint16_t backup(uint16_t chip)
+  {
+    uint16_t rc = probe(chip);                          // `flashSize` do Gameshark sai do ID
+    if (rc) return rc;
+    if (chip == kGameshark) N::backupGameshark();       // lê flashSize bytes (256 KB, ou 1 MB no SST 28LF040) em 0x1EC00000
+    else N::backupXplorer();                            // 256 KB em 0x10400000
+    return 0;
+  }
+
+  uint16_t prepare(uint16_t chip, uint32_t sizeBytes)
+  {
+    if (chip == kGameshark)
+    {
+      uint16_t rc = probe(chip);
+      if (rc) return rc;
+      if (!oscr::n64::gamesharkFits(sizeBytes, flashid)) return oscr::E_ARGUMENTO;
+      N::eraseGameshark();
+      N::blankCheck();                                  // "Erase failed" é fatalError no OSCR: volta pelo longjmp do runCore (E_FLASH)
+      return 0;
+    }
+    if (chip == kXplorer)
+    {
+      uint16_t rc = probe(chip);
+      if (rc) return rc;
+      N::eraseXplorer();
+      N::blankCheck_XP64();
+      return 0;
+    }
     N::cartOn();
     N::idFlashrom();                                   // cartSize = 0 se o ID não é conhecido (ROM de máscara, chip fora da lista)
     if (OSCR::Cores::cartSize == 0) return oscr::E_FLASH;
@@ -58,8 +94,19 @@ namespace OSCR::Dumper::N64Flash
     return N::blankcheckFlashrom() ? 0 : oscr::E_FLASH;  // "Check if erase was successful": sem blankcheck o OSCR não grava
   }
 
-  uint16_t program(uint16_t, uint32_t sizeBytes)
+  uint16_t program(uint16_t chip, uint32_t sizeBytes)
   {
+    if (chip == kGameshark || chip == kXplorer)
+    {
+      OSCR::Cores::fileSize = sizeBytes;
+      uint16_t rc = probe(chip);                        // religa o cartucho (`prepare` o desligou) e refaz o ID: flashid e flashSize
+      if (rc) return rc;
+      if (chip == kGameshark) N::writeGameshark();      // páginas de 256 bytes (29LE010 e parentes) ou setores de 16 KB (28LF040); lê o fluxo em ordem
+      else N::writeXplorer();                           // o arquivo chega já embaralhado pelo PC: o `seekSet` do fluxo não anda (docs/decisoes.md, D177)
+      OSCR::Storage::Shared::close();
+      delay(1000);
+      return 0;
+    }
     N::cartOn();
     OSCR::Cores::fileSize = sizeBytes;
 

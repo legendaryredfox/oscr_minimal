@@ -49,6 +49,19 @@ namespace oscr { namespace n64
   /// Gravação em flash repro (F-19, D176): o `flashRepro` do OSCR lê o arquivo em setores de 128 KB (32 KB no MX29LV640), então o tamanho é múltiplo de 128 KB, de 128 KB a 64 MB.
   constexpr uint32_t kFlashSector = 0x20000UL, kFlashMaxBytes = 64UL << 20;
   inline bool flashBytesValid(uint32_t bytes) { return bytes >= kFlashSector && bytes <= kFlashMaxBytes && bytes % kFlashSector == 0; }
+  /// Gameshark e Xplorer 64 (F-19, D177): `chip` do WRITE_ROM = 2 e 3. O backup (leitura da flash do cartucho) é um `DUMP_ROM` do N64 com o bit 15 do `mapper` ligado e o chip nos bits 0 a 7.
+  constexpr uint16_t kChipRepro = 1, kChipGameshark = 2, kChipXplorer = 3, kBackupFlag = 0x8000;
+  constexpr uint32_t kGamesharkSector = 16384UL, kGamesharkMax1Mbit = 262144UL, kGamesharkMax4Mbit = 1048576UL, kXplorerBytes = 262144UL;
+  inline uint16_t backupCode(uint16_t chip) { return uint16_t(kBackupFlag | chip); }
+  inline bool isBackup(uint16_t mapper) { return (mapper & kBackupFlag) != 0; }
+  inline bool backupValid(uint16_t mapper) { return mapper == backupCode(kChipGameshark) || mapper == backupCode(kChipXplorer); }
+  /// Tamanho do arquivo do Gameshark: o `writeGameshark` do OSCR grava páginas de 256 bytes (2 chips de 128) e, no SST 28LF040, setores de 16 KB; múltiplo de 16 KB cobre os dois. O limite do chip (256 KB ou 1 MB) só se sabe depois do ID.
+  inline bool gamesharkBytesValid(uint32_t bytes) { return bytes >= kGamesharkSector && bytes <= kGamesharkMax4Mbit && bytes % kGamesharkSector == 0; }
+  /// Cabe no chip achado? `id` é o ID de flash do Gameshark: 0x0808, 0x3535 e 0x0707 (2 x 1 Mbit) ou 0x0404 (2 x SST 28LF040, 1 MB).
+  inline bool gamesharkFits(uint32_t bytes, uint16_t id) { return bytes <= (id == 0x0404 ? kGamesharkMax4Mbit : kGamesharkMax1Mbit); }
+  /// Xplorer 64: o `verifyXplorer` e o `blankCheck_XP64` do OSCR cobrem sempre os 256 KB, e o `writeXplorer` só embaralha corretamente um arquivo desse tamanho.
+  inline bool xplorerBytesValid(uint32_t bytes) { return bytes == kXplorerBytes; }
+
   /// O arquivo cabe no chip? `chipMb` é o tamanho que o `idFlashrom` achou (1 a 64 MB). O OSCR divide por 1 MB e arredonda para baixo; aqui a conta é em bytes.
   inline bool flashFits(uint32_t bytes, uint32_t chipMb) { return chipMb != 0 && bytes <= (chipMb << 20); }
 

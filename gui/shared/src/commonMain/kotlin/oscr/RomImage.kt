@@ -29,8 +29,16 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** N64: o firmware identifica o chip pelo ID (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512). */
     N64_FLASH("n64-flash", 1, 0, "N64 flash (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512)", n64 = true),
+    /** N64, acessórios (F-19, D177): a flash do próprio Gameshark (2 chips SST 29LE010, AT29LV010A, SST 29EE010 ou SST 28LF040) e do Xplorer 64 (2 x SST 29LE010). */
+    GAMESHARK("gameshark", 2, 0, "Gameshark (2 chips: SST 29LE010, AT29LV010A, SST 29EE010 ou SST 28LF040)", n64 = true),
+    XPLORER64("xplorer64", 3, 0, "Xplorer 64 (2 x SST 29LE010, 256 KB)", n64 = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
     MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)", md = true);
+
+    /** Gameshark e Xplorer 64: a flash do acessório, que não tem outra cópia (o backup é lido antes de apagar). */
+    val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64
+    /** Campo `mapper` do DUMP_ROM que lê a flash do acessório (bit 15 mais o chip). Igual a n64_backup_code em romimage.py. */
+    val backupCode: Int get() = 0x8000 or code
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -118,7 +126,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -247,6 +255,37 @@ object RomImages {
         return RomImage(body, minOf(body.size / 1024, 65535), 0, null)
     }
 
+    const val GAMESHARK_SECTOR = 16 * 1024
+    const val GAMESHARK_MAX_BYTES = 1024 * 1024
+    const val XPLORER_BYTES = 256 * 1024
+
+    /** Imagem da flash de um Gameshark: múltiplo de 16 KB, até 1 MB; vai como está. Igual a split_gameshark em romimage.py. */
+    fun splitGameshark(data: ByteArray): RomImage {
+        if (data.size < GAMESHARK_SECTOR || data.size % GAMESHARK_SECTOR != 0) throw RomImageException(RomImageProblem.GS_SIZE)
+        if (data.size > GAMESHARK_MAX_BYTES) throw RomImageException(RomImageProblem.GS_TOO_BIG, data.size / 1024)
+        return RomImage(data, data.size / 1024, 0, null)
+    }
+
+    /** Permutação dos 12 bits baixos do endereço (em meias-palavras) do Xplorer 64: a mesma de `unscramble` em N64.cpp do OSCR. */
+    fun xplorerUnscramble(a: Int): Int =
+        ((a shr 4) and 0x001) or ((a shr 8) and 0x002) or ((a.inv() shr 9) and 0x004) or ((a shr 3) and 0x008) or ((a shr 6) and 0x010) or ((a shr 2) and 0x020) or
+        ((a.inv() shl 5) and 0x0C0) or ((a.inv() shl 8) and 0x100) or ((a.inv() shl 6) and 0x200) or ((a.inv() shl 2) and 0x400) or ((a shl 6) and 0x800) or (a and 0x1F000)
+
+    /**
+     * Imagem de 256 KB do Xplorer 64. O `writeXplorer` do OSCR busca cada palavra do arquivo em `unscramble(j)` com `seekSet`, e o fluxo serial não anda para trás;
+     * então o PC manda o arquivo já na ordem em que o OSCR o consome: palavra j do fluxo = palavra `unscramble(j)` do arquivo. [RomImage.rom] guarda a original,
+     * que a conferência compara com a leitura de volta. Igual a split_xplorer em romimage.py.
+     */
+    fun splitXplorer(data: ByteArray): RomImage {
+        if (data.size != XPLORER_BYTES) throw RomImageException(RomImageProblem.XP_SIZE)
+        val body = ByteArray(data.size)
+        for (j in 0 until data.size / 2) {
+            val u = xplorerUnscramble(j) * 2
+            body[2 * j] = data[u]; body[2 * j + 1] = data[u + 1]
+        }
+        return RomImage(body, data.size / 1024, 0, null, rom = data)
+    }
+
     const val GBA_369_MAX_BYTES = 256 * 1024 * 1024
     const val GBA_VERIFY_MAX_BYTES = 64 * 1024 * 1024 - 1024      // prg_kb do DUMP_ROM é u16 (KB)
 
@@ -290,7 +329,7 @@ object RomImages {
         if (chip != null && chip.snes) return chip to splitSnes(data, capacityKb, layout)
         if (chip != null && chip.md) return chip to splitMd(data)
         if (chip != null && chip.gba) return chip to splitGba(data, block)
-        if (chip != null && chip.n64) return chip to splitN64(data)
+        if (chip != null && chip.n64) return chip to (if (chip == FlashChip.GAMESHARK) splitGameshark(data) else if (chip == FlashChip.XPLORER64) splitXplorer(data) else splitN64(data))
         if (chip != null && chip.gb) return chip to splitGb(data, chip)
         if (chip != null) return chip to split(data, chip)
         val first = split(data, FlashChip.NESMAKER)
@@ -362,7 +401,8 @@ fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, m
  */
 fun verifyWritten(client: OscrClient, system: CartSystem, chip: FlashChip, img: RomImage, progress: Progress? = null): VerifyResult {
     // N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo
-    val res = client.dumpRom(system, 0, chip.mapper, if (chip.n64) (img.body.size + (1 shl 20) - 1) shr 20 else img.prgKb, img.chrKb, progress)
+    val res = if (chip.accessory) client.dumpRom(system, 0, chip.backupCode, 0, 0, progress)       // Gameshark e Xplorer 64: o backup do próprio acessório (mapper com o bit 15), sem tamanho
+              else client.dumpRom(system, 0, chip.mapper, if (chip.n64) (img.body.size + (1 shl 20) - 1) shr 20 else img.prgKb, img.chrKb, progress)
     val d = res.data
     val hasHeader = d.size >= 4 && d[0] == 'N'.code.toByte() && d[1] == 'E'.code.toByte() && d[2] == 'S'.code.toByte() && d[3] == 0x1A.toByte()
     val read0 = if (hasHeader) d.copyOfRange(16, d.size) else d       // o firmware acrescenta um cabeçalho iNES sintético

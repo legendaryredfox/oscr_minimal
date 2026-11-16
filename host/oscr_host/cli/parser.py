@@ -182,6 +182,8 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--yes", action="store_true", help=H("yes_write"))
     rp.add_argument("--no-verify", action="store_true", help=H("rom_no_verify"))
     rp.add_argument("--ignore-cart-limit", action="store_true", help=H("rom_ignore_limit"))
+    rp.add_argument("--no-backup", action="store_true", help=H("save_no_backup"))
+    rp.add_argument("--backup-dir", default="~/oscr_backups", help=H("save_backup_dir"))
     rp.add_argument("--begin-timeout", type=float, default=None, help=H("begin_timeout_rom"))
     # programador de flash genérico (sistema 7)
     def flash_cmd(name, fn, help_, out=False, inp=False, write=False):

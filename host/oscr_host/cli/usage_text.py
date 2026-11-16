@@ -73,8 +73,8 @@ options (accepted before or after the command):
   --dry-run            firmware-flash: only show the avrdude command and the current firmware version
   --no-verify          firmware-flash, rom-write, save-write: do not read the ROM/save back to verify after writing (default: verify)
   --yes                do not ask before writing (required outside a terminal)
-  --no-backup          save-write: do not read the current save first
-  --backup-dir DIR     save-write: backup folder (default ~/oscr_backups)
+  --no-backup          save-write: do not read the current save first; rom-write -s n64 on Gameshark and Xplorer 64: do not read the accessory flash first (no other copy exists)
+  --backup-dir DIR     save-write, rom-write (Gameshark, Xplorer 64): backup folder (default ~/oscr_backups)
 
 exit codes: 0 ok | 1 error | 2 no cartridge | 3 no port/device | 4 refused (needs --yes) | 64 usage | 130 Ctrl+C
 Full contract: docs/referencia/cli.md"""
@@ -150,8 +150,8 @@ opções (aceitas antes ou depois do comando):
   --dry-run            firmware-flash: só mostra o comando do avrdude e a versão atual do firmware
   --no-verify          firmware-flash, rom-write, save-write: não lê a ROM/save de volta para conferir depois de gravar (padrão: conferir)
   --yes                não pergunta antes de gravar (obrigatório fora de terminal)
-  --no-backup          save-write: não lê o save atual antes
-  --backup-dir DIR     save-write: pasta do backup (padrão ~/oscr_backups)
+  --no-backup          save-write: não lê o save atual antes; rom-write -s n64 em Gameshark e Xplorer 64: não lê a flash do acessório antes (não há outra cópia)
+  --backup-dir DIR     save-write, rom-write (Gameshark, Xplorer 64): pasta do backup (padrão ~/oscr_backups)
 
 códigos de saída: 0 ok | 1 erro | 2 sem cartucho | 3 sem porta/dispositivo | 4 recusado (precisa de --yes) | 64 uso | 130 Ctrl+C
 Contrato completo: docs/referencia/cli.md"""
@@ -227,8 +227,8 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --dry-run            firmware-flash: только показать команду avrdude и текущую версию прошивки
   --no-verify          firmware-flash, rom-write, save-write: не читать ROM/сохранение обратно для проверки после записи (по умолчанию: проверять)
   --yes                не спрашивать перед записью (обязательно вне терминала)
-  --no-backup          save-write: не читать текущее сохранение заранее
-  --backup-dir DIR     save-write: папка резервной копии (по умолчанию ~/oscr_backups)
+  --no-backup          save-write: не читать текущее сохранение заранее; rom-write -s n64 на Gameshark и Xplorer 64: не читать флеш аксессуара заранее (другой копии нет)
+  --backup-dir DIR     save-write, rom-write (Gameshark, Xplorer 64): папка резервной копии (по умолчанию ~/oscr_backups)
 
 коды возврата: 0 ок | 1 ошибка | 2 нет картриджа | 3 нет порта/устройства | 4 отказано (нужен --yes) | 64 использование | 130 Ctrl+C
 Полный контракт: docs/referencia/cli.md"""
@@ -304,8 +304,8 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --dry-run            firmware-flash：只显示 avrdude 命令和当前固件版本
   --no-verify          firmware-flash、rom-write、save-write：写入后不回读 ROM/存档校验（默认：校验）
   --yes                写入前不询问（在终端之外必须给出）
-  --no-backup          save-write：事先不读取当前存档
-  --backup-dir DIR     save-write：备份文件夹（默认 ~/oscr_backups）
+  --no-backup          save-write：事先不读取当前存档；rom-write -s n64 用于 Gameshark 和 Xplorer 64：事先不读取配件闪存（没有其他副本）
+  --backup-dir DIR     save-write、rom-write（Gameshark、Xplorer 64）：备份文件夹（默认 ~/oscr_backups）
 
 退出码：0 成功 | 1 错误 | 2 无卡带 | 3 无串口/设备 | 4 被拒绝（需要 --yes）| 64 用法 | 130 Ctrl+C
 完整约定：docs/referencia/cli.md"""

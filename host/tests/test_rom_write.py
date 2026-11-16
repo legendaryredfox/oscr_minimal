@@ -418,6 +418,110 @@ def test_rom_write_n64_recusas(monkeypatch, capsys, tmp_path):
     assert code == 64 and o["error"]["kind"] == "bad_rom"
 
 
+# ---------------------------------------------------------------- N64: Gameshark e Xplorer 64 (F-19, D177)
+def _gs_image(kb: int) -> bytes:
+    return bytes((i * 7 + 1) & 0xFF for i in range(kb * 1024))
+
+
+def test_xplorer_unscramble_e_uma_permutacao_dentro_de_blocos_de_4096_meias_palavras():
+    for block in (0, 1, 31):
+        base = block * 4096
+        got = {RI.xplorer_unscramble(base + k) for k in range(4096)}
+        assert got == set(range(base, base + 4096))
+
+
+def test_xplorer_unscramble_igual_ao_do_oscr():
+    """Lê a expressão de `unscramble` direto do N64.cpp do firmware e compara com a do host em todos os endereços de 17 bits."""
+    import re
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[2] / "firmware" / "oscr" / "src" / "cores" / "N64.cpp").read_text()
+    expr = re.search(r"uint32_t unscramble\(uint32_t addr\)\s*\{\s*uint32_t result = (.*?);", src, re.S).group(1)
+    expr = expr.replace("~addr", "(~addr & 0xFFFFFFFF)")
+    for a in range(1 << 17):
+        assert eval(expr, {"addr": a}) & 0xFFFFFFFF == RI.xplorer_unscramble(a), a
+
+
+def test_split_xplorer_entrega_na_ordem_que_o_writeXplorer_consome():
+    img = _gs_image(256)
+    out = RI.split_xplorer(img)
+    assert out.rom == img and len(out.body) == 256 * 1024 and out.prg_kb == 256
+    # simula o laço do OSCR: palavra j do buffer = palavra unscramble(j) do arquivo (seekSet + read de 2 bytes); o fluxo entrega na ordem do corpo
+    for j in (0, 1, 127, 128, 4095, 4096, 70000, 131071):
+        u = RI.xplorer_unscramble(j) * 2
+        assert out.body[2 * j:2 * j + 2] == img[u:u + 2]
+    assert sorted(out.body) == sorted(img)                         # é só uma reordenação
+
+
+def test_split_xplorer_e_gameshark_erros():
+    for n in (0, 128 * 1024, 256 * 1024 + 2):
+        with pytest.raises(ValueError):
+            RI.split_xplorer(bytes(n))
+    for n in (0, 8 * 1024, 16 * 1024 + 256, 1024 * 1024 + 16 * 1024):
+        with pytest.raises(ValueError):
+            RI.split_gameshark(bytes(n))
+    assert RI.split_gameshark(_gs_image(256)).body == _gs_image(256) and len(RI.split_gameshark(_gs_image(1024)).body) == 1 << 20
+    assert RI.chip_code("gameshark", RI.split_gameshark(_gs_image(256))) == 2 and RI.chip_code("xplorer64", RI.split_xplorer(_gs_image(256))) == 3
+    assert RI.n64_backup_code("gameshark") == 0x8002 and RI.n64_backup_code("xplorer64") == 0x8003
+
+
+class _FakeAcc:
+    """Cliente falso do Gameshark/Xplorer 64: DUMP_ROM com o bit 15 devolve a flash (de início um conteúdo antigo; depois da gravação, a imagem gravada)."""
+    def __init__(self, old, size):
+        self.flash, self.size, self.calls, self.written = old, size, [], None
+
+    def dump_rom(self, system, block, progress, mapper, prg, chr_):
+        self.calls.append(("dump", system, mapper, prg))
+        return types.SimpleNamespace(data=self.flash, crc32=zlib.crc32(self.flash))
+
+    def write_rom(self, system, data, chip, prg_kb, chr_kb, block, progress, begin_timeout):
+        self.calls.append(("write", system, chip, len(data), begin_timeout))
+        self.written = data
+        return zlib.crc32(data)
+
+
+def test_rom_write_gameshark_faz_backup_antes_e_confere_pela_imagem(monkeypatch, capsys, tmp_path):
+    img = _gs_image(256)
+    f = tmp_path / "gs.bin"
+    f.write_bytes(img)
+    class Fake2(_FakeAcc):
+        def write_rom(self, *a, **k):
+            r = super().write_rom(*a, **k)
+            self.flash = img                      # depois de gravar, a flash tem a imagem
+            return r
+    fake = Fake2(b"\x11" * (256 * 1024), 0)
+    code, o = _n64_cli(monkeypatch, capsys, fake, "rom-write", "-s", "n64", "--chip", "gameshark", "-i", str(f), "--backup-dir", str(tmp_path / "bk"), "--yes")
+    assert code == 0 and o["chip"] == "gameshark" and o["verify"]["ok"]
+    assert [c[0] for c in fake.calls] == ["dump", "write", "dump"]            # backup, gravação, leitura de volta
+    assert fake.calls[0][2] == 0x8002 and fake.calls[2][2] == 0x8002 and fake.calls[1][2] == 2 and fake.calls[1][4] == 600.0
+    bk = list((tmp_path / "bk").glob("gameshark_*.bin"))
+    assert len(bk) == 1 and bk[0].read_bytes() == b"\x11" * (256 * 1024) and o["backup"] == str(bk[0])
+
+
+def test_rom_write_xplorer_manda_o_fluxo_reordenado_e_confere_a_imagem_original(monkeypatch, capsys, tmp_path):
+    img = _gs_image(256)
+    f = tmp_path / "xp.bin"
+    f.write_bytes(img)
+    class Fake3(_FakeAcc):
+        def write_rom(self, *a, **k):
+            r = super().write_rom(*a, **k)
+            self.flash = img
+            return r
+    fake = Fake3(b"\xff" * (256 * 1024), 0)
+    code, o = _n64_cli(monkeypatch, capsys, fake, "rom-write", "-s", "n64", "--chip", "xplorer64", "-i", str(f), "--no-backup", "--yes")
+    assert code == 0 and o["verify"]["ok"] and "backup" not in o
+    assert [c[0] for c in fake.calls] == ["write", "dump"] and fake.calls[1][2] == 0x8003
+    assert fake.written == RI.split_xplorer(img).body and fake.written != img
+
+
+def test_rom_write_acessorio_recusas(monkeypatch, capsys, tmp_path):
+    f = tmp_path / "x.bin"
+    f.write_bytes(bytes(1000))
+    code, o = _n64_cli(monkeypatch, capsys, _FakeAcc(b"", 0), "rom-write", "-s", "n64", "--chip", "xplorer64", "-i", str(f), "--yes")
+    assert code == 64 and o["error"]["kind"] == "bad_rom"
+    code, o = _n64_cli(monkeypatch, capsys, _FakeAcc(b"", 0), "rom-write", "-s", "gba", "--chip", "gameshark", "-i", str(f), "--yes")
+    assert code == 64
+
+
 # ---------------------------------------------------------------- Game Boy (29F, 39SF, CFI)
 def gb_rom(kb: int) -> bytes:
     return bytes((i * 17 + 9) & 0xFF for i in range(kb * 1024))

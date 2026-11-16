@@ -38,6 +38,12 @@ int main()
   CHECK(!flashBytesValid(0) && !flashBytesValid(64UL << 10) && !flashBytesValid((8UL << 20) + 1) && !flashBytesValid((64UL << 20) + (128UL << 10)) && !flashBytesValid(1UL << 20 | 0x8000));
   CHECK(flashFits(16UL << 20, 16) && !flashFits((16UL << 20) + 0x20000, 16) && !flashFits(1, 0) && flashFits(64UL << 20, 64));
 
+  CHECK(backupCode(2) == 0x8002 && backupCode(3) == 0x8003 && isBackup(0x8002) && !isBackup(2) && !isBackup(6));    // o tipo de save 2 nunca vira backup
+  CHECK(backupValid(0x8002) && backupValid(0x8003) && !backupValid(0x8001) && !backupValid(0x8004) && !backupValid(3));
+  CHECK(gamesharkBytesValid(16384) && gamesharkBytesValid(262144) && gamesharkBytesValid(1048576) && !gamesharkBytesValid(0) && !gamesharkBytesValid(8192) && !gamesharkBytesValid(16384 + 256) && !gamesharkBytesValid(1048576 + 16384));
+  CHECK(gamesharkFits(262144, 0x0808) && gamesharkFits(262144, 0x3535) && gamesharkFits(262144, 0x0707) && !gamesharkFits(262144 + 16384, 0x0808) && gamesharkFits(1048576, 0x0404) && !gamesharkFits(1048576 + 16384, 0x0404));
+  CHECK(xplorerBytesValid(262144) && !xplorerBytesValid(131072) && !xplorerBytesValid(262144 + 1) && !xplorerBytesValid(0));
+
   printf("test_n64: %d verificações, %d falhas\n", checks, failures);
   return failures ? 1 : 0;
 }

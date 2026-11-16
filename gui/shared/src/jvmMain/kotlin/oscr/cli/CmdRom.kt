@@ -40,9 +40,19 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val c = connect(io, a)
     val crc: Int
     var mdChip: MdFlashChip? = null
+    var backupPath: File? = null
     try {
         if (!c.info.writeRom) throw CliError("unsupported_firmware", Msg.t("fw.unsupported_write_rom"), EXIT_ERROR, Msg.t("fw.unsupported.hint"))
         val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: if (sys == CartSystem.N64) 600.0 else 90.0) * 1000).toLong()
+        if (chip.accessory && "no-backup" !in a.flags) {  // a flash do Gameshark e do Xplorer 64 não tem outra cópia: lê tudo antes de apagar (se falhar, nada foi apagado)
+            val cur = c.client.dumpRom(sys, 0, chip.backupCode, 0, 0, progress(io, a, "backup"))
+            val dir = File((a.opts["backup-dir"] ?: "~/oscr_backups").let { if (it.startsWith("~")) io.home + it.substring(1) else it })
+            dir.mkdirs()
+            val f = File(dir, "${chip.key}_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.bin")
+            f.writeBytes(cur.data)
+            backupPath = f
+            if (!a.json) io.out(Msg.t("rom.backup", "label" to chip.label, "path" to f.path, "crc" to cur.crcHex))
+        }
         if (sys == CartSystem.MD) {                       // mostra o chip que vai ser gravado antes de apagar
             mdChip = identifyMdFlash(c.client, c.info)
             if (!a.json) io.out(mdChipLine(mdChip))
@@ -59,6 +69,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
     if (img.flashKb > 0) { out["flash_kb"] = img.flashKb; out["layout"] = layoutName }
     if (sys == CartSystem.MD) out["flash_chip"] = mdChipJson(mdChip)
+    backupPath?.let { out["backup"] = it.path }
     val lines = mutableListOf(Msg.t("rom.written", "what" to what, "crc" to hex))
     val gbaSkip = (chip.gba && (img.block != 0 || img.body.size > RomImages.GBA_VERIFY_MAX_BYTES)) || chip == FlashChip.GB_CAM_SECOND    // 369-in-1 em bloco N ou ROM > 64 MB: a leitura comum não alcança
     if ("no-verify" in a.flags || sys == CartSystem.MOCK || gbaSkip) {          // o simulador não guarda a ROM gravada para ler de volta

@@ -760,7 +760,8 @@ namespace OSCR::Dumper
         activeSink = &countingSink;
         bool r369 = system == oscr::SYS_GBA && kind == oscr::KIND_ROM && oscr::gba369::isRead(optMapper);
         uint16_t m369 = optMapper, mb369 = optPrgKb;
-        bool ok = runCore([system, kind, saveType, r369, m369, mb369]
+        uint16_t m64 = optMapper;
+        bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64]
         {
           if (isNes(system))
           {
@@ -804,6 +805,7 @@ namespace OSCR::Dumper
           }
           if (system == oscr::SYS_N64)
           {
+            if (kind == oscr::KIND_ROM && oscr::n64::isBackup(m64)) { N64Flash::backup(m64 & 0xFF); N6::cartOff(); return; }   // flash do Gameshark ou do Xplorer 64
             if (kind == oscr::KIND_ROM) N6::readRom();                          // liga e desliga o cartucho sozinha
             else
             {
@@ -946,10 +948,11 @@ namespace OSCR::Dumper
         }
         else if (system == oscr::SYS_N64)
         {
-          rc = N64Flash::check(optMapper, size);                        // N64: `mapper` = 1 (flash repro); o firmware identifica o chip pelo ID
+          uint16_t kind64 = chip;                                       // N64: 1 = flash repro (o firmware identifica o chip pelo ID), 2 = Gameshark, 3 = Xplorer 64
+          rc = N64Flash::check(kind64, size);
           if (rc) { err = rc; return false; }
           rc = oscr::E_FLASH;                                           // chip desconhecido, ROM de máscara ou apagamento que não fica em branco
-          ran = runCore([&rc, size] { rc = N64Flash::prepare(N64Flash::kRepro, size); N6::cartOff(); });
+          ran = runCore([&rc, kind64, size] { rc = N64Flash::prepare(kind64, size); N6::cartOff(); });
         }
         else if (system == oscr::SYS_GB)
         {
@@ -1029,7 +1032,8 @@ namespace OSCR::Dumper
           countingSource.inner = &in; countingSource.bytes = 0;
           activeSource = &countingSource;
           OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
-          ran = runCore([&rc, n] { rc = N64Flash::program(N64Flash::kRepro, n); N6::cartOff(); });
+          uint16_t kind64 = chip;
+          ran = runCore([&rc, kind64, n] { rc = N64Flash::program(kind64, n); N6::cartOff(); });
           activeSource = nullptr;
           if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;
         }
@@ -1104,6 +1108,16 @@ namespace OSCR::Dumper
           bool ran = runCore([&rc, forSave, m, p, c] { rc = nesProbe(forSave, m, p, c); NE::cartOff(); });
           if (!ran && rc == oscr::E_SEM_CARTUCHO) { err = oscr::E_CARTUCHO_IO; return false; }
           if (rc != 0) { err = rc; return false; }
+          return true;
+        }
+        if (system == oscr::SYS_N64 && !forSave && oscr::n64::isBackup(optMapper))
+        {
+          // Backup da flash do Gameshark ou do Xplorer 64 (F-19, D177): não é um cartucho de jogo, então não tem cabeçalho de N64; só confere o ID do acessório.
+          if (!oscr::n64::backupValid(optMapper)) { err = oscr::E_ARGUMENTO; return false; }
+          uint16_t rc = oscr::E_FLASH, kind64 = optMapper & 0xFF;
+          bool ran = runCore([&rc, kind64] { rc = N64Flash::probe(kind64); N6::cartOff(); });
+          if (!ran && rc == 0) rc = oscr::E_CARTUCHO_IO;
+          if (rc) { err = rc; return false; }
           return true;
         }
         if (system == oscr::SYS_N64)

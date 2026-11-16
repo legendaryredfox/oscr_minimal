@@ -25,16 +25,18 @@ class ImageError(ValueError):
 # Mega Drive (firmware/oscr/include/dumper/MdFlash.h): o firmware identifica o chip pelo ID (MX29F1610, S29GL064N, chips AMD de 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF).
 # No SNES o campo é (disposição << 8) | fiação (SNES_WIRING); `chip_code()` monta o valor final.
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
-         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1, "n64-flash": 1,
+         "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1, "n64-flash": 1, "gameshark": 2, "xplorer64": 3,
          "gb-diy-mbc3": 1, "gb-diy-mbc5": 2, "gb-hdr-mbc30": 3, "gb-cam-first": 4, "gb-cam-second": 5, "gb-orange-fm": 6, "gb-39sf-mbc5": 7, "gb-cfi": 8}
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
-               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0, "n64-flash": 0,
+               "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0, "n64-flash": 0, "gameshark": 0, "xplorer64": 0,
                "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)",
               "gba-flash": "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)",
               "n64-flash": "N64 flash (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512)",
+              "gameshark": "Gameshark (2 chips: SST 29LE010, AT29LV010A, SST 29EE010 ou SST 28LF040)",
+              "xplorer64": "Xplorer 64 (2 x SST 29LE010, 256 KB)",
               "gb-diy-mbc3": "GB flash 29F, DIY MBC3 (WR)", "gb-diy-mbc5": "GB flash 29F, DIY MBC5 (WR)", "gb-hdr-mbc30": "GB flash 29F, HDR MBC30 (WE no pino de áudio)",
               "gb-cam-first": "GB flash 29F, HDR GameBoy Cam, 1º jogo (apaga)", "gb-cam-second": "GB flash 29F, HDR GameBoy Cam, 2º jogo (sem apagar)",
               "gb-orange-fm": "GB flash 39SF010 sem MBC, Orange FM (32 KB)", "gb-39sf-mbc5": "GB flash 39SF040, MBC5 (WE no pino de áudio)", "gb-cfi": "GB flash CFI",
@@ -241,6 +243,47 @@ def split_n64(data: bytes) -> RomImage:
     return RomImage(body, min(len(body) // 1024, 65535), 0, None)
 
 
+N64_ACCESSORY_CHIPS = ("gameshark", "xplorer64")        # a flash do acessório, não de um cartucho de jogo (WRITE_ROM chip 2 e 3; backup: DUMP_ROM com o bit 15 no mapper)
+N64_BACKUP_FLAG = 0x8000
+GAMESHARK_SECTOR = 16 * 1024
+GAMESHARK_MAX_BYTES = 1024 * 1024
+XPLORER_BYTES = 256 * 1024
+
+
+def n64_backup_code(chip: str) -> int:
+    """Campo `mapper` do DUMP_ROM que lê a flash do acessório (firmware/oscr/include/dumper/N64Core.h: backupCode)."""
+    return N64_BACKUP_FLAG | CHIPS[chip]
+
+
+def split_gameshark(data: bytes) -> RomImage:
+    """Imagem da flash de um Gameshark: múltiplo de 16 KB (páginas de 256 bytes e setores de 16 KB do SST 28LF040), até 1 MB; os chips de 2 x 1 Mbit só têm 256 KB
+    (o firmware recusa, antes de apagar, o que não cabe no chip achado). Vai como está: é a imagem que o backup lê. Levanta ValueError."""
+    if len(data) < GAMESHARK_SECTOR or len(data) % GAMESHARK_SECTOR:
+        raise ImageError("gs_size")
+    if len(data) > GAMESHARK_MAX_BYTES:
+        raise ImageError("gs_too_big", kb=len(data) // 1024)
+    return RomImage(data, len(data) // 1024, 0, None)
+
+
+def xplorer_unscramble(a: int) -> int:
+    """Permutação dos 12 bits baixos do endereço (em meias-palavras) do Xplorer 64: a mesma de `unscramble` em N64.cpp do OSCR."""
+    return (((a >> 4) & 0x001) | ((a >> 8) & 0x002) | ((~a >> 9) & 0x004) | ((a >> 3) & 0x008) | ((a >> 6) & 0x010) | ((a >> 2) & 0x020) | ((~a << 5) & 0x0C0)
+            | ((~a << 8) & 0x100) | ((~a << 6) & 0x200) | ((~a << 2) & 0x400) | ((a << 6) & 0x800) | (a & 0x1F000))
+
+
+def split_xplorer(data: bytes) -> RomImage:
+    """Imagem de 256 KB da flash do Xplorer 64 (a que o backup lê). O `writeXplorer` do OSCR busca cada palavra do arquivo em `unscramble(j)` com `seekSet`,
+    e o fluxo serial não anda para trás; então o PC manda o arquivo já na ordem em que o OSCR o consome: palavra j do fluxo = palavra `unscramble(j)` do arquivo.
+    `rom` guarda a imagem original, que a conferência compara com a leitura de volta. Levanta ValueError."""
+    if len(data) != XPLORER_BYTES:
+        raise ImageError("xp_size")
+    body = bytearray(len(data))
+    for j in range(len(data) // 2):
+        u = xplorer_unscramble(j) * 2
+        body[2 * j:2 * j + 2] = data[u:u + 2]
+    return RomImage(bytes(body), len(data) // 1024, 0, None, rom=data)
+
+
 def split_gb(data: bytes, chip: str) -> RomImage:
     """ROM de Game Boy para o flash repro: tamanho múltiplo de 16 KB (um banco), de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB.
     O número de bancos o firmware tira do tamanho. Levanta ValueError."""
@@ -314,9 +357,13 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
     o que mudou depois (um setor apagado por engano, um banco que não responde)."""
     import zlib
 
-    n64 = chip == "n64-flash"
-    # N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo
-    res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], -(-len(img.body) // (1 << 20)) if n64 else img.prg_kb, img.chr_kb)     # SNES: prg_kb = tamanho da ROM; sem cabeçalho iNES
+    n64 = chip == "n64-flash" or chip in N64_ACCESSORY_CHIPS
+    # N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo.
+    # Gameshark e Xplorer 64: o backup do próprio acessório (mapper com o bit 15), sem tamanho
+    if chip in N64_ACCESSORY_CHIPS:
+        res = client.dump_rom(system, 0, progress, n64_backup_code(chip), 0, 0)
+    else:
+        res = client.dump_rom(system, 0, progress, CHIP_MAPPER[chip], -(-len(img.body) // (1 << 20)) if n64 else img.prg_kb, img.chr_kb)     # SNES: prg_kb = tamanho da ROM; sem cabeçalho iNES
     data = res.data[16:] if res.data[:4] == b"NES\x1a" else res.data      # o firmware acrescenta um cabeçalho iNES sintético
     exp = img.rom if img.rom is not None else img.body
     if n64:
