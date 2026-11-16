@@ -27,6 +27,12 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
     }
     val raw = "raw" in a.flags
     if (raw && sys != CartSystem.NES && sys != CartSystem.FAMICOM) throw CliError("usage", Msg.t("dump.raw_only_nes"), EXIT_USAGE)
+    val b369 = a.opts["block369"]?.let { v -> v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to "block369", "value" to v), EXIT_USAGE) }
+    if (b369 != null) {                                           // GBA 369-in-1: "Read 256MB" e "Read Offset" do OSCR (F-18, D174); --prg é o tamanho em MB
+        val bad = if (sys != CartSystem.GBA) "gba369.only_gba" else Gba369.errorKey(b369, prg)
+        if (bad != null) throw CliError("usage", Msg.t(bad), EXIT_USAGE)
+        mapper = Gba369.code(b369)
+    }
     val stype = snesTypeCode(a)
     if (sys == CartSystem.SNES) chr = stype                       // SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
     val c = c0 ?: connect(io, a)
@@ -49,7 +55,7 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
     if (res2 != null) { extra["twice"] = true; notes += Msg.t("dump.twice_ok", "crc" to res.crcHex) }
     if (chk.status != CheckStatus.NA) notes += if (chk.status == CheckStatus.MISMATCH) Msg.t("dump.warning") + Msg.t("check.mismatch", "name" to chk.name, "expected" to (chk.expected and 0xFFFF), "computed" to (chk.computed and 0xFFFF))
                  else Msg.t("check.ok", "name" to chk.name, "value" to (chk.expected and 0xFFFF))
-    if (sys == CartSystem.GBA) {
+    if (sys == CartSystem.GBA && b369 == null) {              // o 369-in-1 tem vários jogos: sem tipo de save pela base nem pela ROM
         val known = GbaSaveDb.lookup(res.data)                    // P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX; a cadeia da biblioteca de save fica de reserva
         if (known != null) {
             extra["gba_save_type"] = known.saveType

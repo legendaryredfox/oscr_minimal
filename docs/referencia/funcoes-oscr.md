@@ -68,7 +68,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Tipo de save (menu "Set save type") | **PC** (`--mapper`, dica pela ROM) | ✅ |
 | Flash repro: Intel 4000L0YBQ0 e 4400L0ZDQ0, MSP55LV128(N), MX29GL128E, PC28F256M29, M29W128GH | firmware + PC | ✅ `WRITE_ROM` (D83; nunca rodou); conferência por leitura de volta |
 | 369-in-1: gravar 256 MB e por bloco (offset) | firmware + PC | ✅ `WRITE_ROM` com `--block369` (D83); a conferência não alcança o bloco N |
-| 369-in-1: ler 256 MB e por offset | firmware | ⬜ |
+| 369-in-1: ler 256 MB e por offset | firmware + PC | ✅ `DUMP_ROM` com `--block369` (D174; nunca rodou) |
 | GBA Repro (3 V) via slot GB | firmware | ⬜ |
 
 ## Game Boy / Game Boy Color (adaptador no slot GBA, 3,3 V)

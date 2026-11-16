@@ -156,6 +156,7 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--chr", type=int, default=0, help=H("dump_chr"))
     dp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
     dp.add_argument("--raw", action="store_true", help=H("dump_raw"))
+    dp.add_argument("--block369", type=int, default=None, help=H("rom_block369"))
     dp.add_argument("--twice", action="store_true", help=H("dump_twice"))
     dp.add_argument("--game", help=H("dump_game"))
     for sp in (add("save-read", cmd_save_read, H("cmd_save_read"), out=True, auto=True), add("save-write", cmd_save_write, H("cmd_save_write"), inp=True)):

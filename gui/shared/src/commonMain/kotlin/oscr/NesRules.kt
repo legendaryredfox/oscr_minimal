@@ -84,4 +84,13 @@ object Rules {
         CartSystem.MD -> if (kb == 0 || kb in 32..8192) null else Problem(S.V_MD_SIZE)
         else -> null
     }
+
+    /** Leitura do GBA 369-in-1 (F-18, D174): bloco (0 a 63) e tamanho em MB, as mesmas regras do firmware (Gba369.kt). */
+    fun gba369(block: Int, mb: Int): Problem? = when (Gba369.errorKey(block, mb)) {
+        null -> null
+        "gba369.block" -> Problem(S.V_G369_BLOCK)
+        "gba369.size0" -> Problem(S.V_G369_SIZE0)
+        "gba369.size" -> Problem(S.V_G369_SIZE)
+        else -> Problem(S.V_G369_BANK)
+    }
 }

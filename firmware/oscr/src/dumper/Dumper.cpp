@@ -24,6 +24,7 @@
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
 # include "dumper/NesCore.h"
+# include "dumper/Gba369.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
 # include "dumper/MdFlash.h"
@@ -756,7 +757,9 @@ namespace OSCR::Dumper
 
         countingSink.inner = &sink; countingSink.bytes = 0;
         activeSink = &countingSink;
-        bool ok = runCore([system, kind, saveType]
+        bool r369 = system == oscr::SYS_GBA && kind == oscr::KIND_ROM && oscr::gba369::isRead(optMapper);
+        uint16_t m369 = optMapper, mb369 = optPrgKb;
+        bool ok = runCore([system, kind, saveType, r369, m369, mb369]
         {
           if (isNes(system))
           {
@@ -777,7 +780,8 @@ namespace OSCR::Dumper
           }
           if (system == oscr::SYS_GBA)
           {
-            if (kind == oscr::KIND_ROM) GBA::readROM(); else GBA::readSave();
+            if (kind == oscr::KIND_ROM && r369) GBA::read369in1(oscr::gba369::block(m369), uint8_t(mb369));   // liga e desliga o cartucho sozinha; 0 MB = 256 MB (bloco 0)
+            else if (kind == oscr::KIND_ROM) GBA::readROM(); else GBA::readSave();
             return;
           }
           if (system == oscr::SYS_SNES)
@@ -1055,11 +1059,13 @@ namespace OSCR::Dumper
       {
         if (system == oscr::SYS_GBA)
         {
+          bool r369 = !forSave && oscr::gba369::isRead(optMapper);        // F-18 (D174): leitura do 369-in-1; o `mapper` não é tipo de save
+          if (r369 && !oscr::gba369::valid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
           if (forSave && optMapper > 6) { err = oscr::E_ARGUMENTO; return false; }
           uint8_t st = 1;
-          runCore([&st, this] { st = gbaProbe(uint8_t(optMapper)); });
+          runCore([&st, this, r369] { st = gbaProbe(r369 ? uint8_t(0) : uint8_t(optMapper)); });
           if (st == 1) { err = oscr::E_SEM_CARTUCHO; return false; }     // 4 (checksum do cabeçalho errado) segue: o PC decide
-          if (!forSave && optPrgKb) OSCR::Cores::cartSize = uint32_t(optPrgKb) * 1024UL;   // tamanho informado (conferência depois de gravar o flash: a detecção por espelho vê o flash inteiro)
+          if (!forSave && !r369 && optPrgKb) OSCR::Cores::cartSize = uint32_t(optPrgKb) * 1024UL;   // tamanho informado (conferência depois de gravar o flash: a detecção por espelho vê o flash inteiro)
           return true;
         }
         if (system == oscr::SYS_SNES)

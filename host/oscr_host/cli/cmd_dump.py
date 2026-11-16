@@ -7,6 +7,7 @@ import zlib
 
 from .. import database as DB
 from .. import autodetect as AUTO
+from .. import gba369 as G369
 from .. import gba_db as GBADB
 from .. import n64 as N64
 from .. import protocol as P
@@ -59,6 +60,12 @@ def cmd_dump(args) -> int:
     if getattr(args, "raw", False) and sid not in DB.NES_SYSTEMS:
         t.close()
         raise CliError("usage", tr("dump.raw_only_nes"), EXIT_USAGE)
+    if getattr(args, "block369", None) is not None:                         # GBA 369-in-1: "Read 256MB" e "Read Offset" do OSCR (F-18, D174); --prg é o tamanho em MB
+        bad = "gba369.only_gba" if sid != 5 else G369.error(args.block369, args.prg)
+        if bad:
+            t.close()
+            raise CliError("usage", tr(bad), EXIT_USAGE)
+        args.mapper = G369.code(args.block369)
     try:
         chr_kb = common.snes_type_code(args) or (0 if args.system == "snes" else args.chr)       # SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
         res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, chr_kb)
@@ -86,7 +93,7 @@ def cmd_dump(args) -> int:
             notes.append(tr("dump.game_more" if m.others else "dump.game", name=m.entry.name, source=m.entry.source, how=m.how, others=m.others))
         else:
             notes.append(tr("dump.game_missing", n=len(db)))
-    if sid == 5:
+    if sid == 5 and getattr(args, "block369", None) is None:                # o 369-in-1 tem vários jogos: sem tipo de save pela base nem pela ROM
         known = GBADB.lookup(res.data)                    # P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX; a cadeia da biblioteca de save fica de reserva
         if known:
             extra["gba_save_type"] = known.save_type

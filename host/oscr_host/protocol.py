@@ -84,7 +84,7 @@ ERROR_HINTS = {
 }
 
 UNKNOWN_SIZE = 0xFFFFFFFF            # BEGIN de núcleos em modo fluxo: o tamanho real vem no END
-MAX_STREAM_BYTES = 64 << 20          # maior leitura aceita (GBA: 32 MB); acima disso o BEGIN é tratado como defeito
+MAX_STREAM_BYTES = 256 << 20         # maior leitura aceita (GBA 369-in-1: 256 MB, D174; as outras vão até 64 MB); acima disso o BEGIN é tratado como defeito
 
 
 class ProtocolError(Exception):

@@ -152,6 +152,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var backupFirst by remember { mutableStateOf(true) }
     var verifySave by remember { mutableStateOf(true) }
     var nesRaw by remember { mutableStateOf(false) }
+    var read369 by remember { mutableStateOf(false) }                 // GBA: ler como 369-in-1, no bloco acima (F-18, D174)
+    var size369 by remember { mutableStateOf("0") }                   // tamanho da leitura do 369-in-1 em MB (0 = 256 MB, só no bloco 0)
     var readTwice by remember { mutableStateOf(false) }               // lê a ROM duas vezes e compara (D125)
     var saveReport by remember { mutableStateOf(Prefs.saveReport) }
     var beepDone by remember { mutableStateOf(Prefs.beepDone) }
@@ -203,6 +205,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val problem: Problem? = when {
         isNes -> Rules.nes(mapN, prgN, chrN)
         system == CartSystem.SNES || system == CartSystem.MD -> Rules.romSize(system, prgN)
+        isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
     val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else null
@@ -619,11 +622,14 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         run(S.STAGE_READING_ROM) {
             val n64 = if (system == CartSystem.N64) (n64Resolve(c, true, false) ?: return@run) else null
             val prgUse = n64?.first ?: prgN
-            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
+            val r369 = isGba && read369
+            val mapUse = if (r369) Gba369.code(block369.toIntOrNull() ?: 0) else mapN
+            val prgUse2 = if (r369) (size369.toIntOrNull() ?: 0) else prgUse
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
             val extra = mutableListOf<String>()
             if (readTwice) {
                 say("2/2")
-                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapN, prgUse, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
+                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
                 if (res2.data.contentEquals(res.data)) { val m = "${t(S.TWICE_OK)} (CRC32 ${res.crcHex})"; say(m); extra += m }
                 else {
                     val (n, first) = diffSummary(res.data, res2.data)
@@ -634,7 +640,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             val chk = verifyRom(system, res.data)
             if (chk.status == CheckStatus.OK) { val m = "${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})"; say(m); extra += m }
             else if (chk.status == CheckStatus.MISMATCH) { val m = "${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}"; say(m); extra += m }
-            if (system == CartSystem.GBA) {
+            if (system == CartSystem.GBA && !r369) {                    // o 369-in-1 tem vários jogos: sem tipo de save pela base nem pela ROM
                 val known = GbaSaveDb.lookup(res.data)                  // P2 (D160): o SHA-1 do cabeçalho acha o save na base do FlashGBX
                 if (known != null) gbaType = known.saveType.toString()   // só preenche o campo: o usuário confere antes de ler ou gravar o save
                 val h = if (known != null) null else gbaSaveHint(res.data)
@@ -1077,6 +1083,11 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
             }
             if (stub == null && isGba) OutlinedTextField(block369, { block369 = it.filter(Char::isDigit).take(2) }, label = { Text(t(S.LBL_BLOCK369)) }, singleLine = true, modifier = Modifier.width(200.dp))
+            if (stub == null && isGba) CheckRow(read369, { read369 = it }, t(S.LBL_READ369))
+            if (stub == null && isGba && read369) {
+                OutlinedTextField(size369, { size369 = it.filter(Char::isDigit).take(3) }, label = { Text(t(S.LBL_SIZE369)) }, singleLine = true, isError = problem != null, modifier = Modifier.width(200.dp))
+                problem?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
+            }
             if (stub == null && isSnes && chipChoice != null) {
                 if (chipChoice.generic) {
                     LabeledField(t(S.LBL_FLASH_TYPE)) {
