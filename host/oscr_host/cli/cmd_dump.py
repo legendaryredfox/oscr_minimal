@@ -76,11 +76,12 @@ def cmd_dump(args) -> int:
     finally:
         t.close()
     ext = ".st" if acc else P.SYSTEMS[args.system][1]      # Sufami Turbo: extensão do OSCR
-    if sid == 6 and len(res.data) > 0x143 and res.data[0x143] & 0x80:
+    gb_acc = sid == 6 and bool(args.mapper)                # F-17 (D186): acessório do Game Boy (Pelican, Mega Memory...), sem cabeçalho de jogo
+    if sid == 6 and not gb_acc and len(res.data) > 0x143 and res.data[0x143] & 0x80:
         ext = ".gbc"                                      # cabeçalho com a flag de Game Boy Color
     if res2 is not None and res2.data != res.data:
         _twice_mismatch(args, res, res2, ext, safe_name(title, f"rom_{args.system}"))
-    chk = verify_rom(sid, res.data) if not acc else verify_rom(0, b"")      # o cabeçalho do Sufami Turbo não é o do SNES
+    chk = verify_rom(sid, res.data) if not (acc or gb_acc) else verify_rom(0, b"")      # o cabeçalho do Sufami Turbo não é o do SNES
     notes = []
     extra: dict = {"checksum": chk.status}
     if res2 is not None:

@@ -18,7 +18,7 @@ internal val LONG_VALUED = setOf("type", "accessory", "op", "fill", "palette", "
 internal val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "flash-id", "raw", "twice", "help", "version", "dry-run", "allow-5v", "ignore-cart-limit", "sound", "all", "auto-flash")
 internal val COMMANDS = setOf("ports", "ram-test", "voltage", "selftest", "clock-cal", "boards", "board", "firmware-flash", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write", "gbcamera", "save-convert")
 internal val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
-    "md" to listOf("mapper", "prg"), "gba" to listOf("mapper"), "gb" to emptyList(), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "n64" to listOf("mapper", "prg"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
+    "md" to listOf("mapper", "prg"), "gba" to listOf("mapper"), "gb" to listOf("mapper"), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "n64" to listOf("mapper", "prg"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
 
 internal fun parseArgs(argv: List<String>): Args {
     var cmd: String? = null

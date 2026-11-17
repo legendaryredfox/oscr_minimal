@@ -145,7 +145,7 @@ namespace OSCR::Cores::GameBoyMem
 
       if (timeout > 10)
       {
-        OSCR::UI::error(FS(OSCR::Strings::Errors::TimedOut));
+        OSCR::UI::fatalError(FS(OSCR::Strings::Errors::TimedOut));      // fork: o OSCR só avisava e continuava no laço para sempre sem o módulo (vira E_CARTUCHO_IO pelo runCore)
       }
     }
   }

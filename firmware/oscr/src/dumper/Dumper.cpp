@@ -33,6 +33,9 @@
 # include "dumper/SnesType.h"
 # include "dumper/MdExtra.h"
 # include "dumper/MdBank.h"
+# include "dumper/GbAcc.h"
+# include "cores/GameBoyMem.h"
+# include "cores/GameBoySmart.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
 # include "dumper/N64Flash.h"
@@ -232,6 +235,25 @@ namespace OSCR::Dumper
       if (romType == 0x22) return GB::lastByteAddress;                      // MBC7: 256 ou 512 bytes (guardados como tamanho, não endereço)
       if (romType == 0x20) return 32768UL + 1048576UL;                      // MBC6: SRAM de 32 KB + Flash de 1 MB
       return uint32_t(GB::sramBanks) * (uint32_t(GB::lastByteAddress) - 0xA000UL + 1UL);
+    }
+
+    /**
+     * Acessórios do Game Boy (F-17, D186): chama a leitura do OSCR do acessório (GbAcc.h). Cada função do OSCR liga o cartucho sozinha, menos a do Mega Memory,
+     * que o menu do OSCR chamava com o cartucho já ligado. Sem o acessório (ID desconhecido) o OSCR só avisa e volta sem gravar: o chamador vê zero bytes.
+     */
+    void gbAccRead(uint16_t acc)
+    {
+      using namespace OSCR::Dumper::GbAcc;
+      switch (acc)
+      {
+      case kPelican: GB::readPelican(); GB::cartOff(); break;
+      case kMegaMem: GB::cartOn(); GB::readMegaMem(); GB::cartOff(); break;
+      case kGameShark: GB::readGameshark(); break;                       // liga e desliga sozinha
+      case kGbMemory: OSCR::Cores::GameBoyMem::readROM(); break;
+      case kGbMemoryMap: OSCR::Cores::GameBoyMem::readMapping(); break;
+      case kGbSmart: OSCR::Cores::GameBoySmart::readFlash(); break;                   // o `runCore` desliga o cartucho
+      default: break;
+      }
     }
 
     namespace SM = OSCR::Cores::SMS;
@@ -819,6 +841,17 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
 
+        if (system == oscr::SYS_GB && kind == oscr::KIND_ROM && optMapper != 0)       // acessórios do Game Boy (F-17, D186): sem cabeçalho de jogo, só leitura
+        {
+          uint16_t acc = optMapper;
+          if (!OSCR::Dumper::GbAcc::valid(acc)) { err = oscr::E_ARGUMENTO; return false; }
+          countingSink.inner = &sink; countingSink.bytes = 0;
+          activeSink = &countingSink;
+          bool ok = runCore([acc] { gbAccRead(acc); }, true);
+          activeSink = nullptr;
+          err = oscr::E_CARTUCHO_IO;
+          return ok && countingSink.bytes > 0;
+        }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
