@@ -40,6 +40,7 @@ object Rules {
         92 to "Jaleco JF-19", 93 to "Sunsoft 2", 94 to "UN1ROM", 140 to "Jaleco JF-11/14", 152 to "Bandai 74161", 180 to "UNROM invertido", 184 to "Sunsoft 1",
         16 to "Bandai FCG", 159 to "Bandai FCG (24C01)", 18 to "Jaleco SS8806", 19 to "Namco 163", 32 to "Irem G-101", 65 to "Irem H-3001", 80 to "Taito X1-005",
         82 to "Taito X1-017", 85 to "VRC7", 153 to "Bandai (CHR-RAM)", 154 to "Namco 3453", 155 to "MMC1A", 207 to "Taito X1-005 (var.)",
+        21 to "VRC4a/c", 22 to "VRC2a", 23 to "VRC2b/VRC4e", 24 to "VRC6a", 25 to "VRC2c/VRC4b/d", 26 to "VRC6b",
     )
 
     /** (PRG máx., CHR máx.) em KB por mapper, como no `probe` do firmware. */
@@ -50,10 +51,10 @@ object Rules {
         13 to (32 to 0), 30 to (512 to 0), 34 to (512 to 64), 67 to (128 to 128), 68 to (256 to 256), 72 to (128 to 128), 73 to (128 to 0), 86 to (128 to 64), 92 to (256 to 128),
         93 to (128 to 0), 94 to (128 to 0), 140 to (128 to 128), 152 to (128 to 128), 180 to (128 to 0), 184 to (32 to 32),
         155 to (256 to 128), 16 to (256 to 256), 159 to (256 to 256), 18 to (256 to 256), 19 to (256 to 256), 65 to (256 to 256), 32 to (256 to 128),
-        80 to (128 to 256), 82 to (128 to 256), 207 to (256 to 128), 85 to (512 to 128), 153 to (512 to 0), 154 to (128 to 128),
+        80 to (128 to 256), 82 to (128 to 256), 21 to (256 to 256), 22 to (256 to 128), 23 to (256 to 256), 24 to (256 to 128), 25 to (256 to 256), 26 to (256 to 256), 207 to (256 to 128), 85 to (512 to 128), 153 to (512 to 0), 154 to (128 to 128),
     )
     private val chrRam = setOf(2, 7, 71, 13, 30, 73, 93, 94, 180, 153)
-    private val chrRom = setOf(79, 87, 78, 75, 70, 33, 48, 118, 206, 67, 68, 72, 92, 86, 140, 152, 184, 16, 159, 18, 32, 65, 80, 82, 154, 207)
+    private val chrRom = setOf(79, 87, 78, 75, 70, 33, 48, 118, 206, 67, 68, 72, 92, 86, 140, 152, 184, 16, 159, 18, 32, 65, 80, 82, 154, 207, 21, 22, 23, 24, 25, 26)
     private val prg32 = setOf(7, 11, 66, 79, 34, 86, 140, 13)
 
     fun mapperName(m: Int): String? = mapperNames[m]

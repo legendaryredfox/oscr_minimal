@@ -6,7 +6,7 @@ A leitura do `readCHR` parou por volta do mapper 19 (a lista de CHR dos mappers 
 
 ## 1. O que o firmware faz hoje
 
-Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206 (36; o lote de D64 acrescentou 14); D184 (F-14) acrescentou 16, 18, 19, 32, 65, 80, 82, 85, 153, 154, 155, 159 e 207 (49 no total), com os limites dos comentários do `readPRG` e do `readCHR` do núcleo. São 36 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/referencia/protocolo.md` e D50, D57.
+Mappers de ROM: 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 13, 30, 33, 34, 48, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 86, 87, 92, 93, 94, 118, 140, 152, 180, 184, 206 (36; o lote de D64 acrescentou 14); D184 (F-14) acrescentou 16, 18, 19, 32, 65, 80, 82, 85, 153, 154, 155, 159 e 207 (49 no total); D185 acrescentou os VRC 21 a 26 (55), com os limites dos comentários do `readPRG` e do `readCHR` do núcleo. São 36 de mais de 100 que o OSCR trata. Saves (PRG-RAM de 8 KB, mais 16/32 KB no 1 e no 5): mappers 1, 4, 5, 69 e 118. Detalhes: `docs/referencia/protocolo.md` e D50, D57.
 
 ## 2. Limites de tamanho dos mappers já suportados
 
@@ -59,7 +59,7 @@ Regras gerais: PRG múltiplo de 16 KB, CHR múltiplo de 8 KB. Mappers 79, 87, 78
 
 ### 4.2 Depende de variante, de submapper ou de ligação dos pinos
 
-- **VRC2/VRC4 (21, 22, 23, 25) e VRC6 (24, 26):** os registradores mudam de endereço conforme a placa (linhas A0/A1 ligadas de formas diferentes). O OSCR resolve com escritas "para ver se pega" (`$9002`, `$9008`, `$9005`, `$9004`) e escolhe pelo número do mapper. Sem submapper no protocolo, o firmware não sabe qual variante o usuário tem. Não li a parte de CHR desses mappers.
+- **VRC2/VRC4 (21, 22, 23, 25) e VRC6 (24, 26) — feitos em D185 sem campo novo** (o texto abaixo era a hipótese inicial; o OSCR escolhe a variante pelo número e por leituras): os registradores mudam de endereço conforme a placa (linhas A0/A1 ligadas de formas diferentes). O OSCR resolve com escritas "para ver se pega" (`$9002`, `$9008`, `$9005`, `$9004`) e escolhe pelo número do mapper. Sem submapper no protocolo, o firmware não sabe qual variante o usuário tem. Não li a parte de CHR desses mappers.
 - **16/159 (Bandai FCG):** o OSCR escreve em dois endereços (`$6000` e `$8000`) para cobrir os submappers 4 e 5. As placas com EEPROM serial (save) são outro assunto: o save desses mappers usa I²C.
 - **80/82 (Taito X1-005/017), 207:** o PRG usa `$7EFA`; o OSCR avisa que o 207 "às vezes precisa de power cycle".
 
