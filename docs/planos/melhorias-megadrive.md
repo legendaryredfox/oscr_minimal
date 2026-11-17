@@ -71,7 +71,7 @@ Itens da revisão do PCB V1.0 do `md_rewriter` e o que cada um significa para o 
 | MD-6 | Intel PA28F400 e Sharp LH28F320BJE via `Flash.cpp` (família 28FXXX) | confirmar o mapa de blocos no datasheet antes; cartucho de código-cracker ou equivalente |
 | MD-7 | SST39VF3201/3202: apagar por bloco com `50h` | |
 | MD-8 | Teste no PC com modelo de chip (AMD 555h, 5555h, Intel; layouts bottom, top e uniforme) para `MdFlash`, como o `md_rewriter` fez com o `MD.c` real (`firmware_1.1/tests/host`) | cobre apagar, programar, falha 0 → 1, chip lento, troca de cartucho |
-| MD-9 | Open EverDrive: `A130E0h = 0404h` antes de gravar; EverDrive-MD v2, Magistr-16, WaterMelon (Pier Solar, Paprium), MX26L6420 | só com cartucho em mãos |
+| MD-9 | **Parcial (D181):** Lion King 3 e Pokémon Stadium por banco (`--mapper 1|2`), sem cartucho; Pier Solar e o resto pendentes (`docs/historico/2026-11-17-pesquisa-pier-solar-e-piratas-md.md`). Open EverDrive: `A130E0h = 0404h` antes de gravar; EverDrive-MD v2, Magistr-16, WaterMelon (Pier Solar, Paprium), MX26L6420 | só com cartucho em mãos |
 | MD-10 | Suíte de bancada **somente leitura** para Mega Drive (sem cartucho, com cartucho; leituras repetidas iguais, prefixo de 512K igual ao início da leitura maior, conferência do tamanho, blocos de 32 KiB distintos para detectar linha de endereço presa). A guarda recusa qualquer comando de escrita ou apagar. Modelo: `md_rewriter/tools/hwtest/hwtest.py` | roda sem hardware (fase `host`) e com ele |
 
 ## 5b. Estado da implementação (2026-11-04)

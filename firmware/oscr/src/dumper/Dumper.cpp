@@ -32,6 +32,7 @@
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
 # include "dumper/MdExtra.h"
+# include "dumper/MdBank.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
 # include "dumper/N64Flash.h"
@@ -251,6 +252,31 @@ namespace OSCR::Dumper
     bool isSega(uint8_t system) { return system == oscr::SYS_SMS || system == oscr::SYS_GG || system == oscr::SYS_SG1000; }
     // Cartucho de RAM de backup do Sega CD: `getCartInfo` (via `detect`, que `prepare` chama) deixou `bramSize` (F-16, D179).
     bool isMdBram(uint8_t system) { return system == oscr::SYS_MD && MD::bramSize > 0; }
+
+    /// Lion King 3 e Pokémon Stadium (F-16, D181): troca de banco de 32 KiB a cada pedaço (MdBank.h). Não vem do OSCR e não foi conferido em cartucho.
+    void readBanked(uint16_t kb)
+    {
+      MD::cartOn();
+      OSCR::Storage::Shared::sharedFile.open("rom", O_WRONLY | O_CREAT | O_TRUNC);
+      for (uint32_t bank = 0; bank < OSCR::Dumper::MdBank::chunks(kb); bank++)
+      {
+        MD::dataOut();
+        MD::writeWord(OSCR::Dumper::MdBank::kRegWordAddr, uint16_t(bank));
+        MD::dataIn();
+        for (uint32_t w = 0; w < OSCR::Dumper::MdBank::kChunkBytes / 2; w += 256)
+        {
+          for (uint16_t i = 0; i < 256; i++)
+          {
+            uint16_t word = MD::readWord(w + i);
+            OSCR::Storage::Shared::buffer[2 * i] = word >> 8;
+            OSCR::Storage::Shared::buffer[2 * i + 1] = word & 0xFF;
+          }
+          OSCR::Storage::Shared::writeBuffer();
+        }
+      }
+      OSCR::Storage::Shared::close();
+      MD::cartOff();
+    }
     uint8_t segaConsole(uint8_t system) { return system == oscr::SYS_GG ? oscr::sms::kGg : system == oscr::SYS_SG1000 ? oscr::sms::kSg : oscr::sms::kSms; }
     bool segaOptionsOk(uint8_t system, uint16_t adapter, uint16_t kb) { return oscr::sms::mode(segaConsole(system), adapter) != oscr::sms::kBadMode && oscr::sms::sizeKbValid(segaConsole(system), kb); }
 
@@ -780,6 +806,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
 
+        if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1 ou 2 e tamanho em KB (D181)
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -851,7 +878,8 @@ namespace OSCR::Dumper
           }
           if (kind == oscr::KIND_ROM)
           {
-            if (MD::realtec) MD::readRealtec(); else MD::readROM();      // Realtec: o OSCR lê com `readRealtec` (F-16, D179); liga e desliga o cartucho sozinha
+            if (OSCR::Dumper::MdBank::valid(m64)) readBanked(mb369);       // `mapper` 1 (Lion King 3) ou 2 (Pokémon Stadium), `prg_kb` = tamanho (D181)
+            else if (MD::realtec) MD::readRealtec(); else MD::readROM();      // Realtec: o OSCR lê com `readRealtec` (F-16, D179); liga e desliga o cartucho sozinha
           }
           else if (MD::bramSize > 0)
           {
