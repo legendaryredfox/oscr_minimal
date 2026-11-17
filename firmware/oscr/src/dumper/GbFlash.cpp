@@ -77,9 +77,256 @@ namespace OSCR::Dumper::GbFlash
     }
   }
 
+  // ---------------------------------------------------------------- acessórios (F-17, D188)
+  // Sequências das funções writePelican, writeMegaMem e writeGameshark do OSCR (GameBoy.cpp), com toda espera limitada e sem a conferência que relê o arquivo (o PC lê de volta).
+  // O OSCR identifica, apaga, confere o branco e grava numa sessão só; aqui o `prepare` faz a identificação, a conferência do tamanho, o apagamento e o branco, e o `program`
+  // liga o cartucho de novo e repete só o que o OSCR repete antes de gravar (habilitar os bancos e desproteger).
+  namespace
+  {
+    constexpr uint32_t kPollTries = 5000;
+
+    /// Os dois bytes de ID seguidos, como o OSCR monta `flashid`.
+    uint16_t id2(uint16_t a0, uint16_t a1) { return uint16_t((uint16_t(GB::readByte(a0)) << 8) | GB::readByte(a1)); }
+
+    /// Espera o fim da gravação do 28LF040: o bit 6 (toggle) deixa de alternar entre duas leituras. Com limite de tentativas.
+    bool waitToggle(uint16_t addr)
+    {
+      for (uint32_t i = 0; i < kPollTries; i++)
+      {
+        uint8_t a = GB::readByte(addr), b = GB::readByte(addr);
+        if (!GB::isToggle(a, b)) return true;
+      }
+      return false;
+    }
+
+    bool blank(uint16_t banks, uint16_t from, uint16_t to, void (*bank)(uint16_t))
+    {
+      uint8_t * buf = OSCR::Storage::Shared::buffer;
+      for (uint16_t b = 0; b < banks; b++)
+      {
+        bank(b);
+        for (uint16_t a = from; a < to; a += 512)
+        {
+          for (int i = 0; i < 512; i++) buf[i] = GB::readByte(a + i);
+          for (int i = 0; i < 512; i++) if (buf[i] != 0xFF) return false;
+        }
+      }
+      return true;
+    }
+
+    uint16_t pelicanId = 0, pelicanBanks = 0;
+
+    void pelicanBank(uint16_t b) { GB::writeByteSRAM(0xA000, b); }
+    void megaBank(uint16_t b) { GB::writeByte(0x2000, uint8_t(b)); }
+    void sharkBank(uint16_t b) { GB::writeByte(0x7FE1, uint8_t(b)); }
+
+    void megaProtect(bool on)
+    {
+      GB::writeByte(0x2000, 0x0);
+      GB::readByte(0x5823); GB::readByte(0x5820); GB::readByte(0x5822);
+      GB::readByte(0x4418); GB::readByte(0x441B); GB::readByte(0x4419);
+      GB::readByte(on ? 0x440A : 0x441A);
+      delay(100);
+    }
+
+    void sharkEnableBanks() { GB::readByte(0x101); GB::readByte(0x108); GB::readByte(0x101); delay(100); }
+
+    // ---- Pelican
+    uint16_t prepPelican(uint32_t size)
+    {
+      GB::cartOn();
+      GB::readByte(0x100);                                 // habilita o endereçamento de bancos no CPLD
+      delay(100);
+      GB::sendW29C020Command(0x80);
+      GB::sendW29C020CommandSufix(0x60);
+      delay(10);
+      GB::writeByteSRAM(0xA000, 0x0);
+      pelicanId = id2(0, 1);
+      GB::sendW29C020Command(0xF0);
+      delay(100);
+
+      if (pelicanId != 0xDA45 && pelicanId != 0xBF10)
+      {
+        GB::writeByteSRAM(0xA000, 0x2); GB::writeByte(0x3555, 0xFF); delay(100);
+        GB::writeByteSRAM(0xA000, 0x2); GB::writeByte(0x3555, 0x90); delay(100);
+        pelicanId = id2(0, 1);
+        GB::writeByteSRAM(0xA000, 0x2); GB::writeByte(0x3555, 0xFF); delay(100);
+        if (pelicanId != 0xBF04) return oscr::E_FLASH;
+        pelicanBanks = 64;
+      }
+      else pelicanBanks = 32;
+
+      if (size != uint32_t(pelicanBanks) * 8192UL) return oscr::E_ARGUMENTO;        // 256 KB no 29EE020/W29C020, 512 KB no 28LF040: antes de apagar
+
+      if (pelicanId == 0xDA45)                              // 29EE020: libera o bloco de boot
+      {
+        GB::sendW29C020Command(0x80);
+        GB::sendW29C020CommandSufix(0x40);
+        GB::writeByteSRAM(0xA000, 0x1);
+        GB::writeByte(0x2AAA, 0xAA);
+        delay(100);
+      }
+      if (pelicanId == 0xBF04)
+      {
+        GB::send28LF040Potection(false);
+        delay(100);
+        GB::writeByteSRAM(0xA000, 0x2); GB::writeByte(0x3555, 0x30); GB::writeByte(0x3555, 0x30); delay(100);
+        GB::writeByteSRAM(0xA000, 0x2); GB::writeByte(0x3555, 0xFF); delay(100);
+      }
+      else
+      {
+        GB::sendW29C020Command(0x80);
+        GB::sendW29C020CommandSufix(0x10);
+        delay(1000);
+      }
+      return blank(pelicanBanks, 0x2000, 0x4000, pelicanBank) ? 0 : oscr::E_CARTUCHO_IO;
+    }
+
+    uint16_t progPelican(oscr::StreamSource & in)
+    {
+      uint8_t * buf = OSCR::Storage::Shared::buffer;
+      GB::cartOn();
+      GB::readByte(0x100);
+      delay(100);
+      GB::send28LF040Potection(false);                      // como o OSCR (no 29EE020 a sequência é inofensiva: leituras)
+      delay(100);
+
+      for (uint16_t bank = 0; bank < pelicanBanks; bank++)
+      {
+        uint16_t addr = 0x2000;
+        if (pelicanId != 0xBF04)                            // W29C020 / 29EE020: páginas de 128 bytes
+        {
+          while (addr <= 0x3FFF)
+          {
+            if (!readFull(in, buf, 128)) return oscr::E_CARTUCHO_IO;
+            GB::sendW29C020Command(0xA0);
+            GB::writeByteSRAM(0xA000, bank);
+            for (int i = 0; i < 128; i++) GB::writeByte(addr + i, buf[i]);
+            addr += 128;
+            delay(10);
+          }
+        }
+        else                                                // SST 28LF040: byte a byte
+        {
+          while (addr <= 0x3FFF)
+          {
+            if (!readFull(in, buf, 512)) return oscr::E_CARTUCHO_IO;
+            for (int i = 0; i < 512; i++)
+            {
+              for (uint8_t attempt = 0; attempt < 2; attempt++)       // o OSCR tenta de novo uma vez se o byte não confere
+              {
+                GB::writeByteSRAM(0xA000, 0x2);
+                GB::writeByte(0x3555, 0x10);
+                GB::writeByteSRAM(0xA000, bank);
+                GB::writeByte(addr + i, buf[i]);
+                if (!waitToggle(addr + i)) return oscr::E_CARTUCHO_IO;
+                if (GB::readByte(addr + i) == buf[i]) break;
+                if (attempt == 1) return oscr::E_CARTUCHO_IO;
+              }
+            }
+            addr += 512;
+          }
+        }
+      }
+      if (pelicanId == 0xBF04) { GB::send28LF040Potection(true); delay(100); }
+      return 0;
+    }
+
+    // ---- Datel Mega Memory Card (só o chip de dados)
+    uint16_t prepMegaMem()
+    {
+      GB::cartOn();
+      GB::writeByte(0x2000, 0x1); GB::writeByte(0x5555, 0xFF); delay(100);
+      GB::writeByte(0x2000, 0x1); GB::writeByte(0x5555, 0x90); delay(100);
+      GB::writeByte(0x2000, 0x0);
+      uint16_t id = id2(0x4000, 0x4001);
+      GB::writeByte(0x2000, 0x1); GB::writeByte(0x5555, 0xFF); delay(100);
+      if (id != 0xBF04) return oscr::E_FLASH;
+
+      megaProtect(false);
+      GB::writeByte(0x2000, 0x1); GB::writeByte(0x5555, 0x30); GB::writeByte(0x5555, 0x30); delay(100);
+      GB::writeByte(0x2000, 0x1); GB::writeByte(0x5555, 0xFF); delay(100);
+      return blank(32, 0x4000, 0x8000, megaBank) ? 0 : oscr::E_CARTUCHO_IO;
+    }
+
+    uint16_t progMegaMem(oscr::StreamSource & in)
+    {
+      uint8_t * buf = OSCR::Storage::Shared::buffer;
+      GB::cartOn();
+      megaProtect(false);
+      for (uint16_t bank = 0; bank < 32; bank++)
+      {
+        for (uint16_t addr = 0x4000; addr < 0x8000; addr += 512)
+        {
+          if (!readFull(in, buf, 512)) return oscr::E_CARTUCHO_IO;
+          for (int i = 0; i < 512; i++)
+          {
+            for (uint8_t attempt = 0; attempt < 2; attempt++)
+            {
+              GB::writeByte(0x2000, 0x1);
+              GB::writeByte(0x5555, 0x10);
+              GB::writeByte(0x2000, uint8_t(bank));
+              GB::writeByte(addr + i, buf[i]);
+              if (!waitToggle(addr + i)) return oscr::E_CARTUCHO_IO;
+              if (GB::readByte(addr + i) == buf[i]) break;
+              if (attempt == 1) return oscr::E_CARTUCHO_IO;
+            }
+          }
+        }
+      }
+      megaProtect(true);
+      return 0;
+    }
+
+    // ---- GameShark GBC
+    uint16_t prepShark()
+    {
+      GB::cartOn();
+      sharkEnableBanks();
+      GB::sendGamesharkCommand(0x90);
+      delay(10);
+      GB::writeByte(0x7FE1, 0x0);
+      uint16_t id = id2(0x4000, 0x4001);
+      GB::sendGamesharkCommand(0xF0);
+      delay(100);
+      if (id != 0xBFB5) return oscr::E_FLASH;
+
+      GB::sendGamesharkCommand(0x80);
+      GB::sendGamesharkCommand(0x10);
+      delay(100);
+      return blank(16, 0x4000, 0x6000, sharkBank) ? 0 : oscr::E_CARTUCHO_IO;
+    }
+
+    uint16_t progShark(oscr::StreamSource & in)
+    {
+      uint8_t * buf = OSCR::Storage::Shared::buffer;
+      GB::cartOn();
+      sharkEnableBanks();
+      for (uint16_t bank = 0; bank < 16; bank++)
+      {
+        for (uint16_t addr = 0x4000; addr <= 0x5FFF; addr += 512)
+        {
+          if (!readFull(in, buf, 512)) return oscr::E_CARTUCHO_IO;
+          for (int i = 0; i < 512; i++)
+          {
+            GB::sendGamesharkCommand(0xA0);
+            GB::writeByte(0x7FE1, uint8_t(bank));
+            GB::writeByte(addr + i, buf[i]);
+            uint32_t t = 0;
+            while (GB::readByte(addr + i) != buf[i]) if (++t > kPollTries) return oscr::E_CARTUCHO_IO;
+          }
+        }
+      }
+      return 0;
+    }
+  }
+
   uint16_t check(uint8_t chip, uint32_t sizeBytes)
   {
-    if (chip < kDiyMbc3 || chip > kCfi) return oscr::E_ARGUMENTO;
+    if (chip < kDiyMbc3 || chip > kLast) return oscr::E_ARGUMENTO;
+    if (chip == kPelican) return (sizeBytes == 262144UL || sizeBytes == 524288UL) ? 0 : oscr::E_ARGUMENTO;
+    if (chip == kMegaMem) return sizeBytes == 524288UL ? 0 : oscr::E_ARGUMENTO;
+    if (chip == kGameShark) return sizeBytes == 131072UL ? 0 : oscr::E_ARGUMENTO;
     if (sizeBytes < 32768UL || sizeBytes % 16384UL != 0 || sizeBytes > 4UL * 1024UL * 1024UL) return oscr::E_ARGUMENTO;   // bancos de 8 bits: até 256
     if (chip == kOrangeFm && sizeBytes != 32768UL) return oscr::E_ARGUMENTO;                                           // o OSCR limita esse a 32 KB
     return 0;
@@ -87,6 +334,9 @@ namespace OSCR::Dumper::GbFlash
 
   uint16_t prepare(uint8_t chip, uint32_t sizeBytes)
   {
+    if (chip == kPelican) return prepPelican(sizeBytes);
+    if (chip == kMegaMem) return prepMegaMem();
+    if (chip == kGameShark) return prepShark();
     if (chip == kCfi)
     {
       if (!GB::identifyCFI()) return oscr::E_FLASH;       // liga e desliga o cartucho; calcula flashBanks
@@ -137,6 +387,10 @@ namespace OSCR::Dumper::GbFlash
   {
     uint8_t * buf = OSCR::Storage::Shared::buffer;
     uint16_t banks = uint16_t(sizeBytes / 16384UL);
+
+    if (chip == kPelican) return progPelican(in);
+    if (chip == kMegaMem) return progMegaMem(in);
+    if (chip == kGameShark) return progShark(in);
 
     if (chip == kCfi)
     {

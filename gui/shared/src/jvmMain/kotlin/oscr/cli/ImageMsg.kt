@@ -34,6 +34,7 @@ internal fun imageMessage(e: RomImageException, a: Args): String {
         RomImageProblem.GB_SIZE -> Msg.t("img.gb_size")
         RomImageProblem.GB_TOO_BIG -> Msg.t("img.gb_too_big", "kb" to kb)
         RomImageProblem.GB_ORANGE -> Msg.t("img.gb_orange")
+        RomImageProblem.GB_ACC_SIZE -> Msg.t("img.gb_acc_size", "sizes" to (if (e.b != 0) "${e.a} KB ou ${e.b} KB" else "${e.a} KB"))
         RomImageProblem.GB_NEEDS_CHIP -> Msg.t("rom.usage.gb_chip", "chips" to FlashChip.forSystem(CartSystem.GB).joinToString(", ") { it.key })
         RomImageProblem.GBA_BLOCK -> Msg.t("img.gba_block")
         RomImageProblem.GBA_SIZE -> Msg.t("img.gba_size")

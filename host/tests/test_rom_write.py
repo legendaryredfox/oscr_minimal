@@ -530,8 +530,35 @@ def gb_rom(kb: int) -> bytes:
 def test_split_gb_e_codigos():
     img = RI.split_gb(gb_rom(512), "gb-cfi")
     assert (img.prg_kb, len(img.body)) == (512, 512 * 1024)
-    assert [RI.chip_code(c, img) for c in RI.GB_CHIPS] == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert [RI.chip_code(c, img) for c in RI.GB_CHIPS] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     assert RI.split_gb(gb_rom(32), "gb-orange-fm").prg_kb == 32
+
+
+def test_gb_acessorios_f17():
+    """Pelican, Mega Memory e GameShark GBC (D188): tamanhos exatos, backup e conferência pela leitura do acessório (D186)."""
+    assert RI.split_gb(bytes(262144), "gb-pelican").prg_kb == 256 and RI.split_gb(bytes(524288), "gb-pelican").prg_kb == 512
+    assert RI.split_gb(bytes(524288), "gb-megamem").prg_kb == 512 and RI.split_gb(bytes(131072), "gb-gameshark").prg_kb == 128
+    for data, chip in ((bytes(131072), "gb-pelican"), (bytes(262144), "gb-megamem"), (bytes(524288), "gb-gameshark"), (b"", "gb-gameshark")):
+        with pytest.raises(ValueError):
+            RI.split_gb(data, chip)
+    assert [RI.backup_code(c) for c in ("gb-pelican", "gb-megamem", "gb-gameshark")] == [1, 2, 3] and RI.backup_code("gameshark") == 0x8002
+    assert set(RI.BACKUP_CHIPS) == {"gameshark", "xplorer64", "gb-pelican", "gb-megamem", "gb-gameshark"}
+
+    class Client:
+        def __init__(self, data): self.data, self.calls = data, []
+        def dump_rom(self, system, block, progress, mapper, prg, chr_):
+            self.calls.append((system, mapper))
+            class R: pass
+            r = R(); r.data = self.data; return r
+    body = bytes((i * 7) & 0xFF for i in range(524288))
+    img = RI.split_gb(body, "gb-megamem")
+    c = Client(bytes(16384) + body)                       # a leitura traz a ROM de 16 KB antes dos dados
+    assert RI.verify_written(c, 6, "gb-megamem", img).ok and c.calls == [(6, 2)]
+    bad = bytearray(bytes(16384) + body); bad[16384 + 100] ^= 1
+    v = RI.verify_written(Client(bytes(bad)), 6, "gb-megamem", img)
+    assert not v.ok and v.first_diff == 100
+    p = RI.split_gb(bytes(262144), "gb-pelican")
+    assert RI.verify_written(Client(bytes(262144)), 6, "gb-pelican", p).ok
 
 
 def test_split_gb_erros():

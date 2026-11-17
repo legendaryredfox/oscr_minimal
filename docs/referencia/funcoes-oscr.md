@@ -82,7 +82,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Flash repro: CFI + save | PC (`rom-write` e depois `save-write`) | ✅ em dois comandos (D84) |
 | GB Smart (ler a flash de 4 MB) | firmware + PC | ✅ só leitura (`DUMP_ROM` do GB com `mapper` 6, D186); ⬜ Game Menu, trocar jogo e gravar |
 | NPower GB Memory (ler ROM e ler mapeamento) | firmware + PC | ✅ só leitura (`mapper` 4 e 5, D186); ⬜ ler ID, apagar, gravar ROM e mapeamento |
-| Mega Memory, GBC GameShark, Pelican (ler) | firmware + PC | ✅ só leitura (`mapper` 2, 3 e 1, D186); ⬜ gravar os três; Codebreaker não tem função própria no OSCR (usa o Pelican) |
+| Mega Memory, GBC GameShark, Pelican (ler e gravar) | firmware + PC | ✅ ler (`mapper` 2, 3 e 1, D186) e gravar (`rom-write --chip gb-megamem`, `gb-gameshark`, `gb-pelican`, D188; destrutivo, nunca rodou; o Codebreaker usa o Pelican) |
 
 ## Programador de flash genérico (`Flash.cpp`)
 

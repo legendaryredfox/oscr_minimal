@@ -25,6 +25,10 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GB_ORANGE_FM("gb-orange-fm", 6, 0, "GB flash 39SF010 sem MBC, Orange FM (32 KB)", gb = true),
     GB_39SF_MBC5("gb-39sf-mbc5", 7, 0, "GB flash 39SF040, MBC5 (WE no pino de áudio)", gb = true),
     GB_CFI("gb-cfi", 8, 0, "GB flash CFI", gb = true),
+    /** Game Boy, acessórios (F-17, D188): a flash do próprio acessório. Backup e conferência pela leitura do D186 (`DUMP_ROM` com `mapper` 1 a 3). */
+    GB_PELICAN("gb-pelican", 9, 0, "Pelican do GB (W29C020/29EE020 de 256 KB ou SST 28LF040 de 512 KB)", gb = true),
+    GB_MEGAMEM("gb-megamem", 10, 0, "Datel Mega Memory Card do GB (chip de dados SST 28LF040, 512 KB)", gb = true),
+    GB_GAMESHARK("gb-gameshark", 11, 0, "Datel GameShark GBC (SST 39SF010, 128 KB)", gb = true),
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** N64: o firmware identifica o chip pelo ID (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512). */
@@ -36,9 +40,11 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)", md = true);
 
     /** Gameshark e Xplorer 64: a flash do acessório, que não tem outra cópia (o backup é lido antes de apagar). */
-    val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64
-    /** Campo `mapper` do DUMP_ROM que lê a flash do acessório (bit 15 mais o chip). Igual a n64_backup_code em romimage.py. */
-    val backupCode: Int get() = 0x8000 or code
+    val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64 || gbAccessory
+    /** Acessórios do Game Boy (F-17, D188). */
+    val gbAccessory: Boolean get() = this == GB_PELICAN || this == GB_MEGAMEM || this == GB_GAMESHARK
+    /** Campo `mapper` do DUMP_ROM que lê a flash do acessório (N64: bit 15 mais o chip; GB: 1 a 3). Igual a backup_code em romimage.py. */
+    val backupCode: Int get() = when (this) { GB_PELICAN -> 1; GB_MEGAMEM -> 2; GB_GAMESHARK -> 3; else -> 0x8000 or code }
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -126,7 +132,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_ACC_SIZE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -221,6 +227,11 @@ object RomImages {
 
     /** ROM de Game Boy para o flash repro: múltiplo de 16 KB, de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB. Igual a split_gb em romimage.py. */
     fun splitGb(data: ByteArray, chip: FlashChip): RomImage {
+        if (chip.gbAccessory) {
+            val ok = when (chip) { FlashChip.GB_PELICAN -> data.size == 262144 || data.size == 524288; FlashChip.GB_MEGAMEM -> data.size == 524288; else -> data.size == 131072 }
+            if (!ok) throw RomImageException(RomImageProblem.GB_ACC_SIZE, if (chip == FlashChip.GB_GAMESHARK) 128 else if (chip == FlashChip.GB_PELICAN) 256 else 512, if (chip == FlashChip.GB_PELICAN) 512 else 0)
+            return RomImage(data, data.size / 1024, 0, null)
+        }
         if (data.size < 32768 || data.size % 16384 != 0) throw RomImageException(RomImageProblem.GB_SIZE)
         if (data.size > GB_MAX_BYTES) throw RomImageException(RomImageProblem.GB_TOO_BIG, data.size / 1024)
         if (chip == FlashChip.GB_ORANGE_FM && data.size != 32768) throw RomImageException(RomImageProblem.GB_ORANGE)
@@ -405,7 +416,7 @@ fun verifyWritten(client: OscrClient, system: CartSystem, chip: FlashChip, img: 
               else client.dumpRom(system, 0, chip.mapper, if (chip.n64) (img.body.size + (1 shl 20) - 1) shr 20 else img.prgKb, img.chrKb, progress)
     val d = res.data
     val hasHeader = d.size >= 4 && d[0] == 'N'.code.toByte() && d[1] == 'E'.code.toByte() && d[2] == 'S'.code.toByte() && d[3] == 0x1A.toByte()
-    val read0 = if (hasHeader) d.copyOfRange(16, d.size) else d       // o firmware acrescenta um cabeçalho iNES sintético
+    val read0 = if (chip == FlashChip.GB_MEGAMEM && d.size >= 16384) d.copyOfRange(16384, d.size) else if (hasHeader) d.copyOfRange(16, d.size) else d       // GB Mega Memory: a ROM de 16 KB vem antes dos dados gravados; NES: cabeçalho iNES sintético
     val exp = img.rom ?: img.body
     val read = if (chip.n64 && read0.size > exp.size) read0.copyOf(exp.size) else read0
     var diff: Int? = null

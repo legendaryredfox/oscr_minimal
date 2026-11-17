@@ -95,8 +95,8 @@ def cmd_rom_write(args) -> int:
         if not info.get("write_rom"):
             raise CliError("unsupported_firmware", tr("fw.unsupported_write_rom"), EXIT_ERROR, tr("fw.unsupported.hint"))
         backup_path = None
-        if chip in RI.N64_ACCESSORY_CHIPS and not args.no_backup:      # a flash do Gameshark e do Xplorer 64 não tem outra cópia: lê tudo antes de apagar (se falhar, nada foi apagado)
-            cur = c.dump_rom(system_id(args.system), 0, progress("backup", args.progress), RI.n64_backup_code(chip), 0, 0)
+        if chip in RI.BACKUP_CHIPS and not args.no_backup:      # a flash do Gameshark, do Xplorer 64 e dos acessórios do Game Boy não tem outra cópia: lê tudo antes de apagar (se falhar, nada foi apagado)
+            cur = c.dump_rom(system_id(args.system), 0, progress("backup", args.progress), RI.backup_code(chip), 0, 0)
             bdir = Path(args.backup_dir).expanduser()
             bdir.mkdir(parents=True, exist_ok=True)
             backup_path = bdir / f"{chip}_{time.strftime('%Y%m%d-%H%M%S')}.bin"

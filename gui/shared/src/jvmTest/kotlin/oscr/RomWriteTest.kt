@@ -260,7 +260,7 @@ class RomWriteTest {
     @Test fun gbDivideECodigos() {
         val a = RomImages.splitGb(gbRom(512), FlashChip.GB_CFI)
         assertEquals(Pair(512, 512 * 1024), Pair(a.prgKb, a.body.size))
-        assertEquals((1..8).toList(), FlashChip.forSystem(CartSystem.GB).map { RomImages.chipCode(it, a) })
+        assertEquals((1..11).toList(), FlashChip.forSystem(CartSystem.GB).map { RomImages.chipCode(it, a) })
         assertEquals(32, RomImages.splitGb(gbRom(32), FlashChip.GB_ORANGE_FM).prgKb)
         for ((d, c) in listOf(ByteArray(0) to FlashChip.GB_CFI, ByteArray(16384) to FlashChip.GB_CFI, ByteArray(32768 + 100) to FlashChip.GB_CFI)) {
             assertEquals(RomImageProblem.GB_SIZE, assertFailsWith<RomImageException> { RomImages.splitGb(d, c) }.problem)

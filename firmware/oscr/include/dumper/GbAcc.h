@@ -16,7 +16,7 @@ namespace OSCR::Dumper::GbAcc
   {
     switch (a)
     {
-    case kMegaMem: return 16384UL + 32UL * 8192UL;          // ROM de 16 KB e depois 32 bancos de 8 KB de dados salvos (`SaveData`)
+    case kMegaMem: return 16384UL + 32UL * 16384UL;         // ROM de 16 KB e depois 32 bancos de 16 KB (janela `$4000`-`$7FFF`) de dados salvos (`SaveData`)
     case kGameShark: return 16UL * 8192UL;                  // SST 39SF010: 16 bancos de 8 KB (os 128 KB do chip, pela janela de 8 KB)
     case kGbMemory: return 32768UL + 62UL * 16384UL;        // banco 1 inteiro (32 KB) e os bancos 2 a 63 pela janela de 16 KB
     case kGbMemoryMap: return 128;                          // mapeamento escondido do GB Memory Module

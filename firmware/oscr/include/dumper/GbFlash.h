@@ -17,9 +17,14 @@ namespace OSCR::Dumper::GbFlash
     kOrangeFm = 6,       ///< "Orange FM (WR)": sem MBC, comandos do 39SF040, apaga; ROM de 32 KB
     kSst39Mbc5 = 7,      ///< "39SF MBC5 (Audio)": MBC5, comandos do 39SF040, WE no pino de áudio, apaga
     kCfi = 8,            ///< "GB CFI Repro": flash CFI (o OSCR identifica pelo CFI)
+    // Acessórios (F-17, D188): a flash do próprio acessório, não de um cartucho de jogo. Backup e conferência pela leitura do D186 (`DUMP_ROM` com `mapper` = 1, 2, 3).
+    kPelican = 9,        ///< Pelican (Brainboys, MonsterBrains, Codebreaker): W29C020/29EE020 de 256 KB ou SST 28LF040 de 512 KB
+    kMegaMem = 10,       ///< Datel Mega Memory Card: só o chip de dados SST 28LF040 (512 KB, os 32 bancos de 16 KB do `SaveData`)
+    kGameShark = 11,     ///< Datel GameShark GBC: SST 39SF010 (128 KB)
+    kLast = 11,
   };
 
-  /// Confere chip e tamanho do arquivo (múltiplo de 16 KB, 32 KB a 4 MB; 32 KB no kOrangeFm), sem tocar no cartucho. 0 = ok; senão E_ARGUMENTO.
+  /// Confere chip e tamanho do arquivo (múltiplo de 16 KB, 32 KB a 4 MB; 32 KB no kOrangeFm; acessórios: Pelican 256 ou 512 KB, Mega Memory 512 KB, GameShark 128 KB), sem tocar no cartucho. 0 = ok; senão E_ARGUMENTO.
   uint16_t check(uint8_t chip, uint32_t sizeBytes);
 
   /// Com o cartucho ligado: lê o ID (E_FLASH se o chip não responde; no kCfi, se não responde ao CFI ou se a ROM não cabe) e apaga (menos no kCamSecond). 0 = ok.

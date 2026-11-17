@@ -9,7 +9,7 @@ static int g_fail = 0, g_n = 0;
 
 int main() {
   CHECK(!valid(0) && valid(1) && valid(6) && !valid(7) && !valid(0x8001));
-  CHECK(expectedBytes(kMegaMem) == 278528UL);
+  CHECK(expectedBytes(kMegaMem) == 540672UL);
   CHECK(expectedBytes(kGameShark) == 131072UL);
   CHECK(expectedBytes(kGbMemory) == 1048576UL);
   CHECK(expectedBytes(kGbMemoryMap) == 128 && expectedBytes(kGbSmart) == 4UL * 1024 * 1024);

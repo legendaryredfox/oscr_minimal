@@ -436,6 +436,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         RomImageProblem.GB_SIZE -> t(S.RIMG_GB_SIZE)
         RomImageProblem.GB_TOO_BIG -> f(S.RIMG_GB_TOO_BIG, e.a)
         RomImageProblem.GB_ORANGE -> t(S.RIMG_GB_ORANGE)
+        RomImageProblem.GB_ACC_SIZE -> f(S.RIMG_GB_ACC_SIZE, e.a, e.b)
         RomImageProblem.GB_NEEDS_CHIP -> t(S.RIMG_GB_NEEDS_CHIP)
         RomImageProblem.GBA_BLOCK -> t(S.RIMG_GBA_BLOCK)
         RomImageProblem.GBA_SIZE -> t(S.RIMG_GBA_SIZE)
