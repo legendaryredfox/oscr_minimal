@@ -77,3 +77,7 @@ Dez GPIO no total. O lado do Mega (D40 = PG1, D41 = PG0) não muda: `boards/16_b
    com a nova tabela, gerbers (KiCad 10.0.8 e o MCP; `nvm use 24`).
 5. Atualizar `bom.md`, `montagem.md`, `pinmap.md` (seção CIC) e a tabela de decisões da seção 1 do `CLAUDE.md`
    (a linha "CIC (SNES SA1): PIC12F629 em soquete" muda).
+
+## Depois do RP2040
+
+Na fila, pedido do usuário em 2026-11-17: adaptador passante para capturar o barramento do Mega Drive com um Pier Solar (`docs/planos/adaptador-passante-pier-solar.md`). Só depois de fechada a decisão do RP2040.
