@@ -3067,6 +3067,12 @@ namespace OSCR::Cores::MegaDrive
     OSCR::Storage::Shared::close();
   }
 
+  // fork oscr_minimal (D180): bytes que o `readROM` lê além da ROM do Sonic & Knuckles (jogo encaixado em cima, mais o Sonic 2 inteiro no modo 3); o PC mostra o tamanho certo
+  uint32_t lockonBytes()
+  {
+    return (SnKmode < 2) ? 0 : (cartSizeLockon + ((SnKmode == 3) ? cartSizeSonic2 : 0));
+  }
+
   void force_cartSize()
   {
     cartSize = OSCR::UI::menu(FS(OSCR::Strings::Headings::SelectCartSize), FS(OSCR::Strings::Templates::SizeM), MDSize, sizeofarray(MDSize));

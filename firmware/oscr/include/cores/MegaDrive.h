@@ -30,6 +30,7 @@ namespace OSCR::Cores::MegaDrive
   void readBram();
   void writeBram();
 
+  uint32_t lockonBytes();    // fork oscr_minimal (D180): bytes do jogo encaixado no Sonic & Knuckles (0 = sem lock-on)
   void force_cartSize();
 
   uint16_t readWord(uint32_t myAddress);

@@ -756,7 +756,7 @@ namespace OSCR::Dumper
         if (!ok || OSCR::Cores::cartSize == 0 || OSCR::Cores::cartSize > 16777216UL) { out.status = mdCartPinLow() ? 4 : 1; return; }
 
         out.status = 0;
-        out.rom_size = OSCR::Cores::cartSize;
+        out.rom_size = OSCR::Cores::cartSize + MD::lockonBytes();     // Sonic & Knuckles com jogo encaixado: o `readROM` do OSCR lê os dois (D180)
         out.save_size = OSCR::Cores::saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize;
         out.save_type = OSCR::Cores::saveType;
         strlcpy(out.name, OSCR::Cores::fileName, sizeof(out.name));
