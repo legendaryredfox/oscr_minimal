@@ -40,7 +40,7 @@ options (accepted before or after the command):
   -i, --input FILE     save file to write
   --block N            block size (default 512)
   --mapper N --prg KB --chr KB --ram KB     NES/Famicom/GBA options (see 'systems')
-  --accessory NAME     SNES: sufami-a or sufami-b (dump, detect: Sufami Turbo adapter slot) or gpc (save-read, save-write: Game Processor RAM Cassette, 512 KB)
+  --accessory NAME     SNES: sufami-a or sufami-b (dump, detect: Sufami Turbo adapter slot) or gpc (save-read, save-write: Game Processor RAM Cassette, 512 KB), bsx-pack (dump), bsx-sram (save-read, save-write), sfm-flash, sfm-map, sfm-game-0..6 (dump) (D187)
   --db PATH            extra game database: file or folder of .dat (No-Intro) or nes20db.xml; repeatable; also reads env OSCR_DB
                        (the project's own database, from the OSCR legacy, is always loaded first)
   --no-builtin-db      do not load the project's own game database
@@ -119,7 +119,7 @@ opções (aceitas antes ou depois do comando):
   -i, --input ARQ      arquivo de save a gravar
   --block N            tamanho do bloco (padrão 512)
   --mapper N --prg KB --chr KB --ram KB     opções de NES/Famicom/GBA (veja 'systems')
-  --accessory NOME     SNES: sufami-a ou sufami-b (dump, detect: slot do adaptador Sufami Turbo) ou gpc (save-read, save-write: Game Processor RAM Cassette, 512 KB)
+  --accessory NOME     SNES: sufami-a ou sufami-b (dump, detect: slot do adaptador Sufami Turbo) ou gpc (save-read, save-write: Game Processor RAM Cassette, 512 KB), bsx-pack (dump), bsx-sram (save-read, save-write), sfm-flash, sfm-map, sfm-game-0..6 (dump) (D187)
   --db CAMINHO         base de jogos extra: arquivo ou pasta de .dat (No-Intro) ou nes20db.xml; repetível; lê também a variável OSCR_DB
                        (a base do próprio projeto, herdada do OSCR, é sempre carregada primeiro)
   --no-builtin-db      não carrega a base de jogos do próprio projeto
@@ -198,7 +198,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   -i, --input ФАЙЛ     файл сохранения для записи
   --block N            размер блока (по умолчанию 512)
   --mapper N --prg KB --chr KB --ram KB     опции NES/Famicom/GBA (см. 'systems')
-  --accessory ИМЯ      SNES: sufami-a или sufami-b (dump, detect: слот адаптера Sufami Turbo) или gpc (save-read, save-write: Game Processor RAM Cassette, 512 КБ)
+  --accessory ИМЯ      SNES: sufami-a или sufami-b (dump, detect: слот адаптера Sufami Turbo) или gpc (save-read, save-write: Game Processor RAM Cassette, 512 КБ), bsx-pack (dump), bsx-sram (save-read, save-write), sfm-flash, sfm-map, sfm-game-0..6 (dump) (D187)
   --db ПУТЬ            дополнительная база игр: файл или папка с .dat (No-Intro) или nes20db.xml; можно повторять; читает также переменную OSCR_DB
                        (собственная база проекта, унаследованная от OSCR, всегда загружается первой)
   --no-builtin-db      не загружать собственную базу игр проекта
@@ -277,7 +277,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   -i, --input 文件     要写入的存档文件
   --block N            块大小（默认 512）
   --mapper N --prg KB --chr KB --ram KB     NES/Famicom/GBA 选项（见 'systems'）
-  --accessory 名称     SNES：sufami-a 或 sufami-b（dump、detect：Sufami Turbo 适配器的插槽），或 gpc（save-read、save-write：Game Processor RAM Cassette，512 KB）
+  --accessory 名称     SNES：sufami-a 或 sufami-b（dump、detect：Sufami Turbo 适配器的插槽），或 gpc（save-read、save-write：Game Processor RAM Cassette，512 KB），bsx-pack（dump）、bsx-sram（save-read、save-write）、sfm-flash、sfm-map、sfm-game-0..6（dump）（D187）
   --db 路径            额外的游戏数据库：.dat（No-Intro）文件或文件夹，或 nes20db.xml；可重复；同时读取环境变量 OSCR_DB
                        （项目自带的、继承自 OSCR 的数据库总是最先加载）
   --no-builtin-db      不加载项目自带的游戏数据库

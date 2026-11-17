@@ -29,6 +29,8 @@
 # include "dumper/SnesAccIo.h"
 # include "cores/ST.h"
 # include "cores/GPC.h"
+# include "cores/Satellaview.h"
+# include "cores/SFM.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
 # include "dumper/MdExtra.h"
@@ -1212,7 +1214,7 @@ namespace OSCR::Dumper
         uint16_t f = optChrKb;
         if (!oscr::snesacc::valid(f)) { err = oscr::E_ARGUMENTO; return false; }
         bool sufami = oscr::snesacc::isSufami(f);
-        if ((sufami && kind != oscr::KIND_ROM) || (!sufami && kind != oscr::KIND_SAVE)) { err = oscr::E_ARGUMENTO; return false; }
+        if (oscr::snesacc::isRomAcc(f) != (kind == oscr::KIND_ROM)) { err = oscr::E_ARGUMENTO; return false; }   // ROM: Sufami, Memory Pack, SFM; save: GPC e SRAM do BS-X
 
         bool slotB = oscr::snesacc::sufamiSlotB(f);
         if (sufami)
@@ -1222,9 +1224,26 @@ namespace OSCR::Dumper
           if (!ran || rc) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
         }
 
+        if (f == oscr::snesacc::kBsxPack || f == oscr::snesacc::kBsxSram)         // F-11 (D187): precisa do cartucho base do BS-X
+        {
+          uint16_t rc = oscr::E_SEM_CARTUCHO;
+          bool ran = runCore([&rc] { rc = SnesAcc::probeBsx(); });
+          if (!ran || rc) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        }
+
         countingSink.inner = &sink; countingSink.bytes = 0;
         activeSink = &countingSink;
-        bool ok = runCore([sufami, slotB] { if (sufami) OSCR::Cores::ST::readSlot(slotB); else OSCR::Cores::GPC::readRAM(); }, true);
+        bool ok = runCore([f, sufami, slotB]
+        {
+          namespace A = oscr::snesacc;
+          if (sufami) OSCR::Cores::ST::readSlot(slotB);
+          else if (f == A::kGpc) OSCR::Cores::GPC::readRAM();
+          else if (f == A::kBsxPack) OSCR::Cores::Satellaview::readROM();                          // liga e desliga sozinha
+          else if (f == A::kBsxSram) { OSCR::Cores::Satellaview::readSRAM(); OSCR::Cores::Satellaview::cartOff(); }
+          else if (f == A::kSfmFlash) OSCR::Cores::SFM::readFlash();                               // destrava, lê os 4 MB e desliga
+          else if (f == A::kSfmMap) SnesAcc::readSfmMap();
+          else SnesAcc::readSfmGame(A::sfmGameIndex(f));
+        }, true);
         activeSink = nullptr;
         err = oscr::E_CARTUCHO_IO;
         return ok || (!fatalHit && countingSink.bytes > 0);
@@ -1233,15 +1252,23 @@ namespace OSCR::Dumper
       /** Gravação dos 512 KB do GPC (WRITE_SAVE com o acessório). */
       bool accWrite(oscr::StreamSource & in, uint16_t & err)
       {
-        if (optChrKb != oscr::snesacc::kGpc) { err = oscr::E_ARGUMENTO; return false; }     // o Sufami Turbo não tem gravação
-        if (in.size() != oscr::snesacc::kGpcBytes) { err = oscr::E_ARGUMENTO; return false; }
+        uint16_t f = optChrKb;
+        if (!oscr::snesacc::hasWrite(f)) { err = oscr::E_ARGUMENTO; return false; }         // só o GPC e a SRAM do BS-X gravam; o resto é só leitura
+        uint32_t want = oscr::snesacc::writeBytes(f);
+        if (in.size() != want) { err = oscr::E_ARGUMENTO; return false; }
+        if (f == oscr::snesacc::kBsxSram)
+        {
+          uint16_t rc = oscr::E_SEM_CARTUCHO;
+          bool ran = runCore([&rc] { rc = SnesAcc::probeBsx(); });
+          if (!ran || rc) { err = rc ? rc : oscr::E_CARTUCHO_IO; return false; }
+        }
         countingSource.inner = &in; countingSource.bytes = 0;
         activeSource = &countingSource;
         OSCR::Storage::Shared::sharedFile.open("save", O_RDONLY);
-        bool ok = runCore([] { SnesAcc::writeGpc(); });
+        bool ok = runCore([f] { if (f == oscr::snesacc::kGpc) SnesAcc::writeGpc(); else SnesAcc::writeBsxSram(); });
         activeSource = nullptr;
         err = oscr::E_CARTUCHO_IO;
-        return ok || (!fatalHit && countingSource.bytes == oscr::snesacc::kGpcBytes);
+        return ok || (!fatalHit && countingSource.bytes == want);
       }
       uint32_t romWriteSize = 0;      // tamanho do arquivo do último WRITE_ROM (rom_prepare -> stream_write_rom)
 

@@ -160,10 +160,10 @@ def snes_type_code(args) -> int:
     if t and acc:
         raise CliError("usage", tr("snes_acc.with_type"), EXIT_USAGE)
     if acc:                                                # F-10: Sufami Turbo (ROM) e GPC (save); o comando confere se o acessório serve a ele
-        gpc = acc == "gpc"
+        is_save = acc in P.SNES_SAVE_ACCESSORIES               # GPC e SRAM do BS-X são RAM; os outros, ROM
         cmd = getattr(args, "cmd", "")
-        if (gpc and cmd in ("dump", "detect")) or (not gpc and cmd in ("save-read", "save-write")):
-            raise CliError("usage", tr("snes_acc.gpc_is_save" if gpc else "snes_acc.sufami_is_rom"), EXIT_USAGE)
+        if (is_save and cmd in ("dump", "detect")) or (not is_save and cmd in ("save-read", "save-write")):
+            raise CliError("usage", tr("snes_acc.gpc_is_save" if is_save else "snes_acc.sufami_is_rom"), EXIT_USAGE)
         return P.SNES_ACCESSORIES[acc]
     return P.SNES_TYPES[t]
 

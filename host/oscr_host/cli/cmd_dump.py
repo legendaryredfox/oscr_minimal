@@ -75,7 +75,7 @@ def cmd_dump(args) -> int:
         res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, chr_kb) if getattr(args, "twice", False) else None
     finally:
         t.close()
-    ext = ".st" if acc else P.SYSTEMS[args.system][1]      # Sufami Turbo: extensão do OSCR
+    ext = P.snes_acc_ext(acc) if acc else P.SYSTEMS[args.system][1]      # acessórios do SNES: extensão de cada um (Sufami Turbo: a do OSCR)
     gb_acc = sid == 6 and bool(args.mapper)                # F-17 (D186): acessório do Game Boy (Pelican, Mega Memory...), sem cabeçalho de jogo
     if sid == 6 and not gb_acc and len(res.data) > 0x143 and res.data[0x143] & 0x80:
         ext = ".gbc"                                      # cabeçalho com a flag de Game Boy Color

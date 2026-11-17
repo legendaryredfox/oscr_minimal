@@ -257,8 +257,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     fun mapperArg() = (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0
     fun ramArg() = if (isNes) ramN else 0
     fun snesTypeArg() = if (system == CartSystem.SNES) snesTypeSel else 0
-    val accGpc = system == CartSystem.SNES && snesTypeSel == Proto.SNES_ACCESSORIES.getValue("gpc")                  // acessórios do SNES (F-10, D178), no mesmo campo do tipo de ROM
-    val accSufami = system == CartSystem.SNES && snesTypeSel in setOf(Proto.SNES_ACCESSORIES.getValue("sufami-a"), Proto.SNES_ACCESSORIES.getValue("sufami-b"))
+    val accGpc = system == CartSystem.SNES && Proto.SNES_SAVE_ACCESSORIES.keys.any { snesTypeSel == Proto.SNES_ACCESSORIES.getValue(it) }                  // acessórios do SNES (F-10, D178), no mesmo campo do tipo de ROM
+    val accSufami = system == CartSystem.SNES && snesTypeSel in Proto.SNES_ACCESSORIES.filterKeys { it !in Proto.SNES_SAVE_ACCESSORIES }.values
 
     fun reportText(p: String, crc: String, size: Int, extra: List<String>, h: Hashes.Result? = null) =
         (listOf("oscr_minimal $APP_VERSION", "${t(S.SYSTEM)}: ${system.name}", p, "${t(S.RESULT_SIZE)}: $size ${t(S.BYTES)}", "CRC32: $crc") + (h?.let { listOf("SHA-1: ${it.sha1}", "MD5: ${it.md5}") } ?: emptyList()) + extra).joinToString("\n") + "\n"
@@ -659,7 +659,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 else if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE)
                 say(m); extra += m
             }
-            val ext = if (accSufami) ".st" else if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
+            val ext = if (accSufami) Proto.snesAccExt(Proto.SNES_ACCESSORIES.entries.first { it.value == snesTypeSel }.key) else if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
             val game = db?.identify(system, res.data)
             if (db != null) {
                 val m = if (game != null) "${t(S.GAME_LABEL)}: ${game.entry.name} (${game.entry.source})" else t(S.GAME_NOT_FOUND)
@@ -688,7 +688,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")
             val title = detectedNames[system].orEmpty()
-            offerSave(Pending(res.data, safeName(title, if (accGpc) "save_snes_gpc" else "save_${system.name.lowercase()}") + (if (accGpc) ".bin" else ".sav"), "save", reportText(title, res.crcHex, res.data.size, emptyList(), hashes)))
+            offerSave(Pending(res.data, safeName(title, if (accGpc) "save_snes_" + Proto.SNES_ACCESSORIES.entries.first { it.value == snesTypeSel }.key.replace('-', '_') else "save_${system.name.lowercase()}") + (if (accGpc) ".bin" else ".sav"), "save", reportText(title, res.crcHex, res.data.size, emptyList(), hashes)))
         }
     }
 
@@ -697,7 +697,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         if (accSufami) { say(t(S.ERR_PREFIX) + ": " + t(S.ACC_SUFAMI_IS_ROM)); return }
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
-        if (accGpc && file.length() != Proto.GPC_BYTES.toLong()) { say(t(S.ERR_PREFIX) + ": " + f(S.ACC_GPC_SIZE, file.length())); return }
+        if (accGpc) { val want = Proto.SNES_SAVE_ACCESSORIES.getValue(Proto.SNES_ACCESSORIES.entries.first { it.value == snesTypeSel }.key); if (file.length() != want.toLong()) { say(t(S.ERR_PREFIX) + ": " + f(S.ACC_GPC_SIZE, file.length(), want)); return } }
         writeReq = WriteRequest(file, file.readBytes())
     }
 
@@ -1411,7 +1411,8 @@ private fun LabeledField(label: String, content: @Composable ColumnScope.() -> U
 private val LocalFieldLabel = compositionLocalOf { "" }
 
 /** Passos do zoom da interface, em %. */
-private val SNES_ACC_NAMES = mapOf("sufami-a" to "Sufami Turbo (A)", "sufami-b" to "Sufami Turbo (B)", "gpc" to "Game Processor RAM (GPC)")      // nomes próprios
+private val SNES_ACC_NAMES: Map<String, String> = mapOf("sufami-a" to "Sufami Turbo (A)", "sufami-b" to "Sufami Turbo (B)", "gpc" to "Game Processor RAM (GPC)",
+    "bsx-pack" to "BS-X Memory Pack (ROM)", "bsx-sram" to "BS-X SRAM", "sfm-flash" to "SF Memory (flash 4 MB)", "sfm-map" to "SF Memory (mapeamento)") + (0..6).associate { "sfm-game-$it" to "SF Memory (jogo ${it + 1})" }      // nomes próprios
 private val SNES_TYPE_NAMES = mapOf("lorom" to "LoROM", "hirom" to "HiROM", "sa1" to "SA-1", "exhirom" to "ExHiROM")      // nomes próprios: iguais em todos os idiomas
 private val ZOOM_STEPS = listOf(100, 125, 150, 175, 200)
 

@@ -50,8 +50,17 @@ KIND_ROM, KIND_SAVE = 1, 2
 # Tipo de ROM do SNES forçado pelo PC (F-2, D164): vai no terceiro campo opcional (`chr_kb`), que o SNES não usa. 0 = pelo cabeçalho.
 SNES_TYPES = {"lorom": 1, "hirom": 2, "sa1": 3, "exhirom": 4}
 # Acessórios do SNES (F-10, D178): vão no mesmo 3º campo, a partir de 0x8000 (firmware/oscr/include/dumper/SnesAcc.h). Sufami Turbo: só ROM; GPC: só save de 512 KB.
-SNES_ACCESSORIES = {"sufami-a": 0x8001, "sufami-b": 0x8002, "gpc": 0x8003}
+SNES_ACCESSORIES = {"sufami-a": 0x8001, "sufami-b": 0x8002, "gpc": 0x8003,
+                    "bsx-pack": 0x8004, "bsx-sram": 0x8005, "sfm-flash": 0x8006, "sfm-map": 0x8007,        # F-11 (D187): Satellaview BS-X e SF Memory Cassette
+                    **{f"sfm-game-{n}": 0x8010 + n for n in range(7)}}
 GPC_BYTES = 0x80000
+SNES_SAVE_ACCESSORIES = {"gpc": GPC_BYTES, "bsx-sram": 0x8000}      # acessórios que são RAM (save-read e save-write) e o tamanho do arquivo; os outros são só ROM (dump)
+SNES_ACC_EXT = {"sufami-a": ".st", "sufami-b": ".st", "bsx-pack": ".bs", "sfm-flash": ".bin", "sfm-map": ".map"}
+
+
+def snes_acc_ext(name: str) -> str:
+    """Extensão do arquivo de um acessório de ROM do SNES (os jogos do SFM saem como .sfc)."""
+    return SNES_ACC_EXT.get(name, ".sfc")
 
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),

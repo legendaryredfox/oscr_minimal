@@ -50,7 +50,7 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
         }
     } finally { c.transport.close() }
     val gbAcc = sys == CartSystem.GB && mapper != 0        // F-17 (D186): acessório do Game Boy, sem cabeçalho de jogo
-    val ext = if (acc != null) ".st" else if (sys == CartSystem.GB && !gbAcc && res.data.size > 0x143 && res.data[0x143].toInt() and 0x80 != 0) ".gbc" else sys.ext
+    val ext = if (acc != null) Proto.snesAccExt(acc) else if (sys == CartSystem.GB && !gbAcc && res.data.size > 0x143 && res.data[0x143].toInt() and 0x80 != 0) ".gbc" else sys.ext
     res2?.let { if (!it.data.contentEquals(res.data)) twiceMismatch(a, res, it, ext, safeName(title, "rom_${sys.name.lowercase()}")) }
     val chk = if (acc != null || gbAcc) verifyRom(CartSystem.MOCK, ByteArray(0)) else verifyRom(sys, res.data)      // o cabeçalho do Sufami Turbo não é o do SNES
     val extra = linkedMapOf<String, Any?>("checksum" to chk.status.name.lowercase())

@@ -19,8 +19,12 @@ object Proto {
     const val STAGE_NONE = 0; const val STAGE_ERASE = 1; const val STAGE_WRITE = 2; const val STAGE_READ = 3; const val STAGE_SELFTEST = 4
     val STAGE_NAMES = mapOf(STAGE_ERASE to "erasing", STAGE_WRITE to "writing", STAGE_READ to "reading", STAGE_SELFTEST to "selftest")
     /** Acessórios do SNES (F-10, D178): no 3º campo do SNES, a partir de 0x8000 (firmware/oscr/include/dumper/SnesAcc.h). Sufami Turbo: só ROM; GPC: só save de 512 KB. */
-    val SNES_ACCESSORIES = mapOf("sufami-a" to 0x8001, "sufami-b" to 0x8002, "gpc" to 0x8003)
+    val SNES_ACCESSORIES: Map<String, Int> = linkedMapOf("sufami-a" to 0x8001, "sufami-b" to 0x8002, "gpc" to 0x8003,
+        "bsx-pack" to 0x8004, "bsx-sram" to 0x8005, "sfm-flash" to 0x8006, "sfm-map" to 0x8007) + (0..6).associate { "sfm-game-$it" to 0x8010 + it }     // F-11 (D187): Satellaview BS-X e SF Memory Cassette
     const val GPC_BYTES = 0x80000
+    /** Acessórios que são RAM (save-read e save-write) e o tamanho do arquivo; os outros são só ROM (dump). */
+    val SNES_SAVE_ACCESSORIES: Map<String, Int> = mapOf("gpc" to GPC_BYTES, "bsx-sram" to 0x8000)
+    fun snesAccExt(name: String): String = when (name) { "sufami-a", "sufami-b" -> ".st"; "bsx-pack" -> ".bs"; "sfm-flash" -> ".bin"; "sfm-map" -> ".map"; else -> ".sfc" }
     /** Maior leitura aceita (GBA 369-in-1: 256 MB, D174; as outras vão até 64 MB). Acima disso o BEGIN é tratado como defeito. */
     const val MAX_STREAM = 256 shl 20
 }

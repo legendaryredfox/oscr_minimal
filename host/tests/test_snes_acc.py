@@ -18,6 +18,10 @@ def test_codigos_batem_com_o_firmware():
     for name, key in (("kSufamiA", "sufami-a"), ("kSufamiB", "sufami-b"), ("kGpc", "gpc")):
         assert int(re.search(rf"{name} = (0x[0-9A-Fa-f]+)", h).group(1), 16) == P.SNES_ACCESSORIES[key]
     assert int(re.search(r"kGpcBytes = (0x[0-9A-Fa-f]+)", h).group(1), 16) == P.GPC_BYTES
+    for name, key in (("kBsxPack", "bsx-pack"), ("kBsxSram", "bsx-sram"), ("kSfmFlash", "sfm-flash"), ("kSfmMap", "sfm-map")):      # F-11 (D187)
+        assert int(re.search(rf"{name} = (0x[0-9A-Fa-f]+)", h).group(1), 16) == P.SNES_ACCESSORIES[key]
+    assert int(re.search(r"kSfmGame = (0x[0-9A-Fa-f]+)", h).group(1), 16) == P.SNES_ACCESSORIES["sfm-game-0"] and P.SNES_ACCESSORIES["sfm-game-6"] == 0x8016
+    assert int(re.search(r"kBsxSramBytes = (0x[0-9A-Fa-f]+)", h).group(1), 16) == P.SNES_SAVE_ACCESSORIES["bsx-sram"]
     assert all(v >= 0x8000 for v in P.SNES_ACCESSORIES.values()) and not set(P.SNES_ACCESSORIES.values()) & set(P.SNES_TYPES.values())
 
 
@@ -125,3 +129,30 @@ def test_ram_test_recusas(monkeypatch, capsys, tmp_path):
     assert code == 64 and not f.calls
     code, o = _cli(monkeypatch, capsys, f, "ram-test")                  # sem --yes e sem terminal: recusa sem tocar no cartucho
     assert code != 0 and not f.calls
+
+
+def test_bsx_e_sfm_f11(monkeypatch, capsys, tmp_path):
+    f = Fake(rom=b"\x02" * 4096)
+    code, o = _cli(monkeypatch, capsys, f, "dump", "-s", "snes", "--accessory", "bsx-pack", "-o", str(tmp_path / "pack"))
+    assert code == 0 and o["file"].endswith(".bs") and ("dump", 1, 0x8004) in f.calls
+    code, o = _cli(monkeypatch, capsys, f, "dump", "-s", "snes", "--accessory", "sfm-game-3", "-o", str(tmp_path / "g"))
+    assert code == 0 and o["file"].endswith(".sfc") and ("dump", 1, 0x8013) in f.calls
+    code, o = _cli(monkeypatch, capsys, f, "dump", "-s", "snes", "--accessory", "sfm-flash", "-o", str(tmp_path / "fl"))
+    assert code == 0 and o["file"].endswith(".bin") and ("dump", 1, 0x8006) in f.calls
+    sram = bytes(range(256)) * 128
+    f = Fake(save=sram)
+    code, o = _cli(monkeypatch, capsys, f, "save-read", "-s", "snes", "--accessory", "bsx-sram", "-o", str(tmp_path / "bsx"))
+    assert code == 0 and o["bytes"] == 32768 and ("read_save", 1, 0x8005) in f.calls
+    src = tmp_path / "bsx.bin"
+    src.write_bytes(sram)
+    f = Fake(save=bytes(32768))
+    code, o = _cli(monkeypatch, capsys, f, "save-write", "-s", "snes", "--accessory", "bsx-sram", "-i", str(src), "--backup-dir", str(tmp_path / "bk"), "--yes")
+    assert code == 0 and ("write_save", 1, 0x8005, 32768) in f.calls
+    bad = tmp_path / "g512.bin"
+    bad.write_bytes(bytes(512 * 1024))
+    g = Fake()
+    for argv in (("save-write", "-s", "snes", "--accessory", "bsx-sram", "-i", str(bad), "--yes"), ("save-read", "-s", "snes", "--accessory", "bsx-pack"),
+                 ("dump", "-s", "snes", "--accessory", "bsx-sram"), ("save-write", "-s", "snes", "--accessory", "sfm-flash", "-i", str(src), "--yes")):
+        code, o = _cli(monkeypatch, capsys, g, *argv)
+        assert code == 64, argv
+    assert not g.calls
