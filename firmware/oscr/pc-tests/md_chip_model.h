@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
+#include <utility>
 #include <string>
 
 namespace mdmodel
@@ -45,6 +46,9 @@ namespace mdmodel
   static const Cfg S29GL064N    = { "S29GL064N",   { 0x0001, 0x227E, 0x220C, 0x2201 }, TOP, AMD11, 0x400000, 0, 15000, 100000000ULL };
   static const Cfg PA28F400B    = { "PA28F400B",   { 0x0089, 0x4471, 0, 0 }, BOTTOM, INTEL, 0x40000, 0, 8000, 100000000ULL };
   static const Cfg PA28F400T    = { "PA28F400T",   { 0x0089, 0x4470, 0, 0 }, TOP, INTEL, 0x40000, 0, 8000, 100000000ULL };
+  // AMD Am29F800 (8 Mbit): 555h/2AAh, boot de 16, 8, 8 e 32 KB (não oito de 8 KB).
+  static const Cfg AM29F800BB   = { "AM29F800BB",  { 0x0001, 0x2258, 0, 0 }, BOTTOM, AMD11, 0x80000, 0, 11000, 100000000ULL };
+  static const Cfg AM29F800BT   = { "AM29F800BT",  { 0x0001, 0x22D6, 0, 0 }, TOP, AMD11, 0x80000, 0, 11000, 100000000ULL };
   // Sharp LH28F320BJE: comandos Intel, 32 Mbit, oito blocos de 4 KWord numa ponta e 63 de 32 KWord. O modelo cobre as duas pontas (o ID da tabela não diz qual).
   static const Cfg LH28F320BJE_B = { "LH28F320BJE-B", { 0x00B0, 0x00E3, 0, 0 }, BOTTOM, INTEL, 0x200000, 0, 8000, 100000000ULL };
   static const Cfg LH28F320BJE_T = { "LH28F320BJE-T", { 0x00B0, 0x00E3, 0, 0 }, TOP, INTEL, 0x200000, 0, 8000, 100000000ULL };
@@ -61,6 +65,9 @@ namespace mdmodel
     Cfg cfg;
     std::vector<uint16_t> mem;
     bool romOnly = false;       // ROM de máscara: leituras devolvem o conteúdo, escritas são ignoradas
+    // tabela CFI: conjunto de comandos em 13h e regiões de setores (blocos, bytes por setor) a partir de 2Ch; vazia = o chip só diz o tamanho
+    int cfiCmdSet = 2;
+    std::vector<std::pair<uint32_t, uint32_t>> cfiRegions;
     bool cfi = false;           // o chip responde à consulta CFI (98h no endereço 55h): "QRY" em 10h a 12h e o tamanho em 27h
     bool stuck = false;         // chip travado: apagar e programar nunca terminam
     uint32_t keepStart = 0, keepLen = 0;   // apagamento "termina sem erro" mas não limpa estas palavras (setores de boot de 8 KB; bancada do md_rewriter)
@@ -123,6 +130,18 @@ namespace mdmodel
     void sectorOf(uint32_t a, uint32_t & start, uint32_t & size) const
     {
       if (cfg.erase30Words) { size = cfg.erase30Words; start = a & ~(size - 1); return; }
+      if (cfg.words == 0x80000 && cfg.layout != UNIFORM)      // Am29F800: boot de 16, 8, 8 e 32 KB (em palavras 2000h, 1000h, 1000h, 4000h)
+      {
+        uint32_t m = (cfg.layout == TOP) ? (cfg.words - 1 - a) : a;
+        if (m < 0x8000)
+        {
+          uint32_t ms, mz;
+          if (m < 0x2000) { ms = 0; mz = 0x2000; } else if (m < 0x3000) { ms = 0x2000; mz = 0x1000; } else if (m < 0x4000) { ms = 0x3000; mz = 0x1000; } else { ms = 0x4000; mz = 0x4000; }
+          size = mz;
+          start = (cfg.layout == TOP) ? cfg.words - (ms + mz) : ms;
+          return;
+        }
+      }
       bool small = (cfg.layout == BOTTOM && a < 0x8000) || (cfg.layout == TOP && a >= cfg.words - 0x8000);
       size = small ? 0x1000 : 0x8000;
       start = a & ~(size - 1);
@@ -220,7 +239,21 @@ namespace mdmodel
         case 0x11: return 0x0052;
         case 0x12: return 0x0059;
         case 0x27: { uint32_t bytes = cfg.words * 2, e = 0; while ((1UL << e) < bytes) e++; return uint16_t(e); }
-        default: return 0;
+        case 0x13: return uint16_t(cfiCmdSet);
+        case 0x2C: return uint16_t(cfiRegions.size());
+        default:
+          if (addr >= 0x2D && addr < 0x2D + 4 * cfiRegions.size())
+          {
+            auto const & r = cfiRegions[(addr - 0x2D) / 4];
+            switch ((addr - 0x2D) % 4)
+            {
+            case 0: return uint16_t((r.first - 1) & 0xFF);
+            case 1: return uint16_t(((r.first - 1) >> 8) & 0xFF);
+            case 2: return uint16_t((r.second / 256) & 0xFF);
+            default: return uint16_t(((r.second / 256) >> 8) & 0xFF);
+            }
+          }
+          return 0;
         }
       case S_AUTO:
         switch (addr & 0xFF)

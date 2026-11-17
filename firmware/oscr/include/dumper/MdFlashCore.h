@@ -75,6 +75,8 @@ static const Chip kChips[] MDF_PROGMEM = {
   { 0x20, 0x57, "M29W320EB",   kBottomBoot, kAmd555,  kNative,    0x30, kW32 },
   { 0xC2, 0xA7, "MX29LV320T",  kTopBoot,    kAmd555,  kNative,    0x30, kW32 },
   { 0xC2, 0xA8, "MX29LV320B",  kBottomBoot, kAmd555,  kNative,    0x30, kW32 },
+  { 0x01, 0xD6, "AM29F800BT",  kTopBoot,    kAmd555,  kNative,    0x30, 0x80000UL },      // 8 Mbit; boot de 16, 8, 8 e 32 KB (o passo de 8 KB do apagar cobre)
+  { 0x01, 0x58, "AM29F800BB",  kBottomBoot, kAmd555,  kNative,    0x30, 0x80000UL },
   { 0xC2, 0xF9, "MX29L3211",   kLayoutUnknown, kAmd5555, kNative, 0x30, kW32 },           // desbloqueio 5555h/2AAAh
   { 0x89, 0x70, "PA28F400T",   kTopBoot,    kIntel,   kNative,    0x20, 0x40000UL },      // Intel: apagar bloco 20h+D0h
   { 0x89, 0x71, "PA28F400B",   kBottomBoot, kIntel,   kNative,    0x20, 0x40000UL },
@@ -114,6 +116,8 @@ struct Probe
   uint16_t u1 = 0x555, u2 = 0x2AA;       ///< endereços de desbloqueio AMD
   bool cfi = false;                      ///< chip fora da tabela que respondeu à consulta CFI ("QRY"): só informação, não grava
   uint32_t cfiWords = 0;                 ///< capacidade dita pelo CFI, em palavras
+  bool cfiWritable = false;              ///< CFI com conjunto de comandos AMD e mapa de setores que fecha com o tamanho: o chip entra em `chip` e grava (D183)
+  uint32_t cfiSmall = 0, cfiLarge = 0, cfiSpan = 0;   ///< setor menor e maior, em palavras, e o trecho de cada ponta que não é de setores grandes
   Probe() { memset(&chip, 0, sizeof(chip)); }
 };
 
@@ -149,12 +153,14 @@ template <class B> void autoselectIntel(B & b, uint8_t id[4])
   b.w(0, 0xFF);
 }
 
-/// Consulta CFI (menu "Flash CFI" do `MD.ino` do OSCR legado, `identifyFlashCFIChip_MD`): reset duplo, 98h no endereço 55h, "QRY" nas palavras 10h a 12h
-/// e o tamanho 2^n bytes na palavra 27h. Só informa o tamanho de um chip que não está na tabela; o OSCR legado gravava por aí, aqui não se grava
-/// um chip que nenhum ID confirmou. `p.cfi` e `p.cfiWords` ficam zerados se não houver resposta ou se o tamanho for absurdo (fora de 128 KB a 128 MB).
+/// Consulta CFI (menu "Flash CFI" do `MD.ino` do OSCR legado, `identifyFlashCFIChip_MD`): reset duplo, 98h no endereço 55h, "QRY" nas palavras 10h a 12h,
+/// o conjunto de comandos em 13h (2 e 4 = AMD/Fujitsu grava; 1 e 3 = Intel/Sharp só informa, sem teste no modelo), o tamanho 2^n bytes em 27h e o mapa de setores a partir de 2Ch (número de
+/// regiões e, por região, blocos - 1 e tamanho em unidades de 256 bytes). `p.cfi` e `p.cfiWords` ficam zerados se não houver resposta ou se o tamanho for
+/// absurdo (fora de 128 KB a 128 MB). O mapa só vale (`cfiWritable`) se as regiões somam o tamanho do chip e o trecho fora dos setores maiores é múltiplo
+/// deles; a ordem das regiões (de baixo ou do lado do boot) não é usada, ver `edgeBlock`.
 template <class B> void queryCfi(B & b, Probe & p)
 {
-  p.cfi = false; p.cfiWords = 0;
+  p.cfi = false; p.cfiWords = 0; p.cfiWritable = false; p.cfiSmall = p.cfiLarge = p.cfiSpan = 0;
   b.out();
   b.w(0x555, 0xF0); b.wait_ms(2);
   b.w(0x555, 0xF0); b.wait_ms(2);
@@ -162,9 +168,49 @@ template <class B> void queryCfi(B & b, Probe & p)
   b.in();
   bool qry = (b.r(0x10) & 0xFF) == 0x51 && (b.r(0x11) & 0xFF) == 0x52 && (b.r(0x12) & 0xFF) == 0x59;
   uint8_t exp = uint8_t(b.r(0x27) & 0xFF);
+  uint8_t set = uint8_t(b.r(0x13) & 0xFF);
+  uint8_t nreg = uint8_t(b.r(0x2C) & 0xFF);
+  uint32_t cnt[4] = { 0, 0, 0, 0 }, sz[4] = { 0, 0, 0, 0 };
+  if (nreg >= 1 && nreg <= 4)
+    for (uint8_t i = 0; i < nreg; i++)
+    {
+      uint32_t base = 0x2D + 4UL * i;
+      cnt[i] = 1UL + ((b.r(base) & 0xFF) | ((b.r(base + 1) & 0xFF) << 8));
+      sz[i] = 128UL * ((b.r(base + 2) & 0xFF) | ((b.r(base + 3) & 0xFF) << 8));         // 256 bytes = 128 palavras
+    }
   b.out();
   b.w(0x555, 0xF0);
-  if (qry && exp >= 17 && exp <= 27) { p.cfi = true; p.cfiWords = (1UL << exp) / 2; }
+  if (!(qry && exp >= 17 && exp <= 27)) return;
+  p.cfi = true; p.cfiWords = (1UL << exp) / 2;
+  if (nreg < 1 || nreg > 4 || !(set == 2 || set == 4)) return;
+  uint32_t total = 0, small = 0xFFFFFFFFUL, large = 0;
+  for (uint8_t i = 0; i < nreg; i++)
+  {
+    if (sz[i] == 0 || (sz[i] & (sz[i] - 1)) != 0) return;                            // setor de tamanho zero ou que não é potência de 2: mapa que não se entende
+    total += cnt[i] * sz[i];
+    if (sz[i] < small) small = sz[i];
+    if (sz[i] > large) large = sz[i];
+  }
+  if (total != p.cfiWords) return;
+  uint32_t span = 0;                                                                   // o que não é setor grande: fica nas pontas
+  for (uint8_t i = 0; i < nreg; i++) if (sz[i] != large) span += cnt[i] * sz[i];
+  if (span % large != 0 || span * 2 > total) return;
+  p.cfiWritable = true;
+  p.cfiSmall = small; p.cfiLarge = large; p.cfiSpan = span;
+  memset(&p.chip, 0, sizeof(p.chip));
+  p.chip.mfr = p.id[0]; p.chip.dev = p.id[1];
+  p.chip.cmd = kAmd555;                              // desbloqueio 555h/2AAh (o CFI não diz); chip que só entende 5555h não responde e nada é apagado
+  p.chip.impl = kNative; p.chip.eraseCode = 0x30; p.chip.layout = kLayoutUnknown;
+  p.chip.words = p.cfiWords;
+  {
+    uint32_t mbit = p.cfiWords >> 16;                  // palavras de 16 bits: 2^16 palavras = 1 Mbit
+    char digits[11]; uint8_t nd = 0;
+    do { digits[nd++] = char('0' + mbit % 10); mbit /= 10; } while (mbit && nd < 4);
+    strcpy(p.chip.name, "CFI ");
+    uint8_t k = 4;
+    while (nd) p.chip.name[k++] = digits[--nd];
+    strcpy(p.chip.name + k, "Mbit");                   // "CFI 32Mbit"
+  }
 }
 
 /// Descobre o conjunto de comandos. Ordem: o desbloqueio 5555h/2AAAh que o OSCR já usa (os chips de 11 bits de decodificação respondem
@@ -188,7 +234,11 @@ template <class B> void probe(B & b, Probe & p)
     }
   }
   if (p.known && p.chip.cmd == kAmd5555) { p.u1 = 0x5555; p.u2 = 0x2AAA; }
-  if (!p.known) queryCfi(b, p);
+  if (!p.known)
+  {
+    queryCfi(b, p);
+    if (p.cfiWritable) p.known = true;                // chip fora da tabela, mas o CFI deu comandos, tamanho e setores (D183); `chip.name` = "CFI"
+  }
 }
 
 // ---------- apagar ----------
@@ -210,11 +260,13 @@ inline void intelBlock(bool top, uint32_t a, uint32_t & start, uint32_t & size)
 /// Bloco do Sharp LH28F320BJE (32 Mbit): oito blocos de parâmetro de 4 KWord numa ponta e blocos principais de 32 KWord no resto. O ID da tabela não diz em
 /// que ponta ficam os de parâmetro (top ou bottom): por isso as duas pontas (32 KWord de cada lado) são percorridas em passos de 4 KWord. Um passo a mais
 /// só apaga de novo um bloco já apagado; um a menos deixaria dado, e o `blankRange` pegaria.
-inline void sharpBlock(uint32_t chipWords, uint32_t a, uint32_t & start, uint32_t & size)
+/// Mesma conta, parametrizada: `span` palavras em cada ponta em passos de `small`, o meio em passos de `large` (a quantidade que o CFI diz, D183).
+inline void edgeBlock(uint32_t chipWords, uint32_t span, uint32_t small, uint32_t large, uint32_t a, uint32_t & start, uint32_t & size)
 {
-  if (a < 0x8000UL || a >= chipWords - 0x8000UL) { start = a & ~0xFFFUL; size = 0x1000; }
-  else { start = a & ~0x7FFFUL; size = 0x8000; }
+  if (a < span || a >= chipWords - span) { start = a & ~(small - 1); size = small; }
+  else { start = a & ~(large - 1); size = large; }
 }
+inline void sharpBlock(uint32_t chipWords, uint32_t a, uint32_t & start, uint32_t & size) { edgeBlock(chipWords, 0x8000UL, 0x1000UL, 0x8000UL, a, start, size); }
 
 /// Sharp: destrava o bloco (60h, D0h). Alguns chips da família saem do reset com os blocos travados; no que não trava, o comando é inofensivo.
 /// O resultado não é conferido: se o bloco continuar travado, o apagar devolve erro.
@@ -293,6 +345,17 @@ template <class B> bool eraseRange(B & b, Probe const & p, uint32_t words)
     return true;
   }
 
+  if (p.cfiWritable)                                  // AMD pelo mapa do CFI: pontas em passos do menor setor (D183)
+  {
+    for (uint32_t a = 0; a < words;)
+    {
+      uint32_t bs, bn;
+      edgeBlock(c.words, p.cfiSpan, p.cfiSmall, p.cfiLarge, a, bs, bn);
+      if (!eraseSectorAmd(b, p, a)) return false;
+      a = bs + bn;
+    }
+    return true;
+  }
   bool smallStart = c.layout == kBottomBoot || c.layout == kLayoutUnknown;
   for (uint32_t a = 0; a < words;)
   {

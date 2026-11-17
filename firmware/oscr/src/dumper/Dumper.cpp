@@ -253,17 +253,18 @@ namespace OSCR::Dumper
     // Cartucho de RAM de backup do Sega CD: `getCartInfo` (via `detect`, que `prepare` chama) deixou `bramSize` (F-16, D179).
     bool isMdBram(uint8_t system) { return system == oscr::SYS_MD && MD::bramSize > 0; }
 
-    /// Lion King 3 e Pokémon Stadium (F-16, D181): troca de banco de 32 KiB a cada pedaço (MdBank.h). Não vem do OSCR e não foi conferido em cartucho.
-    void readBanked(uint16_t kb)
+    /// Lion King 3, Pokémon Stadium (32 KiB) e Star Odyssey (256 KiB; F-16, D181 e D183): troca de banco a cada pedaço (MdBank.h). Não vem do OSCR e não foi conferido em cartucho.
+    void readBanked(uint16_t mapper, uint16_t kb)
     {
+      namespace B = OSCR::Dumper::MdBank;
       MD::cartOn();
       OSCR::Storage::Shared::sharedFile.open("rom", O_WRONLY | O_CREAT | O_TRUNC);
-      for (uint32_t bank = 0; bank < OSCR::Dumper::MdBank::chunks(kb); bank++)
+      for (uint32_t bank = 0; bank < B::chunks(mapper, kb); bank++)
       {
         MD::dataOut();
-        MD::writeWord(OSCR::Dumper::MdBank::kRegWordAddr, uint16_t(bank));
+        MD::writeWord(B::regWordAddr(mapper), B::regValue(mapper, bank));
         MD::dataIn();
-        for (uint32_t w = 0; w < OSCR::Dumper::MdBank::kChunkBytes / 2; w += 256)
+        for (uint32_t w = 0; w < B::chunkBytes(mapper) / 2; w += 256)
         {
           for (uint16_t i = 0; i < 256; i++)
           {
@@ -806,7 +807,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
 
-        if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1 ou 2 e tamanho em KB (D181)
+        if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -878,7 +879,7 @@ namespace OSCR::Dumper
           }
           if (kind == oscr::KIND_ROM)
           {
-            if (OSCR::Dumper::MdBank::valid(m64)) readBanked(mb369);       // `mapper` 1 (Lion King 3) ou 2 (Pokémon Stadium), `prg_kb` = tamanho (D181)
+            if (OSCR::Dumper::MdBank::valid(m64)) readBanked(m64, mb369);       // `mapper` 1 (Lion King 3), 2 (Pokémon Stadium) ou 3 (Star Odyssey), `prg_kb` = tamanho (D181, D183)
             else if (MD::realtec) MD::readRealtec(); else MD::readROM();      // Realtec: o OSCR lê com `readRealtec` (F-16, D179); liga e desliga o cartucho sozinha
           }
           else if (MD::bramSize > 0)

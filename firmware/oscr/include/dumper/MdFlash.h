@@ -7,7 +7,7 @@
 namespace OSCR::Dumper::MdFlash
 {
   /// Valor do campo `mapper` do WRITE_ROM (aqui: o chip). O chip é identificado pelo ID (tabela em `MdFlashCore.h`): MX29F1610 e S29GL064N
-  /// (funções do OSCR), chips AMD de 32 e 64 Mbit, MX29L3211 (5555h), Intel PA28F400, LH28F320BJE e SST39VF320x/640x.
+  /// (funções do OSCR), chips AMD de 32 e 64 Mbit, MX29L3211 (5555h), Intel PA28F400, LH28F320BJE, AM29F800 e SST39VF320x/640x.
   enum : uint8_t { kAuto = 1 };
 
   /// Confere chip e tamanho do arquivo (par, até 8 MB), sem tocar no cartucho. 0 = ok; senão E_ARGUMENTO.

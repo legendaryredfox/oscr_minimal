@@ -94,7 +94,7 @@ namespace OSCR::Dumper::MdFlash
     if (!text) return probed.known ? 0 : oscr::E_FLASH;
     static char const hex[] = "0123456789ABCDEF";
     if (probed.known) strlcpy(text, probed.chip.name, 32);
-    else if (probed.cfi)                                       // fora da tabela, mas o CFI disse o tamanho: "CFI 32Mbit" (só informação; não grava)
+    else if (probed.cfi)                                       // fora da tabela, CFI com tamanho mas sem mapa de setores AMD que feche: "CFI 32Mbit" (só informação; com o mapa o núcleo já grava, D183)
     {
       strlcpy(text, "CFI ", 32);
       size_t k = 4;

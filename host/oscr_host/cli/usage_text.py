@@ -48,7 +48,7 @@ options (accepted before or after the command):
   --limit N            search: maximum results (default 20)
   --chip NAME          rom-write: nesmaker (SST 39SF040, mapper 30) or a29040b (mapper 0), default from the file's iNES mapper;
                        SNES: snes-lorom or snes-hirom (required, the wiring of the CFI flash)
-                       Mega Drive: md-flash (the default; the firmware identifies the chip by ID: MX29F1610, S29GL064N, 32 and 64 Mbit M29W/MX29LV, MX29L3211, PA28F400, LH28F320BJE, SST39VF)
+                       Mega Drive: md-flash (the default; the firmware identifies the chip by ID: MX29F1610, S29GL064N, 32 and 64 Mbit M29W/MX29LV, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)
   --bus NAME           flash-*: 8 (8-bit flash on the flash adapter), plcc32 (8-bit PLCC32 on the SNES adapter), 16 (16-bit flash) or eprom (27C322)
   --flash-kb N         flash-*: chip size in KB (1 to 8192; the EPROM is always 4096)
   --capacity KB        rom-write, SNES CFI, layout 1x: flash size, 2048 or 4096 (default: the smallest the ROM fits)
@@ -127,7 +127,7 @@ opções (aceitas antes ou depois do comando):
   --limit N            search: máximo de resultados (padrão 20)
   --chip NOME          rom-write: nesmaker (SST 39SF040, mapper 30) ou a29040b (mapper 0), padrão pelo mapper iNES do arquivo;
                        SNES: snes-lorom ou snes-hirom (obrigatório, a ligação da flash CFI)
-                       Mega Drive: md-flash (o padrão; o firmware identifica o chip pelo ID: MX29F1610, S29GL064N, M29W/MX29LV de 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, SST39VF)
+                       Mega Drive: md-flash (o padrão; o firmware identifica o chip pelo ID: MX29F1610, S29GL064N, M29W/MX29LV de 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)
   --bus NOME           flash-*: 8 (flash de 8 bits no adaptador de flash), plcc32 (PLCC32 de 8 bits no adaptador SNES), 16 (flash de 16 bits) ou eprom (27C322)
   --flash-kb N         flash-*: tamanho do chip em KB (1 a 8192; a EPROM é sempre 4096)
   --capacity KB        rom-write, SNES CFI, layout 1x: tamanho da flash, 2048 ou 4096 (padrão: o menor em que a ROM cabe)
@@ -206,7 +206,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --limit N            search: максимум результатов (по умолчанию 20)
   --chip ИМЯ           rom-write: nesmaker (SST 39SF040, mapper 30) или a29040b (mapper 0), по умолчанию по iNES-мапперу файла;
                        SNES: snes-lorom или snes-hirom (обязательно, разводка flash CFI)
-                       Mega Drive: md-flash (по умолчанию; прошивка определяет микросхему по ID: MX29F1610, S29GL064N, M29W/MX29LV на 32 и 64 Мбит, MX29L3211, PA28F400, LH28F320BJE, SST39VF)
+                       Mega Drive: md-flash (по умолчанию; прошивка определяет микросхему по ID: MX29F1610, S29GL064N, M29W/MX29LV на 32 и 64 Мбит, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)
   --bus ИМЯ            flash-*: 8 (8-битная flash на адаптере flash), plcc32 (8-битная PLCC32 на адаптере SNES), 16 (16-битная flash) или eprom (27C322)
   --flash-kb N         flash-*: размер микросхемы в КБ (от 1 до 8192; EPROM всегда 4096)
   --capacity KB        rom-write, SNES CFI, раскладка 1x: размер flash, 2048 или 4096 (по умолчанию: наименьший, в который помещается ROM)
@@ -285,7 +285,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --limit N            search：最多结果数（默认 20）
   --chip 名称          rom-write：nesmaker（SST 39SF040，mapper 30）或 a29040b（mapper 0），默认按文件的 iNES mapper；
                        SNES：snes-lorom 或 snes-hirom（必填，CFI flash 的接线）
-                       Mega Drive：md-flash（默认；固件按 ID 识别芯片：MX29F1610、S29GL064N、32 和 64 Mbit 的 M29W/MX29LV、MX29L3211、PA28F400, LH28F320BJE、SST39VF）
+                       Mega Drive：md-flash（默认；固件按 ID 识别芯片：MX29F1610、S29GL064N、32 和 64 Mbit 的 M29W/MX29LV、MX29L3211、PA28F400, LH28F320BJE, AM29F800、SST39VF）
   --bus 名称           flash-*：8（flash 适配器上的 8 位 flash）、plcc32（SNES 适配器上的 8 位 PLCC32）、16（16 位 flash）或 eprom（27C322）
   --flash-kb N         flash-*：芯片大小，单位 KB（1 到 8192；EPROM 固定为 4096）
   --capacity KB        rom-write，SNES CFI，布局 1x：flash 大小，2048 或 4096（默认：能容纳 ROM 的最小值）

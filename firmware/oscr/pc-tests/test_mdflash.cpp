@@ -76,6 +76,8 @@ static void testProbe()
     { &S29GL064N, "S29GL064N", C::kAmd555, C::kOscrGl },
     { &PA28F400B, "PA28F400B", C::kIntel, C::kNative },
     { &PA28F400T, "PA28F400T", C::kIntel, C::kNative },
+    { &AM29F800BB, "AM29F800BB", C::kAmd555, C::kNative },
+    { &AM29F800BT, "AM29F800BT", C::kAmd555, C::kNative },
     { &LH28F320BJE_B, "LH28F320BJE", C::kIntel, C::kNative },
     { &LH28F320BJE_T, "LH28F320BJE", C::kIntel, C::kNative },
     { &M29W320EB_EXACT, "M29W320EB", C::kAmd555, C::kNative },
@@ -149,6 +151,72 @@ static void testProbe()
     CHECK(!p.cfi && p.cfiWords == 0);
   }
 
+  // CFI com mapa de setores (D183): chip fora da tabela, comandos AMD: identifica pelo CFI e grava. Boot embaixo ou em cima, regiões na ordem que o chip listar.
+  {
+    struct Row { char const * name; Layout lay; uint32_t words; std::vector<std::pair<uint32_t, uint32_t>> reg; uint32_t span, small; };
+    Row rows2[] = {
+      { "cfi 32M bottom", BOTTOM, 0x200000, { { 8, 8192 }, { 63, 65536 } }, 0x8000, 0x1000 },
+      { "cfi 32M top, regioes invertidas", TOP, 0x200000, { { 63, 65536 }, { 8, 8192 } }, 0x8000, 0x1000 },
+      { "cfi 8M (16, 8, 8, 32 KB)", BOTTOM, 0x80000, { { 1, 16384 }, { 2, 8192 }, { 1, 32768 }, { 15, 65536 } }, 0x8000, 0x1000 },
+      { "cfi 8M top", TOP, 0x80000, { { 15, 65536 }, { 1, 32768 }, { 2, 8192 }, { 1, 16384 } }, 0x8000, 0x1000 },
+    };
+    for (auto & r : rows2)
+    {
+      Cfg cfg = { "unknown", { 0x00AB, 0x22CD, 0, 0 }, r.lay, AMD11, r.words, 0, 10000, 100000000ULL };
+      Chip chip(cfg);
+      chip.cfi = true;
+      chip.cfiRegions = r.reg;
+      dirty(chip);
+      auto rom = makeRom(r.words * 2, 21);
+      Outcome o = flashRom(chip, rom);
+      CHECKM(o.known && o.p.cfi && o.p.cfiWritable, r.name);
+      CHECKM(o.prep == C::kOk && o.prog == C::kOk, r.name);
+      CHECKM(matches(chip, rom), r.name);
+      CHECKM(chip.errors == 0, chip.firstError.c_str());
+      CHECKM(o.p.cfiSmall == r.small && o.p.cfiSpan == r.span, r.name);
+      CHECKM(strncmp(o.p.chip.name, "CFI ", 4) == 0 && o.p.chip.words == r.words, r.name);
+    }
+    // nome com o tamanho
+    Cfg cfg = { "unknown", { 0x00AB, 0x22CD, 0, 0 }, BOTTOM, AMD11, 0x200000, 0, 10000, 100000000ULL };
+    Chip chip(cfg);
+    chip.cfi = true;
+    chip.cfiRegions = { { 8, 8192 }, { 63, 65536 } };
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(strcmp(p.chip.name, "CFI 32Mbit") == 0);
+  }
+  // CFI que não fecha, ou comandos que não são AMD: só informa, não grava (e não apaga).
+  {
+    std::vector<std::pair<uint32_t, uint32_t>> bad[] = {
+      { { 8, 8192 }, { 62, 65536 } },                  // soma menos que o chip
+      { { 8, 8192 }, { 63, 65536 }, { 1, 0 } },        // tamanho zero
+      { { 8, 8000 }, { 63, 65536 } },                  // tamanho que não é potência de 2
+      { { 3, 8192 }, { 63, 65536 } },                  // soma errada (pontas que não fecham)
+      { },                                             // sem mapa
+    };
+    for (auto & reg : bad)
+    {
+      Chip chip(UNKNOWN_CHIP);
+      chip.cfi = true;
+      chip.cfiRegions = reg;
+      Bus bus(chip);
+      C::Probe p;
+      C::probe(bus, p);
+      CHECK(!p.known && p.cfi && !p.cfiWritable);
+      CHECK(C::prepare(bus, p, 1024) == C::kNoChip);
+      CHECK(chip.sectorErases == 0 && chip.programs == 0);
+    }
+    Chip chip(UNKNOWN_CHIP);                           // conjunto de comandos Intel (1): só informa
+    chip.cfi = true;
+    chip.cfiCmdSet = 1;
+    chip.cfiRegions = { { 8, 8192 }, { 63, 65536 } };
+    Bus bus(chip);
+    C::Probe p;
+    C::probe(bus, p);
+    CHECK(!p.known && p.cfi && !p.cfiWritable);
+  }
+
   // ROM de máscara: as escritas de sondagem são ignoradas e o conteúdo da ROM não é um ID da tabela.
   {
     Chip chip(M29W320EB);
@@ -195,7 +263,7 @@ static void testRoundTrip(Cfg const & cfg, size_t bytes, char const * what)
 
 static void testRoundTrips()
 {
-  Cfg const * all[] = { &MX29LV640EB, &MX29LV640ET, &M29W640DT, &M29W640DB, &SST39VF6401B, &SST39VF3201, &M29W320ET, &M29W320EB, &MX29LV320T, &MX29L3211, &PA28F400B, &PA28F400T, &LH28F320BJE_B, &LH28F320BJE_T };
+  Cfg const * all[] = { &MX29LV640EB, &MX29LV640ET, &M29W640DT, &M29W640DB, &SST39VF6401B, &SST39VF3201, &M29W320ET, &M29W320EB, &MX29LV320T, &MX29L3211, &PA28F400B, &PA28F400T, &LH28F320BJE_B, &LH28F320BJE_T, &AM29F800BB, &AM29F800BT };
   for (Cfg const * c : all)
   {
     size_t full = size_t(c->words) * 2;
