@@ -76,6 +76,8 @@ static void testProbe()
     { &S29GL064N, "S29GL064N", C::kAmd555, C::kOscrGl },
     { &PA28F400B, "PA28F400B", C::kIntel, C::kNative },
     { &PA28F400T, "PA28F400T", C::kIntel, C::kNative },
+    { &LH28F320BJE_B, "LH28F320BJE", C::kIntel, C::kNative },
+    { &LH28F320BJE_T, "LH28F320BJE", C::kIntel, C::kNative },
     { &M29W320EB_EXACT, "M29W320EB", C::kAmd555, C::kNative },
   };
   for (auto & r : rows)
@@ -193,7 +195,7 @@ static void testRoundTrip(Cfg const & cfg, size_t bytes, char const * what)
 
 static void testRoundTrips()
 {
-  Cfg const * all[] = { &MX29LV640EB, &MX29LV640ET, &M29W640DT, &M29W640DB, &SST39VF6401B, &SST39VF3201, &M29W320ET, &M29W320EB, &MX29LV320T, &MX29L3211, &PA28F400B, &PA28F400T };
+  Cfg const * all[] = { &MX29LV640EB, &MX29LV640ET, &M29W640DT, &M29W640DB, &SST39VF6401B, &SST39VF3201, &M29W320ET, &M29W320EB, &MX29LV320T, &MX29L3211, &PA28F400B, &PA28F400T, &LH28F320BJE_B, &LH28F320BJE_T };
   for (Cfg const * c : all)
   {
     size_t full = size_t(c->words) * 2;
@@ -264,6 +266,31 @@ static void testLayouts()
     CHECK(o.prep == C::kOk && o.prog == C::kOk);
     CHECK(chip.blockErases == 7);
     CHECK(matches(chip, rom));
+  }
+  // Sharp LH28F320BJE, blocos travados na partida, parâmetros embaixo ou em cima: o núcleo destrava, apaga as duas pontas em passos de 4 KWord e grava.
+  for (Cfg const * cfg : { &LH28F320BJE_B, &LH28F320BJE_T })
+  {
+    for (size_t kb : { 64, 100, 4096 })
+    {
+      Chip chip(*cfg);
+      chip.sharpLocks = true;
+      dirty(chip);
+      auto rom = makeRom(kb * 1024, 13);
+      Outcome o = flashRom(chip, rom);
+      CHECKM(o.prep == C::kOk && o.prog == C::kOk, cfg->name);
+      CHECKM(matches(chip, rom), cfg->name);
+      CHECKM(chip.errors == 0, chip.firstError.c_str());
+    }
+  }
+  // Sharp com os blocos travados e o chip recusando o desbloqueio (modelo sem o 60h): o apagar devolve erro, nada é gravado.
+  {
+    Chip chip(LH28F320BJE_B);
+    chip.sharpLocks = true;
+    chip.unlockBroken = true;
+    auto rom = makeRom(64 * 1024, 14);
+    Outcome o = flashRom(chip, rom);
+    CHECK(o.prep == C::kEraseFail);
+    CHECK(chip.programs == 0);
   }
 }
 

@@ -33,7 +33,7 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GAMESHARK("gameshark", 2, 0, "Gameshark (2 chips: SST 29LE010, AT29LV010A, SST 29EE010 ou SST 28LF040)", n64 = true),
     XPLORER64("xplorer64", 3, 0, "Xplorer 64 (2 x SST 29LE010, 256 KB)", n64 = true),
     /** Mega Drive: o firmware identifica o chip (MX29F1610 de 2 MB ou S29GL064N de 4 MB) pelo ID. */
-    MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, SST39VF)", md = true);
+    MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, SST39VF)", md = true);
 
     /** Gameshark e Xplorer 64: a flash do acessório, que não tem outra cópia (o backup é lido antes de apagar). */
     val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64

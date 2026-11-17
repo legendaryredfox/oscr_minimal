@@ -78,6 +78,7 @@ static const Chip kChips[] MDF_PROGMEM = {
   { 0xC2, 0xF9, "MX29L3211",   kLayoutUnknown, kAmd5555, kNative, 0x30, kW32 },           // desbloqueio 5555h/2AAAh
   { 0x89, 0x70, "PA28F400T",   kTopBoot,    kIntel,   kNative,    0x20, 0x40000UL },      // Intel: apagar bloco 20h+D0h
   { 0x89, 0x71, "PA28F400B",   kBottomBoot, kIntel,   kNative,    0x20, 0x40000UL },
+  { 0xB0, 0xE3, "LH28F320BJE", kLayoutUnknown, kIntel, kNative,   0x20, kW32 },            // Sharp: mesmos comandos; blocos de 4 e 32 KWord (ver sharpBlock)
 };
 constexpr size_t kChipCount = sizeof(kChips) / sizeof(kChips[0]);
 
@@ -206,6 +207,29 @@ inline void intelBlock(bool top, uint32_t a, uint32_t & start, uint32_t & size)
   else { start = bs[i]; size = bn[i]; }
 }
 
+/// Bloco do Sharp LH28F320BJE (32 Mbit): oito blocos de parâmetro de 4 KWord numa ponta e blocos principais de 32 KWord no resto. O ID da tabela não diz em
+/// que ponta ficam os de parâmetro (top ou bottom): por isso as duas pontas (32 KWord de cada lado) são percorridas em passos de 4 KWord. Um passo a mais
+/// só apaga de novo um bloco já apagado; um a menos deixaria dado, e o `blankRange` pegaria.
+inline void sharpBlock(uint32_t chipWords, uint32_t a, uint32_t & start, uint32_t & size)
+{
+  if (a < 0x8000UL || a >= chipWords - 0x8000UL) { start = a & ~0xFFFUL; size = 0x1000; }
+  else { start = a & ~0x7FFFUL; size = 0x8000; }
+}
+
+/// Sharp: destrava o bloco (60h, D0h). Alguns chips da família saem do reset com os blocos travados; no que não trava, o comando é inofensivo.
+/// O resultado não é conferido: se o bloco continuar travado, o apagar devolve erro.
+template <class B> void unlockBlockSharp(B & b, uint32_t a)
+{
+  b.out();
+  b.w(a, 0x60); b.w(a, 0xD0);
+  b.in();
+  uint32_t t0 = b.ms();
+  while (b.ms() - t0 <= 100)
+    if (uint8_t(b.r(a)) & 0x80) break;
+  b.out();
+  b.w(a, 0xFF);
+}
+
 /// Apaga o setor (ou bloco) que contém `sa`. DQ7 e DQ6 (AMD) com limite de tempo; falha se DQ5 ficou preso ou estourou o tempo (e dá reset).
 template <class B> bool eraseSectorAmd(B & b, Probe const & p, uint32_t sa)
 {
@@ -261,7 +285,8 @@ template <class B> bool eraseRange(B & b, Probe const & p, uint32_t words)
     for (uint32_t a = 0; a < words;)
     {
       uint32_t bs, bn;
-      intelBlock(top, a, bs, bn);
+      if (c.mfr == 0xB0) { sharpBlock(c.words, a, bs, bn); unlockBlockSharp(b, a); }
+      else intelBlock(top, a, bs, bn);
       if (!eraseBlockIntel(b, a)) return false;
       a = bs + bn;
     }

@@ -45,6 +45,9 @@ namespace mdmodel
   static const Cfg S29GL064N    = { "S29GL064N",   { 0x0001, 0x227E, 0x220C, 0x2201 }, TOP, AMD11, 0x400000, 0, 15000, 100000000ULL };
   static const Cfg PA28F400B    = { "PA28F400B",   { 0x0089, 0x4471, 0, 0 }, BOTTOM, INTEL, 0x40000, 0, 8000, 100000000ULL };
   static const Cfg PA28F400T    = { "PA28F400T",   { 0x0089, 0x4470, 0, 0 }, TOP, INTEL, 0x40000, 0, 8000, 100000000ULL };
+  // Sharp LH28F320BJE: comandos Intel, 32 Mbit, oito blocos de 4 KWord numa ponta e 63 de 32 KWord. O modelo cobre as duas pontas (o ID da tabela não diz qual).
+  static const Cfg LH28F320BJE_B = { "LH28F320BJE-B", { 0x00B0, 0x00E3, 0, 0 }, BOTTOM, INTEL, 0x200000, 0, 8000, 100000000ULL };
+  static const Cfg LH28F320BJE_T = { "LH28F320BJE-T", { 0x00B0, 0x00E3, 0, 0 }, TOP, INTEL, 0x200000, 0, 8000, 100000000ULL };
   // Um chip AMD que só reconhece 555h/2AAh exatos (sem ignorar os bits altos): a sondagem 5555h não o enxerga, a 555h sim.
   static const Cfg M29W320EB_EXACT = { "M29W320EB(exact)", { 0x0020, 0x2257, 0, 0 }, BOTTOM, AMD_EXACT, 0x200000, 0, 10000, 100000000ULL };
   // Um ID que não está na tabela.
@@ -62,6 +65,8 @@ namespace mdmodel
     bool stuck = false;         // chip travado: apagar e programar nunca terminam
     uint32_t keepStart = 0, keepLen = 0;   // apagamento "termina sem erro" mas não limpa estas palavras (setores de boot de 8 KB; bancada do md_rewriter)
     uint64_t nowNs = 0;
+    bool unlockBroken = false;  // Sharp: o chip ignora 60h + D0h (bloco continua travado)
+    bool sharpLocks = false;    // Sharp: blocos travados na partida; só 60h + D0h no bloco libera (apagar ou gravar travado dá erro de status)
 
     // contadores
     int errors = 0;             // contenção de barramento, escrita com o barramento como entrada
@@ -240,12 +245,20 @@ namespace mdmodel
     }
 
     // ---- Intel/Sharp 28F400 ----
-    enum IState { I_ARRAY, I_ID, I_PROG_DATA, I_ERASE_CONFIRM, I_STATUS };
+    enum IState { I_ARRAY, I_ID, I_PROG_DATA, I_ERASE_CONFIRM, I_LOCK_CONFIRM, I_STATUS };
+    std::vector<uint32_t> unlocked;                // início dos blocos Sharp liberados
     IState istate = I_ARRAY;
     uint16_t isr = 0;
 
     void intelBlockOf(uint32_t a, uint32_t & start, uint32_t & size) const
     {
+      if (cfg.words == 0x200000)       // Sharp LH28F320BJE
+      {
+        uint32_t u = (cfg.layout == TOP) ? (0x1FFFFFU - a) : a;
+        if (u < 0x8000U) { size = 0x1000; start = (cfg.layout == TOP) ? 0x200000U - ((u & ~0xFFFU) + 0x1000U) : (a & ~0xFFFU); }
+        else { size = 0x8000; start = a & ~0x7FFFU; }
+        return;
+      }
       static const uint32_t bs[7] = { 0x0000, 0x2000, 0x3000, 0x4000, 0x10000, 0x20000, 0x30000 };
       static const uint32_t bn[7] = { 0x2000, 0x1000, 0x1000, 0xC000, 0x10000, 0x10000, 0x10000 };
       bool top = cfg.layout == TOP;
@@ -267,7 +280,8 @@ namespace mdmodel
           uint16_t old = mem[addr];
           programs++;
           isr = 0;
-          if (data & uint16_t(~old)) isr = 0x10;
+          if (sharpLocks && !isUnlocked(addr)) isr = 0x12;
+          else if (data & uint16_t(~old)) isr = 0x10;
           else mem[addr] = uint16_t(old & data);
           busyUntil = stuck ? ~0ULL : nowNs + cfg.programNs;
           istate = I_STATUS;
@@ -278,12 +292,28 @@ namespace mdmodel
         {
           uint32_t st, sz;
           intelBlockOf(addr, st, sz);
-          eraseWords(st, sz);
           blockErases++;
           isr = 0;
-          busyUntil = stuck ? ~0ULL : nowNs + cfg.sectorEraseNs;
+          if (sharpLocks && !isUnlocked(addr)) { isr = 0x22; busyUntil = 0; }
+          else
+          {
+            eraseWords(st, sz);
+            busyUntil = stuck ? ~0ULL : nowNs + cfg.sectorEraseNs;
+          }
         }
         else { isr = 0x30; busyUntil = 0; }
+        istate = I_STATUS;
+        return;
+      case I_LOCK_CONFIRM:
+        if (cmd == 0xD0)
+        {
+          uint32_t st, sz;
+          intelBlockOf(addr, st, sz);
+          unlocked.push_back(st);
+          isr = 0;
+        }
+        else isr = 0x30;
+        busyUntil = 0;
         istate = I_STATUS;
         return;
       default:
@@ -297,8 +327,17 @@ namespace mdmodel
       case 0x50: isr = 0; break;
       case 0x40: istate = I_PROG_DATA; break;
       case 0x20: istate = I_ERASE_CONFIRM; break;
+      case 0x60: if (cfg.words == 0x200000 && !unlockBroken) istate = I_LOCK_CONFIRM; break;      // só o Sharp tem; no 28F400 o comando é ignorado
       default: break;              // AAh, 55h, F0h, A0h: não são comandos Intel
       }
+    }
+
+    bool isUnlocked(uint32_t addr) const
+    {
+      uint32_t st, sz;
+      intelBlockOf(addr, st, sz);
+      for (uint32_t u : unlocked) if (u == st) return true;
+      return false;
     }
 
     uint16_t intelRead(uint32_t addr)

@@ -85,7 +85,7 @@ Firmware, PC e testes feitos; **nada rodou em cartucho**. Detalhe e riscos: `doc
 | MD-3 MX29L3211 (5555h) | feito no núcleo, sem confirmar em chip |
 | MD-4 apagar por layout | feito (top e bottom boot em oito setores de 8 KB; uniforme; Intel por bloco) |
 | MD-5 limites de tempo | feito: `busyCheck`, status do `write29GL` e todo o núcleo |
-| MD-6 Intel PA28F400 | feito no núcleo com o barramento do Mega Drive (o `Flash.cpp` usa o do SNES, não serve); Sharp LH28F320BJE pendente |
+| MD-6 Intel PA28F400 | feito no núcleo com o barramento do Mega Drive (o `Flash.cpp` usa o do SNES, não serve); Sharp LH28F320BJE feito em D182 (sem chip real) |
 | MD-7 SST39VF3201/3202 com `50h` | feito |
 | MD-8 teste no PC com modelo de chip | feito: `pc-tests/test_mdflash.cpp` e `md_chip_model.h` |
 | MD-9 mapeadores | pendente (precisa de cartucho) |
