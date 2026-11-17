@@ -43,3 +43,20 @@ Detecção segura: por cabeçalho (produto e checksum, como o Genesis Plus GX fa
 3. Nada disto foi confirmado em cartucho real.
 
 Próximo passo possível: dump de teste de um Pier Solar (ou de um dos piratas acima) para confirmar, com leitura linear, se a ROM sai espelhada e com quais escritas.
+
+## Atualização: artigo de quem dumpou um Pier Solar real
+
+Fonte: Brandon L. Wilson, "Pier Solar and the Great Reverser", PoC‖GTFO 15:02 (https://mcfp.felk.cvut.cz/publicDatasets/pocorgtfo/contents/articles/15-02.pdf; texto extraído com `pdftotext`). Único relato **confirmado em cartucho real** que achei. Reddit não pôde ser pesquisado (a ferramenta de busca recusa o domínio); a Krikzz forum deu 403 e a SpritesMind deu timeout.
+
+Fatos do artigo:
+
+- A leitura simples devolve os **primeiros 32 KiB espelhados** por todo o espaço (o mesmo resultado de um dump com o OSCR ou com qualquer leitor de barramento).
+- "Os primeiros 32 KB ficam espelhados até que **acessos específicos a `0x18010`** ocorram. O espelhamento é **religado automaticamente pelo hardware se o sistema não estiver executando da ROM por mais de um tempo desconhecido**." O autor acha que o cartucho é uma FPGA e que distingue busca de instrução de leitura de dado: o dump só saiu fazendo o 68000 ficar num laço infinito *na ROM* (por Game Genie) enquanto o Z80 lia o cartucho.
+- Depois do desbloqueio: **4 MB lineares** a partir de `$000000`, e os outros 4 MB (**8 MB no total**) por troca de banco "quase igual ao Super Street Fighter II" (registradores `$A130F3` a `$A130FF`, janelas de 512 KB; o autor leu o dump de 4 MB no IDA para descobrir). O checksum do cabeçalho conferiu com o dump completo.
+- Save: EEPROM serial acessada por "um par de registradores" (o MAME diz SPI M95320, 4 KiB, em `$A13009` e `$A1300B` se a base for `$A13000`; a SpritesMind diz que `$A13000` a `$A1300F` é a área do Pier Solar).
+
+Conclusão para este projeto:
+
+- O OSCR (e este firmware) lê pelo barramento com o 68000 desligado. **Não há como reproduzir a "execução da ROM"** que o cartucho exige, nem se sabe qual sequência de acessos em `0x18010` desbloqueia. Implementar `Pier Solar` agora seria código sem como testar e provavelmente devolveria 32 KiB espelhados.
+- O que **falta saber** para tentar: a sequência exata de leituras/escritas em `0x18010` (e o tempo antes de religar o espelhamento). Só se obtém com analisador lógico no barramento de um cartucho rodando no console, ou com os fontes do MAME/PicoDrive (`t5740.cpp` só tem um *hack* para `$018100` a `$0181FF`).
+- Pier Solar fica **fora do alcance** do hardware atual até alguém medir essa sequência. Cartuchos de flash repro (Everdrive) só emulam o mapper do cartucho original.
