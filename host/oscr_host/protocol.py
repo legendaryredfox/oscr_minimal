@@ -193,7 +193,7 @@ def build_dump(system: int, block: int = 0, mapper: int = 0, prg_kb: int = 0, ch
 
 def build_write_save(system: int, size: int, block: int = 0, mapper: int = 0, ram_kb: int = 0, snes_type: int = 0) -> bytes:
     base = struct.pack("<BIH", system, size, block)
-    if mapper or ram_kb or snes_type:   # NES/Famicom: mapper (1, 4, 5 e 69 têm PRG-RAM com bateria) e RAM em KB (16/32 só nos mappers 1 e 5); SNES: tipo forçado no 3º campo (F-2)
+    if mapper or ram_kb or snes_type:   # NES/Famicom: mapper (1, 4, 5, 69, 118, 155, 19, 80 e 82 têm PRG-RAM com bateria; 16 e 159, EEPROM; D184) e RAM em KB (16/32 só nos mappers 1 e 5); SNES: tipo forçado no 3º campo (F-2)
         base += struct.pack("<HHH", mapper, ram_kb, snes_type)
     return base
 

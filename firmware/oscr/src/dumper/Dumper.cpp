@@ -437,7 +437,7 @@ namespace OSCR::Dumper
     bool isPow2(uint16_t v) { return v != 0 && (v & (v - 1)) == 0; }
 
     /** Mapper com PRG-RAM aceita em READ_SAVE/WRITE_SAVE (o mesmo conjunto do firmware próprio). */
-    bool nesHasSave(uint16_t m) { return m == 1 || m == 4 || m == 5 || m == 69 || m == 118; }
+    bool nesHasSave(uint16_t m) { return m == 1 || m == 4 || m == 5 || m == 69 || m == 118 || m == 16 || m == 159 || m == 19 || m == 80 || m == 82 || m == 155; }    // 16 e 159: EEPROM serial; 19, 80, 82: RAM da Namco 163 e da Taito X1 (F-14, D184)
 
     /**
      * Confere mapper e tamanhos de ROM (KB) contra os limites do protocolo (docs/referencia/protocolo.md, NES/Famicom).
@@ -447,14 +447,15 @@ namespace OSCR::Dumper
     {
       bool known = m == 0 || m == 1 || m == 2 || m == 3 || m == 4 || m == 5 || m == 7 || m == 9 || m == 10 || m == 11 || m == 33 || m == 48 || m == 66 || m == 69 || m == 70 || m == 71
                    || m == 75 || m == 78 || m == 79 || m == 87 || m == 118 || m == 206
-                   || m == 13 || m == 30 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184;
+                   || m == 13 || m == 30 || m == 34 || m == 67 || m == 68 || m == 72 || m == 73 || m == 86 || m == 92 || m == 93 || m == 94 || m == 140 || m == 152 || m == 180 || m == 184
+                   || m == 16 || m == 18 || m == 19 || m == 32 || m == 65 || m == 80 || m == 82 || m == 85 || m == 153 || m == 154 || m == 155 || m == 159 || m == 207;       // F-14, D184
       if (!known) return oscr::E_SISTEMA;
       // O núcleo do OSCR conta bancos em potências de 2 (NES_PRG e NES_CHR são expoentes).
       if (prg == 0 || prg % 16 != 0 || chr % 8 != 0 || !isPow2(prg / 16) || (chr && !isPow2(chr / 8))) return oscr::E_ARGUMENTO;
-      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 30 || m == 73 || m == 93 || m == 94 || m == 180) && chr != 0) return oscr::E_ARGUMENTO;     // CHR-RAM
-      if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206 || m == 67 || m == 68 || m == 72 || m == 92 || m == 86 || m == 140 || m == 152 || m == 184) && chr == 0) return oscr::E_ARGUMENTO;   // CHR-ROM
+      if ((m == 2 || m == 7 || m == 71 || m == 13 || m == 30 || m == 73 || m == 93 || m == 94 || m == 180 || m == 153) && chr != 0) return oscr::E_ARGUMENTO;     // CHR-RAM
+      if ((m == 79 || m == 87 || m == 78 || m == 75 || m == 70 || m == 33 || m == 48 || m == 118 || m == 206 || m == 67 || m == 68 || m == 72 || m == 92 || m == 86 || m == 140 || m == 152 || m == 184 || m == 16 || m == 159 || m == 18 || m == 32 || m == 65 || m == 80 || m == 82 || m == 154 || m == 207) && chr == 0) return oscr::E_ARGUMENTO;   // CHR-ROM
       if ((m == 7 || m == 11 || m == 66 || m == 79 || m == 34 || m == 86 || m == 140 || m == 13) && prg % 32 != 0) return oscr::E_ARGUMENTO;
-      if (((m == 0 || m == 3) && prg > 32) || (m == 1 && (prg > 256 || chr > 128)) || (m == 4 && (prg > 512 || chr > 256)) || ((m == 9 || m == 10) && chr > 128) || (m == 69 && chr > 256)) return oscr::E_SISTEMA;
+      if (((m == 0 || m == 3) && prg > 32) || ((m == 1 || m == 155) && (prg > 256 || chr > 128)) || (m == 4 && (prg > 512 || chr > 256)) || ((m == 9 || m == 10) && chr > 128) || (m == 69 && chr > 256)) return oscr::E_SISTEMA;
       if ((m == 9 && prg > 128) || (m == 10 && prg > 256) || (m == 11 && (prg > 128 || chr > 128))
           || (m == 66 && (prg > 128 || chr > 32)) || (m == 69 && prg > 512) || (m == 5 && prg > 1024)
           || ((m == 33 || m == 48) && (prg > 256 || chr > 256)) || (m == 70 && (prg > 256 || chr > 128)) || (m == 75 && (prg > 128 || chr > 128))
@@ -463,7 +464,10 @@ namespace OSCR::Dumper
           || (m == 30 && prg > 512) || (m == 13 && prg > 32) || (m == 34 && (prg > 512 || chr > 64)) || (m == 67 && (prg > 128 || chr > 128)) || (m == 68 && (prg > 256 || chr > 256))
           || (m == 72 && (prg > 128 || chr > 128)) || (m == 92 && (prg > 256 || chr > 128)) || (m == 73 && prg > 128) || (m == 86 && (prg > 128 || chr > 64))
           || ((m == 93 || m == 94 || m == 180) && prg > 128) || (m == 140 && (prg > 128 || chr > 128)) || (m == 152 && (prg > 128 || chr > 128))
-          || (m == 184 && (prg > 32 || chr > 32))) return oscr::E_SISTEMA;
+          || (m == 184 && (prg > 32 || chr > 32))
+          || ((m == 16 || m == 159 || m == 18 || m == 19 || m == 65) && (prg > 256 || chr > 256)) || (m == 32 && (prg > 256 || chr > 128))
+          || ((m == 80 || m == 82) && (prg > 128 || chr > 256)) || (m == 207 && (prg > 256 || chr > 128)) || (m == 85 && (prg > 512 || chr > 128))
+          || (m == 153 && prg > 512) || (m == 154 && (prg > 128 || chr > 128))) return oscr::E_SISTEMA;     // limites dos comentários do núcleo (readPRG/readCHR do NES.cpp)
       return 0;
     }
 
@@ -495,11 +499,15 @@ namespace OSCR::Dumper
       {
         if (!nesHasSave(m)) return oscr::E_SEM_SAVE;
         uint16_t ram = prgKb ? prgKb : 8;
-        if (ram != 8 && !((m == 1 || m == 5) && (ram == 16 || ram == 32))) return oscr::E_ARGUMENTO;     // 16/32 KB só no MMC1 (SOROM/SXROM) e no MMC5
-        nesRec.ram = log2u(ram / 4);                                  // 8 KB = 1, 16 KB = 2, 32 KB = 3 (ramSizes do núcleo)
+        bool internal128 = m == 19 && ram == 1;                       // Namco 163 sem SRAM: os 128 bytes de RAM interna do chip (o núcleo lê com NES_RAM == 2)
+        if (!internal128 && ram != 8 && !((m == 1 || m == 5) && (ram == 16 || ram == 32))) return oscr::E_ARGUMENTO;     // 16/32 KB só no MMC1 (SOROM/SXROM) e no MMC5
+        nesRec.ram = internal128 ? 2 : log2u(ram / 4);                // 8 KB = 1, 16 KB = 2, 32 KB = 3 (ramSizes do núcleo)
         nesRec.prg = 0;
-        NE::checkStatus();                                            // preenche ramsize; no MMC6 acha a RAM de 1 KB
+        NE::checkStatus();                                            // preenche ramsize; no MMC6 acha a RAM de 1 KB; no mapper 82 são 5 KB
         nesRamBytes = uint32_t(nesRec.ramsize) * 1024UL;
+        if (m == 16) nesRamBytes = 256;                               // EEPROM serial 24C02 (D184)
+        else if (m == 159) nesRamBytes = 128;                         // 24C01
+        else if (m == 80 || internal128) nesRamBytes = 128;           // Taito X1-005: 128 bytes espelhados em $7F00; RAM interna da Namco 163
         snprintf(nesName, sizeof nesName, "mapper %u", unsigned(m));
         return 0;
       }
