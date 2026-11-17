@@ -31,6 +31,7 @@
 # include "cores/GPC.h"
 # include "dumper/SnesFlash.h"
 # include "dumper/SnesType.h"
+# include "dumper/MdExtra.h"
 # include "dumper/MdFlash.h"
 # include "dumper/GbaFlash.h"
 # include "dumper/N64Flash.h"
@@ -248,6 +249,8 @@ namespace OSCR::Dumper
     }
 
     bool isSega(uint8_t system) { return system == oscr::SYS_SMS || system == oscr::SYS_GG || system == oscr::SYS_SG1000; }
+    // Cartucho de RAM de backup do Sega CD: `getCartInfo` (via `detect`, que `prepare` chama) deixou `bramSize` (F-16, D179).
+    bool isMdBram(uint8_t system) { return system == oscr::SYS_MD && MD::bramSize > 0; }
     uint8_t segaConsole(uint8_t system) { return system == oscr::SYS_GG ? oscr::sms::kGg : system == oscr::SYS_SG1000 ? oscr::sms::kSg : oscr::sms::kSms; }
     bool segaOptionsOk(uint8_t system, uint16_t adapter, uint16_t kb) { return oscr::sms::mode(segaConsole(system), adapter) != oscr::sms::kBadMode && oscr::sms::sizeKbValid(segaConsole(system), kb); }
 
@@ -735,7 +738,18 @@ namespace OSCR::Dumper
           return;
         }
 
+        MD::bramSize = 0; MD::realtec = false;                 // o OSCR só liga; cartucho trocado sem reiniciar deixaria o estado do anterior (D179)
         bool ok = runCore([] { MD::getCartInfo(); MD::cartOff(); });
+
+        if (ok && OSCR::Dumper::MdExtra::bramSizeValid(MD::bramSize))      // RAM de backup do Sega CD (F-16, D179): não tem ROM de jogo, o save é a RAM
+        {
+          out.status = 0;
+          out.rom_size = 0;
+          out.save_size = MD::bramSize;
+          out.save_type = OSCR::Dumper::MdExtra::kSaveBram;
+          strlcpy(out.name, OSCR::Dumper::MdExtra::kBramName, sizeof(out.name));
+          return;
+        }
 
         // O OSCR considera "sem cartucho" um tamanho zero ou absurdo (o maior jogo conhecido tem 10 MB).
         // Sem cabeçalho legível: se o /CART está baixo há cartucho (contato sujo ou mal encaixado): status 4 em vez de 1. Alto: como antes.
@@ -773,7 +787,8 @@ namespace OSCR::Dumper
         else if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
         else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (isSega(system)) { }                                      // SRAM de 32 KB sempre (o usuário sabe se o cartucho tem)
-        else if (kind == oscr::KIND_SAVE && saveType == 0) { err = oscr::E_SEM_SAVE; return false; }
+        else if (kind == oscr::KIND_SAVE && saveType == 0 && !isMdBram(system)) { err = oscr::E_SEM_SAVE; return false; }
+        if (kind == oscr::KIND_ROM && isMdBram(system)) { err = oscr::E_ARGUMENTO; return false; }   // a RAM de backup do Sega CD não tem ROM
 
         countingSink.inner = &sink; countingSink.bytes = 0;
         activeSink = &countingSink;
@@ -836,7 +851,11 @@ namespace OSCR::Dumper
           }
           if (kind == oscr::KIND_ROM)
           {
-            MD::readROM();
+            if (MD::realtec) MD::readRealtec(); else MD::readROM();      // Realtec: o OSCR lê com `readRealtec` (F-16, D179); liga e desliga o cartucho sozinha
+          }
+          else if (MD::bramSize > 0)
+          {
+            MD::readBram(); MD::cartOff();                               // RAM de backup do Sega CD
           }
           else if (saveType == 4)
           {
@@ -866,9 +885,10 @@ namespace OSCR::Dumper
                           : (system == oscr::SYS_GB ? gbSaveBytes()
                           : (system == oscr::SYS_N64 ? oscr::n64::saveBytes(saveType)
                           : (isSega(system) ? oscr::sms::kSramBytes
-                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)))));
+                          : (isMdBram(system) ? MD::bramSize
+                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize))))));
 
-        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
@@ -912,7 +932,11 @@ namespace OSCR::Dumper
             N6::cartOff();
             return;
           }
-          if (saveType == 4)
+          if (MD::bramSize > 0)
+          {
+            MD::writeBram();                                             // RAM de backup do Sega CD (liga e desliga o cartucho sozinha); a conferência é do PC
+          }
+          else if (saveType == 4)
           {
             MD::writeEEP();
           }

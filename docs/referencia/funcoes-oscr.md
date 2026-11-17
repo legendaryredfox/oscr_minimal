@@ -54,8 +54,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 |---|---|---|
 | Ler ROM (tamanho pelo cabeçalho, forçar tamanho, SSF2) | firmware | ✅ |
 | Ler e gravar SRAM e EEPROM serial (38 checksums do OSCR) | firmware | ✅ |
-| Sega CD RAM (BRAM): ler e gravar | firmware | ⬜ |
-| Realtec (ler) | firmware | ⬜ |
+| Sega CD RAM (BRAM): ler e gravar | firmware | ✅ `READ_SAVE` e `WRITE_SAVE` com `save_type` 5 (D179; nunca rodou) |
+| Realtec (ler) | firmware | ✅ `DUMP_ROM` chama `readRealtec` quando o `DETECT` acha o mapeador (D179; nunca rodou) |
 | Flash repro: MX29F1610 (2 MB) e S29GL064N (4 MB), apagar e gravar | firmware + PC | ✅ `WRITE_ROM` (D81; nunca rodou); conferência por leitura de volta |
 | Flash repro além do OSCR: M29W320/640, MX29LV320/640, SST39VF320x/640x, MX29L3211 (5555h), Intel PA28F400; ROM até 8 MB; limites de tempo | firmware + PC | ✅ `WRITE_ROM` (D86; nunca rodou em chip; testado no PC contra modelo). Não vem do OSCR: o `Flash.cpp` usa o barramento do SNES |
 

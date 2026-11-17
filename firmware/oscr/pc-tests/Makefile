@@ -5,10 +5,11 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc
+test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc build/test_mdextra
 	./build/test_nes
 	./build/test_gba369
 	./build/test_snesacc
+	./build/test_mdextra
 	./build/test_snes_type
 	./build/test_sms
 	./build/test_n64
@@ -35,6 +36,10 @@ build/test_gba369: test_gba369.cpp ../include/dumper/Gba369.h
 build/test_snesacc: test_snesacc.cpp ../include/dumper/SnesAcc.h
 	mkdir -p build
 	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_snesacc.cpp
+
+build/test_mdextra: test_mdextra.cpp ../include/dumper/MdExtra.h
+	mkdir -p build
+	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_mdextra.cpp
 
 build/test_n64: test_n64.cpp ../include/dumper/N64Core.h
 	mkdir -p build

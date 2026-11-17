@@ -14,6 +14,8 @@
 namespace OSCR::Cores::MegaDrive
 {
   extern uint16_t eepSize;   // fork oscr_minimal: o laço de comandos precisa do tamanho da EEPROM
+  extern uint32_t bramSize;  // fork oscr_minimal (D179): tamanho da RAM de backup do Sega CD achado por `getCartInfo` (0 = não é esse cartucho)
+  extern bool realtec;       // fork oscr_minimal (D179): `getCartInfo` achou o mapeador Realtec (a ROM se lê com `readRealtec`)
   void pulse_clock(int n);
   void menu();
   void cartMenu();
