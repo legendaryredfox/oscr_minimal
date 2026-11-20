@@ -14,6 +14,7 @@ commands:
   board           prepare the Arduino for the --board board: check the firmware, write the board profile and, if needed, the firmware (asks first)
   detect       detect the cartridge            (-s SYSTEM)
   identify     identify saved ROMs by CRC32 in the database (--db), without opening the port
+  gb-rtc       reads or sets the Game Boy MBC3 clock (RTC): [--now | --set HH:MM[:SS]] [--day N] [--halt | --run] [--clear-carry] [-o FOOTER]
   gbcamera     extracts the photos of a Game Boy Camera save to PNG: -i SAVE.sav [-o FOLDER] [--palette gray|green|gbc] [--scale 1-8] [--all] (does not open the port)
   save-convert converts the byte order of a save for an emulator: -i SAVE -o OUT --op swap16|swap32|md-expand-odd|md-expand-even|md-compact-odd|md-compact-even [--fill 0xFF] (does not open the port)
   search       search games by name in the database (--db), without opening the port
@@ -93,6 +94,7 @@ comandos:
   board           prepara o Arduino para a placa de --board: confere o firmware, grava o perfil e, se preciso, o firmware (pede confirmação)
   detect       detecta o cartucho              (-s SISTEMA)
   identify     identifica ROMs salvas pelo CRC32 na base de dados (--db), sem abrir a porta
+  gb-rtc       lê ou acerta o relógio (RTC) do MBC3 do Game Boy: [--now | --set HH:MM[:SS]] [--day N] [--halt | --run] [--clear-carry] [-o RODAPÉ]
   gbcamera     extrai as fotos de um save do Game Boy Camera para PNG: -i SAVE.sav [-o PASTA] [--palette gray|green|gbc] [--scale 1-8] [--all] (não abre a porta)
   save-convert troca a ordem dos bytes de um save para emulador: -i SAVE -o SAÍDA --op swap16|swap32|md-expand-odd|md-expand-even|md-compact-odd|md-compact-even [--fill 0xFF] (não abre a porta)
   search       busca jogos pelo nome na base de dados (--db), sem abrir a porta
@@ -172,6 +174,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   board           подготовить Arduino для платы из --board: проверить прошивку, записать профиль и при необходимости прошивку (спросит)
   detect       определить картридж             (-s СИСТЕМА)
   identify     опознать сохранённые ROM по CRC32 в базе (--db), порт не открывается
+  gb-rtc       читает или устанавливает часы (RTC) MBC3 Game Boy: [--now | --set HH:MM[:SS]] [--day N] [--halt | --run] [--clear-carry] [-o ХВОСТ]
   gbcamera     извлекает фотографии из сохранения Game Boy Camera в PNG: -i SAVE.sav [-o ПАПКА] [--palette gray|green|gbc] [--scale 1-8] [--all] (порт не открывается)
   save-convert меняет порядок байтов сохранения для эмулятора: -i SAVE -o ВЫХОД --op swap16|swap32|md-expand-odd|md-expand-even|md-compact-odd|md-compact-even [--fill 0xFF] (порт не открывается)
   search       искать игры по названию в базе (--db), порт не открывается
@@ -251,6 +254,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   board           为 --board 指定的电路板准备 Arduino：检查固件、写入电路板配置，必要时写入固件（会先询问）
   detect       检测卡带                        (-s 系统)
   identify     按 CRC32 在数据库（--db）中识别已保存的 ROM，不打开串口
+  gb-rtc       读取或设置 Game Boy MBC3 的时钟（RTC）：[--now | --set HH:MM[:SS]] [--day N] [--halt | --run] [--clear-carry] [-o 尾部]
   gbcamera     把 Game Boy Camera 存档中的照片导出为 PNG：-i SAVE.sav [-o 文件夹] [--palette gray|green|gbc] [--scale 1-8] [--all]（不打开端口）
   save-convert 为模拟器转换存档的字节顺序：-i SAVE -o 输出 --op swap16|swap32|md-expand-odd|md-expand-even|md-compact-odd|md-compact-even [--fill 0xFF]（不打开端口）
   search       按名称在数据库（--db）中搜索游戏，不打开串口

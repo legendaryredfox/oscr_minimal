@@ -39,7 +39,7 @@ build/test_snesacc: test_snesacc.cpp ../include/dumper/SnesAcc.h
 	mkdir -p build
 	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_snesacc.cpp
 
-build/test_gbacc: test_gbacc.cpp ../include/dumper/GbAcc.h
+build/test_gbacc: test_gbacc.cpp ../include/dumper/GbAcc.h ../include/dumper/GbRtc.h
 	mkdir -p build
 	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_gbacc.cpp
 

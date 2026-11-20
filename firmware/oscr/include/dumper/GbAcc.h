@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Game Boy: leitura de acessórios (F-17, D186). `DUMP_ROM` do GB com `mapper` 1 a 6 chama a função de leitura do OSCR do acessório, sem olhar o cabeçalho
-// de jogo (os acessórios não têm o cabeçalho de cartucho comum). Só leitura: nenhuma das gravações (Pelican, Datel, GameShark, GB Memory, GB Smart) está ligada.
+// de jogo (os acessórios não têm o cabeçalho de cartucho comum). `mapper` 7 = relógio do MBC3 (GbRtc.h, D192), que também grava, por `WRITE_SAVE` com `mapper` 7.
 // O OSCR grava um arquivo por vez; aqui os arquivos vão seguidos no mesmo fluxo (o `open` e o `close` do StreamFile não mexem no fluxo).
 #pragma once
 #include <stdint.h>
 
 namespace OSCR::Dumper::GbAcc
 {
-  enum : uint16_t { kNone = 0, kPelican = 1, kMegaMem = 2, kGameShark = 3, kGbMemory = 4, kGbMemoryMap = 5, kGbSmart = 6, kLast = 6 };
+  enum : uint16_t { kNone = 0, kPelican = 1, kMegaMem = 2, kGameShark = 3, kGbMemory = 4, kGbMemoryMap = 5, kGbSmart = 6, kRtc = 7, kLast = 7 };
 
   inline bool valid(uint16_t a) { return a >= kPelican && a <= kLast; }
 
@@ -21,6 +21,7 @@ namespace OSCR::Dumper::GbAcc
     case kGbMemory: return 32768UL + 62UL * 16384UL;        // banco 1 inteiro (32 KB) e os bancos 2 a 63 pela janela de 16 KB
     case kGbMemoryMap: return 128;                          // mapeamento escondido do GB Memory Module
     case kGbSmart: return 256UL * 16384UL;                  // 32 Mbit: 256 bancos de 16 KB
+    case kRtc: return 5;                                    // relógio do MBC3 (GbRtc.h, D192): segundos, minutos, horas, dias baixo, dias alto
     default: return 0;
     }
   }

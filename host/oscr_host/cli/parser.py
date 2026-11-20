@@ -13,6 +13,7 @@ from .. import __version__
 from . import messages
 from .cmd_db import cmd_identify, cmd_search
 from .cmd_gbcamera import cmd_gbcamera
+from .cmd_gbrtc import cmd_gbrtc
 from .cmd_saveconv import cmd_saveconv
 from .cmd_detect import cmd_detect
 from .cmd_dump import cmd_dump
@@ -140,6 +141,13 @@ def build_parser() -> argparse.ArgumentParser:
     dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
     dtp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
     dtp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))
+    rp = add("gb-rtc", cmd_gbrtc, H("cmd_gbrtc"), system=False, out=True)
+    rp.add_argument("--now", action="store_true", help=H("gbrtc_now"))
+    rp.add_argument("--set", metavar="HH:MM[:SS]", help=H("gbrtc_set"))
+    rp.add_argument("--day", type=int, metavar="N", help=H("gbrtc_day"))
+    rp.add_argument("--halt", action="store_true", help=H("gbrtc_halt"))
+    rp.add_argument("--run", action="store_true", help=H("gbrtc_run"))
+    rp.add_argument("--clear-carry", action="store_true", help=H("gbrtc_carry"))
     gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
     gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
     gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))

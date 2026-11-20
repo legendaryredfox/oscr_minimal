@@ -36,6 +36,7 @@
 # include "dumper/MdExtra.h"
 # include "dumper/MdBank.h"
 # include "dumper/GbAcc.h"
+# include "dumper/GbRtc.h"
 # include "cores/GameBoyMem.h"
 # include "cores/GameBoySmart.h"
 # include "dumper/MdFlash.h"
@@ -240,6 +241,51 @@ namespace OSCR::Dumper
     }
 
     /**
+     * Relógio do MBC3 (F-17, D192). Não vem do OSCR (ele não lê o RTC): liga o cartucho, confere pelo byte 0x0147 que é MBC3 com TIMER, habilita a RAM/RTC (0x0A em
+     * 0x0000), trava os registradores (0 e depois 1 em 0x6000), seleciona 08h a 0Ch em 0x4000 e lê cada um em 0xA000 (com o CS, por `readByteSRAM`).
+     * `gbRtcNone` fica true se o cartucho não tem RTC (nada é enviado).
+     */
+    bool gbRtcNone = false;
+    void gbRtcRead()
+    {
+      using namespace OSCR::Dumper::GbRtc;
+      GB::cartOn();
+      uint8_t type = GB::readByte(0x0147);
+      gbRtcNone = !hasRtc(type);
+      if (!gbRtcNone)
+      {
+        OSCR::Cores::romType = type;
+        uint8_t r[kRegs];
+        GB::writeByte(0x0000, 0x0A);
+        GB::writeByte(0x6000, 0);
+        GB::writeByte(0x6000, 1);
+        for (uint8_t i = 0; i < kRegs; i++) { GB::writeByte(0x4000, kFirstReg + i); r[i] = GB::readByteSRAM(0xA000); }
+        GB::writeByte(0x0000, 0x00);
+        OSCR::Storage::Shared::sharedFile.write(r, kRegs);
+      }
+      GB::cartOff();
+    }
+
+    /// Grava os 5 registradores do RTC: para o relógio (bit de parada), escreve segundos, minutos, horas e dias baixo, e por último os dias alto com o bit de parada pedido.
+    void gbRtcWrite(const uint8_t * r)
+    {
+      using namespace OSCR::Dumper::GbRtc;
+      GB::cartOn();
+      uint8_t type = GB::readByte(0x0147);
+      gbRtcNone = !hasRtc(type);
+      if (!gbRtcNone)
+      {
+        OSCR::Cores::romType = type;
+        GB::writeByte(0x0000, 0x0A);
+        GB::writeByte(0x4000, kFirstReg + 4); GB::writeByteSRAM(0xA000, kHalt);
+        for (uint8_t i = 0; i < 4; i++) { GB::writeByte(0x4000, kFirstReg + i); GB::writeByteSRAM(0xA000, r[i]); }
+        GB::writeByte(0x4000, kFirstReg + 4); GB::writeByteSRAM(0xA000, r[4]);
+        GB::writeByte(0x0000, 0x00);
+      }
+      GB::cartOff();
+    }
+
+    /**
      * Acessórios do Game Boy (F-17, D186): chama a leitura do OSCR do acessório (GbAcc.h). Cada função do OSCR liga o cartucho sozinha, menos a do Mega Memory,
      * que o menu do OSCR chamava com o cartucho já ligado. Sem o acessório (ID desconhecido) o OSCR só avisa e volta sem gravar: o chamador vê zero bytes.
      */
@@ -254,6 +300,7 @@ namespace OSCR::Dumper
       case kGbMemory: OSCR::Cores::GameBoyMem::readROM(); break;
       case kGbMemoryMap: OSCR::Cores::GameBoyMem::readMapping(); break;
       case kGbSmart: OSCR::Cores::GameBoySmart::readFlash(); break;                   // o `runCore` desliga o cartucho
+      case kRtc: gbRtcRead(); break;
       default: break;
       }
     }
@@ -849,9 +896,10 @@ namespace OSCR::Dumper
           if (!OSCR::Dumper::GbAcc::valid(acc)) { err = oscr::E_ARGUMENTO; return false; }
           countingSink.inner = &sink; countingSink.bytes = 0;
           activeSink = &countingSink;
+          gbRtcNone = false;
           bool ok = runCore([acc] { gbAccRead(acc); }, true);
           activeSink = nullptr;
-          err = oscr::E_CARTUCHO_IO;
+          err = acc == OSCR::Dumper::GbAcc::kRtc && gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;   // sem MBC3 com TIMER: nada a ler
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
@@ -953,6 +1001,17 @@ namespace OSCR::Dumper
       {
         if (!supports(system)) { err = oscr::E_SISTEMA; return false; }
         if (system == oscr::SYS_SNES && oscr::snesacc::isAcc(optChrKb)) return accWrite(in, err);
+        if (system == oscr::SYS_GB && optMapper == OSCR::Dumper::GbAcc::kRtc)           // relógio do MBC3 (D192): 5 bytes, sem cabeçalho de jogo
+        {
+          uint8_t r[OSCR::Dumper::GbRtc::kRegs];
+          size_t got = 0;
+          if (in.size() == sizeof(r)) { while (got < sizeof(r)) { size_t k = in.read(r + got, sizeof(r) - got); if (k == 0) break; got += k; } }
+          if (got != sizeof(r) || !OSCR::Dumper::GbRtc::valid(r)) { err = oscr::E_ARGUMENTO; return false; }
+          gbRtcNone = false;
+          bool ok = runCore([&r] { gbRtcWrite(r); });
+          err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
+          return ok && !gbRtcNone;
+        }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;

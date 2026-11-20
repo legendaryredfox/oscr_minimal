@@ -43,6 +43,7 @@ Menor cobertura por classe (linhas cobertas / total): `ImageMsg` 11/43, `CmdFlas
 | `test_n64` | 25 | núcleo do N64 (D176, D177) |
 | `test_gba369`, `test_gbacc` | 30 e 12 | GBA 369-in-1 e acessórios do GB (D174, D186) |
 | `test_snes_type` | 9 | tipo de ROM do SNES forçado (D164) |
+| `test_gbacc` | 18 | acessórios do GB e RTC do MBC3 (D186, D192) |
 | `test_snesacc` | 17 | tamanhos e códigos do Memory Pack e do SFM (D190) |
 | `test_sms` | 28 | `SmsCore.h` (D137): slot vazio, cabeçalho "TMR SEGA", Fantasy Zone, tamanhos, adaptadores Retrode/Retron/Raphnet |
 

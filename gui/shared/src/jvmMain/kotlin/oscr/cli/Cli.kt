@@ -56,6 +56,7 @@ object Cli {
                 "save-read" -> cmdSaveRead(io, a)
                 "ram-test" -> cmdRamTest(io, a)
                 "gbcamera" -> cmdGbCamera(io, a)
+                "gb-rtc" -> cmdGbRtc(io, a)
                 "save-convert" -> cmdSaveConv(io, a)
                 "identify" -> cmdIdentify(io, a)
                 "search" -> cmdSearch(io, a)
