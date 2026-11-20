@@ -6,8 +6,8 @@ Números medidos nesta data, depois de ligar o Master System, o Game Gear e o SG
 
 | Parte | Testes | Cobertura de linhas | Como medir |
 |---|---|---|---|
-| Host Python (`host/oscr_host`) | 305 em 2026-11-14 (era 224 em 2026-11-08; pytest) | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
-| Kotlin compartilhado (`gui/shared`: protocolo, cliente, CLI, banco, regras) | 182 em 2026-11-14 (era 131; `jvmTest`) | **91,7 %** das linhas (2673 de 2914), **65,3 %** dos ramos (1661 de 2542) | ver seção 3 |
+| Host Python (`host/oscr_host`) | 364 em 2026-11-20 (era 305 em 2026-11-14 e 224 em 2026-11-08; pytest); a % abaixo é de 2026-11-14 | **90 %** (2320 linhas, 238 sem cobertura) | `cd host && python3 -m pytest -q --cov=oscr_host --cov-report=term` (precisa do `pytest-cov`) |
+| Kotlin compartilhado (`gui/shared`: protocolo, cliente, CLI, banco, regras) | 221 em 2026-11-20 (era 182 em 2026-11-14 e 131; `jvmTest`); a % abaixo é de 2026-11-14 | **91,7 %** das linhas (2673 de 2914), **65,3 %** dos ramos (1661 de 2542) | ver seção 3 |
 | GUI (`gui/desktopApp`, Compose) | 0 testes de lógica; só compila. **Teste de fumaça** (D161): `tools/gui_smoke.sh` abre a janela em largura normal e estreita e confere que não está em branco | não medida | `tools/gui_smoke.sh` (display virtual) |
 | Placas (`boards/`) | `tools/check_all_boards.py`: ERC, DRC, netlist, silk e fab das 22 versões (D161) | não se aplica | `python3 tools/check_all_boards.py` |
 | Firmware nos núcleos do OSCR e no `Dumper.cpp` | **nenhum teste no PC** | 0 % medido | só roda no AVR |
@@ -37,9 +37,13 @@ Menor cobertura por classe (linhas cobertas / total): `ImageMsg` 11/43, `CmdFlas
 
 | Programa | Verificações | O que cobre |
 |---|---|---|
-| `test_proto` | 36 | quadros, CRC32, sessão (modo MOCK e modo fluxo), `oscr_session.cpp` |
-| `test_mdflash` | 734 | `MdFlashCore.h` contra um modelo de chip de flash de Mega Drive |
+| `test_proto` | 68 | quadros, CRC32, sessão (modo MOCK e modo fluxo), `oscr_session.cpp` |
+| `test_mdflash` | 1018 | `MdFlashCore.h` contra um modelo de chip de flash de Mega Drive |
 | `test_snes_plan` | 21 | `SnesPlan.h`: plano de gravação do CFI de 1, 2 ou 4 chips |
+| `test_n64` | 25 | núcleo do N64 (D176, D177) |
+| `test_gba369`, `test_gbacc` | 30 e 12 | GBA 369-in-1 e acessórios do GB (D174, D186) |
+| `test_snes_type` | 9 | tipo de ROM do SNES forçado (D164) |
+| `test_snesacc` | 17 | tamanhos e códigos do Memory Pack e do SFM (D190) |
 | `test_sms` | 28 | `SmsCore.h` (D137): slot vazio, cabeçalho "TMR SEGA", Fantasy Zone, tamanhos, adaptadores Retrode/Retron/Raphnet |
 
 Medida: `g++ -std=c++17 --coverage -O0` em cada teste e `gcov` nos cabeçalhos `include/dumper/*.h` e `src/dumper/oscr_*.cpp`. O `oscr_session.cpp` aparece com 50,7 % porque o `test_proto` só exercita parte dele; o resto roda pelo `host/tests/test_firmware_cpp.py` (o cliente Python contra o C++ real, via `sim_stdio`), que **não entra** nesse número.
