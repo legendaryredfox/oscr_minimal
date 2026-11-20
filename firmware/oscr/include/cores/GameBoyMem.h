@@ -15,6 +15,8 @@ namespace OSCR::Cores::GameBoyMem
 {
   void menu();
 
+  void cartOn();   // fork (D189): exportadas para a costura de gravação do dumper
+  void cartOff();
   uint8_t readByte(uint16_t myAddress);
   void writeByte(uint16_t myAddress, uint8_t myData);
 

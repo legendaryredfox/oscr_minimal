@@ -21,10 +21,14 @@ namespace OSCR::Dumper::GbFlash
     kPelican = 9,        ///< Pelican (Brainboys, MonsterBrains, Codebreaker): W29C020/29EE020 de 256 KB ou SST 28LF040 de 512 KB
     kMegaMem = 10,       ///< Datel Mega Memory Card: só o chip de dados SST 28LF040 (512 KB, os 32 bancos de 16 KB do `SaveData`)
     kGameShark = 11,     ///< Datel GameShark GBC: SST 39SF010 (128 KB)
-    kLast = 11,
+    // Módulos da Nintendo (F-17, D189): a flash do próprio módulo. Backup e conferência pela leitura do D186 (`DUMP_ROM` com `mapper` = 4, 5, 6).
+    kGbMemory = 12,      ///< GB Memory Module (Nintendo Power): ROM de 1 MB (banco 1 inteiro e bancos 2 a 63), flash Macronix com ID C289
+    kGbMemoryMap = 13,   ///< GB Memory Module: mapeamento escondido de 128 bytes
+    kGbSmart = 14,       ///< GB Smart Card 32M: duas LH28F016SUT, 4 MB
+    kLast = 14,
   };
 
-  /// Confere chip e tamanho do arquivo (múltiplo de 16 KB, 32 KB a 4 MB; 32 KB no kOrangeFm; acessórios: Pelican 256 ou 512 KB, Mega Memory 512 KB, GameShark 128 KB), sem tocar no cartucho. 0 = ok; senão E_ARGUMENTO.
+  /// Confere chip e tamanho do arquivo (múltiplo de 16 KB, 32 KB a 4 MB; 32 KB no kOrangeFm; acessórios: Pelican 256 ou 512 KB, Mega Memory 512 KB, GameShark 128 KB; módulos: GB Memory 1 MB, mapeamento 128 bytes, GB Smart 4 MB), sem tocar no cartucho. 0 = ok; senão E_ARGUMENTO.
   uint16_t check(uint8_t chip, uint32_t sizeBytes);
 
   /// Com o cartucho ligado: lê o ID (E_FLASH se o chip não responde; no kCfi, se não responde ao CFI ou se a ROM não cabe) e apaga (menos no kCamSecond). 0 = ok.

@@ -18,6 +18,8 @@ namespace OSCR::Cores::GameBoySmart
   bool gameOptionsMenu();
   void flashMenu();
 
+  void cartOn();   // fork (D189): exportada para a costura de gravação do dumper
+  void cartOff();
   uint8_t readByte(uint16_t myAddress);
 
   void getOneGame(struct GBSmartGameInfo *gbSmartGames, uint8_t bank, uint16_t base);

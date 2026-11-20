@@ -29,6 +29,10 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GB_PELICAN("gb-pelican", 9, 0, "Pelican do GB (W29C020/29EE020 de 256 KB ou SST 28LF040 de 512 KB)", gb = true),
     GB_MEGAMEM("gb-megamem", 10, 0, "Datel Mega Memory Card do GB (chip de dados SST 28LF040, 512 KB)", gb = true),
     GB_GAMESHARK("gb-gameshark", 11, 0, "Datel GameShark GBC (SST 39SF010, 128 KB)", gb = true),
+    /** Game Boy, módulos da Nintendo (F-17, D189). Backup e conferência pela leitura do D186 (`DUMP_ROM` com `mapper` 4 a 6). */
+    GB_MEMORY("gb-memory", 12, 0, "GB Memory Module da Nintendo (flash de 1 MB)", gb = true),
+    GB_MEMORY_MAP("gb-memory-map", 13, 0, "GB Memory Module: mapeamento escondido (128 bytes)", gb = true),
+    GB_SMART("gb-smart", 14, 0, "GB Smart Card 32M (duas LH28F016SUT, 4 MB)", gb = true),
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** N64: o firmware identifica o chip pelo ID (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512). */
@@ -42,9 +46,9 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     /** Gameshark e Xplorer 64: a flash do acessório, que não tem outra cópia (o backup é lido antes de apagar). */
     val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64 || gbAccessory
     /** Acessórios do Game Boy (F-17, D188). */
-    val gbAccessory: Boolean get() = this == GB_PELICAN || this == GB_MEGAMEM || this == GB_GAMESHARK
+    val gbAccessory: Boolean get() = this == GB_PELICAN || this == GB_MEGAMEM || this == GB_GAMESHARK || this == GB_MEMORY || this == GB_MEMORY_MAP || this == GB_SMART
     /** Campo `mapper` do DUMP_ROM que lê a flash do acessório (N64: bit 15 mais o chip; GB: 1 a 3). Igual a backup_code em romimage.py. */
-    val backupCode: Int get() = when (this) { GB_PELICAN -> 1; GB_MEGAMEM -> 2; GB_GAMESHARK -> 3; else -> 0x8000 or code }
+    val backupCode: Int get() = when (this) { GB_PELICAN -> 1; GB_MEGAMEM -> 2; GB_GAMESHARK -> 3; GB_MEMORY -> 4; GB_MEMORY_MAP -> 5; GB_SMART -> 6; else -> 0x8000 or code }
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -228,8 +232,10 @@ object RomImages {
     /** ROM de Game Boy para o flash repro: múltiplo de 16 KB, de 32 KB a 4 MB; o Orange FM (sem MBC) grava só 32 KB. Igual a split_gb em romimage.py. */
     fun splitGb(data: ByteArray, chip: FlashChip): RomImage {
         if (chip.gbAccessory) {
-            val ok = when (chip) { FlashChip.GB_PELICAN -> data.size == 262144 || data.size == 524288; FlashChip.GB_MEGAMEM -> data.size == 524288; else -> data.size == 131072 }
-            if (!ok) throw RomImageException(RomImageProblem.GB_ACC_SIZE, if (chip == FlashChip.GB_GAMESHARK) 128 else if (chip == FlashChip.GB_PELICAN) 256 else 512, if (chip == FlashChip.GB_PELICAN) 512 else 0)
+            // tamanhos aceitos em KB (a segunda é 0 se só há uma); 0 KB = o mapeamento de 128 bytes
+            val (kbA, kbB) = when (chip) { FlashChip.GB_PELICAN -> 256 to 512; FlashChip.GB_MEGAMEM -> 512 to 0; FlashChip.GB_GAMESHARK -> 128 to 0; FlashChip.GB_MEMORY -> 1024 to 0; FlashChip.GB_SMART -> 4096 to 0; else -> 0 to 0 }
+            val ok = if (chip == FlashChip.GB_MEMORY_MAP) data.size == 128 else data.size == kbA * 1024 || (kbB != 0 && data.size == kbB * 1024)
+            if (!ok) throw RomImageException(RomImageProblem.GB_ACC_SIZE, kbA, kbB)
             return RomImage(data, data.size / 1024, 0, null)
         }
         if (data.size < 32768 || data.size % 16384 != 0) throw RomImageException(RomImageProblem.GB_SIZE)

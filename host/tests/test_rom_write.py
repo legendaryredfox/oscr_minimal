@@ -530,7 +530,7 @@ def gb_rom(kb: int) -> bytes:
 def test_split_gb_e_codigos():
     img = RI.split_gb(gb_rom(512), "gb-cfi")
     assert (img.prg_kb, len(img.body)) == (512, 512 * 1024)
-    assert [RI.chip_code(c, img) for c in RI.GB_CHIPS] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    assert [RI.chip_code(c, img) for c in RI.GB_CHIPS] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     assert RI.split_gb(gb_rom(32), "gb-orange-fm").prg_kb == 32
 
 
@@ -542,7 +542,7 @@ def test_gb_acessorios_f17():
         with pytest.raises(ValueError):
             RI.split_gb(data, chip)
     assert [RI.backup_code(c) for c in ("gb-pelican", "gb-megamem", "gb-gameshark")] == [1, 2, 3] and RI.backup_code("gameshark") == 0x8002
-    assert set(RI.BACKUP_CHIPS) == {"gameshark", "xplorer64", "gb-pelican", "gb-megamem", "gb-gameshark"}
+    assert set(RI.BACKUP_CHIPS) == {"gameshark", "xplorer64", "gb-pelican", "gb-megamem", "gb-gameshark", "gb-memory", "gb-memory-map", "gb-smart"}
 
     class Client:
         def __init__(self, data): self.data, self.calls = data, []
@@ -889,3 +889,23 @@ def test_flash_id_id_fora_da_tabela(monkeypatch, capsys):
     resp = {"system": 7, "status": 0, "rom_size": 2 << 20, "save_size": 0, "save_type": 0, "name": "ID 1234"}
     code, o, _ = _flash_id(monkeypatch, capsys, resp, "--bus", "16", "--flash-kb", "2048")
     assert code == 0 and o["candidates"] == []
+
+
+def test_gb_modulos_nintendo_d189():
+    """GB Memory Module (ROM de 1 MB e mapeamento de 128 bytes) e GB Smart (4 MB): tamanho exato, códigos do chip e do backup (D189)."""
+    assert RI.split_gb(bytes(1048576), "gb-memory").prg_kb == 1024 and RI.split_gb(bytes(4194304), "gb-smart").prg_kb == 4096
+    assert RI.split_gb(bytes(128), "gb-memory-map").body == bytes(128)
+    for data, chip in ((bytes(524288), "gb-memory"), (bytes(127), "gb-memory-map"), (bytes(1048576), "gb-smart"), (bytes(4194304), "gb-memory")):
+        with pytest.raises(ValueError):
+            RI.split_gb(data, chip)
+    assert [RI.CHIPS[c] for c in ("gb-memory", "gb-memory-map", "gb-smart")] == [12, 13, 14]
+    assert [RI.backup_code(c) for c in ("gb-memory", "gb-memory-map", "gb-smart")] == [4, 5, 6]
+    class Client:
+        def __init__(self, data): self.data, self.calls = data, []
+        def dump_rom(self, system, block, progress, mapper, prg, chr_):
+            self.calls.append((system, mapper))
+            class R: pass
+            r = R(); r.data = self.data; return r
+    m = bytes((i * 5) & 0xFF for i in range(128))
+    c = Client(m)
+    assert RI.verify_written(c, 6, "gb-memory-map", RI.split_gb(m, "gb-memory-map")).ok and c.calls == [(6, 5)]

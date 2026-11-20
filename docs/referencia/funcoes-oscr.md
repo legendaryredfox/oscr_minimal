@@ -80,8 +80,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Flash do MBC6 (`save-write` grava SRAM de 32 KB + Flash de 1 MB pela `writeSRAMFLASH_MBC6` do OSCR), ROM do TAMA5 (`readROM` do OSCR já troca o banco do TAMA5) | firmware | ✅ já ligado no `GB::writeSave`/`readROM` (D186 conferiu; **destrutivo e nunca rodou**); ⬜ RTC do MBC3: o OSCR não tem, seria código novo |
 | Flash repro: 29F/39SF (DIY MBC3, DIY MBC5, HDR MBC30, HDR GB Cam 1º e 2º jogo, Orange FM, 39SF MBC5) e CFI | firmware + PC | ✅ `WRITE_ROM` (D84; nunca rodou); conferência por leitura de volta |
 | Flash repro: CFI + save | PC (`rom-write` e depois `save-write`) | ✅ em dois comandos (D84) |
-| GB Smart (ler a flash de 4 MB) | firmware + PC | ✅ só leitura (`DUMP_ROM` do GB com `mapper` 6, D186); ⬜ Game Menu, trocar jogo e gravar |
-| NPower GB Memory (ler ROM e ler mapeamento) | firmware + PC | ✅ só leitura (`mapper` 4 e 5, D186); ⬜ ler ID, apagar, gravar ROM e mapeamento |
+| GB Smart (ler e gravar a flash de 4 MB) | firmware + PC | ✅ ler (`DUMP_ROM` do GB com `mapper` 6, D186) e gravar (`rom-write --chip gb-smart`, D189; destrutivo, nunca rodou); ⬜ Game Menu e trocar jogo |
+| NPower GB Memory (ler e gravar ROM e mapeamento) | firmware + PC | ✅ ler (`mapper` 4 e 5, D186) e gravar (`rom-write --chip gb-memory` e `gb-memory-map`, D189; destrutivo, nunca rodou); ⬜ trocar de jogo |
 | Mega Memory, GBC GameShark, Pelican (ler e gravar) | firmware + PC | ✅ ler (`mapper` 2, 3 e 1, D186) e gravar (`rom-write --chip gb-megamem`, `gb-gameshark`, `gb-pelican`, D188; destrutivo, nunca rodou; o Codebreaker usa o Pelican) |
 
 ## Programador de flash genérico (`Flash.cpp`)

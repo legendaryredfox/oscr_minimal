@@ -27,11 +27,12 @@ class ImageError(ValueError):
 CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flash": 1,
          "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1, "n64-flash": 1, "gameshark": 2, "xplorer64": 3,
          "gb-diy-mbc3": 1, "gb-diy-mbc5": 2, "gb-hdr-mbc30": 3, "gb-cam-first": 4, "gb-cam-second": 5, "gb-orange-fm": 6, "gb-39sf-mbc5": 7, "gb-cfi": 8,
-         "gb-pelican": 9, "gb-megamem": 10, "gb-gameshark": 11}      # os três últimos: acessórios do GB (F-17, D188)
+         "gb-pelican": 9, "gb-megamem": 10, "gb-gameshark": 11,      # acessórios do GB (F-17, D188)
+         "gb-memory": 12, "gb-memory-map": 13, "gb-smart": 14}                            # módulos da Nintendo (F-17, D189)
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
                "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0, "n64-flash": 0, "gameshark": 0, "xplorer64": 0,
                "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0,
-               "gb-pelican": 0, "gb-megamem": 0, "gb-gameshark": 0}
+               "gb-pelican": 0, "gb-megamem": 0, "gb-gameshark": 0, "gb-memory": 0, "gb-memory-map": 0, "gb-smart": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)",
@@ -44,6 +45,8 @@ CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A290
               "gb-orange-fm": "GB flash 39SF010 sem MBC, Orange FM (32 KB)", "gb-39sf-mbc5": "GB flash 39SF040, MBC5 (WE no pino de áudio)", "gb-cfi": "GB flash CFI",
               "gb-pelican": "Pelican do GB (W29C020/29EE020 de 256 KB ou SST 28LF040 de 512 KB)", "gb-megamem": "Datel Mega Memory Card do GB (chip de dados SST 28LF040, 512 KB)",
               "gb-gameshark": "Datel GameShark GBC (SST 39SF010, 128 KB)",
+              "gb-memory": "GB Memory Module da Nintendo (flash de 1 MB)", "gb-memory-map": "GB Memory Module: mapeamento escondido (128 bytes)",
+              "gb-smart": "GB Smart Card 32M (duas LH28F016SUT, 4 MB)",
               "snes-lorom-p0": "SNES flash de 8 bits, LoROM (P0)", "snes-hirom-p0": "SNES flash de 8 bits, HiROM (P0)",
               "snes-exlorom-p1": "SNES flash de 8 bits, ExLoROM (P1)", "snes-exhirom-p1": "SNES flash de 8 bits, ExHiROM (P1)"}
 SNES_CFI_CHIPS = ("snes-lorom", "snes-hirom")                     # menus "CFI LoROM / CFI HiROM": flash CFI de 1, 2 ou 4 chips (--layout)
@@ -58,8 +61,10 @@ FLASH_TYPES_NEED_SECTOR = ("29gl", "lh28f0xx", "e28fxxxj3a")
 MD_MAX_BYTES = 8 * 1024 * 1024               # o maior chip da tabela do firmware tem 64 Mbit; o firmware recusa ROM maior que o chip encontrado
 GB_GAME_CHIPS = ("gb-diy-mbc3", "gb-diy-mbc5", "gb-hdr-mbc30", "gb-cam-first", "gb-cam-second", "gb-orange-fm", "gb-39sf-mbc5", "gb-cfi")
 # Acessórios do GB (F-17, D188): a flash do próprio acessório. Valor = campo `mapper` do DUMP_ROM que lê o acessório (D186), usado no backup e na conferência.
-GB_ACCESSORY_CHIPS = {"gb-pelican": 1, "gb-megamem": 2, "gb-gameshark": 3}
-GB_ACCESSORY_SIZES = {"gb-pelican": (262144, 524288), "gb-megamem": (524288,), "gb-gameshark": (131072,)}
+# F-17, D189: GB Memory Module (ROM de 1 MB e mapeamento de 128 bytes) e GB Smart (4 MB) entram na mesma tabela, com os `mapper` 4, 5 e 6 da leitura.
+GB_ACCESSORY_CHIPS = {"gb-pelican": 1, "gb-megamem": 2, "gb-gameshark": 3, "gb-memory": 4, "gb-memory-map": 5, "gb-smart": 6}
+GB_ACCESSORY_SIZES = {"gb-pelican": (262144, 524288), "gb-megamem": (524288,), "gb-gameshark": (131072,),
+                      "gb-memory": (1048576,), "gb-memory-map": (128,), "gb-smart": (4194304,)}
 GB_MEGAMEM_ROM_BYTES = 16384        # a leitura do Mega Memory traz a ROM de 16 KB antes dos dados; só os dados são gravados
 GB_CHIPS = GB_GAME_CHIPS + tuple(GB_ACCESSORY_CHIPS)
 GB_MAX_BYTES = 4 * 1024 * 1024
@@ -306,7 +311,7 @@ def split_gb(data: bytes, chip: str) -> RomImage:
     O número de bancos o firmware tira do tamanho. Levanta ValueError."""
     if chip in GB_ACCESSORY_CHIPS:
         if len(data) not in GB_ACCESSORY_SIZES[chip]:
-            raise ImageError("gb_acc_size", sizes=" ou ".join(f"{n // 1024} KB" for n in GB_ACCESSORY_SIZES[chip]))
+            raise ImageError("gb_acc_size", sizes=" ou ".join(f"{n // 1024} KB" if n >= 1024 else f"{n} bytes" for n in GB_ACCESSORY_SIZES[chip]))
         return RomImage(data, len(data) // 1024, 0, None)
     if len(data) < 32768 or len(data) % 16384:
         raise ImageError("gb_size")

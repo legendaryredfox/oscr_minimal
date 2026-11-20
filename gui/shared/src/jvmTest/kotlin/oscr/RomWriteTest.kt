@@ -257,10 +257,22 @@ class RomWriteTest {
     // ---------------------------------------------------------------- Game Boy
     private fun gbRom(kb: Int) = ByteArray(kb * 1024) { ((it * 17 + 9) and 0xFF).toByte() }
 
+    @Test fun gbModulosNintendoD189() {
+        assertEquals(1024, RomImages.splitGb(ByteArray(1048576), FlashChip.GB_MEMORY).prgKb)
+        assertEquals(4096, RomImages.splitGb(ByteArray(4194304), FlashChip.GB_SMART).prgKb)
+        assertEquals(128, RomImages.splitGb(ByteArray(128), FlashChip.GB_MEMORY_MAP).body.size)
+        for ((d, c) in listOf(ByteArray(524288) to FlashChip.GB_MEMORY, ByteArray(127) to FlashChip.GB_MEMORY_MAP, ByteArray(1048576) to FlashChip.GB_SMART)) {
+            assertEquals(RomImageProblem.GB_ACC_SIZE, assertFailsWith<RomImageException> { RomImages.splitGb(d, c) }.problem)
+        }
+        assertEquals(listOf(12, 13, 14), listOf(FlashChip.GB_MEMORY, FlashChip.GB_MEMORY_MAP, FlashChip.GB_SMART).map { it.code })
+        assertEquals(listOf(4, 5, 6), listOf(FlashChip.GB_MEMORY, FlashChip.GB_MEMORY_MAP, FlashChip.GB_SMART).map { it.backupCode })
+        assertTrue(FlashChip.GB_SMART.accessory && FlashChip.GB_MEMORY.accessory)
+    }
+
     @Test fun gbDivideECodigos() {
         val a = RomImages.splitGb(gbRom(512), FlashChip.GB_CFI)
         assertEquals(Pair(512, 512 * 1024), Pair(a.prgKb, a.body.size))
-        assertEquals((1..11).toList(), FlashChip.forSystem(CartSystem.GB).map { RomImages.chipCode(it, a) })
+        assertEquals((1..14).toList(), FlashChip.forSystem(CartSystem.GB).map { RomImages.chipCode(it, a) })
         assertEquals(32, RomImages.splitGb(gbRom(32), FlashChip.GB_ORANGE_FM).prgKb)
         for ((d, c) in listOf(ByteArray(0) to FlashChip.GB_CFI, ByteArray(16384) to FlashChip.GB_CFI, ByteArray(32768 + 100) to FlashChip.GB_CFI)) {
             assertEquals(RomImageProblem.GB_SIZE, assertFailsWith<RomImageException> { RomImages.splitGb(d, c) }.problem)
