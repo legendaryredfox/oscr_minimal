@@ -28,11 +28,13 @@ CHIPS = {"nesmaker": 1, "a29040b": 2, "snes-lorom": 1, "snes-hirom": 2, "md-flas
          "snes-lorom-p0": 1, "snes-hirom-p0": 2, "snes-exlorom-p1": 3, "snes-exhirom-p1": 4, "gba-flash": 1, "n64-flash": 1, "gameshark": 2, "xplorer64": 3,
          "gb-diy-mbc3": 1, "gb-diy-mbc5": 2, "gb-hdr-mbc30": 3, "gb-cam-first": 4, "gb-cam-second": 5, "gb-orange-fm": 6, "gb-39sf-mbc5": 7, "gb-cfi": 8,
          "gb-pelican": 9, "gb-megamem": 10, "gb-gameshark": 11,      # acessórios do GB (F-17, D188)
-         "gb-memory": 12, "gb-memory-map": 13, "gb-smart": 14}                            # módulos da Nintendo (F-17, D189)
+         "gb-memory": 12, "gb-memory-map": 13, "gb-smart": 14,                            # módulos da Nintendo (F-17, D189)
+         "bsx-pack": 0x2001, "sfm-flash": 0x2002, "sfm-map": 0x2003}                      # SNES: Memory Pack do BS-X e SF Memory Cassette (F-11, D190); o campo inteiro, sem (disposição << 8)
 CHIP_MAPPER = {"nesmaker": 30, "a29040b": 0, "snes-lorom": 0, "snes-hirom": 0, "md-flash": 0,
                "snes-lorom-p0": 0, "snes-hirom-p0": 0, "snes-exlorom-p1": 0, "snes-exhirom-p1": 0, "gba-flash": 0, "n64-flash": 0, "gameshark": 0, "xplorer64": 0,
                "gb-diy-mbc3": 0, "gb-diy-mbc5": 0, "gb-hdr-mbc30": 0, "gb-cam-first": 0, "gb-cam-second": 0, "gb-orange-fm": 0, "gb-39sf-mbc5": 0, "gb-cfi": 0,
-               "gb-pelican": 0, "gb-megamem": 0, "gb-gameshark": 0, "gb-memory": 0, "gb-memory-map": 0, "gb-smart": 0}
+               "gb-pelican": 0, "gb-megamem": 0, "gb-gameshark": 0, "gb-memory": 0, "gb-memory-map": 0, "gb-smart": 0,
+               "bsx-pack": 0, "sfm-flash": 0, "sfm-map": 0}
 CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A29040B (mapper 0)",
               "snes-lorom": "SNES flash CFI (fiação LoROM)", "snes-hirom": "SNES flash CFI (fiação HiROM)",
               "md-flash": "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)",
@@ -47,6 +49,8 @@ CHIP_LABEL = {"nesmaker": "NES Maker (SST 39SF040, mapper 30)", "a29040b": "A290
               "gb-gameshark": "Datel GameShark GBC (SST 39SF010, 128 KB)",
               "gb-memory": "GB Memory Module da Nintendo (flash de 1 MB)", "gb-memory-map": "GB Memory Module: mapeamento escondido (128 bytes)",
               "gb-smart": "GB Smart Card 32M (duas LH28F016SUT, 4 MB)",
+              "bsx-pack": "Memory Pack do Satellaview BS-X (flash de 8 Mbit, 1 MB)", "sfm-flash": "SF Memory Cassette: flash inteira (duas MX29F1601, 4 MB)",
+              "sfm-map": "SF Memory Cassette: mapeamento (512 bytes)",
               "snes-lorom-p0": "SNES flash de 8 bits, LoROM (P0)", "snes-hirom-p0": "SNES flash de 8 bits, HiROM (P0)",
               "snes-exlorom-p1": "SNES flash de 8 bits, ExLoROM (P1)", "snes-exhirom-p1": "SNES flash de 8 bits, ExHiROM (P1)"}
 SNES_CFI_CHIPS = ("snes-lorom", "snes-hirom")                     # menus "CFI LoROM / CFI HiROM": flash CFI de 1, 2 ou 4 chips (--layout)
@@ -269,12 +273,32 @@ def n64_backup_code(chip: str) -> int:
     return N64_BACKUP_FLAG | CHIPS[chip]
 
 
+# Acessórios do SNES (F-11, D190): valor = terceiro campo (`chr_kb`) do DUMP_ROM que lê o acessório (D187, protocol.SNES_ACCESSORIES) e tamanho exato do arquivo.
+SNES_ACCESSORY_CHIPS = {"bsx-pack": 0x8004, "sfm-flash": 0x8006, "sfm-map": 0x8007}
+SNES_ACCESSORY_SIZES = {"bsx-pack": 1048576, "sfm-flash": 4194304, "sfm-map": 512}
+
+
+def split_snes_accessory(data: bytes, chip: str) -> "RomImage":
+    """Imagem do Memory Pack do BS-X, da flash ou do mapeamento do SFM: vai como está e tem de ter o tamanho exato do chip (o firmware confere de novo antes de apagar). Levanta ValueError."""
+    want = SNES_ACCESSORY_SIZES[chip]
+    if len(data) != want:
+        raise ImageError("snes_acc_size", size=f"{want // 1024} KB" if want >= 1024 else f"{want} bytes")
+    return RomImage(data, want // 1024, 0, None)
+
+
+def backup_params(chip: str) -> tuple:
+    """Campos (mapper, prg_kb, chr_kb) do DUMP_ROM que leem a flash do acessório, para o backup e a conferência."""
+    if chip in SNES_ACCESSORY_CHIPS:
+        return 0, 0, SNES_ACCESSORY_CHIPS[chip]
+    return backup_code(chip), 0, 0
+
+
 def backup_code(chip: str) -> int:
     """Campo `mapper` do DUMP_ROM que lê a flash de um acessório (N64: D177, bit 15; GB: D186, 1 a 3)."""
     return GB_ACCESSORY_CHIPS[chip] if chip in GB_ACCESSORY_CHIPS else n64_backup_code(chip)
 
 
-BACKUP_CHIPS = N64_ACCESSORY_CHIPS + tuple(GB_ACCESSORY_CHIPS)      # acessórios sem outra cópia: o backup é lido antes de apagar
+BACKUP_CHIPS = N64_ACCESSORY_CHIPS + tuple(GB_ACCESSORY_CHIPS) + tuple(SNES_ACCESSORY_CHIPS)      # acessórios sem outra cópia: o backup é lido antes de apagar
 
 
 def split_gameshark(data: bytes) -> RomImage:
@@ -383,6 +407,12 @@ def verify_written(client, system: int, chip: str, img: RomImage, progress=None)
     o que mudou depois (um setor apagado por engano, um banco que não responde)."""
     import zlib
 
+    if chip in SNES_ACCESSORY_CHIPS:                     # a leitura do acessório do SNES (D187): o acessório vai no terceiro campo
+        res = client.dump_rom(system, 0, progress, *backup_params(chip))
+        diff = None
+        if res.data != img.body:
+            diff = next((i for i in range(min(len(res.data), len(img.body))) if res.data[i] != img.body[i]), min(len(res.data), len(img.body)))
+        return VerifyResult(diff is None, zlib.crc32(res.data), zlib.crc32(img.body), diff, len(res.data))
     if chip in GB_ACCESSORY_CHIPS:                       # a leitura do acessório (D186); o Mega Memory traz a ROM de 16 KB antes dos dados gravados
         res = client.dump_rom(system, 0, progress, GB_ACCESSORY_CHIPS[chip], 0, 0)
         data = res.data[GB_MEGAMEM_ROM_BYTES:] if chip == "gb-megamem" else res.data

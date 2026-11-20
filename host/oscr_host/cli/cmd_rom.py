@@ -16,6 +16,7 @@ from .md_chip import BOARD_LIMIT_BYTES, board_limit_bytes, md_chip_line, md_flas
 from .output import emit, progress
 
 
+SNES_ACC_BEGIN_TIMEOUT = 300.0   # SFM: apagar as duas flashes (até 120 s) e conferir 4 MB em branco antes do primeiro ACK
 N64_BEGIN_TIMEOUT = 600.0        # apagar e conferir em branco até 64 MB leva minutos (o apagamento vem antes do primeiro ACK)
 
 
@@ -33,7 +34,10 @@ def cmd_rom_write(args) -> int:
         data = Path(args.input).read_bytes()
         chip = args.chip
         snes_chip = chip in RI.SNES_CHIPS
-        if args.system == "snes" or (args.system == "mock" and snes_chip):       # no simulador (mock) o chip decide
+        snes_acc = chip in RI.SNES_ACCESSORY_CHIPS
+        if snes_acc and args.system in ("snes", "mock"):     # F-11 (D190): Memory Pack do BS-X, flash e mapeamento do SFM
+            img = RI.split_snes_accessory(data, chip)
+        elif args.system == "snes" or (args.system == "mock" and snes_chip):       # no simulador (mock) o chip decide
             if chip is None:
                 raise CliError("usage", tr("rom.usage.snes_chip"), EXIT_USAGE)
             if not snes_chip:
@@ -63,7 +67,7 @@ def cmd_rom_write(args) -> int:
             if chip not in RI.GB_CHIPS:
                 raise CliError("usage", tr("rom.usage.gb_chip", chips=", ".join(RI.GB_CHIPS)), EXIT_USAGE)
             img = RI.split_gb(data, chip)
-        elif snes_chip or chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.N64_ACCESSORY_CHIPS or chip in RI.GB_CHIPS:
+        elif snes_chip or snes_acc or chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.N64_ACCESSORY_CHIPS or chip in RI.GB_CHIPS:
             raise CliError("usage", tr("rom.usage.chip_other_system", chip=chip), EXIT_USAGE)
         else:
             img = RI.split_image(data, chip or "nesmaker")
@@ -78,7 +82,7 @@ def cmd_rom_write(args) -> int:
         print(tr("rom.mapper_warn", file=img.mapper, chip=chip, chipmapper=RI.CHIP_MAPPER[chip]), file=sys.stderr)
     if img.flash_kb:
         what = tr("rom.what_flash", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, flash=img.flash_kb, layout=_layout_name(img), n=len(img.body))
-    elif chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.N64_ACCESSORY_CHIPS or chip in RI.GB_CHIPS:
+    elif chip in ("md-flash", "gba-flash", "n64-flash") or chip in RI.N64_ACCESSORY_CHIPS or chip in RI.GB_CHIPS or chip in RI.SNES_ACCESSORY_CHIPS:
         what = tr("rom.what_block" if img.block else "rom.what_plain", label=RI.CHIP_LABEL[chip], n=len(img.body), block=img.block)
     else:
         what = tr("rom.what_prgchr", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, chr=img.chr_kb, n=len(img.body))
@@ -96,7 +100,7 @@ def cmd_rom_write(args) -> int:
             raise CliError("unsupported_firmware", tr("fw.unsupported_write_rom"), EXIT_ERROR, tr("fw.unsupported.hint"))
         backup_path = None
         if chip in RI.BACKUP_CHIPS and not args.no_backup:      # a flash do Gameshark, do Xplorer 64 e dos acessórios do Game Boy não tem outra cópia: lê tudo antes de apagar (se falhar, nada foi apagado)
-            cur = c.dump_rom(system_id(args.system), 0, progress("backup", args.progress), RI.backup_code(chip), 0, 0)
+            cur = c.dump_rom(system_id(args.system), 0, progress("backup", args.progress), *RI.backup_params(chip))
             bdir = Path(args.backup_dir).expanduser()
             bdir.mkdir(parents=True, exist_ok=True)
             backup_path = bdir / f"{chip}_{time.strftime('%Y%m%d-%H%M%S')}.bin"
@@ -111,7 +115,7 @@ def cmd_rom_write(args) -> int:
             raise CliError("refused", tr("rom.md_limit", size=len(img.body) // (1 << 20) if len(img.body) % (1 << 20) == 0 else f"{len(img.body) / (1 << 20):.2f}",
                                          chip=md_chip["chip"], codes=md_chip.get("codes", ""), limit=BOARD_LIMIT_BYTES >> 20), EXIT_REFUSED, tr("rom.md_limit_hint"))
         crc = c.write_rom(system_id(args.system), img.body, RI.chip_code(chip, img), img.flash_kb or img.prg_kb, img.wire_chr or img.chr_kb, args.block or P.DEFAULT_BLOCK,
-                          progress("write-rom", args.progress), args.begin_timeout if args.begin_timeout is not None else (N64_BEGIN_TIMEOUT if args.system == "n64" else 90.0))
+                          progress("write-rom", args.progress), args.begin_timeout if args.begin_timeout is not None else (N64_BEGIN_TIMEOUT if args.system == "n64" else SNES_ACC_BEGIN_TIMEOUT if chip in RI.SNES_ACCESSORY_CHIPS else 90.0))
     finally:
         t.close()
     out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}

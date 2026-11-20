@@ -43,9 +43,9 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     var backupPath: File? = null
     try {
         if (!c.info.writeRom) throw CliError("unsupported_firmware", Msg.t("fw.unsupported_write_rom"), EXIT_ERROR, Msg.t("fw.unsupported.hint"))
-        val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: if (sys == CartSystem.N64) 600.0 else 90.0) * 1000).toLong()
+        val timeout = ((a.opts["begin-timeout"]?.toDoubleOrNull() ?: if (sys == CartSystem.N64) 600.0 else if (chip.snesAcc) 300.0 else 90.0) * 1000).toLong()
         if (chip.accessory && "no-backup" !in a.flags) {  // a flash do Gameshark e do Xplorer 64 não tem outra cópia: lê tudo antes de apagar (se falhar, nada foi apagado)
-            val cur = c.client.dumpRom(sys, 0, chip.backupCode, 0, 0, progress(io, a, "backup"))
+            val cur = c.client.dumpRom(sys, 0, chip.backupCode, 0, chip.backupChr, progress(io, a, "backup"))
             val dir = File((a.opts["backup-dir"] ?: "~/oscr_backups").let { if (it.startsWith("~")) io.home + it.substring(1) else it })
             dir.mkdirs()
             val f = File(dir, "${chip.key}_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.bin")

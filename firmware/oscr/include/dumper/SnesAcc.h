@@ -22,6 +22,11 @@ namespace oscr { namespace snesacc {
   inline bool isRomAcc(uint16_t field) { return valid(field) && field != kGpc && field != kBsxSram; }
   inline bool hasWrite(uint16_t field) { return field == kGpc || field == kBsxSram; }
   inline uint32_t writeBytes(uint16_t field) { return field == kGpc ? kGpcBytes : (field == kBsxSram ? kBsxSramBytes : 0); }
+  // Gravação (D190): campo `chip` do WRITE_ROM do SNES, `0x2000 | n`. Os valores ficam fora de `(disposição << 8) | fiação` de SnesFlash.h (disposição 0 a 4 e 0x10).
+  constexpr uint16_t kWriteTag = 0x2000, kWriteBsxPack = 0x2001, kWriteSfmFlash = 0x2002, kWriteSfmMap = 0x2003;
+  inline bool isWriteChip(uint16_t chip) { return chip >= kWriteBsxPack && chip <= kWriteSfmMap; }
+  /// Tamanho exato do arquivo de cada chip de gravação (0 = chip inválido): Memory Pack 1 MiB, flash do SFM 4 MiB (2 chips de 2 MiB), mapeamento 512 bytes (2 x 256).
+  inline uint32_t writeChipBytes(uint16_t chip) { return chip == kWriteBsxPack ? kBsxPackBytes : chip == kWriteSfmFlash ? kSfmFlashBytes : chip == kWriteSfmMap ? kSfmMapBytes : 0; }
   inline bool isSufami(uint16_t field) { return field == kSufamiA || field == kSufamiB; }
   inline bool sufamiSlotB(uint16_t field) { return field == kSufamiB; }
 

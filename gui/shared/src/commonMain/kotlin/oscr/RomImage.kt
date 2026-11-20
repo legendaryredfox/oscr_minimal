@@ -5,7 +5,7 @@ package oscr
  * Prepara um arquivo para o WRITE_ROM: tira o cabeçalho iNES e acha chip, PRG e CHR. Igual a host/oscr_host/romimage.py.
  * No OSCR original isso era feito pelo firmware lendo o arquivo do SD; aqui é o PC.
  */
-enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false, val n64: Boolean = false) {
+enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false, val n64: Boolean = false, val snesAcc: Boolean = false) {
     NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF040, mapper 30)"),
     A29040B("a29040b", 2, 0, "A29040B (mapper 0)"),
     /** SNES: flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR). */
@@ -33,6 +33,10 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     GB_MEMORY("gb-memory", 12, 0, "GB Memory Module da Nintendo (flash de 1 MB)", gb = true),
     GB_MEMORY_MAP("gb-memory-map", 13, 0, "GB Memory Module: mapeamento escondido (128 bytes)", gb = true),
     GB_SMART("gb-smart", 14, 0, "GB Smart Card 32M (duas LH28F016SUT, 4 MB)", gb = true),
+    /** SNES, acessórios (F-11, D190): Memory Pack do BS-X, flash e mapeamento do SF Memory Cassette. O campo chip é o valor inteiro (sem disposição); backup e conferência pela leitura do D187 (`chr_kb` 0x8004, 0x8006 e 0x8007). */
+    BSX_PACK("bsx-pack", 0x2001, 0, "Memory Pack do Satellaview BS-X (flash de 8 Mbit, 1 MB)", snes = true, snesAcc = true),
+    SFM_FLASH("sfm-flash", 0x2002, 0, "SF Memory Cassette: flash inteira (duas MX29F1601, 4 MB)", snes = true, snesAcc = true),
+    SFM_MAP("sfm-map", 0x2003, 0, "SF Memory Cassette: mapeamento (512 bytes)", snes = true, snesAcc = true),
     /** GBA: o firmware identifica o chip pelo ID (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1). */
     GBA_FLASH("gba-flash", 1, 0, "GBA flash (Intel 4000/4400, MX29GL128E, MSP55LV128, PC28F256M29, M29W128GH, 369-in-1)", gba = true),
     /** N64: o firmware identifica o chip pelo ID (S29GL128N/256N, M29W128GL, MX29LV640, Intel 4400L0ZDQ0 e 512M29EW, MSP55LV100S/512). */
@@ -44,11 +48,13 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
     MD_FLASH("md-flash", 1, 0, "Mega Drive flash (o firmware identifica o chip: MX29F1610, S29GL064N, M29W/MX29LV 32 e 64 Mbit, MX29L3211, PA28F400, LH28F320BJE, AM29F800, SST39VF)", md = true);
 
     /** Gameshark e Xplorer 64: a flash do acessório, que não tem outra cópia (o backup é lido antes de apagar). */
-    val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64 || gbAccessory
+    val accessory: Boolean get() = this == GAMESHARK || this == XPLORER64 || gbAccessory || snesAcc
     /** Acessórios do Game Boy (F-17, D188). */
     val gbAccessory: Boolean get() = this == GB_PELICAN || this == GB_MEGAMEM || this == GB_GAMESHARK || this == GB_MEMORY || this == GB_MEMORY_MAP || this == GB_SMART
     /** Campo `mapper` do DUMP_ROM que lê a flash do acessório (N64: bit 15 mais o chip; GB: 1 a 3). Igual a backup_code em romimage.py. */
-    val backupCode: Int get() = when (this) { GB_PELICAN -> 1; GB_MEGAMEM -> 2; GB_GAMESHARK -> 3; GB_MEMORY -> 4; GB_MEMORY_MAP -> 5; GB_SMART -> 6; else -> 0x8000 or code }
+    val backupCode: Int get() = when (this) { GB_PELICAN -> 1; GB_MEGAMEM -> 2; GB_GAMESHARK -> 3; GB_MEMORY -> 4; GB_MEMORY_MAP -> 5; GB_SMART -> 6; BSX_PACK, SFM_FLASH, SFM_MAP -> 0; else -> 0x8000 or code }
+    /** Terceiro campo (`chr_kb`) do DUMP_ROM que lê o acessório do SNES (D187); 0 nos outros. */
+    val backupChr: Int get() = when (this) { BSX_PACK -> 0x8004; SFM_FLASH -> 0x8006; SFM_MAP -> 0x8007; else -> 0 }
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -136,7 +142,7 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_ACC_SIZE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, SNES_ACC_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_ACC_SIZE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
@@ -225,6 +231,16 @@ object RomImages {
             if (body.size > flashMb * SnesLayouts.MB) throw RomImageException(RomImageProblem.GEN_PADDED_NO_FIT, body.size / 1024, flashMb)
         }
         return RomImage(body, rom.size / 1024, 0, null, flashMb * 1024, SnesLayouts.GENERIC, typeWordValue, rom)
+    }
+
+    /** Tamanho exato do arquivo de cada acessório do SNES (F-11, D190). Igual a SNES_ACCESSORY_SIZES em romimage.py. */
+    fun snesAccessoryBytes(chip: FlashChip): Int = when (chip) { FlashChip.BSX_PACK -> 1 shl 20; FlashChip.SFM_FLASH -> 4 shl 20; FlashChip.SFM_MAP -> 512; else -> 0 }
+
+    /** Imagem do Memory Pack do BS-X, da flash ou do mapeamento do SFM: vai como está, com o tamanho exato do chip. Igual a split_snes_accessory em romimage.py. */
+    fun splitSnesAccessory(data: ByteArray, chip: FlashChip): RomImage {
+        val want = snesAccessoryBytes(chip)
+        if (data.size != want) throw RomImageException(RomImageProblem.SNES_ACC_SIZE, want)
+        return RomImage(data, want / 1024, 0, null)
     }
 
     const val GB_MAX_BYTES = 4 * 1024 * 1024
@@ -319,7 +335,7 @@ object RomImages {
     }
 
     /** Valor do campo `chip` do WRITE_ROM. No SNES: (disposição << 8) | fiação; no GBA: (bloco << 8) | 1; nos demais, o número do chip. */
-    fun chipCode(chip: FlashChip, img: RomImage): Int = if (chip.snes) (img.layout shl 8) or chip.code else if (chip.gba) (img.block shl 8) or 1 else chip.code
+    fun chipCode(chip: FlashChip, img: RomImage): Int = if (chip.snesAcc) chip.code else if (chip.snes) (img.layout shl 8) or chip.code else if (chip.gba) (img.block shl 8) or 1 else chip.code
 
     const val MD_MAX_BYTES = 8 * 1024 * 1024
 
@@ -343,6 +359,7 @@ object RomImages {
             if (flashMb == null) throw RomImageException(RomImageProblem.GEN_MB)
             return chip to splitSnesGeneric(data, flashMb, flashType, sectorKb, buffer)
         }
+        if (chip != null && chip.snesAcc) return chip to splitSnesAccessory(data, chip)
         if (chip != null && chip.snes) return chip to splitSnes(data, capacityKb, layout)
         if (chip != null && chip.md) return chip to splitMd(data)
         if (chip != null && chip.gba) return chip to splitGba(data, block)
@@ -418,7 +435,7 @@ fun verifySaveWritten(client: OscrClient, system: CartSystem, data: ByteArray, m
  */
 fun verifyWritten(client: OscrClient, system: CartSystem, chip: FlashChip, img: RomImage, progress: Progress? = null): VerifyResult {
     // N64: prg_kb do DUMP_ROM é o tamanho em MB (1 a 64); a ROM tem sempre um número inteiro de setores de 128 KB, então lê-se o MB seguinte e compara-se o prefixo
-    val res = if (chip.accessory) client.dumpRom(system, 0, chip.backupCode, 0, 0, progress)       // Gameshark e Xplorer 64: o backup do próprio acessório (mapper com o bit 15), sem tamanho
+    val res = if (chip.accessory) client.dumpRom(system, 0, chip.backupCode, 0, chip.backupChr, progress)       // Gameshark e Xplorer 64: o backup do próprio acessório (mapper com o bit 15), sem tamanho
               else client.dumpRom(system, 0, chip.mapper, if (chip.n64) (img.body.size + (1 shl 20) - 1) shr 20 else img.prgKb, img.chrKb, progress)
     val d = res.data
     val hasHeader = d.size >= 4 && d[0] == 'N'.code.toByte() && d[1] == 'E'.code.toByte() && d[2] == 'S'.code.toByte() && d[3] == 0x1A.toByte()

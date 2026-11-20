@@ -20,4 +20,10 @@ namespace OSCR::Dumper::SnesAcc
   /// Leituras do SFM que o menu do OSCR fazia: jogo `idx` (troca o jogo e lê, como o `gameMenu`), flash inteira de 4 MB e mapeamento (512 bytes).
   void readSfmGame(uint8_t idx);
   void readSfmMap();
+
+  /// Gravação do Memory Pack do BS-X e da flash e do mapeamento do SFM (D190, WRITE_ROM; `chip` = kWriteBsxPack, kWriteSfmFlash ou kWriteSfmMap de SnesAcc.h).
+  /// `prepare` confere o cartucho (8B86 no BS-X, ID C2F3 das duas MX29F1601 no SFM), apaga com espera limitada e confere em branco; 0 = ok, E_SEM_CARTUCHO, E_FLASH ou E_CARTUCHO_IO.
+  /// `program` religa o cartucho (a energia caiu entre os dois passos), refaz o destrave e grava o que vem de [in]; o PC confere lendo de volta.
+  uint16_t prepareWrite(uint16_t chip);
+  uint16_t programWrite(uint16_t chip, oscr::StreamSource & in);
 }

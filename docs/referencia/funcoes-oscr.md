@@ -27,8 +27,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Flash repro: CFI LoROM e HiROM, **1x 2 MB e 1x 4 MB** | firmware (laço) + PC (arquivo, chip) | ✅ `WRITE_ROM` (D79; nunca rodou); conferência por leitura de volta |
 | Flash repro: CFI 2x 2 MB, 2x 4 MB, 4x 2 MB, 1x 8 MB | firmware (laço) + PC (reordena a ROM) | ✅ `WRITE_ROM` (D82; nunca rodou) |
 | Flash repro: LoROM/HiROM (P0), ExLoROM/ExHiROM (P1), tipos 29F032, 29F1610, LH28F0XX, 29F1601, 29LV640, 29F800, 29GL, E28FXXXJ3A | firmware (funções do `menuFlash8`) + PC (tipo do flash) | ✅ `WRITE_ROM` (D82; nunca rodou) |
-| SF Memory Cassette (SFM): ler jogo, flash, mapeamento, trocar jogo | firmware + PC | ✅ só leitura (`--accessory sfm-game-N`, `sfm-flash`, `sfm-map`; a troca de jogo é feita antes de ler; D187, nunca rodou); ⬜ gravar flash e mapeamento |
-| Satellaview BS-X: ler e gravar Memory Pack, ler e gravar SRAM | firmware + PC | ✅ ler o Memory Pack (`bsx-pack`, 1 MB) e ler e gravar a SRAM (`bsx-sram`, 32 KB) (D187, nunca rodou); ⬜ gravar o Memory Pack |
+| SF Memory Cassette (SFM): ler jogo, flash, mapeamento, trocar jogo | firmware + PC | ✅ ler (`--accessory sfm-game-N`, `sfm-flash`, `sfm-map`; a troca de jogo é feita antes de ler; D187, nunca rodou); ✅ gravar flash e mapeamento (`rom-write -s snes --chip sfm-flash` e `sfm-map`, D190, destrutivo, com backup; nunca rodou); ⬜ trocar de jogo ao gravar |
+| Satellaview BS-X: ler e gravar Memory Pack, ler e gravar SRAM | firmware + PC | ✅ ler o Memory Pack (`bsx-pack`, 1 MB) e ler e gravar a SRAM (`bsx-sram`, 32 KB) (D187, nunca rodou); ✅ gravar o Memory Pack (`rom-write -s snes --chip bsx-pack`, D190, destrutivo, com backup; nunca rodou) |
 | Sufami Turbo: ler slot A e B | firmware | ✅ `dump --accessory sufami-a/b` (D178; nunca rodou) |
 | Game Processor RAM (GPC): ler e gravar 512 KB | firmware | ✅ `save-read/save-write --accessory gpc` (D178; nunca rodou) |
 | Calibrar o relógio (Si5351) | firmware + PC | ⬜ |

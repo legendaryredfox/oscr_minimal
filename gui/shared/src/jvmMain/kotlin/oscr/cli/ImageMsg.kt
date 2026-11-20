@@ -31,6 +31,7 @@ internal fun imageMessage(e: RomImageException, a: Args): String {
         RomImageProblem.GEN_SECTOR -> Msg.t("img.gen_sector")
         RomImageProblem.GEN_BUFFER -> Msg.t("img.gen_buffer")
         RomImageProblem.GEN_PADDED_NO_FIT -> Msg.t("img.gen_padded_no_fit", "kb" to e.a, "mb" to e.b)
+        RomImageProblem.SNES_ACC_SIZE -> Msg.t("img.snes_acc_size", "size" to (if (e.a >= 1024) "${e.a / 1024} KB" else "${e.a} bytes"))
         RomImageProblem.GB_SIZE -> Msg.t("img.gb_size")
         RomImageProblem.GB_TOO_BIG -> Msg.t("img.gb_too_big", "kb" to kb)
         RomImageProblem.GB_ORANGE -> Msg.t("img.gb_orange")

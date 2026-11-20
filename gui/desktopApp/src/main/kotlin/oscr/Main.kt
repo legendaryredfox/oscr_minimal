@@ -437,6 +437,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         RomImageProblem.GB_TOO_BIG -> f(S.RIMG_GB_TOO_BIG, e.a)
         RomImageProblem.GB_ORANGE -> t(S.RIMG_GB_ORANGE)
         RomImageProblem.GB_ACC_SIZE -> f(S.RIMG_GB_ACC_SIZE, e.a, e.b)
+        RomImageProblem.SNES_ACC_SIZE -> f(S.RIMG_SNES_ACC_SIZE, e.a / 1024)
         RomImageProblem.GB_NEEDS_CHIP -> t(S.RIMG_GB_NEEDS_CHIP)
         RomImageProblem.GBA_BLOCK -> t(S.RIMG_GBA_BLOCK)
         RomImageProblem.GBA_SIZE -> t(S.RIMG_GBA_SIZE)
@@ -766,15 +767,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             }
             if (req.chip.accessory) {                            // a flash do Gameshark e do Xplorer 64 não tem outra cópia: lê e guarda tudo ANTES de apagar (se falhar, nada foi apagado)
                 stage = S.BACKUP_FLASH
-                val cur = withContext(Dispatchers.IO) { c.dumpRom(system, 0, req.chip.backupCode, 0, 0, ticker()) }
+                val cur = withContext(Dispatchers.IO) { c.dumpRom(system, 0, req.chip.backupCode, 0, req.chip.backupChr, ticker()) }
                 val dir = File(System.getProperty("user.home"), "oscr_backups").also { it.mkdirs() }
                 val bf = File(dir, "${req.chip.key}_${SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())}.bin")
                 bf.writeBytes(cur.data)
                 say("${t(S.BACKUP_FLASH)}: $bf — CRC32 ${cur.crcHex}")
                 stage = S.STAGE_WRITING_ROM; progress = 0f
             }
-            val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, if (req.image.flashKb > 0) req.image.flashKb else req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker(), if (system == CartSystem.N64) 600_000 else 90_000) }
-            say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, " + (if (req.chip.md || req.chip.gba || req.chip.gb) "${req.image.body.size} bytes" else if (req.image.flashKb > 0) "ROM ${req.image.prgKb} KB / flash ${req.image.flashKb} KB" else "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB") + ", CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
+            val crc = withContext(Dispatchers.IO) { c.writeRom(system, req.image.body, req.chip.code, if (req.image.flashKb > 0) req.image.flashKb else req.image.prgKb, req.image.chrKb, Proto.DEFAULT_BLOCK, ticker(), if (system == CartSystem.N64) 600_000 else if (req.chip.snesAcc) 300_000 else 90_000) }
+            say("${t(S.ROM_WRITTEN)}: ${req.chip.label}, " + (if (req.chip.md || req.chip.gba || req.chip.gb || req.chip.snesAcc) "${req.image.body.size} bytes" else if (req.image.flashKb > 0) "ROM ${req.image.prgKb} KB / flash ${req.image.flashKb} KB" else "PRG ${req.image.prgKb} KB, CHR ${req.image.chrKb} KB") + ", CRC32 ${(crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')}")
             val gbaSkip = (req.chip.gba && (req.image.block != 0 || req.image.body.size > RomImages.GBA_VERIFY_MAX_BYTES)) || req.chip == FlashChip.GB_CAM_SECOND
             if (verifyRom && !gbaSkip) {
                 stage = S.STAGE_VERIFYING_ROM; progress = 0f

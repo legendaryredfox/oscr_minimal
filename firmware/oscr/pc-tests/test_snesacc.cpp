@@ -22,6 +22,11 @@ int main() {
   CHECK(hasWrite(kGpc) && hasWrite(kBsxSram) && !hasWrite(kBsxPack) && !hasWrite(kSfmFlash) && !hasWrite(kSufamiA));
   CHECK(writeBytes(kGpc) == 524288UL && writeBytes(kBsxSram) == 32768UL && writeBytes(kSfmFlash) == 0);
   CHECK(kBsxPackBytes == 1048576UL && kSfmFlashBytes == 4194304UL && kSfmMapBytes == 512);
+  // D190: gravar o Memory Pack do BS-X e a flash e o mapeamento do SFM (campo chip do WRITE_ROM)
+  CHECK(isWriteChip(kWriteBsxPack) && isWriteChip(kWriteSfmFlash) && isWriteChip(kWriteSfmMap) && !isWriteChip(0) && !isWriteChip(0x2000) && !isWriteChip(0x2004));
+  CHECK(!isWriteChip(0x0101) && !isWriteChip(0x1001) && !isWriteChip(0x0402) && !isWriteChip(kBsxPack));          // não se confunde com (disposição << 8) | fiação nem com o campo de leitura
+  CHECK(writeChipBytes(kWriteBsxPack) == 1048576UL && writeChipBytes(kWriteSfmFlash) == 4194304UL && writeChipBytes(kWriteSfmMap) == 512UL && writeChipBytes(0) == 0);
+  CHECK(writeChipBytes(kWriteBsxPack) == kBsxPackBytes && writeChipBytes(kWriteSfmFlash) == kSfmFlashBytes && writeChipBytes(kWriteSfmMap) == kSfmMapBytes);   // o arquivo gravado é o que a leitura devolve
   printf("test_snesacc: %d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

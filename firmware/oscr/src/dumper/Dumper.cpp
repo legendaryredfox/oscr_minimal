@@ -1046,10 +1046,19 @@ namespace OSCR::Dumper
         else if (system == oscr::SYS_SNES)
         {
           uint16_t code = optMapper;                                    // SNES: o campo inteiro (disposição << 8 | fiação)
-          rc = SnesFlash::check(code, prg, chr, size);
-          if (rc) { err = rc; return false; }
-          rc = oscr::E_CARTUCHO_IO;
-          ran = runCore([&rc, code, prg, chr, size] { rc = SnesFlash::prepare(code, prg, chr, size); SN::cartOff(); });
+          if (oscr::snesacc::isWriteChip(code))                         // Memory Pack do BS-X, flash e mapeamento do SFM (D190): tamanho exato, sem prg_kb nem chr_kb
+          {
+            if (chr != 0 || size != oscr::snesacc::writeChipBytes(code)) { err = oscr::E_ARGUMENTO; return false; }
+            rc = oscr::E_FLASH;
+            ran = runCore([&rc, code] { rc = SnesAcc::prepareWrite(code); });
+          }
+          else
+          {
+            rc = SnesFlash::check(code, prg, chr, size);
+            if (rc) { err = rc; return false; }
+            rc = oscr::E_CARTUCHO_IO;
+            ran = runCore([&rc, code, prg, chr, size] { rc = SnesFlash::prepare(code, prg, chr, size); SN::cartOff(); });
+          }
         }
         else if (system == oscr::SYS_MD)
         {
@@ -1105,17 +1114,21 @@ namespace OSCR::Dumper
         {
           uint16_t code = optMapper; uint32_t n = romWriteSize;
           bool generic = SnesFlash::isGeneric(code);
-          if (generic)                                                  // P0/P1: as funções do OSCR leem o "arquivo" (sharedFile); ligá-lo ao fluxo, como no WRITE_SAVE
+          if (oscr::snesacc::isWriteChip(code)) ran = runCore([&rc, &in, code] { rc = SnesAcc::programWrite(code, in); });       // D190: lê direto do fluxo
+          else
           {
-            countingSource.inner = &in; countingSource.bytes = 0;
-            activeSource = &countingSource;
-            OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
-          }
-          ran = runCore([&rc, &in, code, prg, chr, n] { rc = SnesFlash::program(code, prg, chr, n, in); SN::cartOff(); });
-          if (generic)
-          {
-            activeSource = nullptr;
-            if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;     // o OSCR não avisa se o arquivo acabou antes
+            if (generic)                                                  // P0/P1: as funções do OSCR leem o "arquivo" (sharedFile); ligá-lo ao fluxo, como no WRITE_SAVE
+            {
+              countingSource.inner = &in; countingSource.bytes = 0;
+              activeSource = &countingSource;
+              OSCR::Storage::Shared::sharedFile.open("rom", O_RDONLY);
+            }
+            ran = runCore([&rc, &in, code, prg, chr, n] { rc = SnesFlash::program(code, prg, chr, n, in); SN::cartOff(); });
+            if (generic)
+            {
+              activeSource = nullptr;
+              if (rc == 0 && countingSource.bytes != n) rc = oscr::E_CARTUCHO_IO;     // o OSCR não avisa se o arquivo acabou antes
+            }
           }
         }
         else if (system == oscr::SYS_MD)

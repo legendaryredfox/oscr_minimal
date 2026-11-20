@@ -542,7 +542,7 @@ def test_gb_acessorios_f17():
         with pytest.raises(ValueError):
             RI.split_gb(data, chip)
     assert [RI.backup_code(c) for c in ("gb-pelican", "gb-megamem", "gb-gameshark")] == [1, 2, 3] and RI.backup_code("gameshark") == 0x8002
-    assert set(RI.BACKUP_CHIPS) == {"gameshark", "xplorer64", "gb-pelican", "gb-megamem", "gb-gameshark", "gb-memory", "gb-memory-map", "gb-smart"}
+    assert set(RI.BACKUP_CHIPS) == {"gameshark", "xplorer64", "gb-pelican", "gb-megamem", "gb-gameshark", "gb-memory", "gb-memory-map", "gb-smart", "bsx-pack", "sfm-flash", "sfm-map"}
 
     class Client:
         def __init__(self, data): self.data, self.calls = data, []
@@ -909,3 +909,29 @@ def test_gb_modulos_nintendo_d189():
     m = bytes((i * 5) & 0xFF for i in range(128))
     c = Client(m)
     assert RI.verify_written(c, 6, "gb-memory-map", RI.split_gb(m, "gb-memory-map")).ok and c.calls == [(6, 5)]
+
+
+def test_snes_memory_pack_e_sfm_d190():
+    """Memory Pack do BS-X, flash e mapeamento do SFM: tamanho exato, campo chip inteiro (0x2001 a 0x2003) e leitura do acessório no backup e na conferência (D190)."""
+    assert RI.split_snes_accessory(bytes(1048576), "bsx-pack").prg_kb == 1024 and RI.split_snes_accessory(bytes(4194304), "sfm-flash").prg_kb == 4096
+    assert RI.split_snes_accessory(bytes(512), "sfm-map").body == bytes(512)
+    for data, chip in ((bytes(524288), "bsx-pack"), (bytes(511), "sfm-map"), (bytes(2097152), "sfm-flash"), (bytes(1048576), "sfm-flash")):
+        with pytest.raises(ValueError):
+            RI.split_snes_accessory(data, chip)
+    assert [RI.chip_code(c, RI.split_snes_accessory(bytes(RI.SNES_ACCESSORY_SIZES[c]), c)) for c in ("bsx-pack", "sfm-flash", "sfm-map")] == [0x2001, 0x2002, 0x2003]
+    assert [RI.backup_params(c) for c in ("bsx-pack", "sfm-flash", "sfm-map")] == [(0, 0, 0x8004), (0, 0, 0x8006), (0, 0, 0x8007)]
+    assert all(RI.SNES_ACCESSORY_CHIPS[c] == P.SNES_ACCESSORIES[c] for c in RI.SNES_ACCESSORY_CHIPS)       # o mesmo código da leitura do D187
+    assert all(c in RI.BACKUP_CHIPS for c in RI.SNES_ACCESSORY_CHIPS) and not any(c in RI.SNES_CHIPS for c in RI.SNES_ACCESSORY_CHIPS)
+    class Client:
+        def __init__(self, data): self.data, self.calls = data, []
+        def dump_rom(self, system, block, progress, mapper, prg, chr_):
+            self.calls.append((system, mapper, chr_))
+            class R: pass
+            r = R(); r.data = self.data; return r
+    m = bytes((i * 7) & 0xFF for i in range(512))
+    c = Client(m)
+    assert RI.verify_written(c, 1, "sfm-map", RI.split_snes_accessory(m, "sfm-map")).ok and c.calls == [(1, 0, 0x8007)]
+    bad = bytearray(m); bad[300] ^= 1
+    v = RI.verify_written(Client(bytes(bad)), 1, "sfm-map", RI.split_snes_accessory(m, "sfm-map"))
+    assert not v.ok and v.first_diff == 300
+

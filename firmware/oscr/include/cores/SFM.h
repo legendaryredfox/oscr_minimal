@@ -32,6 +32,8 @@ namespace OSCR::Cores::SFM
   void controlIn();
   void writeBank(uint8_t myBank, uint16_t myAddress, uint8_t myData);
   uint8_t readBank(uint8_t myBank, uint16_t myAddress);
+  void readyBank(uint8_t bank);                              // fork (D190): declaradas para a costura de gravação (SnesAcc.cpp); o OSCR as usa só dentro do .cpp
+  void writeBankSequence(uint8_t data, uint8_t bank);        // o padrão `bank = 0` está na definição, em SFM.cpp
   void getCartInfo();
   bool checkcart();
   void readROM();

@@ -127,7 +127,7 @@ class RomWriteTest {
     }
 
     @Test fun chipsPorSistema() {
-        assertEquals(listOf(FlashChip.SNES_LOROM, FlashChip.SNES_HIROM, FlashChip.SNES_LOROM_P0, FlashChip.SNES_HIROM_P0, FlashChip.SNES_EXLOROM_P1, FlashChip.SNES_EXHIROM_P1), FlashChip.forSystem(CartSystem.SNES))
+        assertEquals(listOf(FlashChip.SNES_LOROM, FlashChip.SNES_HIROM, FlashChip.SNES_LOROM_P0, FlashChip.SNES_HIROM_P0, FlashChip.SNES_EXLOROM_P1, FlashChip.SNES_EXHIROM_P1, FlashChip.BSX_PACK, FlashChip.SFM_FLASH, FlashChip.SFM_MAP), FlashChip.forSystem(CartSystem.SNES))
         assertEquals(listOf(FlashChip.NESMAKER, FlashChip.A29040B), FlashChip.forSystem(CartSystem.NES))
         assertEquals(FlashChip.entries.toList(), FlashChip.forSystem(CartSystem.MOCK))
     }
@@ -267,6 +267,21 @@ class RomWriteTest {
         assertEquals(listOf(12, 13, 14), listOf(FlashChip.GB_MEMORY, FlashChip.GB_MEMORY_MAP, FlashChip.GB_SMART).map { it.code })
         assertEquals(listOf(4, 5, 6), listOf(FlashChip.GB_MEMORY, FlashChip.GB_MEMORY_MAP, FlashChip.GB_SMART).map { it.backupCode })
         assertTrue(FlashChip.GB_SMART.accessory && FlashChip.GB_MEMORY.accessory)
+    }
+
+    @Test fun memoryPackESfmD190() {
+        val chips = listOf(FlashChip.BSX_PACK, FlashChip.SFM_FLASH, FlashChip.SFM_MAP)
+        assertEquals(1024, RomImages.splitSnesAccessory(ByteArray(1048576), FlashChip.BSX_PACK).prgKb)
+        assertEquals(4096, RomImages.splitSnesAccessory(ByteArray(4194304), FlashChip.SFM_FLASH).prgKb)
+        assertEquals(512, RomImages.splitSnesAccessory(ByteArray(512), FlashChip.SFM_MAP).body.size)
+        for ((d, c) in listOf(ByteArray(524288) to FlashChip.BSX_PACK, ByteArray(511) to FlashChip.SFM_MAP, ByteArray(2097152) to FlashChip.SFM_FLASH, ByteArray(1048576) to FlashChip.SFM_FLASH)) {
+            assertEquals(RomImageProblem.SNES_ACC_SIZE, assertFailsWith<RomImageException> { RomImages.splitSnesAccessory(d, c) }.problem)
+        }
+        assertEquals(listOf(0x2001, 0x2002, 0x2003), chips.map { RomImages.chipCode(it, RomImages.splitSnesAccessory(ByteArray(RomImages.snesAccessoryBytes(it)), it)) })
+        assertEquals(listOf(0x8004, 0x8006, 0x8007), chips.map { it.backupChr })
+        assertEquals(listOf(0, 0, 0), chips.map { it.backupCode })
+        assertTrue(chips.all { it.accessory && it.snes && it.snesAcc })
+        assertEquals(chips, RomImages.prepare(ByteArray(1048576), FlashChip.BSX_PACK).let { listOf(it.first) } + listOf(FlashChip.SFM_FLASH, FlashChip.SFM_MAP))
     }
 
     @Test fun gbDivideECodigos() {
