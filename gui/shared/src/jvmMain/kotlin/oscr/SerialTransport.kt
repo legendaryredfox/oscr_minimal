@@ -52,7 +52,7 @@ const val BOOT_WAIT_MS = 2000L
 
 /**
  * INFO de um Arduino recém-aberto. Abrir a porta reinicia o Mega (DTR do CH340 e do 16U2): bootloader e `setup()` levam cerca de 2 s e
- * o INFO enviado nesse tempo deixa lixo no parser do firmware (D196). Só a porta real reinicia: outros transportes (simulador, testes) vão direto.
+ * bytes enviados antes de ~0,9 s (bootloader) fazem o Mega não subir o firmware (D196). Só a porta real reinicia: outros transportes (simulador, testes) vão direto.
  */
 fun infoAfterBoot(t: Transport, c: OscrClient): DeviceInfo {
     if (t !is SerialTransport) return c.info()

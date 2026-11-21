@@ -148,7 +148,7 @@ def _open_raw(args) -> tuple[Client, Transport, dict]:
         # Insiste na mesma abertura até BOOT_WAIT s em vez de desistir em 0,5 s (e reabrir, o que reinicia de novo).
         ser = getattr(t, "ser", None)                     # só a porta real reinicia o Mega; as falsas dos testes não têm `ser`
         if ser is not None:
-            time.sleep(BOOT_SETTLE)                       # nada de enviar durante o boot: o lixo emperra o parser do firmware
+            time.sleep(BOOT_SETTLE)                       # nada de enviar durante o boot: bytes que chegam antes de ~0,9 s (bootloader) fazem o Mega não subir o firmware (D196)
             ser.reset_input_buffer()
         deadline = time.monotonic() + (BOOT_WAIT if ser is not None else 0)
         while True:
