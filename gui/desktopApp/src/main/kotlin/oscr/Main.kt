@@ -335,7 +335,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             for (attempt in 1..12) {                                              // o Mega reinicia: a porta some por um instante
                 delay(1000)
                 var x: SerialTransport? = null
-                try { opened = withContext(Dispatchers.IO) { val tx = SerialTransport(req.port, 1_000_000); x = tx; val cl = OscrClient(tx, 500); Triple(tx, cl, cl.info()) }; break }
+                try { opened = withContext(Dispatchers.IO) { val tx = SerialTransport(req.port, 1_000_000); x = tx; val cl = OscrClient(tx, 500); Triple(tx, cl, infoAfterBoot(tx, cl)) }; break }
                 catch (e: Exception) { x?.close() }
             }
             val got = opened
@@ -368,7 +368,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     val (tr2, c, i) = withContext(Dispatchers.IO) {
                         val x = SerialTransport(port, b); tr = x
                         val cl = OscrClient(x, 500)
-                        Triple(x, cl, cl.info())
+                        Triple(x, cl, infoAfterBoot(x, cl))
                     }
                     if (b != baud) { say(f(S.BAUD_FALLBACK, baud, b)); baud = b }
                     transport = tr2; client = c; info = i

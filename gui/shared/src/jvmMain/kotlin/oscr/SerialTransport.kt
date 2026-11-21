@@ -35,7 +35,31 @@ class SerialTransport(private val portName: String, baud: Int) : Transport {
 
     override fun close() { port.closePort() }
 
+    /** Descarta o que já chegou (texto do boot do firmware). */
+    fun drainInput() {
+        val n = port.bytesAvailable()
+        if (n > 0) port.readBytes(ByteArray(n), n)
+    }
+
     companion object {
         fun ports(): List<PortInfo> = SerialPort.getCommPorts().map { PortInfo(it.systemPortName, it.descriptivePortName ?: "") }
+    }
+}
+
+/** Espera sem enviar nada depois de abrir a porta (BOOT_SETTLE_MS) e insiste no INFO por BOOT_WAIT_MS. */
+const val BOOT_SETTLE_MS = 2500L
+const val BOOT_WAIT_MS = 2000L
+
+/**
+ * INFO de um Arduino recém-aberto. Abrir a porta reinicia o Mega (DTR do CH340 e do 16U2): bootloader e `setup()` levam cerca de 2 s e
+ * o INFO enviado nesse tempo deixa lixo no parser do firmware (D196). Só a porta real reinicia: outros transportes (simulador, testes) vão direto.
+ */
+fun infoAfterBoot(t: Transport, c: OscrClient): DeviceInfo {
+    if (t !is SerialTransport) return c.info()
+    Thread.sleep(BOOT_SETTLE_MS)
+    t.drainInput()
+    val end = System.nanoTime() + BOOT_WAIT_MS * 1_000_000
+    while (true) {
+        try { return c.info() } catch (e: TimeoutError) { if (System.nanoTime() >= end) throw e }
     }
 }

@@ -44,7 +44,7 @@ private fun openRaw(io: CliIo, a: Args): Conn {
     for (b in bauds) {
         val t = io.openPort(port, b)
         val c = OscrClient(t, 500, 10_000)
-        try { return Conn(c, t, c.info()) } catch (e: TimeoutError) { last = e; t.close() }
+        try { return Conn(c, t, infoAfterBoot(t, c)) } catch (e: TimeoutError) { last = e; t.close() }
     }
     throw CliError("no_response", Msg.t("err.no_response", "port" to port, "bauds" to bauds.joinToString(", "), "error" to last?.message), EXIT_NO_DEVICE, Msg.t("err.no_response.hint"))
 }
