@@ -29,7 +29,7 @@ Decisão do usuário em 2026-11-03 (D65): em vez do firmware próprio (`firmware
 - Cada arquivo aberto para escrita pelo núcleo grava no **mesmo** fluxo. Se um núcleo criar dois arquivos num comando, os bytes se concatenam. No Mega Drive isso não acontece em `readROM`/`readSram`; os outros consoles ainda não foram conferidos.
 - Depois do dump, os núcleos releem o arquivo para somar o checksum e comparar com a base de dados: no fluxo serial a releitura devolve 0 bytes (o CRC32 do arquivo inteiro vai no `END`). O que o núcleo imprime sobre isso fica mudo.
 - A verificação do `writeSram` (que relê o arquivo) não funciona no fluxo: o PC precisa **reler o save depois de gravar** e comparar. O `WRITE_SAVE` do firmware próprio já conferia byte a byte; aqui não.
-- O baud é 1.000.000 (`OSCR_DUMPER_BAUD`). O upstream usa 250.000 na placa `mega-embed`; o `setup()` do fork reabre a serial no baud do protocolo.
+- O baud é 1.000.000, **definido pelo `monitor_speed` da placa `mega-embed` no `user.ini`** (vira `OSCR_BAUD`). O upstream usa 250.000. **Correção (D196):** o texto antigo dizia que o `setup()` do fork reabre a serial no baud do protocolo com `ClockedSerial.begin(OSCR_DUMPER_BAUD)`, mas com `ENABLE_STATIC_BAUD=1` o `begin(baud)` ignora o argumento e usa `OSCR_BAUD`; sem o `monitor_speed` o firmware falava a 250.000 e nenhum comando respondia. O `OSCR_DUMPER_BAUD` do `Dumper.cpp` não tem efeito.
 - Não conferi o que `OSCR::Power::setVoltage`/`changeVoltagePrompt` fazem sem VSELECT neste shield. Sem `ENABLE_ONBOARD_ATMEGA`, `enableCartridge` não faz nada.
 - Um `longjmp` por cima do código dos núcleos pula destrutores e deixa o hardware como estava: o laço sempre chama `Power::disableCartridge()` depois.
 

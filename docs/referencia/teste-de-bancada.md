@@ -33,6 +33,24 @@ Modelo: o `MANUFACTURING_TEST.md` e a matriz de validação do `n64cartreader` (
 
 8. **Registrar:** a suíte grava `test-results/<data>-<fase>-<sistema>/report.md` e `report.json` (pasta ignorada pelo git); cole o resultado em `docs/decisoes.md` com o cartucho usado. Se o CRC32 não bater com o No-Intro, **leia outra vez** (`dump --twice`) antes de culpar o cartucho: um bit trocado a cada mil palavras já foi relatado por usuários de GBA.
 
+## Só o Mega, sem shield (feito em 2026-11-21, D196 a D199)
+
+Dá para validar firmware, protocolo, CLIs e GUI com um Mega solto (sem shield, sem Si5351, sem cartucho). Ordem: `firmware-flash` (ou o diálogo da GUI com uma placa escolhida), `python3 tools/hwtest/hwtest.py nocart --system snes --system nes --system gba --system gb --system n64` e os comandos abaixo.
+
+| Teste | Esperado no Mega nu |
+|---|---|
+| `dumper info` | firmware 0.2.0, proto 1, 11 sistemas |
+| `hwtest nocart` | 10 reconexões sem falha; `selftest` com **só** `pullup D7` e `clockgen`; `detect` vazio em snes, nes, gba, gb, n64 e sms |
+| `detect -s md` e `-s auto` | **"cartucho detectado" (falso positivo):** o barramento flutuante; ignore no Mega nu (a suíte marca FAIL no md) |
+| `dump -s md` | 131.072 bytes `FF`, CRC32 `154803CC`, igual em todas as vezes e igual nas duas CLIs: serve de teste de integridade e vazão do protocolo, não de leitura de cartucho |
+| `ABORT` no meio de um dump, **na mesma conexão** | `INFO` e o dump seguinte seguem certos (reabrir a porta reseta o Mega e esconde falhas, por isso teste sem reabrir) |
+| GUI: conectar, Detectar, autoteste, "Ler o estado" do Si5351, placa `16_bits v1.3` | como na CLI; o perfil da placa fica na EEPROM do Mega |
+| GUI com o Mega **sem** firmware do projeto e uma placa escolhida | diálogo "Gravar o firmware para a placa ...?", grava, reconecta e diz "o firmware 0.2.0 serve" |
+
+**Ainda exige fios ou módulo** (não feito): ligar D30 ao GND e dois pinos de dados entre si e ver o `selftest` apontar `gnd` e `pair`; 1 kΩ do D7 ao 5 V para sumir o `pullup`; um Si5351 em SDA e SCL e `clock-cal` com frequencímetro (4 MHz, 3,072 MHz, 1 MHz). Tudo que lê cartucho exige shield.
+
+**Dicas:** o Mega do clone com CH340 aparece como `/dev/ttyUSB0`; sem `avrdude` no PATH aponte `AVRDUDE` para o do Arduino IDE. Para testar a GUI sem ocupar a tela: `Xvfb :97`, `DISPLAY=:97 SKIKO_RENDER_API=SOFTWARE ./gradlew :desktopApp:run`, `xdotool` e `import -window root` para as capturas (ver `tools/gui_smoke.sh`). Só um programa abre a porta por vez: um teste esquecido em segundo plano trava o seguinte.
+
 ## Critérios de aprovação da placa
 
 - Fase host e fase nocart sem nenhuma falha.
