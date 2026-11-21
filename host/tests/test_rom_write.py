@@ -935,3 +935,34 @@ def test_snes_memory_pack_e_sfm_d190():
     v = RI.verify_written(Client(bytes(bad)), 1, "sfm-map", RI.split_snes_accessory(m, "sfm-map"))
     assert not v.ok and v.first_diff == 300
 
+
+
+def test_mirror_prg_repete_ate_o_tamanho_da_flash():
+    img = RI.split_image(ines(128, 0, 30), "nesmaker")
+    m = RI.mirror_prg(img, "nesmaker", 512)
+    assert (m.prg_kb, m.chr_kb, len(m.body), m.mapper) == (512, 0, 512 * 1024, 30)
+    assert m.body == img.body * 4
+    bank = lambda b, n: m.body[n * 16384:(n + 1) * 16384]
+    assert bank(m, 31) == bank(m, 7) == img.body[7 * 16384:]            # o banco fixo da flash (31) é o último da ROM
+    assert RI.mirror_prg(RI.split_image(ines(512, 0, 30), "nesmaker"), "nesmaker", 512).prg_kb == 512
+
+
+@pytest.mark.parametrize("prg,chr_,chip,fill,key", [(96, 0, "nesmaker", 512, "mirror_size"), (256, 0, "nesmaker", 128, "mirror_size"),
+                                                   (128, 0, "a29040b", 512, "mirror_chip"), (128, 8, "nesmaker", 512, "mirror_chip"),
+                                                   (128, 0, "nesmaker", 100, "mirror_fill")])
+def test_mirror_prg_recusa(prg, chr_, chip, fill, key):
+    img = RI.split_image(ines(prg, chr_, 30), "nesmaker")
+    with pytest.raises(RI.ImageError) as e:
+        RI.mirror_prg(img, chip, fill)
+    assert e.value.key == key
+
+
+def test_rom_write_fill_kb_no_simulador(tmp_path, capsys):
+    f = tmp_path / "j.nes"
+    f.write_bytes(ines(128, 0, 30))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "nesmaker", "--fill-kb", "512", "--yes")
+    j = json.loads(out)
+    assert code == 0 and j["prg_kb"] == 512 and j["bytes"] == 512 * 1024 and j["mirrored_from_kb"] == 128
+    f.write_bytes(ines(96, 0, 30))
+    code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "nesmaker", "--fill-kb", "512", "--yes")
+    assert code == 64 and json.loads(out)["error"]["kind"] == "bad_rom"

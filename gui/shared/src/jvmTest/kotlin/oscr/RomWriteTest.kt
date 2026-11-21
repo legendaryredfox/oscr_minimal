@@ -21,6 +21,22 @@ class RomWriteTest {
         return Triple(Cli.run(argv.toList(), io), out.toString().trim(), err.toString())
     }
 
+    @Test fun espelhaAPrgAteOTamanhoDaFlash() {
+        val src = ines(128, 0, 30)
+        val m = RomImages.prepare(src, FlashChip.NESMAKER, fillKb = 512).second
+        assertEquals(Triple(512, 0, 128), Triple(m.prgKb, m.chrKb, m.mirroredFrom)); assertEquals(512 * 1024, m.body.size)
+        val rom = src.copyOfRange(16, src.size)
+        assertContentEquals(rom.copyOfRange(rom.size - 16384, rom.size), m.body.copyOfRange(31 * 16384, 32 * 16384))      // o banco fixo da flash é o último da ROM
+        for (n in 0 until 4) assertContentEquals(rom, m.body.copyOfRange(n * rom.size, (n + 1) * rom.size))
+        assertEquals(0, RomImages.prepare(ines(512, 0, 30), FlashChip.NESMAKER, fillKb = 512).second.mirroredFrom)
+        fun problem(data: ByteArray, chip: FlashChip, fill: Int) = assertFailsWith<RomImageException> { RomImages.prepare(data, chip, fillKb = fill) }.problem
+        assertEquals(RomImageProblem.MIRROR_SIZE, problem(ines(96, 0, 30), FlashChip.NESMAKER, 512))
+        assertEquals(RomImageProblem.MIRROR_SIZE, problem(ines(256, 0, 30), FlashChip.NESMAKER, 128))
+        assertEquals(RomImageProblem.MIRROR_CHIP, problem(ines(32, 8, 0), FlashChip.A29040B, 512))
+        assertEquals(RomImageProblem.MIRROR_CHIP, problem(ines(128, 8, 30), FlashChip.NESMAKER, 512))
+        assertEquals(RomImageProblem.MIRROR_FILL, problem(ines(128, 0, 30), FlashChip.NESMAKER, 100))
+    }
+
     @Test fun splitEInferencia() {
         val img = RomImages.split(ines(32, 8, 0), FlashChip.A29040B)
         assertEquals(Triple(32, 8, 0), Triple(img.prgKb, img.chrKb, img.mapper)); assertEquals(40 * 1024, img.body.size)

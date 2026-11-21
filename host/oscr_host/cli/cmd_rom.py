@@ -30,6 +30,8 @@ def cmd_rom_write(args) -> int:
     """Grava uma ROM em cartucho de flash (WRITE_ROM). Apaga o chip: sempre confirma."""
     if args.system not in ("nes", "famicom", "snes", "md", "gba", "gb", "n64", "mock"):
         raise CliError("usage", tr("rom.usage.system"), EXIT_USAGE)
+    filled_from = None
+    fill_kb = getattr(args, "fill_kb", None)
     try:
         data = Path(args.input).read_bytes()
         chip = args.chip
@@ -76,8 +78,13 @@ def cmd_rom_write(args) -> int:
                 if chip is None:
                     raise CliError("usage", tr("rom.usage.infer"), EXIT_USAGE)
                 img = RI.split_image(data, chip)
+        if fill_kb:
+            filled_from = img.prg_kb
+            img = RI.mirror_prg(img, chip, fill_kb)
     except ValueError as e:
         raise CliError("bad_rom", str(e), EXIT_USAGE) from e
+    if chip == "nesmaker" and not fill_kb and img.prg_kb < 512 and not args.json:
+        print(tr("rom.nes_small", kb=img.prg_kb), file=sys.stderr)
     if img.mapper is not None and img.mapper != RI.CHIP_MAPPER[chip] and not args.json:
         print(tr("rom.mapper_warn", file=img.mapper, chip=chip, chipmapper=RI.CHIP_MAPPER[chip]), file=sys.stderr)
     if img.flash_kb:
@@ -86,6 +93,8 @@ def cmd_rom_write(args) -> int:
         what = tr("rom.what_block" if img.block else "rom.what_plain", label=RI.CHIP_LABEL[chip], n=len(img.body), block=img.block)
     else:
         what = tr("rom.what_prgchr", label=RI.CHIP_LABEL[chip], prg=img.prg_kb, chr=img.chr_kb, n=len(img.body))
+        if filled_from:
+            what += " (" + tr("rom.mirrored", kb=filled_from, fill=img.prg_kb) + ")"
     if not args.yes:
         if not sys.stdin.isatty():
             raise CliError("refused", tr("refused.rom"), EXIT_REFUSED,
@@ -119,6 +128,8 @@ def cmd_rom_write(args) -> int:
     finally:
         t.close()
     out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}
+    if filled_from:
+        out["mirrored_from_kb"] = filled_from
     if img.flash_kb:
         out["flash_kb"] = img.flash_kb
         out["layout"] = _layout_name(img)

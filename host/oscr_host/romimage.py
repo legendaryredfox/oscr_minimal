@@ -365,6 +365,21 @@ def split_md(data: bytes) -> RomImage:
     return RomImage(data, (len(data) + 1023) // 1024, 0, None)
 
 
+NES_FILL_KB = (128, 256, 512)      # tamanhos dos chips SST39SF010A, 020A e 040 (o mapper 30 do foxcarts usa o de 512 KB)
+
+
+def mirror_prg(img: RomImage, chip: str, fill_kb: int) -> RomImage:
+    """NES Maker (mapper 30): repete a PRG até `fill_kb`. O último banco da flash é o fixo em `$C000` e tem o vetor de reset; uma ROM menor, gravada nos
+    primeiros bancos, deixaria esse banco vazio. Repetida, o último banco da ROM cai no último da flash (31 mod 8 = 7 numa ROM de 128 KB). Só PRG: sem CHR."""
+    if chip != "nesmaker" or img.chr_kb:
+        raise ImageError("mirror_chip")
+    if fill_kb not in NES_FILL_KB:
+        raise ImageError("mirror_fill", sizes=", ".join(str(k) for k in NES_FILL_KB))
+    if img.prg_kb > fill_kb or fill_kb % img.prg_kb or (img.prg_kb & (img.prg_kb - 1)):
+        raise ImageError("mirror_size", kb=img.prg_kb, fill=fill_kb)
+    return RomImage(img.body * (fill_kb // img.prg_kb), fill_kb, 0, img.mapper)
+
+
 def infer_chip(img: RomImage) -> Optional[str]:
     for name, m in CHIP_MAPPER.items():
         if img.mapper == m:

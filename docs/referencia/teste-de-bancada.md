@@ -44,3 +44,20 @@ Modelo: o `MANUFACTURING_TEST.md` e a matriz de validação do `n64cartreader` (
 - **Reencaixe depois de trocar o cartucho:** se a EEPROM do N64 disser que não há save depois de uma troca, tire e encaixe de novo o cartucho e repita o `detect` antes de ler o save.
 - **Linha de dados da EEPROM (D7, `EEPROM_DATA` do N64):** divide o pull-up R2 (5 V) com o `/IRQ` do SNES; só um cartucho por vez, e na placa só de N64 o R2 pode ser retirado (`boards/completa/README.md`, pendência 5).
 - **Porta que some ao gravar o firmware:** o Mega reinicia; espere um instante e repita o `info`.
+
+## Gravação em flash de NES (cartucho foxcarts, mapper 30)
+
+Primeira gravação real de `WRITE_ROM` em flash NES (D77, nunca rodou em hardware), junto com o projeto irmão `foxcarts` (`~/development/hardware/foxcarts`, ver `docs/planos/cartuchos-foxcarts.md`). Falha pode ser do gravador, do firmware ou da PCB do cartucho: este roteiro separa os três. Placa do gravador com slot Famicom (`famicom`, `famicom_nes` ou `completa`), cartucho só no slot, **sem outro cartucho** (D2: um por vez).
+
+Antes: a leitura (`dump`) já aprovada na mesma placa com um cartucho comum (roteiro acima). Sem isso não se sabe se o erro é de gravação.
+
+| # | Passo | Passa se | Se falhar |
+|---|---|---|---|
+| 1 | `python3 host/dumper.py --board famicom board` (ou o campo "Placa ligada" da GUI) e `info` | firmware responde, `write_rom` verdadeiro | firmware antigo: `firmware-flash` |
+| 2 | **ID da flash:** gravar uma imagem de 16 KB (`dumper rom-write -s nes --chip nesmaker -i teste16.nes --yes`, arquivo iNES de mapper 30 com 1 banco) | passa do `prepare` sem `E_FLASH`; começa a apagar | `E_FLASH` = o ID `0xBFB7` não veio, nem pela leitura do OSCR (banco 1) nem pela do firmware (banco 0, D194): medir com multímetro `/WE`, `/OE`, `/CE` e A14 da flash; ver o `docs/referencia/flash-sst39sf040.md` do foxcarts |
+| 3 | **Leitura de volta:** a própria gravação lê o cartucho depois (`--no-verify` desliga; deixe ligado) | `verify` ok, CRC32 lido igual ao do arquivo | `first_diff` aponta o byte da primeira diferença: anotar o deslocamento (banco = deslocamento / 16384) para o foxcarts |
+| 4 | **Repetir o dump à mão:** `dumper dump -s nes --mapper 30 --prg 16 -o volta.nes` e comparar o CRC32 | igual ao do passo 3 | a conferência do passo 3 lê pelo mesmo caminho do `dump`: se o passo 3 passou e este não, olhar o cabeçalho iNES sintético |
+| 5 | **Vários bancos:** imagem de 128 KB com `--fill-kb 512` (`rom-write ... --fill-kb 512`) | `verify` ok com 512 KB; `mirrored_from_kb` = 128 no `--json` | anotar o primeiro banco que diverge (`first_diff` / 16384): bancos a partir do 1 apontam para A14 a A18 da flash e o latch de banco; só o banco 31, para o banco fixo em `$C000` |
+| 6 | **No console:** colocar o cartucho no Famicom com uma ROM de teste (tela fixa) | a ROM de teste roda | ROM gravada e conferida mas o console não roda = vetor de reset (banco 31), espelhamento ou CHR-RAM, não é do gravador |
+
+Tempo esperado: apagar setor de 4 KB (cerca de 18 ms cada) e gravar byte a byte; 512 KB leva alguns minutos. Mande o `--json` e o `verify` de cada passo, e a saída do `board`, para anotar em `docs/decisoes.md`. Não confirmado em hardware: o tempo de espera depois de cada comando e se o `/WE` do cartucho respeita os 40 ns mínimos (a escrita do OSCR dura cerca de 1 µs, bem acima).

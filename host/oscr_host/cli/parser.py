@@ -194,6 +194,7 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--layout", choices=list(RI.SNES_LAYOUTS), default="1x",
                     help=H("rom_layout"))
     rp.add_argument("--block369", type=int, default=0, help=H("rom_block369"))
+    rp.add_argument("--fill-kb", type=int, choices=RI.NES_FILL_KB, help=H("rom_fill"))
     rp.add_argument("--flash-type", choices=list(RI.FLASH_TYPES), help=H("rom_flash_type"))
     rp.add_argument("--flash-mb", type=int, help=H("rom_flash_mb"))
     rp.add_argument("--sector-kb", type=int, help=H("rom_sector_kb"))

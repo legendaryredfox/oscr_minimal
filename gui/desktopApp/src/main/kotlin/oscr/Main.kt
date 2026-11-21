@@ -147,6 +147,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var fwReq by remember { mutableStateOf<FirmwareRequest?>(null) }
     var boardSpec by remember { mutableStateOf(Prefs.board.takeIf { sp -> runCatching { BoardPlanner.resolve(sp) }.isSuccess } ?: "") }   // placa ligada (D162); vazio = não informar
     var boardReq by remember { mutableStateOf<BoardRequest?>(null) }
+    var nesFill by remember { mutableStateOf("") }                        // NES Maker: repetir a PRG até N KB ("" = não repetir)
     var block369 by remember { mutableStateOf("0") }                    // GBA 369-in-1: bloco de 4 MB onde a gravação começa
     var sectorKb by remember { mutableStateOf("") }
     var bufferBytes by remember { mutableStateOf("") }
@@ -461,6 +462,9 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         RomImageProblem.GEN_SECTOR -> t(S.RIMG_GEN_SECTOR)
         RomImageProblem.GEN_BUFFER -> t(S.RIMG_GEN_BUFFER)
         RomImageProblem.GEN_PADDED_NO_FIT -> f(S.RIMG_GEN_PADDED, e.a, e.b)
+        RomImageProblem.MIRROR_CHIP -> t(S.RIMG_MIRROR_CHIP)
+        RomImageProblem.MIRROR_FILL -> t(S.RIMG_MIRROR_FILL)
+        RomImageProblem.MIRROR_SIZE -> f(S.RIMG_MIRROR_SIZE, e.a, e.b)
     }
 
     // ---- programador de flash genérico (sistema 7)
@@ -747,7 +751,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         val file = pickFile(t(S.CHOOSE_FILE), false) ?: return
         try {
             val (chip, img) = RomImages.prepare(file.readBytes(), if (isMd) FlashChip.MD_FLASH else if (isGba) FlashChip.GBA_FLASH else if (isN64) (chipChoice ?: FlashChip.N64_FLASH) else chipChoice,
-                if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), block369.toIntOrNull() ?: 0)
+                if (snesLayout == "1x") snesCapacity.toIntOrNull() else null, snesLayout, flashMb.toIntOrNull(), flashType, sectorKb.toIntOrNull(), bufferBytes.toIntOrNull(), block369.toIntOrNull() ?: 0, if (isNes) nesFill.toIntOrNull() else null)
             if (isMd) scope.launch { romReq = RomWriteRequest(file, chip, img, mdBoardLimitWarning(img.body.size)) }      // a sondagem do chip sai da thread da interface
             else romReq = RomWriteRequest(file, chip, img)
         } catch (e: RomImageException) { say(t(S.ERR_PREFIX) + ": " + describeRomImage(e)) }
@@ -1126,6 +1130,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 ComboBox(value = chipChoice?.label ?: (if (isSnes || isGb) "—" else t(S.FLASH_CHIP_AUTO)), modifier = Modifier.fillMaxWidth()) { close ->
                     if (isNes || isN64) DropdownMenuItem(text = { Text(t(S.FLASH_CHIP_AUTO)) }, onClick = { close(); romChip = null })
                     FlashChip.forSystem(system).forEach { ch -> DropdownMenuItem(text = { Text(ch.label) }, onClick = { close(); romChip = ch }) }
+                }
+            }
+            if (stub == null && canWriteRom && isNes && (chipChoice == null || chipChoice == FlashChip.NESMAKER)) LabeledField(t(S.LBL_NES_FILL)) {
+                ComboBox(value = if (nesFill.isEmpty()) t(S.NES_FILL_NONE) else "$nesFill KB", modifier = Modifier.fillMaxWidth()) { close ->
+                    DropdownMenuItem(text = { Text(t(S.NES_FILL_NONE)) }, onClick = { close(); nesFill = "" })
+                    RomImages.NES_FILL_KB.forEach { k -> DropdownMenuItem(text = { Text("$k KB") }, onClick = { close(); nesFill = k.toString() }) }
                 }
             }
             if (stub == null && isGba) OutlinedTextField(block369, { block369 = it.filter(Char::isDigit).take(2) }, label = { Text(t(S.LBL_BLOCK369)) }, singleLine = true, modifier = Modifier.width(200.dp))

@@ -21,17 +21,19 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     val capacityOpt = a.opts["capacity"]?.let { it.toIntOrNull() ?: throw CliError("usage", Msg.t("args.capacity"), EXIT_USAGE) }
     fun optInt(k: String) = a.opts[k]?.let { it.toIntOrNull() ?: throw CliError("usage", Msg.t("args.needs_number", "name" to k), EXIT_USAGE) }
     val (chip, img) = try {
-        RomImages.prepare(File(input).readBytes(), chipOpt, capacityOpt, a.opts["layout"] ?: "1x", optInt("flash-mb"), a.opts["flash-type"], optInt("sector-kb"), optInt("buffer"), optInt("block369") ?: 0)
+        RomImages.prepare(File(input).readBytes(), chipOpt, capacityOpt, a.opts["layout"] ?: "1x", optInt("flash-mb"), a.opts["flash-type"], optInt("sector-kb"), optInt("buffer"), optInt("block369") ?: 0, optInt("fill-kb"))
     }
     catch (e: RomImageException) {
         val msg = imageMessage(e, a)
         throw CliError(if (e.problem in setOf(RomImageProblem.CHIP_UNKNOWN, RomImageProblem.GEN_TYPE, RomImageProblem.GEN_MB)) "usage" else "bad_rom", msg, EXIT_USAGE)
     }
     if (img.mapper != null && img.mapper != chip.mapper && !a.json) io.err(Msg.t("rom.mapper_warn", "file" to img.mapper, "chip" to chip.key, "chipmapper" to chip.mapper))
+    if (chip == FlashChip.NESMAKER && optInt("fill-kb") == null && img.prgKb < 512 && !a.json) io.err(Msg.t("rom.nes_small", "kb" to img.prgKb))
     val layoutName = if (img.layout == SnesLayouts.GENERIC) "8-bit flash of chosen type" else SnesLayouts.NAMES.entries.firstOrNull { it.value == img.layout }?.key ?: "?"
     val what = if (img.flashKb > 0) Msg.t("rom.what_flash", "label" to chip.label, "prg" to img.prgKb, "flash" to img.flashKb, "layout" to layoutName, "n" to img.body.size)
                else if (chip.md || chip.gba || chip.gb || chip.n64) (if (img.block != 0) Msg.t("rom.what_block", "label" to chip.label, "n" to img.body.size, "block" to img.block) else Msg.t("rom.what_plain", "label" to chip.label, "n" to img.body.size))
-               else Msg.t("rom.what_prgchr", "label" to chip.label, "prg" to img.prgKb, "chr" to img.chrKb, "n" to img.body.size)
+               else Msg.t("rom.what_prgchr", "label" to chip.label, "prg" to img.prgKb, "chr" to img.chrKb, "n" to img.body.size) +
+                    (if (img.mirroredFrom > 0) " (" + Msg.t("rom.mirrored", "kb" to img.mirroredFrom, "fill" to img.prgKb) + ")" else "")
     if ("yes" !in a.flags) {
         if (!io.interactive) throw CliError("refused", Msg.t("refused.rom"), EXIT_REFUSED, Msg.t("refused.repeat"))
         io.err(Msg.t("rom.ask", "what" to what))
@@ -67,6 +69,7 @@ internal fun cmdRomWrite(io: CliIo, a: Args): Int {
     } finally { c.transport.close() }
     val hex = (crc.toLong() and 0xFFFFFFFFL).toString(16).uppercase().padStart(8, '0')
     val out = linkedMapOf<String, Any?>("chip" to chip.key, "prg_kb" to img.prgKb, "chr_kb" to img.chrKb, "bytes" to img.body.size, "crc32" to hex)
+    if (img.mirroredFrom > 0) out["mirrored_from_kb"] = img.mirroredFrom
     if (img.flashKb > 0) { out["flash_kb"] = img.flashKb; out["layout"] = layoutName }
     if (sys == CartSystem.MD) out["flash_chip"] = mdChipJson(mdChip)
     backupPath?.let { out["backup"] = it.path }

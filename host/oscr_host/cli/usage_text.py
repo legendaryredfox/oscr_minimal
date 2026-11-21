@@ -55,6 +55,7 @@ options (accepted before or after the command):
   --capacity KB        rom-write, SNES CFI, layout 1x: flash size, 2048 or 4096 (default: the smallest the ROM fits)
   --layout NAME        rom-write, SNES CFI: chips on the cartridge: 1x (one 2 or 4 MB chip, default), 2x2mb, 2x4mb, 4x2mb, 1x8mb (the last three: ROM of 6 to 8 MB, as in the OSCR)
   --block369 N         rom-write and dump, GBA 369-in-1: 4 MB block (0 to 63) where writing or reading starts ("Write Offset" and "Read Offset" of the OSCR); 0 = from the start (dump: --prg is the size in MB, 0 = 256 MB at block 0)
+  --fill-kb N          rom-write, nesmaker: repeats the PRG up to N KB (128, 256 or 512; ROM size must be a power of 2) so the last bank of the flash, fixed at $C000, holds the reset vector
   --flash-type NAME    rom-write, SNES P0/P1 chips (snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1, snes-exhirom-p1): 8-bit flash type (29f032, 29f1610, lh28f0xx, 29f1601, 29lv640, 29f800, 29gl, e28fxxxj3a)
   --flash-mb N         rom-write, SNES P0/P1: chip size in MB (1 to 8)
   --sector-kb N        rom-write, SNES P0/P1, types 29gl, lh28f0xx, e28fxxxj3a: sector size in KB (power of 2)
@@ -135,6 +136,7 @@ opções (aceitas antes ou depois do comando):
   --capacity KB        rom-write, SNES CFI, layout 1x: tamanho da flash, 2048 ou 4096 (padrão: o menor em que a ROM cabe)
   --layout NOME        rom-write, SNES CFI: chips no cartucho: 1x (um chip de 2 ou 4 MB, padrão), 2x2mb, 2x4mb, 4x2mb, 1x8mb (os três últimos: ROM de 6 a 8 MB, como no OSCR)
   --block369 N         rom-write e dump, GBA 369-in-1: bloco de 4 MB (0 a 63) onde a gravação ou a leitura começa ("Write Offset" e "Read Offset" do OSCR); 0 = do início (dump: --prg é o tamanho em MB, 0 = 256 MB no bloco 0)
+  --fill-kb N          rom-write, nesmaker: repete a PRG até N KB (128, 256 ou 512; o tamanho da ROM tem que ser potência de 2) para o último banco da flash, fixo em $C000, ter o vetor de reset
   --flash-type NOME    rom-write, chips SNES P0/P1 (snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1, snes-exhirom-p1): tipo de flash de 8 bits (29f032, 29f1610, lh28f0xx, 29f1601, 29lv640, 29f800, 29gl, e28fxxxj3a)
   --flash-mb N         rom-write, SNES P0/P1: tamanho do chip em MB (1 a 8)
   --sector-kb N        rom-write, SNES P0/P1, tipos 29gl, lh28f0xx, e28fxxxj3a: tamanho do setor em KB (potência de 2)
@@ -215,6 +217,7 @@ _RU = """использование: dumper [опции] <команда> [оп�
   --capacity KB        rom-write, SNES CFI, раскладка 1x: размер flash, 2048 или 4096 (по умолчанию: наименьший, в который помещается ROM)
   --layout ИМЯ         rom-write, SNES CFI: микросхемы на картридже: 1x (одна на 2 или 4 МБ, по умолчанию), 2x2mb, 2x4mb, 4x2mb, 1x8mb (последние три: ROM от 6 до 8 МБ, как в OSCR)
   --block369 N         rom-write и dump, GBA 369-in-1: блок 4 МБ (от 0 до 63), с которого начинается запись или чтение ("Write Offset" и "Read Offset" в OSCR); 0 = с начала (dump: --prg — размер в МБ, 0 = 256 МБ в блоке 0)
+  --fill-kb N          rom-write, nesmaker: повторяет PRG до N КБ (128, 256 или 512; размер ROM — степень двойки), чтобы последний банк флеш-памяти, закреплённый в $C000, содержал вектор сброса
   --flash-type ИМЯ     rom-write, микросхемы SNES P0/P1 (snes-lorom-p0, snes-hirom-p0, snes-exlorom-p1, snes-exhirom-p1): тип 8-битной flash (29f032, 29f1610, lh28f0xx, 29f1601, 29lv640, 29f800, 29gl, e28fxxxj3a)
   --flash-mb N         rom-write, SNES P0/P1: размер микросхемы в МБ (от 1 до 8)
   --sector-kb N        rom-write, SNES P0/P1, типы 29gl, lh28f0xx, e28fxxxj3a: размер сектора в КБ (степень двойки)
@@ -295,6 +298,7 @@ _ZH = """用法：dumper [选项] <命令> [选项]
   --capacity KB        rom-write，SNES CFI，布局 1x：flash 大小，2048 或 4096（默认：能容纳 ROM 的最小值）
   --layout 名称        rom-write，SNES CFI：卡带上的芯片：1x（一片 2 或 4 MB，默认）、2x2mb、2x4mb、4x2mb、1x8mb（后三种：6 到 8 MB 的 ROM，与 OSCR 相同）
   --block369 N         rom-write 与 dump，GBA 369-in-1：开始写入或读取的 4 MB 块（0 到 63）（OSCR 的 "Write Offset" 和 "Read Offset"）；0 = 从头开始（dump：--prg 是以 MB 为单位的大小，块 0 时 0 = 256 MB）
+  --fill-kb N          rom-write, nesmaker: 把 PRG 重复填充到 N KB（128、256 或 512；ROM 大小须为 2 的幂），使固定在 $C000 的闪存最后一个存储体含有复位向量
   --flash-type 名称    rom-write，SNES P0/P1 芯片（snes-lorom-p0、snes-hirom-p0、snes-exlorom-p1、snes-exhirom-p1）：8 位 flash 类型（29f032、29f1610、lh28f0xx、29f1601、29lv640、29f800、29gl、e28fxxxj3a）
   --flash-mb N         rom-write，SNES P0/P1：芯片大小，单位 MB（1 到 8）
   --sector-kb N        rom-write，SNES P0/P1，类型 29gl、lh28f0xx、e28fxxxj3a：扇区大小，单位 KB（2 的幂）

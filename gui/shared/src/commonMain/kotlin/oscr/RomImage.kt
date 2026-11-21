@@ -69,7 +69,7 @@ enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label:
  * [rom]: a ROM original, que a conferência compara com a leitura ([body] vem reordenado e completado).
  */
 class RomImage(val body: ByteArray, val prgKb: Int, val chrKb: Int, val mapper: Int?, val flashKb: Int = 0,
-               val layout: Int = 0, val wireChr: Int = 0, val rom: ByteArray? = null, val block: Int = 0)
+               val layout: Int = 0, val wireChr: Int = 0, val rom: ByteArray? = null, val block: Int = 0, val mirroredFrom: Int = 0)
 
 /** Disposições do flash CFI do SNES (parte alta do campo chip do WRITE_ROM); igual a SNES_LAYOUTS em romimage.py e a SnesPlan.h no firmware. */
 /** Campos do comando do programador de flash genérico (sistema 7); [body] é o que vai ao chip e [rom] o arquivo original, que a conferência compara com a leitura. */
@@ -142,11 +142,27 @@ object SnesLayouts {
 }
 
 enum class RomImageProblem { TRUNCATED_HEADER, TRAINER, SIZE_MISMATCH, NEEDS_HEADER, RAW_SIZE, CHIP_UNKNOWN, SNES_SIZE, SNES_TOO_BIG, SNES_NO_FIT, SNES_CAPACITY, SNES_NEEDS_CHIP, MD_SIZE, MD_TOO_BIG, MD_SMD,
-    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, SNES_ACC_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_ACC_SIZE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS }
+    SNES_LAYOUT, SNES_BAD_LAYOUT, SNES_CAPACITY_FIXED, GEN_TYPE, GEN_MB, GEN_NO_FIT, GEN_NEEDS_SECTOR, GEN_SECTOR, GEN_BUFFER, GEN_PADDED_NO_FIT, GBA_BLOCK, GBA_SIZE, GBA_TOO_BIG, N64_HEADER, N64_SIZE, N64_TOO_BIG, GS_SIZE, GS_TOO_BIG, XP_SIZE, SNES_ACC_SIZE, GB_SIZE, GB_TOO_BIG, GB_ORANGE, GB_ACC_SIZE, GB_NEEDS_CHIP, FP_BUS, FP_KB, FP_NEEDS_TYPE, FP_SIZE, FP_NO_FIT, FP_PADDED_NO_FIT, FP_DETECT_ONLY, FP_MD_OPTIONS, MIRROR_CHIP, MIRROR_FILL, MIRROR_SIZE }
 
 class RomImageException(val problem: RomImageProblem, val a: Int = 0, val b: Int = 0, val c: Int = 0) : Exception(problem.name)
 
 object RomImages {
+    /** Tamanhos dos chips SST39SF010A, 020A e 040 (o mapper 30 do foxcarts usa o de 512 KB). Igual a NES_FILL_KB em romimage.py. */
+    val NES_FILL_KB = listOf(128, 256, 512)
+
+    /**
+     * NES Maker (mapper 30): repete a PRG até [fillKb]. O último banco da flash é o fixo em `$C000` e tem o vetor de reset; uma ROM menor, gravada nos
+     * primeiros bancos, deixaria esse banco vazio. Repetida, o último banco da ROM cai no último da flash (31 mod 8 = 7 numa ROM de 128 KB). Só PRG.
+     */
+    fun mirrorPrg(img: RomImage, chip: FlashChip, fillKb: Int): RomImage {
+        if (chip != FlashChip.NESMAKER || img.chrKb != 0) throw RomImageException(RomImageProblem.MIRROR_CHIP)
+        if (fillKb !in NES_FILL_KB) throw RomImageException(RomImageProblem.MIRROR_FILL)
+        if (img.prgKb > fillKb || fillKb % img.prgKb != 0 || (img.prgKb and (img.prgKb - 1)) != 0) throw RomImageException(RomImageProblem.MIRROR_SIZE, img.prgKb, fillKb)
+        val times = fillKb / img.prgKb
+        val body = ByteArray(img.body.size * times) { img.body[it % img.body.size] }
+        return RomImage(body, fillKb, 0, img.mapper, mirroredFrom = if (times > 1) img.prgKb else 0)
+    }
+
     fun split(data: ByteArray, chip: FlashChip): RomImage {
         if (data.size >= 4 && data[0] == 'N'.code.toByte() && data[1] == 'E'.code.toByte() && data[2] == 'S'.code.toByte() && data[3] == 0x1A.toByte()) {
             if (data.size < 16) throw RomImageException(RomImageProblem.TRUNCATED_HEADER)
@@ -351,9 +367,11 @@ object RomImages {
         return RomImage(data, (data.size + 1023) / 1024, 0, null)
     }
 
+    private fun withFill(chip: FlashChip, img: RomImage, fillKb: Int?): RomImage = if (fillKb == null) img else mirrorPrg(img, chip, fillKb)
+
     /** [chip] null = pelo mapper do cabeçalho (30 = NES Maker, 0 = A29040B); arquivo cru = NES Maker. */
     fun prepare(data: ByteArray, chip: FlashChip?, capacityKb: Int? = null, layout: String = "1x",
-                flashMb: Int? = null, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, block: Int = 0): Pair<FlashChip, RomImage> {
+                flashMb: Int? = null, flashType: String? = null, sectorKb: Int? = null, buffer: Int? = null, block: Int = 0, fillKb: Int? = null): Pair<FlashChip, RomImage> {
         if (chip != null && chip.generic) {
             if (flashType == null) throw RomImageException(RomImageProblem.GEN_TYPE)
             if (flashMb == null) throw RomImageException(RomImageProblem.GEN_MB)
@@ -365,10 +383,10 @@ object RomImages {
         if (chip != null && chip.gba) return chip to splitGba(data, block)
         if (chip != null && chip.n64) return chip to (if (chip == FlashChip.GAMESHARK) splitGameshark(data) else if (chip == FlashChip.XPLORER64) splitXplorer(data) else splitN64(data))
         if (chip != null && chip.gb) return chip to splitGb(data, chip)
-        if (chip != null) return chip to split(data, chip)
+        if (chip != null) return chip to withFill(chip, split(data, chip), fillKb)
         val first = split(data, FlashChip.NESMAKER)
         val inferred = if (first.mapper == null) FlashChip.NESMAKER else FlashChip.entries.firstOrNull { it.mapper == first.mapper } ?: throw RomImageException(RomImageProblem.CHIP_UNKNOWN)
-        return inferred to split(data, inferred)
+        return inferred to withFill(inferred, split(data, inferred), fillKb)
     }
 }
 

@@ -25,6 +25,8 @@ namespace OSCR::Dumper::NesFlash
     inline uint8_t rd(uint16_t a) { return NE::read_prg_byte(a); }
     inline void wr(uint16_t a, uint8_t d) { NE::write_prg_byte(a, d); }
 
+    constexpr uint16_t kSst39sf040Id = 0xBFB7;      // fabricante BFh, dispositivo B7h
+
     inline uint8_t rdChr(uint16_t a) { return NE::read_chr_byte(a); }
 
     /// Lê (PRG) até `tries` vezes, com `gapUs` entre as leituras, esperando `value`.
@@ -62,10 +64,22 @@ namespace OSCR::Dumper::NesFlash
     }
 
     // ---------------------------------------------------------------- NES Maker (SST 39SF040)
+    // Divergência deliberada do OSCR (D194). `NESmaker_ID` termina o `NESmaker_Cmd(0x90)` com `$C000 = 1` e lê o ID em `$8000/$8001` com o banco 1, ou seja,
+    // com A14 = 1 na flash, e o datasheet da SST39SF040 pede A18 a A1 = 0 para o ID. Cartuchos NES Maker de fábrica respondem assim; a PCB do foxcarts
+    // (A14 da flash vem do latch de banco) pode não responder. Só quando a leitura do OSCR falha: o mesmo comando de ID, depois o banco 0, e o ID em 0000H e 0001H.
     bool nmId()
     {
       NE::flashfound = false;
       NE::NESmaker_ID();                             // SST 39SF040 (ID 0xBFB7); liga flashfound
+      if (NE::flashfound) return true;
+
+      NE::NESmaker_Cmd(0xFF);                        // reset
+      NE::NESmaker_Cmd(0x90);                        // entra no modo de ID
+      wr(0xC000, 0x00);                              // banco 0: só o latch do mapper, a escrita em $C000 não chega à flash
+      uint16_t id = uint16_t(rd(0x8000)) << 8;
+      id |= rd(0x8001);
+      NE::NESmaker_Cmd(0xF0);                        // sai do modo de ID
+      if (id == kSst39sf040Id) NE::flashfound = true;
       return NE::flashfound;
     }
 
