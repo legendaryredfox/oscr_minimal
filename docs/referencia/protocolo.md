@@ -242,7 +242,7 @@ Campos: `sistema` (NES = 2 ou Famicom = 3), `tamanho` (bytes do que vai ser envi
 
 | chip | Cartucho | PRG | CHR | Origem no OSCR |
 |---|---|---|---|---|
-| 1 | NES Maker, SST 39SF040 (mapper 30) | múltiplo de 16 KB, até 512 KB | 0 | `NESmaker_*` em `NES.cpp` |
+| 1 | NES Maker, SST 39SF040 (mapper 30); aceita também a SF010A (128 KB) e a SF020A (256 KB), D195 | múltiplo de 16 KB, até 512 KB (e até o tamanho do chip achado: senão `E_ARGUMENTO` antes de apagar) | 0 | `NESmaker_*` em `NES.cpp` |
 | 2 | A29040B (mapper 0) | 16 ou 32 KB | 0 ou 8 KB | `A29040B_*` em `NES.cpp` |
 
 **SNES (D79, D82):** `sistema` = 1; o campo `chip` (u16) é `(disposição << 8) | fiação`. Fiação: 1 = LoROM, 2 = HiROM, 3 = ExLoROM, 4 = ExHiROM (3 e 4 só no modo genérico). `tamanho` = bytes da ROM sem o cabeçalho de copiadora (múltiplo de 512). O `rom_prepare` identifica o chip e apaga **todos** os chips (E_FLASH se não responde ou é menor que o necessário); depois os dados entram na ordem dos segmentos.

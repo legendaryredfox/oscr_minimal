@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../include/dumper/NesCore.h"
+#include "../include/dumper/NesFlashCore.h"
 
 using namespace oscr::nes;
 static int g_fail = 0, g_n = 0;
@@ -21,6 +22,12 @@ int main() {
   fill(0xFF); b[0] = 0x00; CHECK(!absent());           // janela nova $A000 com outro valor
   fill(0xFF); d[12] = 0x80; d[13] = 0xC0; CHECK(!absent());   // $8000 e $C000 em branco, mas o vetor RESET está gravado: há cartucho
   fill(0x00); d[0] = 0xFF; CHECK(!absent());           // janelas com valores diferentes entre si
+  // SST39SF010A, 020A e 040 (D194, datasheet S71147-02-000, Tabela 1)
+  CHECK(sst39ChipKb(0xBFB5) == 128 && sst39ChipKb(0xBFB6) == 256 && sst39ChipKb(0xBFB7) == 512);
+  CHECK(sst39ChipKb(0xBFB4) == 0 && sst39ChipKb(0x0000) == 0 && sst39ChipKb(0xFFFF) == 0 && sst39ChipKb(0xB7BF) == 0);
+  CHECK(sst39Fits(0xBFB5, 128) && !sst39Fits(0xBFB5, 144) && !sst39Fits(0xBFB5, 256));
+  CHECK(sst39Fits(0xBFB6, 256) && !sst39Fits(0xBFB6, 512) && sst39Fits(0xBFB6, 16));
+  CHECK(sst39Fits(0xBFB7, 512) && !sst39Fits(0xBFB7, 528) && !sst39Fits(0x1234, 16));
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

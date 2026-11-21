@@ -13,6 +13,7 @@
 # include "cores/include.h"
 # include "cores/NES.h"
 # include "dumper/NesFlash.h"
+# include "dumper/NesFlashCore.h"
 
 namespace OSCR::Cores::NES { extern bool flashfound; }     // definida em NES.cpp, sem declaração no cabeçalho
 
@@ -24,8 +25,6 @@ namespace OSCR::Dumper::NesFlash
   {
     inline uint8_t rd(uint16_t a) { return NE::read_prg_byte(a); }
     inline void wr(uint16_t a, uint8_t d) { NE::write_prg_byte(a, d); }
-
-    constexpr uint16_t kSst39sf040Id = 0xBFB7;      // fabricante BFh, dispositivo B7h
 
     inline uint8_t rdChr(uint16_t a) { return NE::read_chr_byte(a); }
 
@@ -65,13 +64,17 @@ namespace OSCR::Dumper::NesFlash
 
     // ---------------------------------------------------------------- NES Maker (SST 39SF040)
     // Divergência deliberada do OSCR (D194). `NESmaker_ID` termina o `NESmaker_Cmd(0x90)` com `$C000 = 1` e lê o ID em `$8000/$8001` com o banco 1, ou seja,
-    // com A14 = 1 na flash, e o datasheet da SST39SF040 pede A18 a A1 = 0 para o ID. Cartuchos NES Maker de fábrica respondem assim; a PCB do foxcarts
-    // (A14 da flash vem do latch de banco) pode não responder. Só quando a leitura do OSCR falha: o mesmo comando de ID, depois o banco 0, e o ID em 0000H e 0001H.
+    // com A14 = 1 na flash, e o datasheet da SST39SF0x0 pede A18 (ou AMS) a A1 = 0 para o ID (Tabela 4, nota 5). Cartuchos NES Maker de fábrica respondem assim; a PCB do
+    // foxcarts (A14 da flash vem do latch de banco) pode não responder. Além disso `NESmaker_ID` só aceita a SST39SF040 (BFB7). Quando a leitura do OSCR falha:
+    // o mesmo comando de ID, depois o banco 0, e o ID em 0000H e 0001H, aceitando as três (010A de 128 KB, 020A de 256 KB e 040 de 512 KB).
+    uint16_t nmChipId = 0;                           // ID achado por `nmId` (0 = nenhum)
+
     bool nmId()
     {
+      nmChipId = 0;
       NE::flashfound = false;
       NE::NESmaker_ID();                             // SST 39SF040 (ID 0xBFB7); liga flashfound
-      if (NE::flashfound) return true;
+      if (NE::flashfound) { nmChipId = oscr::nes::kSst39sf040Id; return true; }
 
       NE::NESmaker_Cmd(0xFF);                        // reset
       NE::NESmaker_Cmd(0x90);                        // entra no modo de ID
@@ -79,8 +82,10 @@ namespace OSCR::Dumper::NesFlash
       uint16_t id = uint16_t(rd(0x8000)) << 8;
       id |= rd(0x8001);
       NE::NESmaker_Cmd(0xF0);                        // sai do modo de ID
-      if (id == kSst39sf040Id) NE::flashfound = true;
-      return NE::flashfound;
+      if (oscr::nes::sst39ChipKb(id) == 0) return false;
+      nmChipId = id;
+      NE::flashfound = true;
+      return true;
     }
 
     uint16_t nmProgram(uint16_t prgKb, oscr::StreamSource & in)
@@ -172,8 +177,11 @@ namespace OSCR::Dumper::NesFlash
 
   uint16_t prepare(uint8_t chip, uint16_t prgKb, uint16_t chrKb)
   {
-    (void)prgKb;
-    if (chip == kNesMaker) return nmId() ? 0 : oscr::E_FLASH;
+    if (chip == kNesMaker)
+    {
+      if (!nmId()) return oscr::E_FLASH;
+      return oscr::nes::sst39Fits(nmChipId, prgKb) ? 0 : oscr::E_ARGUMENTO;    // imagem maior que o chip (128 ou 256 KB) se sobreporia: recusa antes de apagar
+    }
 
     if (!aId()) return oscr::E_FLASH;
     NE::A29040B_PRG_ResetFlash();
