@@ -5,7 +5,7 @@
 Shield para **Arduino Mega 2560 (R3)** que lê ROMs e saves de cartuchos pela USB, direto para o PC.
 Sem LCD, sem cartão SD. Somente um cartucho por vez.
 
-> **Estado:** 8 placas com projeto KiCad e gerbers, firmware (fork do OSCR com protocolo serial), CLI Python, CLI e GUI em Kotlin (pt-BR, en, ru, zh). **Nenhuma placa foi montada e nada foi testado com cartucho real**: só os testes automáticos no PC e as verificações de hardware abaixo rodaram. Ver "O que foi testado e o que falta".
+> **Estado:** 8 placas com projeto KiCad e gerbers, firmware (fork do OSCR com protocolo serial), CLI Python, CLI e GUI em Kotlin (pt-BR, en, ru, zh). **Nenhuma placa foi montada e nada foi testado com cartucho real**: só os testes automáticos no PC, as verificações de hardware abaixo e, em 2026-11-21, a primeira execução num Mega sem shield (`docs/referencia/teste-de-bancada.md`) rodaram. Ver "O que foi testado e o que falta".
 
 ## Atribuição
 
@@ -17,6 +17,40 @@ Baseado no **Open Source Cartridge Reader (OSCR)** de sanni e comunidade.
 - Slots (símbolos e footprints) copiados do OSCR, com alterações descritas em `boards/_lib/README.md`.
 
 Adaptado por: <https://github.com/legendaryredfox/oscr_minimal>
+
+## Diferenças em relação ao OSCR original
+
+Este projeto não é uma reimplementação: o firmware é o do OSCR e as placas mantêm a pinagem dele. O que muda é **onde fica a interface** (no computador, não no aparelho) e **o tamanho do hardware**.
+
+| | OSCR original | Este projeto |
+|---|---|---|
+| **Uso** | Aparelho independente: tela LCD, botão rotativo e cartão SD; o PC é opcional | Só com o computador: controle e arquivos pela USB. **Sem LCD, sem botões, sem cartão SD, sem RTC** |
+| **Onde vão ROM e save** | Para arquivos no cartão SD | Direto para o PC por um protocolo serial binário (quadros com CRC32, blocos com ACK, 1.000.000 baud, com recuo para 500.000 e 115.200); o firmware nunca guarda arquivo |
+| **Placa** | HW5: placa SMD com o módulo Mega Pro embutido e todos os slots | Shield **100 % THT** sobre um **Arduino Mega 2560 R3** comum, soldável à mão; várias variantes por combinação de sistemas (`boards/README.md`), da mínima de dois slots à completa |
+| **Pinagem** | HW5 | **Idêntica**: cada sinal de cada slot vai para o mesmo pino do Mega, e por isso os núcleos de leitura do OSCR rodam sem alteração (`boards/<placa>/docs/pinmap.md` guarda a tabela cruzada com o OSCR) |
+| **Tensão dos slots** | Chave 3,3 V / 5 V e VSELECT | 5 V fixo nos slots SNES, NES, Famicom, Mega Drive e Master System; 3,3 V nos slots GBA e N64 (regulador próprio). Algumas versões recentes de placa têm seletor 3,3 V / 5 V opcional, com trava por jumper. O 5 V **não** é desligado por software |
+| **Relógio e CIC** | Si5351 e CIC conforme a versão da placa | Módulo Si5351 em header fêmea; CIC do SNES em PIC12F629 num soquete da própria placa (a alternativa com RP2040 está planejada e ainda não foi validada) |
+| **Menus e botões** | Menus no LCD | O laço de comandos do protocolo (`firmware/oscr/src/dumper/`) chama as funções dos núcleos direto, **sem menu**; erros fatais e esperas por botão voltam ao laço em vez de travar |
+| **Identificação do jogo** | Banco CRDB no SD | No PC: bases No-Intro e NES 2.0 (CRC32, SHA-1), busca e nome do arquivo pelo jogo (`--db`, `--game`) |
+| **Segurança de gravação** | Pelo menu | O PC faz backup do save antes de gravar, relê e compara depois, pede confirmação e recusa tamanhos que não cabem no chip |
+| **Interface** | Tela e botões | CLI em Python, CLI em Kotlin (mesmo contrato, saída JSON para scripts e agentes) e GUI em Kotlin para Linux, macOS e Windows (pt-BR, en, ru, zh) |
+| **Gravar o firmware** | Ferramentas do upstream | `dumper firmware-flash` ou o cartão da GUI; com a placa escolhida o programa confere o firmware, grava o perfil da placa na EEPROM e, se faltar suporte, grava a imagem certa depois de pedir confirmação |
+
+### Firmware: o que é do OSCR e o que é daqui
+
+- **Base:** o firmware novo do OSCR (`vendor/oscr/firmware`), copiado para `firmware/oscr/`. Quem escolhe os núcleos é o `user.ini`: SNES (com Sufami Turbo, GPC, Satellaview e SF Memory), NES/Famicom, Mega Drive, Master System, N64, GB/GBC/GBA, programador de flash e o autoteste. Outros consoles do upstream (por exemplo Atari 7800 e Commodore 64) **não estão ligados**.
+- **Regra do projeto:** chamar a função do OSCR direto e escrever código próprio só nas costuras. Onde divergimos, o motivo está em `docs/decisoes.md`.
+- **Código só daqui** (`firmware/oscr/src/dumper/`): o protocolo e a sessão; o `StreamFile`, arquivo virtual que no lugar do SD manda os bytes pela serial; o laço de comandos; o perfil da placa (`BOARD`, na EEPROM); o comando de tensão (`VOLT`); a calibração do Si5351 (`CLOCK`, guardada na EEPROM, no lugar do arquivo `snes_clk.txt` do SD); e o `SELFTEST`.
+- **Remendos no upstream:** poucos e marcados com `OSCR_DUMPER` ou "fork": o tipo do arquivo e do `sd` em `Storage`, a UI de texto muda (`ClockedSerial.mute`), os tratamentos de erro e de `waitButton` do `ascii.cpp` e o `main.cpp` (laço próprio no lugar do menu).
+- **Baud:** 1.000.000, contra 250.000 do upstream, definido pelo `monitor_speed` da placa `mega-embed` no `user.ini`.
+- **Limites conhecidos do fluxo serial:** só existe leitura sequencial (sem `seek`), e o que o núcleo relê para conferir um save gravado devolve 0 bytes; por isso a conferência fica a cargo do PC, que relê depois de gravar.
+- Mapa completo e estado: `docs/referencia/fork-oscr.md`. Cada função do OSCR e onde ela mora aqui: `docs/referencia/funcoes-oscr.md`.
+
+### O que isto **não** substitui
+
+- O OSCR original tem anos de uso e de cartuchos reais. **Este fork quase não tem validação em hardware:** em 2026-11-21 rodou pela primeira vez, num Mega sem shield e sem cartucho, e essa primeira execução achou e corrigiu vários problemas, de baud errado a gravação de firmware que travava (D196 a D199). **Nenhuma leitura de cartucho real foi feita ainda.** Os núcleos do OSCR são os de sempre, mas o que está em volta (protocolo, placas, sequência de chamadas) é novo.
+- Quem quer um leitor autônomo, sem computador, deve usar o OSCR original.
+- Funções do OSCR que ainda faltam aqui: `docs/referencia/funcoes-oscr.md`.
 
 ## Conteúdo
 

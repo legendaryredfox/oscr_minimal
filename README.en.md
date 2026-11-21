@@ -4,6 +4,20 @@ An **Arduino Mega 2560 (R3) shield** that reads ROMs and saves from game cartrid
 
 > **Status: experimental.** Eight boards (KiCad projects and gerbers in `boards/`), a firmware fork of the OSCR with a serial protocol, a Python CLI, and a Kotlin CLI/GUI (pt-BR, en, ru, zh). **No board has been assembled and nothing has been tested with a real cartridge yet.** Only the PC-side tests and the hardware checks (ERC, DRC, netlist against the OSCR pin map) have run. CI has never run. Most documents are in Brazilian Portuguese; `README.md` is the main one.
 
+## Differences from the original OSCR
+
+The firmware is the OSCR's and the boards keep its pinout; what changes is **where the interface lives** (on the computer, not on the device) and **the size of the hardware**.
+
+- **Computer required.** No LCD, buttons, SD card or RTC. Control and files go over USB through a binary serial protocol (CRC32 frames, per-block ACK, 1,000,000 baud with fallback to 500,000 and 115,200). The firmware never stores a file; ROMs and saves stream straight to the PC.
+- **Hardware.** A 100 % through-hole shield on a plain **Arduino Mega 2560 R3**, hand-solderable, instead of the SMD HW5 board with its embedded Mega Pro module; several variants by system combination (`boards/README.md`).
+- **Same pinout as HW5.** Every slot signal goes to the same Mega pin, which is why the OSCR read cores run unchanged (`boards/<board>/docs/pinmap.md`).
+- **Voltage.** 5 V fixed on the SNES, NES, Famicom, Mega Drive and Master System slots; 3.3 V on the GBA and N64 slots (own regulator). Some recent board versions have an optional 3.3 V / 5 V selector with a jumper lock. 5 V is never switched off by software. The original has a 3V/5V switch and VSELECT.
+- **Firmware.** The new OSCR firmware copied to `firmware/oscr/`, cores selected in `user.ini` (SNES with its accessories, NES/Famicom, Mega Drive, Master System, N64, GB/GBC/GBA, the flash programmer, self-test). Other upstream consoles are not enabled. Own code lives in `firmware/oscr/src/dumper/` (protocol, `StreamFile` in place of the SD, command loop instead of menus, board profile, voltage and clock commands); patches to upstream are few and marked. Baud is 1,000,000 against upstream's 250,000.
+- **PC side.** Game identification (No-Intro, NES 2.0) happens on the PC instead of the CRDB on the SD; save backup before writing and read-back after; a Python CLI, a Kotlin CLI (same JSON contract for scripts) and a Kotlin GUI for Linux, macOS and Windows (pt-BR, en, ru, zh); firmware flashing from the program.
+- **Not a replacement.** The original has years of field use. This fork has almost no hardware validation: its first run (2026-11-21, a bare Mega with no shield or cartridge) found and fixed several problems, from a wrong baud rate to a firmware flash that hung, and **no real cartridge has been read yet**. For a standalone reader that needs no computer, use the original OSCR.
+
+Details: [`docs/referencia/fork-oscr.md`](docs/referencia/fork-oscr.md) and [`docs/referencia/funcoes-oscr.md`](docs/referencia/funcoes-oscr.md) (Portuguese).
+
 ## Boards
 
 | Folder | Slots |
