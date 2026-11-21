@@ -941,7 +941,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         SectionCard(t(S.CLK_TITLE)) {
             Text(t(S.CLK_HINT), style = MaterialTheme.typography.bodyMedium)
             Text(t(S.CLK_TARGETS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(enabled = canRun, onClick = { actClock(Clock.STATUS) }) { Text(t(S.CLK_READ)) }
                 OutlinedButton(enabled = canRun, onClick = { actClock(Clock.TEST_ON) }) { Text(t(S.CLK_TEST_ON)) }
                 OutlinedButton(enabled = canRun, onClick = { actClock(Clock.TEST_OFF) }) { Text(t(S.CLK_TEST_OFF)) }
