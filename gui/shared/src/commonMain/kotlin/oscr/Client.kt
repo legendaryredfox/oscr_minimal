@@ -108,7 +108,7 @@ class OscrClient(
     /** Pode ser chamado de outra thread (botão Cancelar): o `write` do transporte é sincronizado. */
     fun abort() = send(Proto.T_ABORT, ByteArray(0), nextSeq())
 
-    private fun streamIn(cmd: Int, payload: ByteArray, progress: Progress?, expectKind: Int): DumpResult {
+    private fun streamIn(cmd: Int, payload: ByteArray, progress: Progress?, expectKind: Int, estimate: Long = 0): DumpResult {
         val seq = nextSeq()
         val begin = request(cmd, payload, seq, setOf(Proto.T_BEGIN), longTimeoutMs).payload
         val kind = begin.u8(0); val size = begin.u32(1)
@@ -135,7 +135,7 @@ class OscrClient(
                                 if (expected + n > buf.size) buf = buf.copyOf(maxOf(buf.size * 2, expected + n))
                             }
                             f.payload.copyInto(buf, off, 4, 4 + n); expected += n
-                            send(Proto.T_ACK, le32(off), seq); progress?.invoke(expected.toLong(), if (unknown) 0L else size.toLong())
+                            send(Proto.T_ACK, le32(off), seq); progress?.invoke(expected.toLong(), if (unknown) (if (estimate > 0) maxOf(estimate, expected.toLong()) else 0L) else size.toLong())
                         }
                         off < expected -> send(Proto.T_ACK, le32(off), seq)
                         else -> send(Proto.T_NAK, le32(expected), seq)
@@ -157,18 +157,27 @@ class OscrClient(
         }
     }
 
+    /**
+     * Tamanho esperado (bytes) para o progresso quando o firmware só diz o tamanho no END (núcleos do OSCR; D199). Vem do DETECT com os mesmos
+     * parâmetros do dump; `fallback` vale se o DETECT não souber (N64: --prg em MB). Qualquer falha devolve 0 (sem progresso, como antes).
+     */
+    fun estimateSize(system: CartSystem, save: Boolean, chip: Int = 0, sizeKb: Int = 0, third: Int = 0, fallback: Long = 0): Long = try {
+        val d = detect(system, chip, sizeKb, third)
+        (if (d.status == 0) (if (save) d.saveSize else d.romSize) else 0L).takeIf { it > 0 } ?: fallback
+    } catch (e: DeviceError) { fallback } catch (e: ProtocolError) { fallback } catch (e: TimeoutError) { fallback }
+
     /** NES/Famicom: `mapper`, `prgKb` e `chrKb` são opcionais (0 = automático/NROM); ver docs/referencia/protocolo.md. */
-    fun dumpRom(system: CartSystem, block: Int = 0, mapper: Int = 0, prgKb: Int = 0, chrKb: Int = 0, progress: Progress? = null): DumpResult {
+    fun dumpRom(system: CartSystem, block: Int = 0, mapper: Int = 0, prgKb: Int = 0, chrKb: Int = 0, progress: Progress? = null, estimate: Long = 0): DumpResult {
         var p = byteArrayOf(system.id.toByte()) + le16(block)
         if (mapper != 0 || prgKb != 0 || chrKb != 0) p += le16(mapper) + le16(prgKb) + le16(chrKb)
-        return streamIn(Proto.T_DUMP_ROM, p, progress, Proto.KIND_ROM)
+        return streamIn(Proto.T_DUMP_ROM, p, progress, Proto.KIND_ROM, estimate)
     }
 
     /** NES/Famicom: `mapper` 1, 4, 5, 69, 118, 155 (PRG-RAM com bateria, 8 KB), 16, 159 (EEPROM), 19, 80 ou 82 (D184); `ramKb` 16 ou 32 só nos mappers 1 e 5 (0 = 8 KB). */
-    fun readSave(system: CartSystem, block: Int = 0, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null, snesType: Int = 0): DumpResult {
+    fun readSave(system: CartSystem, block: Int = 0, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null, snesType: Int = 0, estimate: Long = 0): DumpResult {
         var p = byteArrayOf(system.id.toByte()) + le16(block)
         if (mapper != 0 || ramKb != 0 || snesType != 0) p += le16(mapper) + le16(ramKb) + le16(snesType)
-        return streamIn(Proto.T_READ_SAVE, p, progress, Proto.KIND_SAVE)
+        return streamIn(Proto.T_READ_SAVE, p, progress, Proto.KIND_SAVE, estimate)
     }
 
     fun writeSave(system: CartSystem, data: ByteArray, block: Int = Proto.DEFAULT_BLOCK, mapper: Int = 0, ramKb: Int = 0, progress: Progress? = null, snesType: Int = 0): Int {

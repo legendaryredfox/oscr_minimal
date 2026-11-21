@@ -29,6 +29,7 @@ class Client:
         self.t = transport
         self.dec = P.FrameDecoder()
         self.timeout, self.long_timeout, self.retries = timeout, long_timeout, retries
+        self.size_hint = 0                                    # D199: tamanho esperado do próximo dump/leitura, só para o progresso
         self._seq = 0
         self._queue: list[P.Frame] = []
         self.on_stage: Optional[Callable[[int, int, int], None]] = None   # F-1: (etapa, offset, total) do PROGRESSO do firmware
@@ -123,6 +124,7 @@ class Client:
         self._send(P.T_ABORT, b"", self._next_seq())
 
     def _stream_in(self, cmd: int, payload: bytes, progress: Optional[Progress], expect_kind: int = 0) -> DumpResult:
+        estimate = self.size_hint                             # tamanho esperado (do DETECT) para o progresso quando o firmware só diz o tamanho no END (núcleos do OSCR); 0 = sem progresso
         seq = self._next_seq()
         begin = self._request(cmd, payload, seq, {P.T_BEGIN}, self.long_timeout)
         kind, size, block = P.parse_begin(begin.payload)
@@ -158,7 +160,7 @@ class Client:
                     expected += len(data)
                     self._send(P.T_ACK, P.build_offset(off), seq)
                     if progress:
-                        progress(expected, 0 if unknown else size)
+                        progress(expected, (max(estimate, expected) if estimate else 0) if unknown else size)
                 elif off < expected:
                     self._send(P.T_ACK, P.build_offset(off), seq)  # duplicado: confirma de novo
                 else:

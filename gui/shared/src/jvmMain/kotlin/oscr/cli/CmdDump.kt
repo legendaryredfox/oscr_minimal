@@ -44,9 +44,10 @@ internal fun cmdDump(io: CliIo, a0: Args): Int {
     } else if (a.opts["output"] == null) title = try { c.client.detect(sys, 0, 0, stype).name } catch (e: Exception) { if (e is DeviceError || e is ProtocolError || e is TimeoutError) "" else throw e }
     val twice = "twice" in a.flags
     var res2: DumpResult? = null
+    val est = if (a.opts["progress"] == "none") 0L else c.client.estimateSize(sys, false, mapper, prg, chr, if (sys == CartSystem.N64) prg.toLong() shl 20 else 0L)   // progresso: tamanho do DETECT (D199)
     val res = try {
-        c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom")).also {
-            if (twice) res2 = c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom 2"))
+        c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom"), est).also {
+            if (twice) res2 = c.client.dumpRom(sys, a.int("block"), mapper, prg, chr, progress(io, a, "rom 2"), est)
         }
     } finally { c.transport.close() }
     val gbAcc = sys == CartSystem.GB && mapper != 0        // F-17 (D186): acessório do Game Boy, sem cabeçalho de jogo

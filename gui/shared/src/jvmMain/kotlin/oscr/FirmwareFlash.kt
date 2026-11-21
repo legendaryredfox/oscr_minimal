@@ -13,6 +13,7 @@ class FirmwareException(val kind: String, message: String, val hint: String? = n
  */
 object FirmwareFlash {
     const val DEFAULT_ENV = "SerialASCII"
+    const val TIMEOUT_S = 300L                       // gravar e verificar 230 KB leva cerca de 70 s a 115200 baud
     private val PCT = Regex("""(Writing|Reading)\s*\|[# ]*\|\s*(\d+)%""")
 
     /** O `.hex` que seria usado sem `given`, ou null se a compilação do projeto não existe. */
@@ -59,6 +60,9 @@ object FirmwareFlash {
         val nul = File(if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null")
         val proc = ProcessBuilder(cmd).redirectInput(ProcessBuilder.Redirect.from(nul)).start()
         Thread { proc.inputStream.readBytes() }.apply { isDaemon = true }.start()                          // esvazia o stdout
+        val timedOut = java.util.concurrent.atomic.AtomicBoolean(false)
+        Thread { if (!proc.waitFor(TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS)) { timedOut.set(true); proc.destroyForcibly() } }   // avrdude 8 travado fica em laço para sempre (D197, D199)
+            .apply { isDaemon = true }.start()
         val tail = ArrayList<String>(); val buf = StringBuilder()
         fun line() {
             val s = buf.toString(); buf.setLength(0)
@@ -68,6 +72,8 @@ object FirmwareFlash {
         }
         proc.errorStream.bufferedReader().use { r -> while (true) { val c = r.read(); if (c < 0) break; if (c == '\r'.code || c == '\n'.code) line() else buf.append(c.toChar()) } }
         if (buf.isNotEmpty()) line()
-        return proc.waitFor() to tail.joinToString(" | ")
+        val code = proc.waitFor()
+        if (timedOut.get()) { tail += "avrdude timeout after $TIMEOUT_S s"; if (tail.size > 8) tail.removeAt(0); return 124 to tail.joinToString(" | ") }
+        return code to tail.joinToString(" | ")
     }
 }

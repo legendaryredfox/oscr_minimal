@@ -80,7 +80,7 @@ class ClientTest {
 
     @Test fun dumpReconstroiArquivoECrc() {
         val seen = ArrayList<Long>()
-        val r = OscrClient(FakeDevice(), 50, 500).dumpRom(CartSystem.MOCK) { d, _ -> seen += d }
+        val r = OscrClient(FakeDevice(), 50, 500).dumpRom(CartSystem.MOCK, progress = { d, _ -> seen += d })
         assertContentEquals(mockData(), r.data)
         assertEquals(crc32(mockData()), r.crc32)
         assertEquals(32768L, seen.last())

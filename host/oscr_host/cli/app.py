@@ -10,7 +10,7 @@ from .messages import tr
 
 from .. import protocol as P
 from ..client import TimeoutError_
-from .errors import CliError, EXIT_ERROR, EXIT_INTERRUPTED, EXIT_NO_CART, fail
+from .errors import CliError, EXIT_ERROR, EXIT_INTERRUPTED, EXIT_NO_CART, EXIT_USAGE, fail
 from .parser import _Parser, build_parser
 
 
@@ -32,6 +32,9 @@ def _main(argv: list[str] | None = None) -> int:
         print(ui.banner(__version__) + "\n")             # logo só no terminal e só na ajuda
     args = build_parser().parse_args(argv)
     try:
+        blk = getattr(args, "block", 0) or 0
+        if blk and not P.MIN_BLOCK <= blk <= P.MAX_BLOCK:
+            raise CliError("usage", messages.tr("args.block_min", min=P.MIN_BLOCK, max=P.MAX_BLOCK, value=blk), EXIT_USAGE)
         return args.fn(args)
     except CliError as e:
         return fail(args.json, e)

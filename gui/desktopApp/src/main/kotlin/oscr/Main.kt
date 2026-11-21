@@ -642,11 +642,13 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             val r369 = isGba && read369
             val mapUse = if (r369) Gba369.code(block369.toIntOrNull() ?: 0) else mapN
             val prgUse2 = if (r369) (size369.toIntOrNull() ?: 0) else prgUse
-            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
+            val thirdUse = if (system == CartSystem.SNES) snesTypeSel else chrN
+            val est = withContext(Dispatchers.IO) { c.estimateSize(system, false, mapUse, prgUse2, thirdUse, if (system == CartSystem.N64) prgUse2.toLong() shl 20 else 0L) }     // barra com o tamanho do DETECT (D199)
+            val res = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, thirdUse, ticker(), est) }
             val extra = mutableListOf<String>()
             if (readTwice) {
                 say("2/2")
-                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, if (system == CartSystem.SNES) snesTypeSel else chrN, ticker()) }
+                val res2 = withContext(Dispatchers.IO) { c.dumpRom(system, 0, mapUse, prgUse2, thirdUse, ticker(), est) }
                 if (res2.data.contentEquals(res.data)) { val m = "${t(S.TWICE_OK)} (CRC32 ${res.crcHex})"; say(m); extra += m }
                 else {
                     val (n, first) = diffSummary(res.data, res2.data)
@@ -689,7 +691,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (ramProblem != null) { say(describeProblem(lang, ramProblem)); return }
         run(S.STAGE_READING_SAVE) {
             val mapUse = if (system == CartSystem.N64) (n64Resolve(c, false, true)?.second ?: return@run) else mapperArg()
-            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker(), snesTypeArg()) }
+            val estSave = withContext(Dispatchers.IO) { c.estimateSize(system, true, mapUse, ramArg(), snesTypeArg()) }
+            val res = withContext(Dispatchers.IO) { c.readSave(system, 0, mapUse, ramArg(), ticker(), snesTypeArg(), estSave) }
             val hashes = Hashes.of(res.data)
             say("CRC32 ${res.crcHex} — ${t(S.RESULT_SIZE)} ${res.data.size} ${t(S.BYTES)}")
             say("SHA-1 ${hashes.sha1} — MD5 ${hashes.md5}")

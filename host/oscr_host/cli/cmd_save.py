@@ -53,6 +53,7 @@ def cmd_save_read(args) -> int:
         except CliError:
             t.close()
             raise
+    common.set_size_hint(c, args, system_id(args.system), "save", args.mapper, args.ram, _stype_kw(args).get("snes_type", 0))
     res = c.read_save(system_id(args.system), args.block, progress("save", args.progress), args.mapper, args.ram, **_stype_kw(args))
     t.close()
     notes = []

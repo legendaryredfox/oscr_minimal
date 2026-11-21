@@ -22,6 +22,7 @@ class _Aborted(Exception):
 
 
 class MockDevice:
+    unknown_size = False                  # True: BEGIN anuncia 0xFFFFFFFF como os núcleos do OSCR (o tamanho só vem no END; D199)
     def __init__(self, rom: Optional[bytes] = None, save: Optional[bytes] = None, volt_select: bool = False, cart_needs_5v: bool = False, selftest_report: Optional[list] = None, board_profile: bool = True, firmware: tuple = (0, 2, 0), systems: int = 0, stages: bool = True, clock: bool = True, clock_present: bool = True):
         self.rom = rom if rom is not None else P.mock_data()
         self.save = save if save is not None else bytes((i * 3 + 1) & 0xFF for i in range(8192))
@@ -224,7 +225,7 @@ class MockDevice:
         self._send(t, P.T_ERRO, seq, code.to_bytes(2, "little") + bytes([len(tb)]) + tb)
 
     def _stream_out(self, t: Transport, seq: int, kind: int, data: bytes, block: int) -> None:
-        begin = bytes([kind]) + len(data).to_bytes(4, "little") + block.to_bytes(2, "little")
+        begin = bytes([kind]) + (0xFFFFFFFF if self.unknown_size else len(data)).to_bytes(4, "little") + block.to_bytes(2, "little")
         for _ in range(4):
             self._send(t, P.T_BEGIN, seq, begin)
             if self._wait_ack(t, seq, 0, 0.5) == "ack":

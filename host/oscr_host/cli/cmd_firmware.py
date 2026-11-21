@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import sys
 import time
 from pathlib import Path
@@ -57,9 +58,19 @@ def avrdude_cmd(exe: str, port: str, hex_path: Path, verify: bool) -> list[str]:
     return cmd + ["-U", f"flash:w:{hex_path}:i"]
 
 
+AVRDUDE_TIMEOUT_S = 300          # gravar e verificar 230 KB leva cerca de 70 s a 115200 baud
+
+
 def run_avrdude(cmd: list[str], cb_for) -> tuple[int, str]:
     """Roda o avrdude e traduz as barras dele ("Writing | ### | 45%") em progresso. Devolve (código, texto de erro)."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
+    timed_out = []
+    def _kill():                                          # avrdude 8 travado (porta que ele não abre) fica em laço para sempre (D197, D199)
+        timed_out.append(True)
+        proc.kill()
+    watchdog = threading.Timer(AVRDUDE_TIMEOUT_S, _kill)
+    watchdog.daemon = True
+    watchdog.start()
     tail, buf, cbs = [], b"", {}
     assert proc.stderr is not None
     while True:
@@ -78,6 +89,10 @@ def run_avrdude(cmd: list[str], cb_for) -> tuple[int, str]:
         else:
             buf += ch
     proc.wait()
+    watchdog.cancel()
+    if timed_out:
+        tail.append(f"avrdude timeout after {AVRDUDE_TIMEOUT_S} s")
+        return 124, " | ".join(tail[-8:])
     return proc.returncode, " | ".join(tail)
 
 

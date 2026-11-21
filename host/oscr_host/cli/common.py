@@ -162,6 +162,27 @@ def _open_raw(args) -> tuple[Client, Transport, dict]:
     raise CliError("no_response", tr("err.no_response", port=port, bauds=", ".join(map(str, bauds)), error=last), EXIT_NO_DEVICE, tr("err.no_response.hint"))
 
 
+def set_size_hint(c: Client, args, sid: int, kind: str, mapper: int = 0, size_kb: int = 0, third: int = 0) -> None:
+    c.size_hint = size_estimate(c, args, sid, kind, mapper, size_kb, third)
+
+
+def size_estimate(c: Client, args, sid: int, kind: str, mapper: int = 0, size_kb: int = 0, third: int = 0) -> int:
+    """Tamanho esperado (bytes) para a barra de progresso quando o firmware só diz o tamanho no END (núcleos do OSCR; D199). `kind`: "rom" ou "save".
+    Vem do DETECT (mesmos parâmetros do dump); N64 sem tamanho no DETECT usa --prg (MB). Qualquer falha ou `--progress none` devolve 0 (sem progresso, como antes)."""
+    if getattr(args, "progress", "auto") == "none":
+        return 0
+    try:
+        d = c.detect(sid, mapper, size_kb, third)
+    except (P.DeviceError, P.ProtocolError, TimeoutError_):
+        return 0
+    except AttributeError:                                # cliente falso dos testes, sem DETECT
+        return 0
+    n = d.get("rom_size" if kind == "rom" else "save_size", 0) if d.get("status") == 0 else 0
+    if not n and sid == 11 and kind == "rom" and getattr(args, "prg", 0):
+        n = args.prg * 1024 * 1024
+    return n
+
+
 def snes_type_code(args) -> int:
     """`--type` do SNES (F-2, D164) como código do protocolo; 0 = pelo cabeçalho. Em outro sistema é erro de uso."""
     t = getattr(args, "type", None)

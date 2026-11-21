@@ -9,7 +9,10 @@ internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: 
     fun withOpt(name: String, value: String) = Args(cmd, opts + (name to value), flags, positional)
     fun int(name: String): Int {
         val v = opts[name] ?: return 0
-        return v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
+        val n = v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
+        if (name == "block" && n != 0 && n !in Proto.MIN_BLOCK..Proto.MAX_BLOCK)
+            throw CliError("usage", Msg.t("args.block_min", "min" to Proto.MIN_BLOCK, "max" to Proto.MAX_BLOCK, "value" to n), EXIT_USAGE)
+        return n
     }
 }
 

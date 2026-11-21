@@ -23,7 +23,7 @@ HELP_TEXTS = {
     "help.system": _r('sistema (padrão: mock)', 'system (default: mock)', 'система (по умолчанию: mock)', '系统（默认：mock）'),
     "help.output": _r('arquivo de saída (a extensão certa é acrescentada; sobrescreve se existir)', 'output file (the right extension is added; overwrites if it exists)', 'выходной файл (нужное расширение добавляется; существующий файл перезаписывается)', '输出文件（会加上正确的扩展名；已存在则覆盖）'),
     "help.input": _r('arquivo para gravar (save, ou ROM no rom-write)', 'file to write (a save, or the ROM in rom-write)', 'файл для записи (сохранение или ROM в rom-write)', '要写入的文件（存档，或 rom-write 中的 ROM）'),
-    "help.block": _r('tamanho do bloco (padrão 512)', 'block size (default 512)', 'размер блока (по умолчанию 512)', '块大小（默认 512）'),
+    "help.block": _r('tamanho do bloco (64 a 516; padrão 512)', 'block size (64 to 516; default 512)', 'размер блока (от 64 до 516; по умолчанию 512)', '块大小（64 到 516；默认 512）'),
     "help.cmd_ports": _r('lista as portas seriais', 'list the serial ports', 'список последовательных портов', '列出串口'),
     "help.cmd_systems": _r('lista os sistemas, extensões e opções de cada um (não abre a porta)', 'list the systems, extensions and per-system options (does not open the port)', 'список систем, расширений и опций каждой системы (порт не открывается)', '列出系统、扩展名及各系统的选项（不打开串口）'),
     "help.cmd_errors": _r('lista os códigos de erro do dispositivo e os códigos de saída da CLI (não abre a porta)', 'list the device error codes and the CLI exit codes (does not open the port)', 'список кодов ошибок устройства и кодов выхода CLI (порт не открывается)', '列出设备错误码和 CLI 退出码（不打开串口）'),

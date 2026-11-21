@@ -6,6 +6,8 @@ object Proto {
     const val VERSION = 1
     const val MAX_PAYLOAD = 1024
     const val DEFAULT_BLOCK = 512
+    const val MIN_BLOCK = 64          // abaixo disso a leitura fica lenta demais (D199)
+    const val MAX_BLOCK = 516         // OSCR_MAX_PAYLOAD (520) menos o offset de 4 bytes
     const val T_INFO = 0x01; const val T_DETECT = 0x02; const val T_DUMP_ROM = 0x03
     const val T_READ_SAVE = 0x04; const val T_WRITE_SAVE = 0x05; const val T_WRITE_ROM = 0x0B; const val T_ERASE = 0x0C; const val T_VOLT = 0x0D; const val T_SELFTEST = 0x0E; const val T_BOARD = 0x0F; const val T_CLOCK = 0x10; const val T_ACK = 0x06
     const val T_NAK = 0x07; const val T_ABORT = 0x08; const val T_H_DATA = 0x09; const val T_H_END = 0x0A

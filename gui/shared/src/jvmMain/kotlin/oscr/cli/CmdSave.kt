@@ -28,7 +28,8 @@ internal fun cmdSaveRead(io: CliIo, a0: Args): Int {
     val sys = system(a)
     val res = try {
         val mapper = if (sys == CartSystem.N64) n64SaveType(c, a) else a.int("mapper")
-        c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"), snesTypeCode(a))
+        val est = if (a.opts["progress"] == "none") 0L else c.client.estimateSize(sys, true, mapper, a.int("ram"), snesTypeCode(a))   // progresso: tamanho do DETECT (D199)
+        c.client.readSave(sys, a.int("block"), mapper, a.int("ram"), progress(io, a, "save"), snesTypeCode(a), est)
     } finally { c.transport.close() }
     val acc = a.opts["accessory"]
     saveResult(io, a, res, if (acc != null) ".bin" else ".sav", if (acc != null) "save_snes_${acc.replace('-', '_')}" else "save_${sys.name.lowercase()}")

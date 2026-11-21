@@ -10,6 +10,8 @@ PROTO_VERSION = 1
 MAGIC = b"\xA5\x5A"
 MAX_PAYLOAD = 1024
 DEFAULT_BLOCK = 512
+MIN_BLOCK = 64                   # abaixo disso cada quadro leva um ACK por poucos bytes: 1 byte por bloco passa de 90 s para 128 KB (D199)
+MAX_BLOCK = 516                  # OSCR_MAX_PAYLOAD (520) menos o offset de 4 bytes
 HEADER_LEN = 6
 CRC_LEN = 4
 

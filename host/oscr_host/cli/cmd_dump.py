@@ -71,6 +71,7 @@ def cmd_dump(args) -> int:
         args.mapper = G369.code(args.block369)
     try:
         chr_kb = common.snes_type_code(args) or (0 if args.system == "snes" else args.chr)       # SNES: o 3º campo é o tipo forçado (F-2), nunca CHR
+        common.set_size_hint(c, args, sid, "rom", args.mapper, args.prg, chr_kb)
         res = c.dump_rom(sid, args.block, progress("rom", args.progress), args.mapper, args.prg, chr_kb)
         res2 = c.dump_rom(sid, args.block, progress("rom 2", args.progress), args.mapper, args.prg, chr_kb) if getattr(args, "twice", False) else None
     finally:
