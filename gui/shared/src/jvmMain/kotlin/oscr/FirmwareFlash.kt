@@ -48,8 +48,11 @@ object FirmwareFlash {
             "install avrdude (Linux: `sudo apt install avrdude`; macOS: `brew install avrdude`; Windows: winget or the Arduino package) or use --avrdude PATH")
     }
 
+    /** O jSerialComm lista `ttyUSB0`; o avrdude 8 não acha a porta por esse nome e fica em laço a 100 % de CPU sem abrir nada (D197). Usa o caminho `/dev/...`. */
+    fun avrdudePort(port: String): String = if (!port.startsWith("/") && File("/dev/$port").exists()) "/dev/$port" else port
+
     fun command(exe: String, port: String, hex: File, verify: Boolean): List<String> =
-        listOf(exe, "-p", "atmega2560", "-c", "wiring", "-P", port, "-b", "115200", "-D") + (if (verify) emptyList() else listOf("-V")) + listOf("-U", "flash:w:${hex.path}:i")
+        listOf(exe, "-p", "atmega2560", "-c", "wiring", "-P", avrdudePort(port), "-b", "115200", "-D") + (if (verify) emptyList() else listOf("-V")) + listOf("-U", "flash:w:${hex.path}:i")
 
     /** Roda o avrdude e traduz as barras dele ("Writing | ### | 45%") em `onProgress("writing" ou "verifying", percentual)`. Devolve (código, últimas linhas de mensagem). */
     fun run(cmd: List<String>, onProgress: (label: String, percent: Int) -> Unit): Pair<Int, String> {
