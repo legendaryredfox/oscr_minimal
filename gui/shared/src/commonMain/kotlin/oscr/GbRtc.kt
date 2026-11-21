@@ -54,6 +54,10 @@ object GbRtc {
         return ByteArray(REGS) { data[it * 4] }
     }
 
+    /** Os 5 registradores de um arquivo: 5 bytes, rodapé de 48 bytes ou .sav com o rodapé no fim (tamanho múltiplo de 1024 mais 48). */
+    fun fromFile(data: ByteArray): ByteArray =
+        fromFooter(if (data.size > FOOTER_BYTES && data.size % 1024 == FOOTER_BYTES) data.copyOfRange(data.size - FOOTER_BYTES, data.size) else data)
+
     /** Conferência depois de gravar: parado tem que ser igual; andando aceita até 2 s a mais (o relógio anda). */
     fun matches(want: Value, got: Value): Boolean =
         got.halted == want.halted && got.carry == want.carry && (if (want.halted) got.total == want.total else got.total - want.total in 0..2)

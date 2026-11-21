@@ -124,3 +124,24 @@ def test_sem_rtc_e_erros_de_uso(monkeypatch, capsys):
     for argv in (["--now", "--set", "10:00"], ["--set", "99:00"], ["--day", "512"], ["--halt", "--run"]):
         code, out = _run(monkeypatch, capsys, Fake(), *argv)
         assert code == 64 and out["error"]["kind"] == "usage"
+
+
+def test_grava_o_rodape_de_um_arquivo(monkeypatch, capsys, tmp_path):
+    foot = R.footer(bytes([56, 34, 12, 100, 0x40]), 1700000000)
+    for name, data in (("rtc.bin", foot), ("raw.bin", bytes([56, 34, 12, 100, 0x40])), ("jogo.sav", b"\xAA" * 32768 + foot)):
+        f = Fake()
+        (tmp_path / name).write_bytes(data)
+        code, j = _run(monkeypatch, capsys, f, "-i", str(tmp_path / name))
+        assert code == 0 and j["verified"] is True, name
+        assert f.calls[1] == ("write", P.SYSTEMS["gb"][0], 7, bytes([56, 34, 12, 100, 0x40])), name
+
+
+def test_rodape_invalido_ou_combinado_e_erro_de_uso(monkeypatch, capsys, tmp_path):
+    (tmp_path / "ruim.bin").write_bytes(b"\x00" * 7)
+    (tmp_path / "fora.bin").write_bytes(bytes([63, 0, 0, 0, 0]))          # 63 segundos
+    (tmp_path / "ok.bin").write_bytes(bytes([1, 2, 3, 4, 0]))
+    for argv in (["-i", str(tmp_path / "ruim.bin")], ["-i", str(tmp_path / "fora.bin")], ["-i", str(tmp_path / "nao_existe.bin")],
+                 ["-i", str(tmp_path / "ok.bin"), "--day", "3"]):
+        f = Fake()
+        code, out = _run(monkeypatch, capsys, f, *argv)
+        assert code == 64 and out["error"]["kind"] == "usage" and not [c for c in f.calls if c[0] == "write"]

@@ -63,3 +63,10 @@ def from_footer(data: bytes) -> bytes:
     if len(data) != FOOTER_BYTES:
         raise RtcError(f"o rodapé do RTC tem {FOOTER_BYTES} bytes, vieram {len(data)}")
     return bytes(v & 0xFF for v in struct.unpack_from("<5I", data, 0))
+
+
+def from_file(data: bytes) -> bytes:
+    """Os 5 registradores de um arquivo: 5 bytes, rodapé de 48 bytes ou um .sav com o rodapé no fim (tamanho múltiplo de 1024 mais 48)."""
+    if len(data) not in (REGS, FOOTER_BYTES) and len(data) > FOOTER_BYTES and len(data) % 1024 == FOOTER_BYTES:
+        data = data[-FOOTER_BYTES:]
+    return from_footer(data)

@@ -38,6 +38,14 @@ class GbRtcTest {
         assertFailsWith<IllegalArgumentException> { GbRtc.fromFooter(ByteArray(7)) }
     }
 
+    @Test fun arquivoComRodape() {
+        val raw = GbRtc.encode(56, 34, 12, 100, halted = true)
+        val foot = GbRtc.footer(raw, 1_700_000_000L)
+        assertContentEquals(raw, GbRtc.fromFile(foot)); assertContentEquals(raw, GbRtc.fromFile(raw))
+        assertContentEquals(raw, GbRtc.fromFile(ByteArray(32768) { 0xAA.toByte() } + foot))      // .sav com o rodapé no fim
+        assertFailsWith<IllegalArgumentException> { GbRtc.fromFile(ByteArray(7)) }
+    }
+
     @Test fun conferencia() {
         val want = GbRtc.decode(GbRtc.encode(10, 0, 0, 1))
         assertTrue(GbRtc.matches(want, GbRtc.decode(GbRtc.encode(12, 0, 0, 1))))

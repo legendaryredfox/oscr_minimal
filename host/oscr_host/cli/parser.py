@@ -148,6 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--halt", action="store_true", help=H("gbrtc_halt"))
     rp.add_argument("--run", action="store_true", help=H("gbrtc_run"))
     rp.add_argument("--clear-carry", action="store_true", help=H("gbrtc_carry"))
+    rp.add_argument("-i", "--input", metavar="FOOTER", help=H("gbrtc_input"))
     gp = add("gbcamera", cmd_gbcamera, H("cmd_gbcamera"), system=False, out=True, inp=True)
     gp.add_argument("--palette", choices=("gray", "green", "gbc"), default="gray", help=H("gbcamera_palette"))
     gp.add_argument("--scale", type=int, default=1, help=H("gbcamera_scale"))

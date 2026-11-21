@@ -159,6 +159,8 @@ CATALOG: dict[str, dict[str, str]] = {
     "gbrtc.bad_time": _r("hora inválida: {value} (use HH:MM ou HH:MM:SS)", "invalid time: {value} (use HH:MM or HH:MM:SS)", "неверное время: {value} (используйте HH:MM или HH:MM:SS)", "时间无效：{value}（请用 HH:MM 或 HH:MM:SS）"),
     "gbrtc.bad_day": _r("--day vai de 0 a {max}", "--day goes from 0 to {max}", "--day — от 0 до {max}", "--day 取值 0 至 {max}"),
     "gbrtc.halt_run": _r("use --halt ou --run, não os dois", "use --halt or --run, not both", "используйте --halt или --run, но не оба", "--halt 与 --run 只能用一个"),
+    "gbrtc.input_alone": _r("-i não combina com --now, --set, --day, --halt, --run nem --clear-carry", "-i cannot be combined with --now, --set, --day, --halt, --run or --clear-carry", "-i нельзя сочетать с --now, --set, --day, --halt, --run и --clear-carry", "-i 不能与 --now、--set、--day、--halt、--run、--clear-carry 同时使用"),
+    "gbrtc.bad_input": _r("não consegui ler o relógio de {path} (esperado: 5 bytes, rodapé de 48 bytes ou .sav com o rodapé no fim, com valores válidos)", "could not read the clock from {path} (expected: 5 bytes, a 48-byte footer or a .sav with the footer at the end, with valid values)", "не удалось прочитать часы из {path} (ожидается: 5 байт, 48-байтовый хвост или .sav с хвостом в конце, с допустимыми значениями)", "无法从 {path} 读取时钟（应为：5 字节、48 字节尾部，或末尾带尾部的 .sav，且数值有效）"),
     "gbrtc.running": _r("andando", "running", "идёт", "运行中"),
     "gbrtc.halted": _r("parado", "halted", "остановлены", "已停止"),
     "gbrtc.carry_yes": _r("estouro de dias: sim", "day overflow: yes", "переполнение дней: да", "天数溢出：是"),

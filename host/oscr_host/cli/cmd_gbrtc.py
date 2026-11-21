@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Comando gb-rtc: relógio (RTC) do MBC3 do Game Boy (F-17, D192). Sem opção só lê. Com --now, --set, --day, --halt ou --clear-carry grava os 5 registradores
-(o que não foi pedido fica como estava) e confere lendo de volta. `-o` guarda o rodapé de 48 bytes que BGB, VBA-M e mGBA põem depois do save."""
+(o que não foi pedido fica como estava) e confere lendo de volta. `-o` guarda o rodapé de 48 bytes que BGB, VBA-M e mGBA põem depois do save.
+`-i` faz o caminho de volta: grava no cartucho os registradores de um rodapé (ou de um .sav com o rodapé no fim) e confere; não combina com as outras opções de gravação."""
 from __future__ import annotations
 
 import time
@@ -42,16 +43,29 @@ def cmd_gbrtc(args) -> int:
         raise CliError("usage", tr("gbrtc.bad_day", max=R.MAX_DAY), EXIT_USAGE)
     if args.halt and args.run:
         raise CliError("usage", tr("gbrtc.halt_run"), EXIT_USAGE)
-    write = new_time is not None or args.day is not None or args.halt or args.run or args.clear_carry
+    edits = new_time is not None or args.day is not None or args.halt or args.run or args.clear_carry
+    file_raw = None
+    if args.input:
+        if edits:
+            raise CliError("usage", tr("gbrtc.input_alone"), EXIT_USAGE)
+        try:
+            d = R.decode(R.from_file(Path(args.input).read_bytes()))
+            file_raw = R.encode(d["seconds"], d["minutes"], d["hours"], d["days"], d["halted"], d["carry"])
+        except (R.RtcError, OSError) as e:
+            raise CliError("usage", tr("gbrtc.bad_input", path=args.input), EXIT_USAGE) from e
+    write = edits or file_raw is not None
     c, t, info = common.connect(args)
     try:
         before = _read(c)
         raw, verified = before, None
+        if file_raw is not None:
+            raw = file_raw
         if write:
             old = R.decode(before)
             h, m, s = new_time or (old["hours"], old["minutes"], old["seconds"])
             halted = True if args.halt else False if args.run else old["halted"]
-            raw = R.encode(s, m, h, old["days"] if args.day is None else args.day, halted, old["carry"] and not args.clear_carry)
+            if file_raw is None:
+                raw = R.encode(s, m, h, old["days"] if args.day is None else args.day, halted, old["carry"] and not args.clear_carry)
             c.write_save(GB, raw, 512, None, RTC_MAPPER, 0)
             after = R.decode(_read(c))
             want = R.decode(raw)
