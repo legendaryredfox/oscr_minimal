@@ -6,7 +6,7 @@ package oscr
  * No OSCR original isso era feito pelo firmware lendo o arquivo do SD; aqui é o PC.
  */
 enum class FlashChip(val key: String, val code: Int, val mapper: Int, val label: String, val snes: Boolean = false, val md: Boolean = false, val generic: Boolean = false, val gba: Boolean = false, val gb: Boolean = false, val n64: Boolean = false, val snesAcc: Boolean = false) {
-    NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF040, mapper 30)"),
+    NESMAKER("nesmaker", 1, 30, "NES Maker (SST 39SF010A/020A/040, mapper 30)"),
     A29040B("a29040b", 2, 0, "A29040B (mapper 0)"),
     /** SNES: flash CFI de um chip só, com a fiação de LoROM ou de HiROM (menu "CFI LoROM / CFI HiROM" do OSCR). */
     SNES_LOROM("snes-lorom", 1, 0, "SNES flash CFI (fiação LoROM)", true),
