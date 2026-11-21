@@ -2,6 +2,7 @@
 """Coisas que todo comando usa: conexão (porta ou simulador), sistema, base de dados."""
 from __future__ import annotations
 
+import time
 import os
 import sys
 
@@ -14,6 +15,8 @@ from .errors import CliError, EXIT_ERROR, EXIT_NO_DEVICE, EXIT_REFUSED, EXIT_USA
 
 
 BAUDS = P.BAUDS
+BOOT_SETTLE = 2.5        # s sem enviar nada depois de abrir a porta
+BOOT_WAIT = 2.0          # s que o Mega leva para subir depois de abrir a porta (reset por DTR)
 
 
 def _sim_selftest_report() -> list:
@@ -141,11 +144,21 @@ def _open_raw(args) -> tuple[Client, Transport, dict]:
         except OSError as e:                              # porta ocupada, sem permissão (grupo dialout), cabo solto
             raise CliError("open_port", tr("err.open_port", port=port, error=e), EXIT_NO_DEVICE, tr("err.open_port.hint")) from e
         c = Client(t, timeout=0.5)
-        try:
-            return c, t, c.info()
-        except TimeoutError_ as e:
-            last = e
-            t.close()
+        # Abrir a porta reinicia o Mega (DTR do CH340 e do 16U2): bootloader + setup() levam ~2 s e o INFO que sai antes se perde.
+        # Insiste na mesma abertura até BOOT_WAIT s em vez de desistir em 0,5 s (e reabrir, o que reinicia de novo).
+        ser = getattr(t, "ser", None)                     # só a porta real reinicia o Mega; as falsas dos testes não têm `ser`
+        if ser is not None:
+            time.sleep(BOOT_SETTLE)                       # nada de enviar durante o boot: o lixo emperra o parser do firmware
+            ser.reset_input_buffer()
+        deadline = time.monotonic() + (BOOT_WAIT if ser is not None else 0)
+        while True:
+            try:
+                return c, t, c.info()
+            except TimeoutError_ as e:
+                last = e
+                if time.monotonic() >= deadline:
+                    break
+        t.close()
     raise CliError("no_response", tr("err.no_response", port=port, bauds=", ".join(map(str, bauds)), error=last), EXIT_NO_DEVICE, tr("err.no_response.hint"))
 
 

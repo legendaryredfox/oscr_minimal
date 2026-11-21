@@ -13,7 +13,7 @@ from .output import emit
 def selftest_lines(res: dict) -> list[str]:
     """Texto de cada achado, no idioma escolhido."""
     keys = {"gnd": "selftest.gnd", "pair": "selftest.pair", "pullup": "selftest.pullup", "clockgen": "selftest.clockgen"}
-    lines = [tr(keys.get(f["kind"], "selftest.unknown"), pin=(f["pins"] or [""])[0], a=(f["pins"] or [""])[0], b=(f["pins"] + [""])[1], kind=f["kind"])
+    lines = [tr(keys.get(f["kind"], "selftest.unknown"), pin=(f["pins"] or [""])[0], a=(f["pins"] or [""])[0], b=(f["pins"] + ["", ""])[1], kind=f["kind"])
              for f in res["findings"]]
     if res["truncated"]:
         lines.append(tr("selftest.truncated"))
