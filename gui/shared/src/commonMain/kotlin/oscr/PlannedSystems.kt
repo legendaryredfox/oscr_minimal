@@ -8,7 +8,7 @@ package oscr
 class PlannedSystem(val key: String, val label: String, val needs3v3: Boolean = false)
 
 val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
-    PlannedSystem("a2600", "Atari 2600"), PlannedSystem("a5200", "Atari 5200"), PlannedSystem("a7800", "Atari 7800"), PlannedSystem("a8bit", "Atari 8-bit"),
+    PlannedSystem("a5200", "Atari 5200"), PlannedSystem("a7800", "Atari 7800"), PlannedSystem("a8bit", "Atari 8-bit"),
     PlannedSystem("jaguar", "Atari Jaguar"), PlannedSystem("lynx", "Atari Lynx"), PlannedSystem("astrocade", "Bally Astrocade"),
     PlannedSystem("loopy", "Casio Loopy"), PlannedSystem("pv1000", "Casio PV-1000"), PlannedSystem("channelf", "Fairchild Channel F"),
     PlannedSystem("c64", "Commodore 64"), PlannedSystem("vic20", "Commodore VIC-20"),

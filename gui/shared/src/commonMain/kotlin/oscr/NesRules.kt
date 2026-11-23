@@ -94,6 +94,9 @@ object Rules {
         else -> null
     }
 
+    /** Atari 2600 (F-20, D206): o mapper tem que ser um dos ids do `readROM` do OSCR. */
+    fun a2600(mapper: Int): Problem? = if (A2600.byId(mapper) != null) null else Problem(S.V_A2600_MAPPER)
+
     /** Leitura do GBA 369-in-1 (F-18, D174): bloco (0 a 63) e tamanho em MB, as mesmas regras do firmware (Gba369.kt). */
     fun gba369(block: Int, mb: Int): Problem? = when (Gba369.errorKey(block, mb)) {
         null -> null

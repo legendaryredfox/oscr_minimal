@@ -9,7 +9,7 @@ internal class Args(val cmd: String?, val opts: Map<String, String>, val flags: 
     fun withOpt(name: String, value: String) = Args(cmd, opts + (name to value), flags, positional)
     fun int(name: String): Int {
         val v = opts[name] ?: return 0
-        val n = v.toIntOrNull()?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
+        val n = (if (v.startsWith("0x", true)) v.substring(2).toIntOrNull(16) else v.toIntOrNull())?.takeIf { it >= 0 } ?: throw CliError("usage", Msg.t("args.nonneg", "name" to name, "value" to v), EXIT_USAGE)
         if (name == "block" && n != 0 && n !in Proto.MIN_BLOCK..Proto.MAX_BLOCK)
             throw CliError("usage", Msg.t("args.block_min", "min" to Proto.MIN_BLOCK, "max" to Proto.MAX_BLOCK, "value" to n), EXIT_USAGE)
         return n
@@ -21,7 +21,7 @@ internal val LONG_VALUED = setOf("type", "accessory", "op", "set", "day", "fill"
 internal val FLAGS = setOf("simulate", "no-builtin-db", "json", "yes", "no-backup", "no-verify", "flash-id", "raw", "twice", "help", "version", "dry-run", "allow-5v", "ignore-cart-limit", "sound", "all", "auto-flash", "now", "halt", "run", "clear-carry")
 internal val COMMANDS = setOf("ports", "ram-test", "voltage", "selftest", "clock-cal", "gb-rtc", "boards", "board", "firmware-flash", "systems", "errors", "info", "detect", "dump", "save-read", "save-write", "identify", "search", "rom-write", "flash-id", "flash-read", "flash-blank", "flash-erase", "flash-write", "gbcamera", "save-convert")
 internal val OPTIONS = mapOf("snes" to listOf("prg"), "nes" to listOf("mapper", "prg", "chr", "ram"), "famicom" to listOf("mapper", "prg", "chr", "ram"),
-    "md" to listOf("mapper", "prg"), "gba" to listOf("mapper"), "gb" to listOf("mapper"), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "n64" to listOf("mapper", "prg"), "coleco" to listOf("prg"), "ngp" to listOf("prg"), "vectrex" to listOf("prg"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
+    "md" to listOf("mapper", "prg"), "gba" to listOf("mapper"), "gb" to listOf("mapper"), "sms" to listOf("mapper", "prg"), "gg" to listOf("mapper", "prg"), "sg1000" to listOf("prg"), "n64" to listOf("mapper", "prg"), "coleco" to listOf("prg"), "ngp" to listOf("prg"), "vectrex" to listOf("prg"), "a2600" to listOf("mapper"), "flash" to listOf("bus", "flash-kb", "flash-type", "sector-kb", "buffer"), "mock" to emptyList())
 
 internal fun parseArgs(argv: List<String>): Args {
     var cmd: String? = null

@@ -31,6 +31,14 @@ from .errors import EXIT_USAGE
 from .messages import tr
 
 
+def _int_auto(text: str) -> int:
+    """Inteiro decimal ou hexadecimal com prefixo 0x (os ids de mapper do Atari 2600 são conhecidos em hexadecimal)."""
+    try:
+        return int(text, 16) if text.lower().startswith("0x") else int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: {text!r}")
+
+
 def H(slug: str, **kw) -> str:
     """Texto de ajuda no idioma atual (catálogo `help.<slug>`, D133)."""
     return tr("help." + slug, **kw)
@@ -138,7 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
     fw.add_argument("--dry-run", action="store_true", help=H("fw_dry_run"))
     dtp = add("detect", cmd_detect, H("cmd_detect"), auto=True)
     dtp.add_argument("--flash-id", action="store_true", help=H("detect_flash_id"))
-    dtp.add_argument("--mapper", type=int, default=0, help=H("detect_mapper"))
+    dtp.add_argument("--mapper", type=_int_auto, default=0, help=H("detect_mapper"))
     dtp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
     dtp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))
     rp = add("gb-rtc", cmd_gbrtc, H("cmd_gbrtc"), system=False, out=True)
@@ -162,7 +170,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp_.add_argument("query", help=H("search_query"))
     sp_.add_argument("--limit", type=int, default=20, help=H("search_limit"))
     dp = add("dump", cmd_dump, H("cmd_dump"), out=True, auto=True)
-    dp.add_argument("--mapper", type=int, default=0, help=H("dump_mapper"))
+    dp.add_argument("--mapper", type=_int_auto, default=0, help=H("dump_mapper"))
     dp.add_argument("--prg", type=int, default=0, help=H("dump_prg"))
     dp.add_argument("--chr", type=int, default=0, help=H("dump_chr"))
     dp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
@@ -172,7 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--twice", action="store_true", help=H("dump_twice"))
     dp.add_argument("--game", help=H("dump_game"))
     for sp in (add("save-read", cmd_save_read, H("cmd_save_read"), out=True, auto=True), add("save-write", cmd_save_write, H("cmd_save_write"), inp=True)):
-        sp.add_argument("--mapper", type=int, default=0, help=H("save_mapper"))
+        sp.add_argument("--mapper", type=_int_auto, default=0, help=H("save_mapper"))
         sp.add_argument("--ram", type=int, default=0, help=H("save_ram"))
         sp.add_argument("--type", choices=tuple(P.SNES_TYPES), help=H("snes_type"))
         sp.add_argument("--accessory", choices=tuple(P.SNES_ACCESSORIES), help=H("snes_accessory"))

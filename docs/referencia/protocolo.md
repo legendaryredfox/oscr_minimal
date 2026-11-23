@@ -87,7 +87,12 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 12 | ColecoVision (adaptador de 30 pinos no slot SNES, 5 V; F-20, D201) | `.col` |
 | 13 | Neo Geo Pocket / Color (3,3 V; adaptador ainda não projetado; F-20, D202) | `.ngp` (os jogos de Color podem ser renomeados para `.ngc`) |
 | 14 | Vectrex (adaptador de 36 pinos no slot SNES, 5 V; F-20, D205) | `.vec` |
+| 15 | Atari 2600 (adaptador de 24 pinos no slot SNES, 5 V; F-20, D206) | `.a26` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções para Atari 2600 (D206)
+
+Usa o núcleo `Atari2600.cpp` do OSCR e **chama o `readROM` dele**: o método de leitura vem do id do mapper (`mapperDetail->id`, que o OSCR lê do banco `a2600-mappers` no SD); a costura aponta `mapperDetail` para um registro estático com o id do campo `mapper` do protocolo. Única mudança no núcleo: o `matchCRC` no fim do `readROM` fica sob `#if !OSCR_DUMPER` (como no `ST.cpp`). O cartucho não diz o mapper: o campo `mapper` é obrigatório e vale em `DETECT` (só para o `rom_size`), `DUMP_ROM`; `prg_kb` é ignorado. Ids aceitos (os do `switch` do `readROM`) e o tamanho que cada um lê: 0x20 2K, 0xC0 CV 2K, 0x40 4K, 0x3F Tigervision 8K, 0xE0 8K, 0xF8 8K, 0x08 F8SC 8K, 0xF9 Time Pilot 8K, 0xFE 8K, 0x0A UA 8K, 0xD0 DPC 10K, 0xFA 12K, 0xE7 8/12/16K, 0xF6 16K, 0x06 F6SC 16K, 0x3E 32K, 0xF4 32K, 0x04 F4SC 32K, 0xF0 64K, 0x07 X07 64K, 0xDF 128K, 0xBA 128K, 0xBB 256K. Outro id dá `ERRO 0x0004`. O E7 lê 8, 12 ou 16 KB conforme o conteúdo (`DETECT` dá `rom_size` 0 nele). `DETECT`: `status` 1 se os 32 bytes lidos de `$1000` são todos `$00` ou `$FF`, senão 0 (o 2600 não tem cabeçalho). `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/AtariCore.h` (`pc-tests/test_a26.cpp`); a mesma tabela em `host/oscr_host/a2600.py` e `gui/shared/.../A2600.kt` (`host/tests/test_a2600.py` confere as três). **Id 15 é o último que cabe na máscara de 16 bits do `INFO`**: o próximo sistema exige estender a máscara.
 
 ### Opções para Vectrex (D205)
 

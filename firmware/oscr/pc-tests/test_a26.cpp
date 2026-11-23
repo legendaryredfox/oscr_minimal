@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testa include/dumper/AtariCore.h (Atari 2600, F-20, D206): ids de mapper, tamanhos e classificação.
+#include <stdio.h>
+#include <string.h>
+#include "../include/dumper/AtariCore.h"
+
+using namespace oscr::a26;
+static int g_fail = 0, g_n = 0;
+#define CHECK(c) do { g_n++; if (!(c)) { g_fail++; printf("FALHOU %s:%d  %s\n", __FILE__, __LINE__, #c); } } while (0)
+
+int main() {
+  uint8_t n; Map const * t = table(n);
+  CHECK(n == 23);
+  for (uint8_t i = 0; i < n; i++) for (uint8_t k = i + 1; k < n; k++) CHECK(t[i].id != t[k].id);   // nenhum id repetido
+  CHECK(mapperKb(0x40) == 4 && mapperKb(0xF8) == 8 && mapperKb(0x08) == 8 && mapperKb(0xF6) == 16 && mapperKb(0xF4) == 32 && mapperKb(0xF0) == 64);
+  CHECK(mapperKb(0x20) == 2 && mapperKb(0xC0) == 2 && mapperKb(0x3F) == 8 && mapperKb(0x3E) == 32 && mapperKb(0xD0) == 10 && mapperKb(0xFA) == 12);
+  CHECK(mapperKb(0xDF) == 128 && mapperKb(0xBA) == 128 && mapperKb(0xBB) == 256 && mapperKb(0x07) == 64);
+  CHECK(mapperKb(0xE7) == kVariable && mapperValid(0xE7));
+  CHECK(mapperKb(0x00) == kUnknown && mapperKb(0x41) == kUnknown && mapperKb(0x1234) == kUnknown && !mapperValid(0xFF));
+  uint8_t b[32];
+  memset(b, 0xFF, 32); CHECK(classify(b, 32) == kNoCart);
+  memset(b, 0x00, 32); CHECK(classify(b, 32) == kNoCart);
+  memset(b, 0xA5, 32); CHECK(classify(b, 32) == kOk);      // valor único que não é $00 nem $FF
+  memset(b, 0xFF, 32); b[31] = 0x00; CHECK(classify(b, 32) == kOk);
+  CHECK(classify(b, 1) == kNoCart);
+  printf("%d verificacoes do Atari 2600, %d falhas\n", g_n, g_fail);
+  return g_fail ? 1 : 0;
+}
