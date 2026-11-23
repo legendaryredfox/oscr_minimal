@@ -84,7 +84,12 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 9 | Game Gear (adaptador Retrode ou Retron no slot Mega Drive; D137) | `.gg` |
 | 10 | SG-1000 (adaptador Raphnet no slot Mega Drive; D137) | `.sg` |
 | 11 | Nintendo 64 (slot N64 da placa `n64` ou da `completa`, 3,3 V; D158) | `.z64` |
+| 12 | ColecoVision (adaptador de 30 pinos no slot SNES, 5 V; F-20, D201) | `.col` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções para ColecoVision (D201)
+
+Usa o núcleo `Colecovision.cpp` do OSCR (`cartOn`, `readData`, `readSegment`, `cartOff`), só leitura de ROM a partir de `$8000`. O `readROM` do OSCR não é chamado: ele consulta a base de dados do cartão SD (que não existe aqui); a costura repete o que ele faz, sem a base. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 8, 12, 16, 20, 24 ou 32 (a tabela do menu do OSCR); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 32 bytes de `$8000`: `status` 1 se todos forem iguais a `$00` ou `$FF` (slot vazio), 0 se começam por `$AA55` ou `$55AA` (assinatura do console), 4 se há dados sem assinatura (homebrew ou contato sujo); a assinatura é convenção do console, não do OSCR. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A` (cartucho sem save). Regras puras em `include/dumper/ColvCore.h`, testadas em `pc-tests/test_colv.cpp`.
 
 ### Opções para Master System, Game Gear e SG-1000 (D137)
 

@@ -20,6 +20,7 @@
 # include "cores/NES.h"
 # include "cores/SMS.h"
 # include "cores/N64.h"
+# include "cores/Colecovision.h"
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
@@ -46,6 +47,7 @@
 # include "dumper/FlashProg.h"
 # include "dumper/VoltCore.h"
 # include "dumper/SmsCore.h"
+# include "dumper/ColvCore.h"
 # include "dumper/N64Core.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
@@ -307,6 +309,29 @@ namespace OSCR::Dumper
 
     namespace SM = OSCR::Cores::SMS;
     namespace N6 = OSCR::Cores::N64;
+    namespace CV = OSCR::Cores::Colecovision;
+
+    /**
+     * ColecoVision (F-20, D201): o `readROM` do OSCR cria o arquivo e chama `Extended::matchCRC`, que usa a base de dados do SD
+     * (`crdb` nulo aqui, e o `openDatabase` do OSCR para em erro fatal sem SD); então a costura faz o que o `readROM` faz, sem a base:
+     * `cartOn`, `readSegment` a partir de $8000 e `cartOff`. O núcleo não detecta o cartucho: a classificação é de `ColvCore.h`.
+     */
+    uint8_t colvProbe()
+    {
+      uint8_t sample[32];
+      CV::cartOn();
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = CV::readData(oscr::colv::kBase + i);
+      CV::cartOff();
+      return oscr::colv::classify(sample, sizeof sample);
+    }
+    void colvRead(uint16_t kb)
+    {
+      CV::cartOn();
+      OSCR::Storage::Shared::sharedFile.open("rom", O_WRONLY | O_CREAT | O_TRUNC);
+      CV::readSegment(oscr::colv::kBase, oscr::colv::kBase + uint32_t(kb) * 1024UL);
+      OSCR::Storage::Shared::sharedFile.close();
+      CV::cartOff();
+    }
 
     /**
      * Nintendo 64 (D158): lê os 64 primeiros bytes da ROM (`idCart` do OSCR: CRC1, código, versão e nome) e classifica o cabeçalho z64. O `getCartInfo` do OSCR
@@ -713,8 +738,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_N64) | (1U << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_FLASH; }
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_N64) | (1U << oscr::SYS_COLV) | (1U << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -820,6 +845,19 @@ namespace OSCR::Dumper
           return;
         }
 
+        if (system == oscr::SYS_COLV)
+        {
+          uint8_t st = oscr::colv::kNoCart;
+          bool ran = runCore([&st] { st = colvProbe(); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::colv::kNoCart) return;
+          strlcpy_P(out.name, PSTR("COLECOVISION"), sizeof(out.name));
+          out.rom_size = 0;                                         // o console não diz o tamanho (8 a 32 KB): o PC informa
+          out.save_size = 0; out.save_type = 0;
+          return;
+        }
+
         if (isSega(system))
         {
           if (!segaOptionsOk(system, optMapper, 0)) { out.status = 2; return; }      // o DETECT usa só o adaptador (campo mapper); o tamanho vem no dump
@@ -903,6 +941,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
+        if (system == oscr::SYS_COLV && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -918,8 +957,10 @@ namespace OSCR::Dumper
         bool r369 = system == oscr::SYS_GBA && kind == oscr::KIND_ROM && oscr::gba369::isRead(optMapper);
         uint16_t m369 = optMapper, mb369 = optPrgKb;
         uint16_t m64 = optMapper;
-        bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64]
+        uint16_t colvKb = optPrgKb;
+        bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64, colvKb]
         {
+          if (system == oscr::SYS_COLV) { colvRead(colvKb); return; }
           if (isNes(system))
           {
             NE::cartOn();
@@ -1012,6 +1053,7 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
+        if (system == oscr::SYS_COLV) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1405,6 +1447,15 @@ namespace OSCR::Dumper
             if (!oscr::n64::romMbValid(optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
             OSCR::Cores::cartSize = optPrgKb;                                           // o `readRom` do OSCR conta em MB
           }
+          return true;
+        }
+        if (system == oscr::SYS_COLV)
+        {
+          if (oscr::colv::sizeIndex(optPrgKb) == oscr::colv::kBadIndex) { err = oscr::E_ARGUMENTO; return false; }     // 8, 12, 16, 20, 24 ou 32 KB, sempre informado pelo PC
+          uint8_t st = oscr::colv::kNoCart;
+          bool ran = runCore([&st] { st = colvProbe(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::colv::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (isSega(system))

@@ -98,6 +98,7 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | Nintendo 64 | 1 a 64 MB; **o cabeçalho não diz o tamanho**: o programa o acha na base do projeto pelo CRC1 (ou `--prg MB`) | **lido e gravado**: SRAM 32/96 KB, FlashRAM 128 KB, EEPROM 4/16 Kbit (tipo pela base ou `--mapper 1/2/4/5/6`) | Só cartucho de N64 (slot N64 da placa `n64` ou da `completa`, 3,3 V). `dumper detect -s n64` mostra o jogo, o tamanho e o save achados; `dump -s n64` salva `.z64`. Jogo fora da base: informe `--prg` e `--mapper`. Sem gravar ROM em flash repro, Gameshark, Xplorer nem Controller Pak. Nada rodou em hardware (D158) |
 | Game Gear | idem | idem | **Só por adaptador** no slot Mega Drive: Retron 3in1 (`--mapper 0`) ou Retrode (`--mapper 1`). Cuidado com a tensão do adaptador (o Game Gear é de 5 V, mas confira o adaptador). |
 | SG-1000 | 8, 16, 24 ou 32 KB, sempre com `--prg` (não há cabeçalho) | sem save | Adaptador Raphnet no slot Mega Drive (`--mapper 0`). |
+| ColecoVision (`coleco`) | 8, 12, 16, 20, 24 ou 32 KB, sempre com `--prg` (o cartucho não informa) | sem save | Adaptador de 30 pinos no slot SNES (pinagem no cabeçalho de `Colecovision.cpp`); 5 V. Só leitura. **O adaptador não existe no repositório e o núcleo nunca rodou em hardware** (D201). |
 
 Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (código `0x0002`).
 

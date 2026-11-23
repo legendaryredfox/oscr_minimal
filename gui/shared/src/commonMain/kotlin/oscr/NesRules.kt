@@ -88,6 +88,7 @@ object Rules {
     fun romSize(system: CartSystem, kb: Int): Problem? = when (system) {
         CartSystem.SNES -> if (kb == 0 || (kb % 64 == 0 && kb <= 8064)) null else Problem(S.V_SNES_SIZE)
         CartSystem.MD -> if (kb == 0 || kb in 32..8192) null else Problem(S.V_MD_SIZE)
+        CartSystem.COLECO -> if (kb in setOf(8, 12, 16, 20, 24, 32)) null else Problem(S.V_COLECO_SIZE)     // o cartucho não informa o tamanho (ColvCore.h)
         else -> null
     }
 
