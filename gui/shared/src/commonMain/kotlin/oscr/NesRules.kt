@@ -89,6 +89,7 @@ object Rules {
         CartSystem.SNES -> if (kb == 0 || (kb % 64 == 0 && kb <= 8064)) null else Problem(S.V_SNES_SIZE)
         CartSystem.MD -> if (kb == 0 || kb in 32..8192) null else Problem(S.V_MD_SIZE)
         CartSystem.NGP -> if (kb in setOf(0, 512, 1024, 2048, 4096)) null else Problem(S.V_NGP_SIZE)     // 0 = pelo ID do chip (NgpCore.h)
+        CartSystem.VECTREX -> if (kb in setOf(4, 8, 12, 16, 32, 64)) null else Problem(S.V_VECTREX_SIZE)     // o cartucho não informa o tamanho (VecCore.h)
         CartSystem.COLECO -> if (kb in setOf(8, 12, 16, 20, 24, 32)) null else Problem(S.V_COLECO_SIZE)     // o cartucho não informa o tamanho (ColvCore.h)
         else -> null
     }

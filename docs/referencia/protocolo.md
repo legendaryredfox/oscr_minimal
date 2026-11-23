@@ -86,7 +86,12 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 11 | Nintendo 64 (slot N64 da placa `n64` ou da `completa`, 3,3 V; D158) | `.z64` |
 | 12 | ColecoVision (adaptador de 30 pinos no slot SNES, 5 V; F-20, D201) | `.col` |
 | 13 | Neo Geo Pocket / Color (3,3 V; adaptador ainda não projetado; F-20, D202) | `.ngp` (os jogos de Color podem ser renomeados para `.ngc`) |
+| 14 | Vectrex (adaptador de 36 pinos no slot SNES, 5 V; F-20, D205) | `.vec` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções para Vectrex (D205)
+
+Usa o núcleo `Vectrex.cpp` do OSCR (`cartOn`, `readSegment`, `cartOff`), só leitura de ROM. O `readROM` do OSCR não é chamado (usa a base de dados do SD); a costura repete os trechos dele (`VecCore.h`, `segments`) e troca o PB6 (PH5) direto no PORTH. `prg_kb` é o **tamanho em KB** e vale sempre: 4, 8, 12, 16, 32 ou 64 (a tabela do menu do OSCR; os de 64 KB leem o segundo banco com o PB6 alto); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` com o PB6 baixo: `status` 1 se todos iguais a `$00` ou `$FF`, 0 se o primeiro byte é `$67` (o que a BIOS do console procura; convenção do console, não do OSCR), 4 se há dados com outro primeiro byte. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O `/OE` do cartucho não chega ao slot SNES daqui (`docs/planos/adaptador-vectrex.md`).
 
 ### Opções para Neo Geo Pocket (D202)
 

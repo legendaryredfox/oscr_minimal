@@ -22,6 +22,7 @@
 # include "cores/N64.h"
 # include "cores/Colecovision.h"
 # include "cores/NeoGeoPocket.h"
+# include "cores/Vectrex.h"
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
 # include "dumper/NesFlash.h"
@@ -50,6 +51,7 @@
 # include "dumper/SmsCore.h"
 # include "dumper/ColvCore.h"
 # include "dumper/NgpCore.h"
+# include "dumper/VecCore.h"
 # include "dumper/N64Core.h"
 
 // `mmc6` e `flashfound` ficam no .cpp do núcleo NES, sem declaração no cabeçalho; o MMC6 só é marcado, nunca desmarcado.
@@ -315,6 +317,37 @@ namespace OSCR::Dumper
     namespace N6 = OSCR::Cores::N64;
     namespace CV = OSCR::Cores::Colecovision;
     namespace NG = OSCR::Cores::NeoGeoPocket;
+    namespace VX = OSCR::Cores::Vectrex;
+
+    /**
+     * Vectrex (F-20, D205): como no ColecoVision (D201), o `readROM` do OSCR não serve (cria o arquivo e chama `Standard::matchCRC`, que usa a base do SD).
+     * A costura repete os trechos dele (`VecCore.h`, `segments`) com as mesmas `cartOn`, `readSegment` e `cartOff`; o PB6 (PH5), que o núcleo troca com macros
+     * locais (`PB6_ENABLE`/`PB6_DISABLE`), é mexido aqui direto no PORTH. A detecção não vem do OSCR (ver `VecCore.h`).
+     */
+    uint8_t vecProbe()
+    {
+      uint8_t sample[32];
+      VX::cartOn();
+      PORTH &= ~(1 << 5);                                               // PB6 baixo: banco 0
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = VX::readData(i);
+      VX::cartOff();
+      return oscr::vec::classify(sample, sizeof sample);
+    }
+    void vecRead(uint16_t kb)
+    {
+      oscr::vec::Seg seg[6];
+      uint8_t n = oscr::vec::segments(oscr::vec::sizeIndex(kb), seg);
+      VX::cartOn();
+      OSCR::Storage::Shared::sharedFile.open("rom", O_WRONLY | O_CREAT | O_TRUNC);
+      for (uint8_t i = 0; i < n; i++)
+      {
+        if (seg[i].bank) PORTH |= (1 << 5); else PORTH &= ~(1 << 5);
+        VX::readSegment(seg[i].start, seg[i].end);
+      }
+      PORTH &= ~(1 << 5);
+      OSCR::Storage::Shared::sharedFile.close();
+      VX::cartOff();
+    }
 
     /**
      * Neo Geo Pocket (F-20, D202): o `getCartInfo` do OSCR lê o ID do chip (autoselect) e o cabeçalho SNK; o menu de tamanho dele
@@ -770,8 +803,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_N64) | (1U << oscr::SYS_COLV) | (1U << oscr::SYS_NGP) | (1U << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_FLASH; }
+      uint16_t systems() override { return (1U << oscr::SYS_SNES) | (1U << oscr::SYS_NES) | (1U << oscr::SYS_FAMICOM) | (1U << oscr::SYS_MD) | (1U << oscr::SYS_GBA) | (1U << oscr::SYS_GB) | (1U << oscr::SYS_SMS) | (1U << oscr::SYS_GG) | (1U << oscr::SYS_SG1000) | (1U << oscr::SYS_N64) | (1U << oscr::SYS_COLV) | (1U << oscr::SYS_NGP) | (1U << oscr::SYS_VEC) | (1U << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -874,6 +907,19 @@ namespace OSCR::Dumper
           oscr::n64::formatName(out.name, sizeof(out.name), uint32_t(N6::crc1), OSCR::Cores::cartID, OSCR::Cores::fileName);
           out.rom_size = 0;                                         // o cabeçalho não diz o tamanho: o PC acha pelo CRC1 (base de dados) ou o usuário informa
           out.save_size = 0; out.save_type = 0;                     // nem o tipo de save
+          return;
+        }
+
+        if (system == oscr::SYS_VEC)
+        {
+          uint8_t st = oscr::vec::kNoCart;
+          bool ran = runCore([&st] { st = vecProbe(); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::vec::kNoCart) return;
+          strlcpy_P(out.name, PSTR("VECTREX"), sizeof(out.name));
+          out.rom_size = 0;                                         // o console não diz o tamanho (4 a 64 KB): o PC informa
+          out.save_size = 0; out.save_type = 0;
           return;
         }
 
@@ -986,7 +1032,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
-        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
+        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1007,6 +1053,7 @@ namespace OSCR::Dumper
         bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64, colvKb, ngpBytes]
         {
           if (system == oscr::SYS_COLV) { colvRead(colvKb); return; }
+          if (system == oscr::SYS_VEC) { vecRead(colvKb); return; }
           if (system == oscr::SYS_NGP) { ngpRead(ngpBytes); return; }
           if (isNes(system))
           {
@@ -1100,7 +1147,7 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
-        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP) { err = oscr::E_SEM_SAVE; return false; }
+        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1494,6 +1541,15 @@ namespace OSCR::Dumper
             if (!oscr::n64::romMbValid(optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
             OSCR::Cores::cartSize = optPrgKb;                                           // o `readRom` do OSCR conta em MB
           }
+          return true;
+        }
+        if (system == oscr::SYS_VEC)
+        {
+          if (oscr::vec::sizeIndex(optPrgKb) == oscr::vec::kBadIndex) { err = oscr::E_ARGUMENTO; return false; }     // 4, 8, 12, 16, 32 ou 64 KB, sempre informado pelo PC
+          uint8_t st = oscr::vec::kNoCart;
+          bool ran = runCore([&st] { st = vecProbe(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::vec::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (system == oscr::SYS_NGP)

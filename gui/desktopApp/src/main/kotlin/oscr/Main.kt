@@ -207,7 +207,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val prgN = prgKb.toIntOrNull() ?: 0; val chrN = chrKb.toIntOrNull() ?: 0; val ramN = ramKb.toIntOrNull() ?: 0; val mapN = mapper.toIntOrNull() ?: 0
     val problem: Problem? = when {
         isNes -> Rules.nes(mapN, prgN, chrN)
-        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP -> Rules.romSize(system, prgN)
+        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
@@ -1033,6 +1033,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             }
             if (stub == null && system == CartSystem.COLECO) Callout(t(S.COLECO_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.NGP) Callout(t(S.NGP_HINT), Tone.INFO)
+            if (stub == null && system == CartSystem.VECTREX) Callout(t(S.VECTREX_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.N64) {
                 Callout(t(S.N64_HINT), Tone.INFO)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1041,7 +1042,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                         supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
                 }
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP)) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }
