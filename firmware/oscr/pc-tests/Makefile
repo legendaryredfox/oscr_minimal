@@ -5,7 +5,7 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc build/test_mdextra build/test_mdbank build/test_gbacc build/test_colv
+test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc build/test_mdextra build/test_mdbank build/test_gbacc build/test_colv build/test_ngp
 	./build/test_nes
 	./build/test_gba369
 	./build/test_snesacc
@@ -15,6 +15,7 @@ test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms bu
 	./build/test_snes_type
 	./build/test_sms
 	./build/test_colv
+	./build/test_ngp
 	./build/test_n64
 	./build/test_proto
 	./build/test_snes_plan
@@ -27,6 +28,10 @@ build/test_sms: test_sms.cpp ../include/dumper/SmsCore.h
 build/test_colv: test_colv.cpp ../include/dumper/ColvCore.h
 	mkdir -p build
 	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_colv.cpp
+
+build/test_ngp: test_ngp.cpp ../include/dumper/NgpCore.h
+	mkdir -p build
+	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_ngp.cpp
 
 build/test_snes_type: test_snes_type.cpp ../include/dumper/SnesType.h
 	mkdir -p build

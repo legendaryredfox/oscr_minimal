@@ -188,10 +188,12 @@ namespace OSCR::Cores::NeoGeoPocket
     }
 
     // Set rom size manually if chip ID is unknown
+# if !OSCR_DUMPER   // fork oscr_minimal: sem menu; chip desconhecido deixa cartSize em 0 e o tamanho vem do PC (opção prg_kb, D202)
     if (cartSize == 0)
     {
       changeSize();
     }
+# endif
 
     return true;
   }

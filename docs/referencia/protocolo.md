@@ -85,7 +85,12 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 10 | SG-1000 (adaptador Raphnet no slot Mega Drive; D137) | `.sg` |
 | 11 | Nintendo 64 (slot N64 da placa `n64` ou da `completa`, 3,3 V; D158) | `.z64` |
 | 12 | ColecoVision (adaptador de 30 pinos no slot SNES, 5 V; F-20, D201) | `.col` |
+| 13 | Neo Geo Pocket / Color (3,3 V; adaptador ainda não projetado; F-20, D202) | `.ngp` (os jogos de Color podem ser renomeados para `.ngc`) |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
+
+### Opções para Neo Geo Pocket (D202)
+
+Usa o núcleo `NeoGeoPocket.cpp` do OSCR (`cartOn`, `getCartInfo`, `writeByte`, `readByte`, `cartOff`), só leitura de ROM. `getCartInfo` entra no modo autoselect da flash (escreve `AA/55/90` no chip e depois `F0`), lê o ID do fabricante e do dispositivo (tamanho de 512 KB a 2 MB; 4 MB para três títulos) e confere o cabeçalho "COPYRIGHT BY SNK CORPORATION" ou " LICENSED BY SNK CORPORATION"; nome, versão e tipo (mono ou cor) saem dele. O menu de tamanho do núcleo (chip desconhecido) fica desligado no fork (`#if !OSCR_DUMPER`). `readROM` do OSCR não é chamado (abre prompt e espera tecla); a costura repete o laço de leitura em blocos de 512 bytes. `prg_kb`: 0 = pelo ID do chip; 512, 1024, 2048 ou 4096 informa o tamanho e vale sempre; outro valor dá `ERRO 0x0004`. `DETECT`: `status` 1 se o ID do chip é `$FFFF` (nada responde), 0 com cabeçalho SNK, 4 se o chip responde mas o cabeçalho não é da SNK (com `prg_kb` o dump segue, como o "Continuar" do OSCR); `rom_size` é 0 com chip desconhecido. Chip desconhecido sem `prg_kb` dá `ERRO 0x0004`. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O resumo do dumping.guide recomenda **ler pelo menos 6 vezes e comparar** (a leitura é pouco confiável). Regras puras em `include/dumper/NgpCore.h`, testadas em `pc-tests/test_ngp.cpp`.
 
 ### Opções para ColecoVision (D201)
 

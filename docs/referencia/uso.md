@@ -99,6 +99,7 @@ Troque o sistema na lista; para trocar de **cartucho** desligue o USB (seção 1
 | Game Gear | idem | idem | **Só por adaptador** no slot Mega Drive: Retron 3in1 (`--mapper 0`) ou Retrode (`--mapper 1`). Cuidado com a tensão do adaptador (o Game Gear é de 5 V, mas confira o adaptador). |
 | SG-1000 | 8, 16, 24 ou 32 KB, sempre com `--prg` (não há cabeçalho) | sem save | Adaptador Raphnet no slot Mega Drive (`--mapper 0`). |
 | ColecoVision (`coleco`) | 8, 12, 16, 20, 24 ou 32 KB, sempre com `--prg` (o cartucho não informa) | sem save | Adaptador de 30 pinos no slot SNES (pinagem no cabeçalho de `Colecovision.cpp`); 5 V. Só leitura. **O adaptador não existe no repositório e o núcleo nunca rodou em hardware** (D201). |
+| Neo Geo Pocket (`ngp`) | 512 KB a 4 MB pelo ID do chip e pelo cabeçalho SNK; `--prg` (512, 1024, 2048 ou 4096) quando o chip é desconhecido ou o cabeçalho falta | sem save | 3,3 V. Só leitura. **Leia pelo menos 6 vezes e compare os CRC32**: a leitura é pouco confiável. Adaptador ainda não projetado; núcleo nunca rodou em hardware (D202). |
 
 Sistemas ou cartuchos fora disso: o firmware responde "sistema não suportado" (código `0x0002`).
 
