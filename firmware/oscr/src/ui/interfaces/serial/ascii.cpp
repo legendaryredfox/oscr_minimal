@@ -125,12 +125,14 @@ namespace OSCR
             return UserInput::kUserInputUnknown;
           }
         }
+#if !OSCR_DUMPER // fork oscr_minimal: o PC fala o protocolo do dumper, não os comandos do atualizador (economiza flash)
         // Check if the input is an updater command and execute it if so...
         else if (OSCR::Updater::execCommand())
         {
           // Ignore updater commands
           return UserInput::kUserInputIgnore;
         }
+#endif
 
         // Check if the input is an integer (>0)
         uint8_t choice = OSCR::Util::clamp(atoi(command), 0, UINT8_MAX);
