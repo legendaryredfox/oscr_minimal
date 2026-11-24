@@ -33,11 +33,12 @@ Pinagem do cartucho: o quadro "Left Slot Cartridge Pinout, 30P 2.54mm pitch" no 
 | /S5 | 49 | PH3 | 12 |
 | R/W | 54 | PH5 | R |
 | /CCTL | 41 | PL0 | 15 |
+| PHI2 | 57 | - | S |
 
-Pinos fixos do conector: +5V no `13` (slot 27 e 58, 5 V fixo; **sem problema de tensão**) e GND no `B` (slot 5 e 36). `RD4` (`A`) e `RD5` (`14`) são entradas que o núcleo configura mas **não lê**: ficam sem ligação no adaptador. Nada mais é usado.
+Pinos fixos do conector: +5V no `13` (slot 27 e 58, 5 V fixo; **sem problema de tensão**) e GND no `B` (slot 5 e 36). `RD4` (`A`) e `RD5` (`14`) são entradas que o núcleo configura mas **não lê**: ficam sem ligação no adaptador. Nada mais é usado. O `PHI2` (pino `S`) está na tabela como `-` (Si5351, pino 57).
 
-## PENDENTE: PHI2
+## PHI2 (D213)
 
-O pino `S` (`PHI2`, o relógio do 6502, 1,79 MHz) é **pulsado por PH1** na troca de banco (`bankSwitch`, 2 pulsos) e nada mais usa PH1. **PH1 não chega ao slot SNES nesta placa** (o pino 57 do slot, "CPU clock", vem do CLK1 do Si5351, e o núcleo do 8 bits não programa o Si5351). Consequência: **cartuchos com troca de banco (XE de 32, 64 e 128 KB e o Necromancer de 16 KB) não vão trocar de banco** com a placa como está; os de 8 KB, 16 KB sem troca e o Bounty Bob (40 KB, troca por leitura de endereço) não dependem do `PHI2`. Para resolver é preciso decidir entre (a) ligar o `PHI2` ao pino 57 e programar o CLK1 do Si5351 em 1,79 MHz no firmware, ou (b) levar PH1 até o adaptador por um pino livre do slot. Nenhuma das duas foi feita.
+O `PHI2` (pino `S`, o relógio do 6502, 1,79 MHz) vai ao **pino 57 do slot SNES**, que é o CLK1 do Si5351 (o mesmo que o 7800 usa). O núcleo pulsa PH1 na troca de banco (`bankSwitch`), mas PH1 não chega ao slot; no lugar disso a costura do firmware programa o CLK1 em 1,7897725 MHz (relógio NTSC) enquanto lê um cartucho que troca de banco (XE de 32, 64 e 128 KB no slot esquerdo) e o desliga depois. Com o relógio correndo solto o pulso do núcleo é irrelevante: a escrita em `$D5xx` fica de pé por mais de um período (cerca de 1 us contra 0,56 us). **Exige o módulo Si5351 instalado** para 32, 64 e 128 KB (sem ele o firmware recusa a leitura com `E_CARTUCHO_IO`). No de 16 KB o firmware liga o relógio se o Si5351 existir (o Necromancer troca de banco; os de 16 KB comuns não precisam e a leitura não exige o módulo). Cartuchos de 8 KB e o Bounty Bob (40 KB, troca por leitura de endereço) não dependem do `PHI2`. Não conferido em hardware: se o cartucho trocar de banco só em borda de subida isolada, o relógio solto pode precisar de ajuste.
 
 Falta o desenho do PCB (conector de 30 posições, 2,54 mm; o do slot direito usa o mesmo adaptador com os pinos em outra ordem, chaveamento e espessura no slot SNES a confirmar).

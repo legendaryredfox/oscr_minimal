@@ -55,7 +55,7 @@ def port_of(sig: str, a_hi: int) -> str | None:
 def rows_of(doc: Path) -> list[tuple[str, str, str, str]]:
     rows = []
     for line in doc.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^\| ([AD]\d+|/S4|/S5|R/W|/CCTL|/OE|/WE) \| (\d+) \| (P[A-Z]\d) \| (\w+) \|$", line)
+        m = re.match(r"^\| ([AD]\d+|/S4|/S5|R/W|/CCTL|/OE|/WE|PHI2) \| (\d+) \| (P[A-Z]\d|-) \| (\w+) \|$", line)
         if m:
             rows.append(m.groups())
     return rows
@@ -77,6 +77,10 @@ def check(tag: str, doc: Path, pinout: dict[str, str], want_rows: int, a_hi: int
         want = controls.get(sig) or port_of(sig, a_hi)
         if want != port:
             errs.append(f"{tag} {sig}: tabela diz {port}, o núcleo usa {want}")
+        if port == "-":
+            if int(slot) != 57:
+                errs.append(f"{tag} {sig}: a saída CLK1 do Si5351 é o pino 57 do slot SNES (tabela diz {slot})")
+            continue
         got = pins.get(int(slot), ("?", "?"))[1]
         if got != port:
             errs.append(f"{tag} {sig}: pino {slot} do slot SNES é {got} no pinmap (tabela diz {port})")
@@ -92,16 +96,16 @@ def main() -> int:
     pins = snes_pins()
     # --- Atari 8 bits
     po = a8_pinout()
-    e, used = check("a8bit", ROOT / "docs/planos/adaptador-a8bit.md", po, 25, 12, {"/S4": "PH6", "/S5": "PH3", "R/W": "PH5", "/CCTL": "PL0"},
-                    {"13": "+5V", "B": "GND"}, {"A": "RD4", "14": "RD5", "S": "PHI2"}, 30)  # type: ignore[misc]
+    e, used = check("a8bit", ROOT / "docs/planos/adaptador-a8bit.md", po, 26, 12, {"/S4": "PH6", "/S5": "PH3", "R/W": "PH5", "/CCTL": "PL0", "PHI2": "-"},
+                    {"13": "+5V", "B": "GND"}, {"A": "RD4", "14": "RD5"}, 30)  # type: ignore[misc]
     errs += e
     if sorted(used) != sorted(po):
         errs.append(f"a8bit: pinos do conector que faltam ou sobram: {sorted(set(po) ^ set(used))}")
     doc8 = (ROOT / "docs/planos/adaptador-a8bit.md").read_text(encoding="utf-8")
-    if "PENDENTE: PHI2" not in doc8:
-        errs.append("a8bit: o documento tem que registrar o PHI2 (PH1 não chega ao slot) como PENDENTE")
-    if any(v[1] == "PH1" or v[0] == "PH1" for v in pins.values()):
-        errs.append("a8bit: o pinmap SNES passou a ter PH1; revisar o PENDENTE do PHI2")
+    if "PENDENTE" in doc8:
+        errs.append("a8bit: o documento não deveria ter mais PENDENTE (o PHI2 vai ao pino 57, D213)")
+    if any(v[1] == "PH1" for v in pins.values()):
+        errs.append("a8bit: o pinmap SNES passou a ter PH1; revisar a nota do PHI2")
     # --- Lynx
     pl = lynx_pinout()
     e, used = check("lynx", ROOT / "docs/planos/adaptador-lynx.md", pl, 21, 10, {}, {"1": "GND"}, {"31": "VCC", "33": "VCC", "34": "SWVCC"}, 34)  # type: ignore[misc]
@@ -120,7 +124,7 @@ def main() -> int:
             errs.append(f"pino {p} do slot SNES não é '{want}' no pinmap")
     for e in errs:
         print("ERRO", e)
-    print("adaptadores Atari 8 bits e Lynx:", "divergências" if errs else "ok (8 bits 25 linhas, Lynx 21 linhas; PENDENTES conferidos)")
+    print("adaptadores Atari 8 bits e Lynx:", "divergências" if errs else "ok (8 bits 26 linhas, Lynx 21 linhas; PENDENTES conferidos)")
     return 1 if errs else 0
 
 

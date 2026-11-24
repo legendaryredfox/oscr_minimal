@@ -107,6 +107,10 @@ namespace oscr { namespace atari8
     if (slot == 1) return 8;
     return sizeIndex(kb) == kBad ? 0 : kb;
   }
+  /// Troca de banco (`bankSwitch` do núcleo) precisa do PHI2: cartuchos XE de 32, 64 e 128 KB no slot esquerdo (D213). 
+  inline bool needsClock(uint16_t slot, uint16_t kb) { return slot == 0 && (kb == 32 || kb == 64 || kb == 128); }
+  /// O `readROM` chama `bankSwitch` também no de 16 KB (para o Necromancer): liga o relógio se o Si5351 existir, mas não o exige (os de 16 KB comuns não usam).
+  inline bool usesClock(uint16_t slot, uint16_t kb) { return needsClock(slot, kb) || (slot == 0 && kb == 16); }
 } }  // namespace oscr::atari8
 
 namespace oscr { namespace lynx

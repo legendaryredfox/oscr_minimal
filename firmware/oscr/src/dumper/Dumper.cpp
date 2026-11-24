@@ -393,11 +393,37 @@ namespace OSCR::Dumper
       A8::cartOff();
       return oscr::a26::classify(sample, sizeof sample);
     }
+    /**
+     * PHI2 do Atari 8 bits (D213). O `bankSwitch` do núcleo pulsa PH1 para segurar o `PHI2`, mas PH1 não chega ao slot SNES; o `PHI2` vai ao pino 57 do slot (o CLK1 do
+     * Si5351, o mesmo do 7800) e a costura programa o CLK1 em 1,7897725 MHz (o relógio NTSC do 6502 do Atari) enquanto o `readROM` do OSCR roda. Com o relógio correndo
+     * solto, o pulso que o núcleo faz em PH1 vira irrelevante: a escrita em $D5xx fica de pé por mais de um período (cerca de 1 us contra 0,56 us).
+     */
+    bool a8ClockPresent()
+    {
+#if defined(ENABLE_CLOCKGEN)
+      return OSCR::ClockGen::exists() || OSCR::ClockGen::initialize();
+#else
+      return false;
+#endif
+    }
+    void a8Clock(bool on)
+    {
+#if defined(ENABLE_CLOCKGEN)
+      if (!a8ClockPresent()) return;
+      if (on) OSCR::ClockGen::clockgen.set_freq(178977250ULL, SI5351_CLK1);   // unidade da biblioteca: 0,01 Hz
+      OSCR::ClockGen::clockgen.output_enable(SI5351_CLK1, on ? 1 : 0);
+#else
+      (void)on;
+#endif
+    }
     void a8Read(uint16_t slot, uint16_t kb)
     {
       A8::atari8right = slot == 1;
       A8::romSize = oscr::atari8::sizeIndex(kb) == oscr::atari8::kBad ? 0 : oscr::atari8::sizeIndex(kb);
+      bool clk = oscr::atari8::usesClock(slot, kb);                     // 16 KB: liga se houver Si5351 (Necromancer); 32, 64 e 128 KB: `prepare` já exigiu
+      if (clk) a8Clock(true);
       A8::readROM();                                                    // liga e desliga o cartucho e abre/fecha o "arquivo" sozinha
+      if (clk) a8Clock(false);
     }
     /**
      * Atari Jaguar (F-20, D211): só ROM. O `readROM` do OSCR lê 32 bits por vez e usa `romSize` (0 a 2 = 1, 2 ou 4 MB) do próprio núcleo, que a costura
@@ -1804,6 +1830,7 @@ namespace OSCR::Dumper
         if (system == oscr::SYS_A8)
         {
           if (oscr::atari8::totalKb(optMapper, optPrgKb) == 0) { err = oscr::E_ARGUMENTO; return false; }   // slot 0 ou 1 e tamanho do OSCR (AtariCore.h); no slot direito o tamanho é ignorado
+          if (!forSave && oscr::atari8::needsClock(optMapper, optPrgKb) && !a8ClockPresent()) { err = oscr::E_CARTUCHO_IO; return false; }   // XE de 32/64/128 KB troca de banco pelo PHI2 do Si5351 (D213)
           uint8_t st = oscr::a26::kNoCart;
           uint16_t slot = optMapper;
           bool ran = runCore([&st, slot] { st = a8Probe(slot); });
