@@ -86,7 +86,7 @@ namespace OSCR::Cores::N64 { extern uint16_t eepPages; extern OSCR::CRC32::crc32
 // `romSize` (índice em `romSizes`) e `atari8right` ficam no .cpp do núcleo Atari8, sem declaração no cabeçalho (como `mmc6` do NES): o `readROM` do OSCR lê os dois.
 namespace OSCR::Cores::Atari8 { extern uint8_t romSize; extern bool atari8right; }
 // `romSize` (índice 0 a 2) e os dois últimos words lidos ficam no .cpp do núcleo Jaguar, sem declaração no cabeçalho.
-namespace OSCR::Cores::AtariJaguar { extern uint8_t romSize; extern uint16_t tempDataLO; extern uint16_t tempDataHI; }
+namespace OSCR::Cores::AtariJaguar { extern uint8_t romSize; extern uint16_t tempDataLO; extern uint16_t tempDataHI; extern int eepSize; extern uint32_t flaSize; extern uint16_t flashID; }
 
 namespace OSCR::Dumper
 {
@@ -417,6 +417,32 @@ namespace OSCR::Dumper
       }
       JG::cartOff();
       return oscr::a26::classify(sample, sizeof sample);
+    }
+    /**
+     * Jaguar, saves (D212): `mapper` 0 a 4 = EEPROM 93C46/56/66/76/86 (128 a 2048 bytes, o `eepSize` do núcleo) e 5 = o flash AT29C010 de 128 KB do Memory Track
+     * (`flaSize`); a costura só preenche essas duas variáveis do núcleo e chama `readEEP`, `writeEEP`, `readFLASH` e `writeFLASH` do OSCR. `readID` (o OSCR chama ao
+     * entrar no menu) acha o Memory Track pelo ID 0x1FD5.
+     */
+    uint32_t jagSaveBytes(uint16_t m) { return oscr::jag::saveBytes(m); }
+    bool jagMemoryTrack()
+    {
+      JG::readID();
+      return JG::flashID == 0x1FD5;
+    }
+    void jagReadSave(uint16_t m)
+    {
+      if (m <= 4) { JG::eepSize = m; JG::readEEP(); }
+      else { JG::flaSize = 0x20000UL; JG::readFLASH(); }
+    }
+    void jagWriteSave(uint16_t m)
+    {
+      if (m <= 4) { JG::eepSize = m; JG::writeEEP(); }              // a conferência é do PC: relê o save e compara
+      else { JG::flaSize = 0x20000UL; JG::writeFLASH(); }           // idem: o `verifyFLASH` do OSCR relê o arquivo, que não existe no fluxo
+    }
+    void jagReadMem(uint16_t kb)
+    {
+      JG::romSize = oscr::jag::sizeIndex(kb) == oscr::jag::kBad ? 0 : oscr::jag::sizeIndex(kb);
+      JG::readMEMORY();                                             // ROM U1 do Memory Track; `cartOn` do núcleo refaz `cartSize` em MB (ver D212)
     }
     void jagRead(uint16_t kb)
     {
@@ -1075,9 +1101,11 @@ namespace OSCR::Dumper
           if (!ran) { out.status = 1; return; }
           out.status = st;
           if (st == oscr::a26::kNoCart) return;
-          strlcpy_P(out.name, PSTR("JAGUAR"), sizeof(out.name));
+          bool mt = false;
+          runCore([&mt] { mt = jagMemoryTrack(); }, true);                              // o OSCR faz o mesmo ao entrar no menu (escreve a sequência de ID no cartucho)
+          strlcpy_P(out.name, mt ? PSTR("JAGMEMTRACK") : PSTR("JAGUAR"), sizeof(out.name));
           out.rom_size = oscr::jag::sizeIndex(optPrgKb) == oscr::jag::kBad ? 0 : uint32_t(optPrgKb) * 1024UL;   // o cartucho não informa o tamanho: vem do `prg_kb`
-          out.save_size = 0; out.save_type = 0;
+          out.save_size = mt ? 0x20000UL : 0; out.save_type = mt ? 5 : 0;                // 5 = o `mapper` do save do Memory Track; a EEPROM não tem como ser detectada
           return;
         }
 
@@ -1245,7 +1273,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
-        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
+        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1253,6 +1281,7 @@ namespace OSCR::Dumper
         else if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
         else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (isSega(system)) { }                                      // SRAM de 32 KB sempre (o usuário sabe se o cartucho tem)
+        else if (system == oscr::SYS_JAG) { }                             // EEPROM ou Memory Track: o `mapper` já foi validado em `prepare`
         else if (kind == oscr::KIND_SAVE && saveType == 0 && !isMdBram(system)) { err = oscr::E_SEM_SAVE; return false; }
         if (kind == oscr::KIND_ROM && isMdBram(system)) { err = oscr::E_ARGUMENTO; return false; }   // a RAM de backup do Sega CD não tem ROM
 
@@ -1273,7 +1302,13 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_A78) { a78Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_A8) { a8Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_LYNX) { lynxRead(); return; }
-          if (system == oscr::SYS_JAG) { jagRead(a5romsize); return; }
+          if (system == oscr::SYS_JAG)
+          {
+            if (kind == oscr::KIND_SAVE) jagReadSave(a26Id);
+            else if (a26Id == 1) jagReadMem(a5romsize);
+            else jagRead(a5romsize);
+            return;
+          }
           if (system == oscr::SYS_NGP) { ngpRead(ngpBytes); return; }
           if (isNes(system))
           {
@@ -1367,26 +1402,29 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
-        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG) { err = oscr::E_SEM_SAVE; return false; }
+        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
         uint32_t expected = isNes(system) ? nesRamBytes
                           : system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
                           : (system == oscr::SYS_GB ? gbSaveBytes()
+                          : (system == oscr::SYS_JAG ? jagSaveBytes(optMapper)
                           : (system == oscr::SYS_N64 ? oscr::n64::saveBytes(saveType)
                           : (isSega(system) ? oscr::sms::kSramBytes
                           : (isMdBram(system) ? MD::bramSize
-                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize))))));
+                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)))))));
 
-        if ((system != oscr::SYS_GB && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_JAG && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
         activeSource = &countingSource;
         OSCR::Storage::Shared::sharedFile.open("save", O_RDONLY);    // o "arquivo" é o que o PC manda
-        bool ok = runCore([system, saveType]
+        uint16_t jagMap = optMapper;
+        bool ok = runCore([system, saveType, jagMap]
         {
+          if (system == oscr::SYS_JAG) { jagWriteSave(jagMap); return; }
           if (isNes(system))
           {
             NE::cartOn();
@@ -1775,7 +1813,8 @@ namespace OSCR::Dumper
         }
         if (system == oscr::SYS_JAG)
         {
-          if (oscr::jag::sizeIndex(optPrgKb) == oscr::jag::kBad) { err = oscr::E_ARGUMENTO; return false; }   // 1024, 2048 ou 4096 KB, sempre informado pelo PC
+          if (forSave) { if (jagSaveBytes(optMapper) == 0) { err = oscr::E_ARGUMENTO; return false; } }          // `mapper` 0 a 4 (EEPROM) ou 5 (Memory Track)
+          else if (optMapper > 1 || oscr::jag::sizeIndex(optPrgKb) == oscr::jag::kBad) { err = oscr::E_ARGUMENTO; return false; }   // `mapper` 0 (ROM) ou 1 (ROM U1 do Memory Track) e 1024, 2048 ou 4096 KB, sempre informado pelo PC
           uint8_t st = oscr::a26::kNoCart;
           bool ran = runCore([&st] { st = jagProbe(); });
           if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }

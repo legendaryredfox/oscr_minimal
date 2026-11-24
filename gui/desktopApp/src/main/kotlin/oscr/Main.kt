@@ -121,6 +121,8 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var clkMeasured by remember { mutableStateOf("") }
     var clkTarget by remember { mutableStateOf("4000000") }
     var gbaType by remember { mutableStateOf("3") }
+    var jagSave by remember { mutableStateOf("0") }          // Jaguar (D212): tipo do save, 0 a 5
+    var jagMemRom by remember { mutableStateOf(false) }      // Jaguar: ler a ROM U1 do Memory Track em vez da ROM do cartucho
     var prgKb by remember { mutableStateOf("0") }
     var chrKb by remember { mutableStateOf("0") }
     var snesTypeSel by remember { mutableStateOf(0) }                 // tipo de ROM do SNES forçado (F-2, D164); 0 = pelo cabeçalho
@@ -258,7 +260,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         }
     }
 
-    fun mapperArg() = (if (system == CartSystem.GBA) gbaType else mapper).toIntOrNull() ?: 0
+    fun mapperArg() = (if (system == CartSystem.GBA) gbaType else if (system == CartSystem.JAGUAR) jagSave else mapper).toIntOrNull() ?: 0
     fun ramArg() = if (isNes) ramN else 0
     fun snesTypeArg() = if (system == CartSystem.SNES) snesTypeSel else 0
     val accGpc = system == CartSystem.SNES && Proto.SNES_SAVE_ACCESSORIES.keys.any { snesTypeSel == Proto.SNES_ACCESSORIES.getValue(it) }                  // acessórios do SNES (F-10, D178), no mesmo campo do tipo de ROM
@@ -643,7 +645,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             val n64 = if (system == CartSystem.N64) (n64Resolve(c, true, false) ?: return@run) else null
             val prgUse = n64?.first ?: prgN
             val r369 = isGba && read369
-            val mapUse = if (r369) Gba369.code(block369.toIntOrNull() ?: 0) else mapN
+            val mapUse = if (r369) Gba369.code(block369.toIntOrNull() ?: 0) else if (system == CartSystem.JAGUAR) (if (jagMemRom) 1 else 0) else mapN
             val prgUse2 = if (r369) (size369.toIntOrNull() ?: 0) else prgUse
             val thirdUse = if (system == CartSystem.SNES) snesTypeSel else chrN
             val est = withContext(Dispatchers.IO) { c.estimateSize(system, false, mapUse, prgUse2, thirdUse, if (system == CartSystem.N64) prgUse2.toLong() shl 20 else 0L) }     // barra com o tamanho do DETECT (D199)
@@ -1074,7 +1076,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 }
             }
             if (stub == null && system == CartSystem.LYNX) Callout(t(S.LYNX_HINT), Tone.INFO)
-            if (stub == null && system == CartSystem.JAGUAR) Callout(t(S.JAGUAR_HINT), Tone.INFO)
+            if (stub == null && system == CartSystem.JAGUAR) {
+                Callout(t(S.JAGUAR_HINT), Tone.INFO)
+                LabeledField(t(S.JAG_SAVE)) {
+                    ComboBox(value = Atari.JAGUAR_SAVES.getOrNull(jagSave.toIntOrNull() ?: 0) ?: "-", modifier = Modifier.fillMaxWidth()) { close ->
+                        Atari.JAGUAR_SAVES.forEachIndexed { i, n -> DropdownMenuItem(text = { Text(n) }, onClick = { close(); jagSave = i.toString() }) }
+                    }
+                }
+                CheckRow(jagMemRom, { jagMemRom = it }, t(S.JAG_MEMROM))
+            }
             if (stub == null && system == CartSystem.N64) {
                 Callout(t(S.N64_HINT), Tone.INFO)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

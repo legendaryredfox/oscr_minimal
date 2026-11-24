@@ -126,5 +126,7 @@ namespace oscr { namespace jag
   constexpr uint8_t kBad = 0xFF;
   /// Índice do tamanho no `romSize` do núcleo (1, 2 ou 4 MB), `kBad` se não existe.
   inline uint8_t sizeIndex(uint16_t kb) { return kb == 1024 ? 0 : (kb == 2048 ? 1 : (kb == 4096 ? 2 : kBad)); }
+  /// Save (D212): `mapper` 0 a 4 = EEPROM 93C46/56/66/76/86 (128 a 2048 bytes, `eepSize` do núcleo), 5 = flash AT29C010 de 128 KB do Memory Track. 0 se inválido.
+  inline uint32_t saveBytes(uint16_t m) { return m <= 4 ? (128UL << m) : (m == 5 ? 0x20000UL : 0); }
 } }  // namespace oscr::jag
 

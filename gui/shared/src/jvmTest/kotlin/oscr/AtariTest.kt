@@ -48,6 +48,10 @@ class Atari8Test {
 class JaguarTest {
     @Test fun idEExtensao() { assertEquals(20, CartSystem.JAGUAR.id); assertEquals(".jag", CartSystem.JAGUAR.ext) }
 
+    @Test fun saves() {
+        assertEquals(listOf(128, 256, 512, 1024, 2048, 131072, 0), (0..6).map { Atari.jaguarSaveBytes(it) }); assertEquals(6, Atari.JAGUAR_SAVES.size)
+    }
+
     @Test fun tamanhos() {
         listOf(1024, 2048, 4096).forEach { assertNull(Rules.romSize(CartSystem.JAGUAR, it)) }
         listOf(0, 512, 3072, 6144).forEach { assertNotNull(Rules.romSize(CartSystem.JAGUAR, it)) }

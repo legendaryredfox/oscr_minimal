@@ -37,6 +37,7 @@ int main() {
   CHECK(oscr::lynx::totalBytes(512) == 64 + 131072 && oscr::lynx::totalBytes(1024) == 64 + 262144 && oscr::lynx::totalBytes(2048) == 64 + 524288 && oscr::lynx::totalBytes(0) == 0 && oscr::lynx::totalBytes(256) == 0);
   // Atari Jaguar (D211)
   CHECK(oscr::jag::sizeIndex(1024) == 0 && oscr::jag::sizeIndex(2048) == 1 && oscr::jag::sizeIndex(4096) == 2 && oscr::jag::sizeIndex(0) == oscr::jag::kBad && oscr::jag::sizeIndex(512) == oscr::jag::kBad && oscr::jag::sizeIndex(6144) == oscr::jag::kBad);
+  CHECK(oscr::jag::saveBytes(0) == 128 && oscr::jag::saveBytes(1) == 256 && oscr::jag::saveBytes(2) == 512 && oscr::jag::saveBytes(3) == 1024 && oscr::jag::saveBytes(4) == 2048 && oscr::jag::saveBytes(5) == 131072 && oscr::jag::saveBytes(6) == 0);
   printf("%d verificacoes do Atari 2600, 5200, 7800, 8 bits, Lynx e Jaguar, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

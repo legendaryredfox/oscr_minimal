@@ -58,3 +58,12 @@ JAGUAR_SIZES = (1024, 2048, 4096)
 def jaguar_index(kb: int) -> int | None:
     """Índice do tamanho no `romSize` do núcleo (1, 2 ou 4 MB); None se o `prg` não é 1024, 2048 ou 4096."""
     return JAGUAR_SIZES.index(kb) if kb in JAGUAR_SIZES else None
+
+
+# Jaguar, saves (D212): `mapper` 0 a 4 = EEPROM 93C46/56/66/76/86, 5 = flash do Memory Track. Na ROM, `mapper` 0 = ROM e 1 = ROM U1 do Memory Track.
+JAGUAR_SAVES = {0: "EEPROM 93C46 (128 B)", 1: "EEPROM 93C56 (256 B)", 2: "EEPROM 93C66 (512 B)", 3: "EEPROM 93C76 (1024 B)", 4: "EEPROM 93C86 (2048 B)", 5: "Memory Track (flash, 128 KB)"}
+
+
+def jaguar_save_bytes(mapper: int) -> int:
+    """Bytes do save do Jaguar para o `mapper` (tipo); 0 se inválido."""
+    return 128 << mapper if 0 <= mapper <= 4 else (0x20000 if mapper == 5 else 0)

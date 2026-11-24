@@ -44,5 +44,10 @@ object Atari {
     /** KB que o `readROM` do 8 bits lê: o slot direito sempre 8 (o tamanho é ignorado); no esquerdo o tamanho informado. 0 se inválido. */
     fun a8Kb(slot: Int, kb: Int): Int = when (slot) { 1 -> 8; 0 -> if (kb in A8_SIZES) kb else 0; else -> 0 }
 
+    /** Atari Jaguar, saves (D212): `mapper` 0 a 4 = EEPROM 93C46/56/66/76/86, 5 = flash do Memory Track (nomes próprios, iguais em todos os idiomas). */
+    val JAGUAR_SAVES = listOf("EEPROM 93C46 (128 B)", "EEPROM 93C56 (256 B)", "EEPROM 93C66 (512 B)", "EEPROM 93C76 (1024 B)", "EEPROM 93C86 (2048 B)", "Memory Track (flash, 128 KB)")
+
+    fun jaguarSaveBytes(mapper: Int): Int = if (mapper in 0..4) 128 shl mapper else if (mapper == 5) 0x20000 else 0
+
     fun kb(system: CartSystem, mapper: Int, kb: Int): Int = if (system == CartSystem.A5200) a5200Kb(mapper, kb) else a7800Kb(mapper, kb)
 }

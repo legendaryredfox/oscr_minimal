@@ -805,10 +805,19 @@ namespace OSCR::Cores::AtariJaguar
 
     bool status = ((PINA & 0x20) >> 5);  // Check DO
 
+# if OSCR_DUMPER   // fork oscr_minimal: sem EEPROM (DO preso em 0) o laço original esperava para sempre; o ciclo de escrita do 93Cx6 leva até 15 ms
+    for (uint16_t t = 0; !status && t < 2000; t++)
+    {
+      _delay_ms(1);
+      status = ((PINA & 0x20) >> 5);
+    }
+    if (!status) OSCR::UI::fatalError(FS(OSCR::Strings::Errors::TimedOut));   // fatal: sai do comando na primeira palavra (um erro suave deixaria o laço de escrita seguir, 2 s por palavra)
+# else
     do {
       _delay_ms(1);
       status = ((PINA & 0x20) >> 5);
     } while (!status);  // status == 0 = BUSY
+# endif /* OSCR_DUMPER */
     EEP_CS_CLEAR;
   }
 

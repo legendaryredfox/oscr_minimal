@@ -91,19 +91,20 @@ def test_atari8_e_lynx_iguais_no_firmware():
 def test_jaguar():
     assert P.SYSTEMS["jaguar"] == (20, ".jag") and P.SYSTEM_BY_ID[20] == "jaguar"
     assert "jaguar" not in {k for k, _ in PLANNED}
-    assert cmd_info.SYSTEM_OPTIONS["jaguar"] == ["prg"]
+    assert cmd_info.SYSTEM_OPTIONS["jaguar"] == ["mapper", "prg"]
+    assert [A.jaguar_save_bytes(m) for m in range(7)] == [128, 256, 512, 1024, 2048, 131072, 0] and set(A.JAGUAR_SAVES) == set(range(6))
     assert re.search(r"SYS_JAG = 20\b", (ROOT / "firmware/oscr/src/dumper/oscr_proto.h").read_text())
     assert [A.jaguar_index(k) for k in (1024, 2048, 4096, 0, 512, 6144)] == [0, 1, 2, None, None, None]
     import shutil, subprocess, tempfile
     cxx = shutil.which("g++") or shutil.which("c++")
     if cxx is not None:
         ks = (0, 512, 1024, 2048, 4096, 6144)
-        src = '#include <stdio.h>\n#include "dumper/AtariCore.h"\nint main(){\n' + "".join(f'printf("%d\\n", oscr::jag::sizeIndex({k}));' for k in ks) + "return 0;}\n"
+        src = '#include <stdio.h>\n#include "dumper/AtariCore.h"\nint main(){\n' + "".join(f'printf("%d\\n", oscr::jag::sizeIndex({k}));' for k in ks) + "".join(f'printf("%u\\n", (unsigned)oscr::jag::saveBytes({m}));' for m in range(7)) + "return 0;}\n"
         with tempfile.TemporaryDirectory() as d:
             (pathlib.Path(d) / "t.cpp").write_text(src)
             subprocess.run([cxx, "-std=c++11", "-I", str(ROOT / "firmware/oscr/include"), "-o", f"{d}/t", f"{d}/t.cpp"], check=True)
             out = [int(x) for x in subprocess.run([f"{d}/t"], check=True, capture_output=True, text=True).stdout.split()]
-        assert out == [(-1 if A.jaguar_index(k) is None else A.jaguar_index(k)) & 0xFF if A.jaguar_index(k) is None else A.jaguar_index(k) for k in ks]
+        assert out == [255 if A.jaguar_index(k) is None else A.jaguar_index(k) for k in ks] + [A.jaguar_save_bytes(m) for m in range(7)]
 
 
 def test_nomes_iguais_no_kotlin():
