@@ -90,6 +90,8 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 15 | Atari 2600 (adaptador de 24 pinos no slot SNES, 5 V; F-20, D206) | `.a26` |
 | 16 | Atari 5200 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D209) | `.a52` |
 | 17 | Atari 7800 (adaptador de 32 pinos no slot SNES, 5 V, relógio do Si5351; F-20, D209) | `.a78` |
+| 18 | Atari 8 bits 400/800/XL/XE (adaptador de 30 pinos no slot SNES, 5 V; F-20, D210) | `.rom` |
+| 19 | Atari Lynx (adaptador de 34 pinos no slot SNES, 5 V; F-20, D210) | `.lnx` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -102,7 +104,13 @@ Mesma ideia do 2600: os núcleos `Atari5200.cpp` e `Atari7800.cpp` do OSCR escol
 
 - **5200:** mapper 0 padrão, `prg_kb` 4, 8, 16 ou 32; 1 dois chips de 16 KB; 2 Bounty Bob Strikes Back, 40 KB.
 - **7800:** mapper 0 padrão, `prg_kb` 16, 32 ou 48; 1 SuperGame 128 KB; 2 SuperGame 144 KB [78S9]; 3 F-18 Hornet 64 KB; 4 Double Dragon/Rampage 128 KB; 5 e 6 64 KB; 7 bankset, `prg_kb` 32, 48, 64 ou 128 (o `readROM` lê duas vezes, HALT em 1 e em 0: 64, 96, 96 e 256 KB); 8 Crystal Quest/Bounty Bob 144 KB.
-- `DETECT` devolve `ATARI5200` ou `ATARI7800` e o `rom_size` pelas regras acima (0 se a combinação for inválida); slot vazio (o barramento lê sempre o mesmo valor, `$00` ou `$FF`) é `status` 2. Sem save (`E_SEM_SAVE`). As regras estão em `include/dumper/AtariCore.h` (`a52Kb`, `a78Kb`), `host/oscr_host/atari.py` e `Atari.kt`.
+- `DETECT` devolve `ATARI5200` ou `ATARI7800` e o `rom_size` pelas regras acima (0 se a combinação for inválida); slot vazio (o barramento lê sempre o mesmo valor, `$00` ou `$FF`) é `status` 1. Sem save (`E_SEM_SAVE`). As regras estão em `include/dumper/AtariCore.h` (`a52Kb`, `a78Kb`), `host/oscr_host/atari.py` e `Atari.kt`.
+
+### Opções para Atari 8 bits e Atari Lynx (D210)
+
+**8 bits:** o `readROM` do OSCR é chamado com o slot (`atari8right`) e o índice do tamanho (`romSize` do núcleo, que é um índice em `romSizes`) vindos do protocolo. `mapper` = slot (0 esquerdo, 1 direito; outro valor dá `ERRO 0x0004`); `prg_kb` = 8, 16, 32, 40, 64 ou 128 e só vale no slot esquerdo (o direito é sempre 8 KB e ignora o campo). Mudanças no núcleo: o `wait` de `checkStatus` (que `cartOn` chama e que espera um botão) e o `matchCRC` final ficam sob `#if !OSCR_DUMPER`. **Limite conhecido:** a troca de banco dos cartuchos XE (32, 64 e 128 KB) e do Necromancer (16 KB) pulsa o `PHI2` por PH1, que não chega ao slot SNES (`docs/planos/adaptador-a8bit.md`); esses cartuchos lêem o mesmo banco. Sem save. `DETECT`: `ATARI8`, `rom_size` pelas regras acima.
+
+**Lynx:** sem opções (`mapper` e `prg_kb` são ignorados). O próprio núcleo acha o tamanho do bloco (`detectCart`, procurando dados espelhados) e o `readROM` grava o cabeçalho `.lnx` de 64 bytes e 256 blocos; o `DETECT` devolve `LYNX` e `rom_size` = 64 + 256 × bloco (bloco de 512, 1024 ou 2048: 128, 256 ou 512 KB mais o cabeçalho). Mudanças no núcleo: `detectCart`, `readROM` e `lynxBlockSize` perdem o `static` (declarados em `AtariLynx.h`) e o `compareCRC` final fica sob `#if !OSCR_DUMPER`. Sem cartucho o `detectCart` não acha bloco (`status` 1). Sem save. **O adaptador está incompleto:** as linhas A12 a A19 e AUDIN estão PENDENTES (`docs/planos/adaptador-lynx.md`).
 
 ### Opções para Vectrex (D205)
 

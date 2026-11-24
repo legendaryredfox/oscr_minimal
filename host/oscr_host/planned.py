@@ -6,8 +6,7 @@ Sem id no protocolo, sem hardware, sem firmware. A mesma lista está em gui/shar
 from __future__ import annotations
 
 PLANNED: tuple[tuple[str, str], ...] = (
-    ("a8bit", "Atari 8-bit"),
-    ("jaguar", "Atari Jaguar"), ("lynx", "Atari Lynx"), ("astrocade", "Bally Astrocade"),
+    ("jaguar", "Atari Jaguar"), ("astrocade", "Bally Astrocade"),
     ("loopy", "Casio Loopy"), ("pv1000", "Casio PV-1000"), ("channelf", "Fairchild Channel F"),
     ("c64", "Commodore 64"), ("vic20", "Commodore VIC-20"),
     ("cps3", "Capcom CPS3"), ("intellivision", "Intellivision"), ("leapster", "Leapster"),

@@ -76,7 +76,7 @@ namespace OSCR::Cores::AtariLynx
 
   // Cart information
   static bool lynxUseAudin;
-  static uint16_t lynxBlockSize;
+  uint16_t lynxBlockSize;   // fork oscr_minimal: sem `static`, o dumper lê o tamanho do bloco depois de `detectCart` (declarado em AtariLynx.h)
 
 #pragma region LOWLEVEL
 
@@ -146,7 +146,7 @@ namespace OSCR::Cores::AtariLynx
     }
   }
 
-  static bool detectCart()
+  bool detectCart()   // fork oscr_minimal: sem `static`, o dumper chama (AtariLynx.h)
   {
     OSCR::UI::printSync(FS(OSCR::Strings::Status::Checking));
 
@@ -211,7 +211,7 @@ namespace OSCR::Cores::AtariLynx
     OSCR::Storage::Shared::sharedFile.write(header, LYNX_HEADER_SIZE);
   }
 
-  static bool readROM()
+  bool readROM()   // fork oscr_minimal: sem `static`, o dumper chama (AtariLynx.h)
   {
     if (!detectCart()) return false;
 
@@ -254,7 +254,9 @@ namespace OSCR::Cores::AtariLynx
 
     OSCR::UI::ProgressBar::finish();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD; o PC confere o CRC32
     OSCR::Databases::Basic::compareCRC(FS(OSCR::Strings::FileType::AtariLynx), 0, LYNX_HEADER_SIZE);
+# endif /* !OSCR_DUMPER */
 
     OSCR::Storage::Shared::close();
 

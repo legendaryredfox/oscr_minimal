@@ -31,6 +31,10 @@ int main() {
   CHECK(a78Kb(1, 0) == 128 && a78Kb(2, 0) == 144 && a78Kb(3, 0) == 64 && a78Kb(4, 0) == 128 && a78Kb(5, 0) == 64 && a78Kb(6, 0) == 64 && a78Kb(8, 0) == 144 && a78Kb(9, 16) == 0);
   CHECK(a78Kb(7, 32) == 64 && a78Kb(7, 48) == 96 && a78Kb(7, 64) == 96 && a78Kb(7, 128) == 256 && a78Kb(7, 16) == 0 && a78Kb(7, 144) == 0);
   CHECK(a78Std(16) == 16 && a78Std(17) == 32 && a78Std(32) == 32 && a78Std(33) == 48 && a78Std(64) == 48);
-  printf("%d verificacoes do Atari 2600, 5200 e 7800, %d falhas\n", g_n, g_fail);
+  // Atari 8 bits e Lynx (D210)
+  CHECK(oscr::atari8::sizeIndex(8) == 0 && oscr::atari8::sizeIndex(40) == 3 && oscr::atari8::sizeIndex(128) == 5 && oscr::atari8::sizeIndex(24) == oscr::atari8::kBad);
+  CHECK(oscr::atari8::totalKb(0, 32) == 32 && oscr::atari8::totalKb(0, 12) == 0 && oscr::atari8::totalKb(1, 0) == 8 && oscr::atari8::totalKb(1, 99) == 8 && oscr::atari8::totalKb(2, 8) == 0);
+  CHECK(oscr::lynx::totalBytes(512) == 64 + 131072 && oscr::lynx::totalBytes(1024) == 64 + 262144 && oscr::lynx::totalBytes(2048) == 64 + 524288 && oscr::lynx::totalBytes(0) == 0 && oscr::lynx::totalBytes(256) == 0);
+  printf("%d verificacoes do Atari 2600, 5200, 7800, 8 bits e Lynx, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

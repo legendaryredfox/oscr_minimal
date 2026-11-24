@@ -38,5 +38,11 @@ object Atari {
         else -> 0
     }
 
+    /** Atari 8 bits (D210): tamanhos aceitos no slot esquerdo, em KB (a tabela `romSizes` do núcleo). */
+    val A8_SIZES = listOf(8, 16, 32, 40, 64, 128)
+
+    /** KB que o `readROM` do 8 bits lê: o slot direito sempre 8 (o tamanho é ignorado); no esquerdo o tamanho informado. 0 se inválido. */
+    fun a8Kb(slot: Int, kb: Int): Int = when (slot) { 1 -> 8; 0 -> if (kb in A8_SIZES) kb else 0; else -> 0 }
+
     fun kb(system: CartSystem, mapper: Int, kb: Int): Int = if (system == CartSystem.A5200) a5200Kb(mapper, kb) else a7800Kb(mapper, kb)
 }

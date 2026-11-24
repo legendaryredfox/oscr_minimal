@@ -26,6 +26,8 @@
 # include "cores/Atari2600.h"
 # include "cores/Atari5200.h"
 # include "cores/Atari7800.h"
+# include "cores/Atari8.h"
+# include "cores/AtariLynx.h"
 # include "common/crdb/mapper.h"
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
@@ -79,6 +81,9 @@ namespace OSCR::Cores::N64 { extern uint16_t eepPages; extern OSCR::CRC32::crc32
 # ifndef OSCR_DUMPER_BAUD
 #   define OSCR_DUMPER_BAUD 1000000UL     // fallbacks que o host tenta: compile com -DOSCR_DUMPER_BAUD=500000 ou 115200
 # endif
+
+// `romSize` (índice em `romSizes`) e `atari8right` ficam no .cpp do núcleo Atari8, sem declaração no cabeçalho (como `mmc6` do NES): o `readROM` do OSCR lê os dois.
+namespace OSCR::Cores::Atari8 { extern uint8_t romSize; extern bool atari8right; }
 
 namespace OSCR::Dumper
 {
@@ -326,6 +331,8 @@ namespace OSCR::Dumper
     namespace A2 = OSCR::Cores::Atari2600;
     namespace A5 = OSCR::Cores::Atari5200;
     namespace A7 = OSCR::Cores::Atari7800;
+    namespace A8 = OSCR::Cores::Atari8;
+    namespace LX = OSCR::Cores::AtariLynx;
 
     /**
      * Atari 2600 (F-20, D206): o `readROM` do OSCR escolhe o método de leitura por `mapperDetail->id`, um registro do banco `a2600-mappers` do SD
@@ -364,6 +371,42 @@ namespace OSCR::Dumper
       for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = A7::readData(0xFFE0 + i);   // vetores e cabeçalho: no último banco, fixos em $C000-$FFFF
       A7::cartOff();
       return oscr::a26::classify(sample, sizeof sample);
+    }
+    /**
+     * Atari 8 bits e Lynx (F-20, D210). 8 bits: `readROM` do OSCR com o slot (`atari8right`) e o índice do tamanho (`romSize`) vindos do PC; o núcleo só mudou em
+     * `checkStatus` (o `wait` esperava um botão) e no `matchCRC` final. Lynx: o próprio núcleo acha o tamanho do bloco (`detectCart`) e o `readROM` grava o cabeçalho
+     * .lnx de 64 bytes e os 256 blocos; as únicas mudanças no núcleo são tirar o `static` de `detectCart`, `readROM` e `lynxBlockSize` e o `compareCRC` final.
+     */
+    uint8_t a8Probe(uint16_t slot)
+    {
+      uint8_t sample[32];
+      A8::atari8right = slot == 1;
+      A8::romSize = 0;                                                  // `cartOn` chama `checkStatus`, que lê `romSizes[romSize]`
+      A8::cartOn();
+      PORTH &= ~(1 << 3);                                               // /S5 (PH3) baixo: ROM em $A000-$BFFF (no slot direito, o /S4 dele é o /S5 do esquerdo)
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = A8::readData(0xBFE0 + i);
+      PORTH |= (1 << 3);
+      A8::cartOff();
+      return oscr::a26::classify(sample, sizeof sample);
+    }
+    void a8Read(uint16_t slot, uint16_t kb)
+    {
+      A8::atari8right = slot == 1;
+      A8::romSize = oscr::atari8::sizeIndex(kb) == oscr::atari8::kBad ? 0 : oscr::atari8::sizeIndex(kb);
+      A8::readROM();                                                    // liga e desliga o cartucho e abre/fecha o "arquivo" sozinha
+    }
+    bool lynxProbe()
+    {
+      LX::setup();
+      bool found = LX::detectCart();
+      OSCR::Power::disableCartridge();
+      return found;
+    }
+    void lynxRead()
+    {
+      LX::setup();
+      LX::readROM();
+      OSCR::Power::disableCartridge();
     }
     void a52Read(uint16_t id, uint16_t kb)
     {
@@ -876,8 +919,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_FLASH; }
+      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_A8) | (1UL << oscr::SYS_LYNX) | (1UL << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -980,6 +1023,33 @@ namespace OSCR::Dumper
           oscr::n64::formatName(out.name, sizeof(out.name), uint32_t(N6::crc1), OSCR::Cores::cartID, OSCR::Cores::fileName);
           out.rom_size = 0;                                         // o cabeçalho não diz o tamanho: o PC acha pelo CRC1 (base de dados) ou o usuário informa
           out.save_size = 0; out.save_type = 0;                     // nem o tipo de save
+          return;
+        }
+
+        if (system == oscr::SYS_A8)
+        {
+          uint8_t st = oscr::a26::kNoCart;
+          uint16_t slot = optMapper;
+          bool ran = runCore([&st, slot] { st = a8Probe(slot); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::a26::kNoCart) return;
+          strlcpy_P(out.name, PSTR("ATARI8"), sizeof(out.name));
+          out.rom_size = uint32_t(oscr::atari8::totalKb(slot, optPrgKb)) * 1024UL;     // 0 se slot ou tamanho inválidos
+          out.save_size = 0; out.save_type = 0;
+          return;
+        }
+
+        if (system == oscr::SYS_LYNX)
+        {
+          bool found = false;
+          bool ran = runCore([&found] { found = lynxProbe(); }, true);                  // sem cartucho o `detectCart` do OSCR dá "erro" (suave): o DETECT só quer saber se achou
+          if (!ran) { out.status = 1; return; }
+          if (!found) { out.status = oscr::a26::kNoCart; return; }
+          out.status = oscr::a26::kOk;
+          strlcpy_P(out.name, PSTR("LYNX"), sizeof(out.name));
+          out.rom_size = oscr::lynx::totalBytes(LX::lynxBlockSize);
+          out.save_size = 0; out.save_type = 0;
           return;
         }
 
@@ -1134,7 +1204,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
-        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
+        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1160,6 +1230,8 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_A26) { a26Read(a26Id); return; }
           if (system == oscr::SYS_A52) { a52Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_A78) { a78Read(a26Id, a5romsize); return; }
+          if (system == oscr::SYS_A8) { a8Read(a26Id, a5romsize); return; }
+          if (system == oscr::SYS_LYNX) { lynxRead(); return; }
           if (system == oscr::SYS_NGP) { ngpRead(ngpBytes); return; }
           if (isNes(system))
           {
@@ -1253,7 +1325,7 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
-        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78) { err = oscr::E_SEM_SAVE; return false; }
+        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1647,6 +1719,24 @@ namespace OSCR::Dumper
             if (!oscr::n64::romMbValid(optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
             OSCR::Cores::cartSize = optPrgKb;                                           // o `readRom` do OSCR conta em MB
           }
+          return true;
+        }
+        if (system == oscr::SYS_A8)
+        {
+          if (oscr::atari8::totalKb(optMapper, optPrgKb) == 0) { err = oscr::E_ARGUMENTO; return false; }   // slot 0 ou 1 e tamanho do OSCR (AtariCore.h); no slot direito o tamanho é ignorado
+          uint8_t st = oscr::a26::kNoCart;
+          uint16_t slot = optMapper;
+          bool ran = runCore([&st, slot] { st = a8Probe(slot); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::a26::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
+          return true;
+        }
+        if (system == oscr::SYS_LYNX)
+        {
+          bool found = false;
+          bool ran = runCore([&found] { found = lynxProbe(); }, true);
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (!found || oscr::lynx::totalBytes(LX::lynxBlockSize) == 0) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (system == oscr::SYS_A52 || system == oscr::SYS_A78)

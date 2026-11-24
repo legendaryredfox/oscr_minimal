@@ -103,6 +103,9 @@ object Rules {
         return if (m.sized.isEmpty() || kb in m.sized) null else Problem(S.V_ATARI_SIZE)
     }
 
+    /** Atari 8 bits (D210): o slot direito ignora o tamanho; o esquerdo pede um dos tamanhos da tabela do núcleo. */
+    fun atari8(slot: Int, kb: Int): Problem? = if (Atari.a8Kb(slot, kb) != 0) null else Problem(S.V_A8_SIZE)
+
     /** Leitura do GBA 369-in-1 (F-18, D174): bloco (0 a 63) e tamanho em MB, as mesmas regras do firmware (Gba369.kt). */
     fun gba369(block: Int, mb: Int): Problem? = when (Gba369.errorKey(block, mb)) {
         null -> null

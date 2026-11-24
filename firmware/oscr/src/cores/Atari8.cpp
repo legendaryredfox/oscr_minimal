@@ -431,7 +431,9 @@ namespace OSCR::Cores::Atari8
 
     OSCR::Storage::Shared::close();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     OSCR::Databases::Standard::matchCRC();
+# endif /* !OSCR_DUMPER */
 
     OSCR::UI::waitButton();
   }
@@ -460,7 +462,9 @@ namespace OSCR::Cores::Atari8
 
     OSCR::UI::printSize(OSCR::Strings::Common::ROM, romSizes[romSize] * 1024);
 
+# if !OSCR_DUMPER   // fork oscr_minimal: `cartOn` chama `checkStatus` e `wait` espera um botão que não existe (o protocolo não espera o usuário)
     OSCR::UI::wait();
+# endif /* !OSCR_DUMPER */
   }
 
   void setCart()

@@ -29,3 +29,17 @@ class AtariTest {
         assertNull(Rules.atari(CartSystem.A7800, 7, 128)); assertNotNull(Rules.atari(CartSystem.A7800, 7, 16)); assertNotNull(Rules.atari(CartSystem.A7800, 9, 0))
     }
 }
+
+/** F-20, D210: Atari 8 bits e Lynx. */
+class Atari8Test {
+    @Test fun ids() {
+        assertEquals(18, CartSystem.A8BIT.id); assertEquals(".rom", CartSystem.A8BIT.ext)
+        assertEquals(19, CartSystem.LYNX.id); assertEquals(".lnx", CartSystem.LYNX.ext)
+    }
+
+    @Test fun tamanhos() {
+        assertEquals(listOf(8, 16, 32, 40, 64, 128), Atari.A8_SIZES.map { Atari.a8Kb(0, it) })
+        assertEquals(0, Atari.a8Kb(0, 24)); assertEquals(8, Atari.a8Kb(1, 0)); assertEquals(8, Atari.a8Kb(1, 99)); assertEquals(0, Atari.a8Kb(2, 8))
+        assertNull(Rules.atari8(0, 40)); assertNotNull(Rules.atari8(0, 24)); assertNull(Rules.atari8(1, 0)); assertNotNull(Rules.atari8(2, 8))
+    }
+}

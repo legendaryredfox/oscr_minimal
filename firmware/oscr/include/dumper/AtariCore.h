@@ -90,3 +90,32 @@ namespace oscr { namespace atari
   }
 } }  // namespace oscr::atari
 
+// Atari 8 bits (400/800/XL/XE) e Atari Lynx (F-20, D210). 8 bits: adaptador de 30 pinos no slot SNES, 5 V; o campo `mapper` do protocolo é o slot (0 = esquerdo,
+// 1 = direito) e `prg_kb` o tamanho (o cartucho não informa). Lynx: adaptador de 34 pinos, 5 V; o tamanho sai do próprio cartucho (`detectCart` acha o bloco).
+namespace oscr { namespace atari8
+{
+  constexpr uint8_t kBad = 0xFF;
+  /// Índice do tamanho na tabela `romSizes` do núcleo (8, 16, 32, 40, 64 e 128 KB), `kBad` se não existe.
+  inline uint8_t sizeIndex(uint16_t kb)
+  {
+    switch (kb) { case 8: return 0; case 16: return 1; case 32: return 2; case 40: return 3; case 64: return 4; case 128: return 5; default: return kBad; }
+  }
+  /// KB que o `readROM` lê: o slot direito sempre 8 (o `prg_kb` é ignorado); no esquerdo o `prg_kb`. 0 se inválido.
+  inline uint16_t totalKb(uint16_t slot, uint16_t kb)
+  {
+    if (slot > 1) return 0;
+    if (slot == 1) return 8;
+    return sizeIndex(kb) == kBad ? 0 : kb;
+  }
+} }  // namespace oscr::atari8
+
+namespace oscr { namespace lynx
+{
+  constexpr uint32_t kHeader = 64;   // LYNX_HEADER_SIZE do núcleo
+  /// Bytes que o `readROM` entrega para o bloco achado por `detectCart`: cabeçalho de 64 bytes e 256 blocos. 0 se o bloco não é 512, 1024 ou 2048.
+  inline uint32_t totalBytes(uint16_t block)
+  {
+    return (block == 512 || block == 1024 || block == 2048) ? kHeader + 256UL * block : 0;
+  }
+} }  // namespace oscr::lynx
+
