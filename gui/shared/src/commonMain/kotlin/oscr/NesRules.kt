@@ -91,6 +91,7 @@ object Rules {
         CartSystem.NGP -> if (kb in setOf(0, 512, 1024, 2048, 4096)) null else Problem(S.V_NGP_SIZE)     // 0 = pelo ID do chip (NgpCore.h)
         CartSystem.VECTREX -> if (kb in setOf(4, 8, 12, 16, 32, 64)) null else Problem(S.V_VECTREX_SIZE)     // o cartucho não informa o tamanho (VecCore.h)
         CartSystem.JAGUAR -> if (kb in setOf(1024, 2048, 4096)) null else Problem(S.V_JAGUAR_SIZE)     // o cartucho não informa o tamanho (AtariCore.h, `jag::sizeIndex`)
+        CartSystem.ARCADIA -> if (kb in setOf(2, 4, 6, 8)) null else Problem(S.V_ARCADIA_SIZE)     // o cartucho não informa o tamanho (ArcCore.h)
         CartSystem.COLECO -> if (kb in setOf(8, 12, 16, 20, 24, 32)) null else Problem(S.V_COLECO_SIZE)     // o cartucho não informa o tamanho (ColvCore.h)
         else -> null
     }

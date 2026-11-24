@@ -227,7 +227,9 @@ namespace OSCR::Cores::Colecovision
     OSCR::Storage::Shared::close();
 
     // Compare CRC32 to database and rename ROM if found
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     OSCR::Databases::Extended::matchCRC();
+# endif /* !OSCR_DUMPER */
   }
 
   //******************************************

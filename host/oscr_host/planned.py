@@ -16,7 +16,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("rca2", "RCA Studio II"), ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
     ("supercan", "Super A'can"), ("supervision", "Watara Supervision"),
     ("ti99", "TI-99/4A"), ("pyuuta", "Tomy Pyuuta"), ("trs80", "TRS-80"),
-    ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"), ("arcadia", "Arcadia 2001"),
+    ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"),
     ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),
 )
 

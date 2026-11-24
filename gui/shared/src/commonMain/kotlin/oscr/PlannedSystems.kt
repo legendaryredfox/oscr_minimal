@@ -18,6 +18,6 @@ val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
     PlannedSystem("rca2", "RCA Studio II"), PlannedSystem("satellaview", "Satellaview (BS-X)"), PlannedSystem("sfm", "SF Memory"),
     PlannedSystem("supercan", "Super A'can"), PlannedSystem("supervision", "Watara Supervision"),
     PlannedSystem("ti99", "TI-99/4A"), PlannedSystem("pyuuta", "Tomy Pyuuta"), PlannedSystem("trs80", "TRS-80"),
-    PlannedSystem("vsmile", "V.Smile", true), PlannedSystem("ws", "WonderSwan"), PlannedSystem("msx", "MSX"), PlannedSystem("arcadia", "Arcadia 2001"),
+    PlannedSystem("vsmile", "V.Smile", true), PlannedSystem("ws", "WonderSwan"), PlannedSystem("msx", "MSX"),
     PlannedSystem("gbsmart", "Game Boy Smart Card"), PlannedSystem("gbmem", "Game Boy Memory"),
 )

@@ -93,6 +93,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 18 | Atari 8 bits 400/800/XL/XE (adaptador de 30 pinos no slot SNES, 5 V; F-20, D210) | `.rom` |
 | 19 | Atari Lynx (adaptador de 34 pinos no slot SNES, 5 V; F-20, D210) | `.lnx` |
 | 20 | Atari Jaguar (adaptador com 74HC595 no slot SNES, 5 V; **adaptador pendente**; F-20, D211) | `.jag` |
+| 21 | Emerson Arcadia 2001 (adaptador de 30 pinos no slot SNES, 5 V; F-20, D215) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -123,7 +124,11 @@ Leitura de ROM, EEPROM e Memory Track (D212). O `readROM` do OSCR lê 32 bits po
 
 ### Opções para Vectrex (D205)
 
-Usa o núcleo `Vectrex.cpp` do OSCR (`cartOn`, `readSegment`, `cartOff`), só leitura de ROM. O `readROM` do OSCR não é chamado (usa a base de dados do SD); a costura repete os trechos dele (`VecCore.h`, `segments`) e troca o PB6 (PH5) direto no PORTH. `prg_kb` é o **tamanho em KB** e vale sempre: 4, 8, 12, 16, 32 ou 64 (a tabela do menu do OSCR; os de 64 KB leem o segundo banco com o PB6 alto); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` com o PB6 baixo: `status` 1 se todos iguais a `$00` ou `$FF`, 0 se o primeiro byte é `$67` (o que a BIOS do console procura; convenção do console, não do OSCR), 4 se há dados com outro primeiro byte. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O `/OE` do cartucho não chega ao slot SNES daqui (`docs/planos/adaptador-vectrex.md`).
+Usa o núcleo `Vectrex.cpp` do OSCR, só leitura de ROM. **A costura chama o `readROM` do OSCR (D215)**: `romSize` recebe o índice da tabela e o próprio núcleo troca o PB6 (PH5) nos 64 KB; única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. A sondagem do `DETECT` usa o `readData` do OSCR. `prg_kb` é o **tamanho em KB** e vale sempre: 4, 8, 12, 16, 32 ou 64 (a tabela do menu do OSCR; os de 64 KB leem o segundo banco com o PB6 alto); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` com o PB6 baixo: `status` 1 se todos iguais a `$00` ou `$FF`, 0 se o primeiro byte é `$67` (o que a BIOS do console procura; convenção do console, não do OSCR), 4 se há dados com outro primeiro byte. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O `/OE` do cartucho não chega ao slot SNES daqui (`docs/planos/adaptador-vectrex.md`).
+
+### Opções para Arcadia 2001 (D215)
+
+Usa o núcleo `Arcadia2001.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `romSizes`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 2, 4, 6 ou 8 (a tabela do menu do OSCR; o console enxerga a ROM em `$0000-$0FFF` e `$2000-$2FFF`); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000`: `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM do Arcadia não tem assinatura nem cabeçalho, e o núcleo do OSCR também não detecta nada: o tamanho vem sempre do PC e `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ArcCore.h`, testadas em `pc-tests/test_arc.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 
@@ -131,7 +136,7 @@ Usa o núcleo `NeoGeoPocket.cpp` do OSCR (`cartOn`, `getCartInfo`, `writeByte`, 
 
 ### Opções para ColecoVision (D201)
 
-Usa o núcleo `Colecovision.cpp` do OSCR (`cartOn`, `readData`, `readSegment`, `cartOff`), só leitura de ROM a partir de `$8000`. O `readROM` do OSCR não é chamado: ele consulta a base de dados do cartão SD (que não existe aqui); a costura repete o que ele faz, sem a base. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 8, 12, 16, 20, 24 ou 32 (a tabela do menu do OSCR); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 32 bytes de `$8000`: `status` 1 se todos forem iguais a `$00` ou `$FF` (slot vazio), 0 se começam por `$AA55` ou `$55AA` (assinatura do console), 4 se há dados sem assinatura (homebrew ou contato sujo); a assinatura é convenção do console, não do OSCR. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A` (cartucho sem save). Regras puras em `include/dumper/ColvCore.h`, testadas em `pc-tests/test_colv.cpp`.
+Usa o núcleo `Colecovision.cpp` do OSCR, só leitura de ROM a partir de `$8000`. **A costura chama o `readROM` do OSCR (D215)**, com `romSize` = índice da tabela `COL`; única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. A sondagem do `DETECT` usa o `readData` do OSCR. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 8, 12, 16, 20, 24 ou 32 (a tabela do menu do OSCR); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 32 bytes de `$8000`: `status` 1 se todos forem iguais a `$00` ou `$FF` (slot vazio), 0 se começam por `$AA55` ou `$55AA` (assinatura do console), 4 se há dados sem assinatura (homebrew ou contato sujo); a assinatura é convenção do console, não do OSCR. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A` (cartucho sem save). Regras puras em `include/dumper/ColvCore.h`, testadas em `pc-tests/test_colv.cpp`.
 
 ### Opções para Master System, Game Gear e SG-1000 (D137)
 
