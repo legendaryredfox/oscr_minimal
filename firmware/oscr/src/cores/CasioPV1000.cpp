@@ -248,7 +248,9 @@ namespace OSCR::Cores::CasioPV1000
 
     OSCR::Storage::Shared::close();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     OSCR::Databases::Basic::matchCRC();
+# endif /* !OSCR_DUMPER */
   }
 
   //******************************************

@@ -212,7 +212,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         system == CartSystem.A2600 -> Rules.a2600(mapN)
         system == CartSystem.A5200 || system == CartSystem.A7800 -> Rules.atari(system, mapN, prgN)
         system == CartSystem.A8BIT -> Rules.atari8(mapN, prgN)
-        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION -> Rules.romSize(system, prgN)
+        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
@@ -1043,6 +1043,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.RCA2) Callout(t(S.RCA2_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.PYUUTA) Callout(t(S.PYUUTA_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
+            if (stub == null && system == CartSystem.PV1000) Callout(t(S.PV1000_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.A2600) {
                 Callout(t(S.A2600_HINT), Tone.INFO)
                 LabeledField(t(S.A2600_MAPPER)) {
@@ -1097,7 +1098,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                         supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
                 }
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION)) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }

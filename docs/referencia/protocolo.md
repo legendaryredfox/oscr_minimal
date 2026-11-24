@@ -97,6 +97,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 22 | RCA Studio II (adaptador de 22 pinos no slot SNES, 5 V; F-20, D216) | `.bin` |
 | 23 | Tomy Pyuuta (adaptador de 36 pinos no slot SNES, 5 V; F-20, D217) | `.bin` |
 | 24 | Watara Supervision (adaptador de 40 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D218) | `.sv` |
+| 25 | Casio PV-1000 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D219) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -144,6 +145,10 @@ Usa o núcleo `TomyPyuuta.cpp` do OSCR, só leitura de ROM. A costura chama o `r
 ### Opções para Watara Supervision (D218)
 
 Usa o núcleo `Supervision.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `romSizes`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 32, 64 ou 512 (outro valor dá `ERRO 0x0004`); o de 32 KB lê `$8000-$FFFF`, os outros `$0000` em diante. `DETECT` lê 32 bytes de `$8000`: `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM não tem assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O núcleo pede 3,3 V; o slot SNES é 5 V fixo (ver o plano do adaptador). Regras puras em `include/dumper/SvCore.h`, testadas em `pc-tests/test_sv.cpp`.
+
+### Opções para Casio PV-1000 (D219)
+
+Usa o núcleo `CasioPV1000.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `PV1000`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 8 (usa /CS1) ou 16 (usa /CS2); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` (primeiro com /CS1 baixo e, se vier vazio, com /CS2 baixo): `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM do PV-1000 não tem assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/PvCore.h`, testadas em `pc-tests/test_pv.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 

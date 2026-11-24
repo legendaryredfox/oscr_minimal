@@ -7,7 +7,7 @@ from __future__ import annotations
 
 PLANNED: tuple[tuple[str, str], ...] = (
     ("astrocade", "Bally Astrocade"),
-    ("loopy", "Casio Loopy"), ("pv1000", "Casio PV-1000"), ("channelf", "Fairchild Channel F"),
+    ("loopy", "Casio Loopy"), ("channelf", "Fairchild Channel F"),
     ("c64", "Commodore 64"), ("vic20", "Commodore VIC-20"),
     ("cps3", "Capcom CPS3"), ("intellivision", "Intellivision"), ("leapster", "Leapster"),
     ("jammer", "Little Jammer"), ("jammerpro", "Little Jammer Pro"),
