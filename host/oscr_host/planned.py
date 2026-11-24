@@ -14,7 +14,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("vb", "Virtual Boy"), ("pokemini", "Pokémon Mini"),
     ("odyssey2", "Odyssey 2"), ("pce", "PC Engine / TurboGrafx-16"), ("pcw", "Pocket Challenge W"),
     ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
-    ("supercan", "Super A'can"), ("supervision", "Watara Supervision"),
+    ("supercan", "Super A'can"),
     ("ti99", "TI-99/4A"), ("trs80", "TRS-80"),
     ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"),
     ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),

@@ -33,8 +33,19 @@ object Proto {
 
 /** Sistemas e extensão do arquivo de ROM. */
 enum class CartSystem(val id: Int, val ext: String) {
-    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), N64(11, ".z64"), COLECO(12, ".col"), NGP(13, ".ngp"), VECTREX(14, ".vec"), A2600(15, ".a26"), A5200(16, ".a52"), A7800(17, ".a78"), A8BIT(18, ".rom"), LYNX(19, ".lnx"), JAGUAR(20, ".jag"), ARCADIA(21, ".bin"), RCA2(22, ".bin"), PYUUTA(23, ".bin"), MOCK(255, ".bin");
+    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), N64(11, ".z64"), COLECO(12, ".col"), NGP(13, ".ngp"), VECTREX(14, ".vec"), A2600(15, ".a26"), A5200(16, ".a52"), A7800(17, ".a78"), A8BIT(18, ".rom"), LYNX(19, ".lnx"), JAGUAR(20, ".jag"), ARCADIA(21, ".bin"), RCA2(22, ".bin"), PYUUTA(23, ".bin"), SUPERVISION(24, ".sv"), MOCK(255, ".bin");
 }
+
+/**
+ * Sistemas que só leem com um adaptador entre o cartucho e o slot da placa (a lista da GUI os separa dos de slot direto).
+ * Direto: SNES, NES, Famicom, Mega Drive, GBA, Master System, N64 e o programador de flash. Com adaptador: Game Boy e GBC (pelo slot GBA),
+ * Game Gear e SG-1000 (pelo slot Mega Drive) e os sistemas da F-20, que usam o barramento do slot SNES. Espelha `docs/referencia/uso.md`.
+ */
+val CartSystem.needsAdapter: Boolean
+    get() = when (this) {
+        CartSystem.SNES, CartSystem.NES, CartSystem.FAMICOM, CartSystem.MD, CartSystem.GBA, CartSystem.SMS, CartSystem.N64, CartSystem.FLASH, CartSystem.MOCK -> false
+        else -> true
+    }
 
 /** Motivos de falha do lado do programa. O texto para o usuário vem de `describeError` (traduzido); nenhuma mensagem fixa aqui. */
 enum class Fail { NO_RESPONSE, STALLED, OPEN_PORT, SHORT_REPLY, BAD_END, BAD_PAYLOAD, BAD_KIND, BAD_SIZE, PARTIAL_WRITE, DISCONNECTED }

@@ -212,7 +212,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         system == CartSystem.A2600 -> Rules.a2600(mapN)
         system == CartSystem.A5200 || system == CartSystem.A7800 -> Rules.atari(system, mapN, prgN)
         system == CartSystem.A8BIT -> Rules.atari8(mapN, prgN)
-        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA -> Rules.romSize(system, prgN)
+        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
@@ -982,7 +982,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             LabeledField(t(S.SYSTEM)) {
                 SystemPicker(
                     systems = CartSystem.entries.filter { info?.mock == true || it != CartSystem.MOCK },
-                    selected = system, stub = planned, soonTitle = t(S.SOON_TITLE),
+                    selected = system, stub = planned, adapterTitle = t(S.ADAPTER_TITLE), soonTitle = t(S.SOON_TITLE),
                     onSystem = { sys ->
                         planned = null
                         if (sys != system) { system = sys; prgKb = "0"; chrKb = "0"; ramKb = "0"; mapper = "0"; Prefs.system = sys.name }   // cada sistema começa limpo: nada "vaza" de um para outro
@@ -1042,6 +1042,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.ARCADIA) Callout(t(S.ARCADIA_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.RCA2) Callout(t(S.RCA2_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.PYUUTA) Callout(t(S.PYUUTA_HINT), Tone.INFO)
+            if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.A2600) {
                 Callout(t(S.A2600_HINT), Tone.INFO)
                 LabeledField(t(S.A2600_MAPPER)) {
@@ -1096,7 +1097,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                         supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
                 }
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA)) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }
@@ -1544,9 +1545,15 @@ private fun ComboBox(value: String, modifier: Modifier = Modifier, enabled: Bool
 private val collator: java.text.Collator = java.text.Collator.getInstance(Locale.ROOT)   // ordem alfabética que ignora maiúsculas e acentos (Pokémon vem com o P)
 
 @Composable
-private fun SystemPicker(systems: List<CartSystem>, selected: CartSystem, stub: PlannedSystem?, soonTitle: String, onSystem: (CartSystem) -> Unit, onStub: (PlannedSystem) -> Unit) {
+private fun SystemPicker(systems: List<CartSystem>, selected: CartSystem, stub: PlannedSystem?, adapterTitle: String, soonTitle: String, onSystem: (CartSystem) -> Unit, onStub: (PlannedSystem) -> Unit) {
     ComboBox(value = stub?.label ?: selected.name, modifier = Modifier.fillMaxWidth()) { close ->
-        systems.sortedWith(compareBy(collator) { it.name }).forEach { s -> DropdownMenuItem(text = { Text(s.name) }, onClick = { close(); onSystem(s) }) }
+        val (needAdapter, direct) = systems.sortedWith(compareBy(collator) { it.name }).partition { it.needsAdapter }
+        direct.forEach { s -> DropdownMenuItem(text = { Text(s.name) }, onClick = { close(); onSystem(s) }) }
+        if (needAdapter.isNotEmpty()) {
+            HorizontalDivider()
+            Text(adapterTitle, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline)
+            needAdapter.forEach { s -> DropdownMenuItem(text = { Text(s.name) }, onClick = { close(); onSystem(s) }) }
+        }
         HorizontalDivider()
         Text(soonTitle, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline)
         PLANNED_SYSTEMS.sortedWith(compareBy(collator) { it.label }).forEach { p -> DropdownMenuItem(text = { Text(p.label) }, onClick = { close(); onStub(p) }) }
