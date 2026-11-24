@@ -111,10 +111,11 @@ void Session::handle() {
 }
 
 void Session::do_info(uint8_t seq) {
-  uint8_t p[9] = {PROTO_VERSION, 0, 2, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0) | (be_.selftest_supported() ? 64 : 0) | (be_.board_supported() ? 128 : 0)), 0, 0, 0, 0};   // bit5: seletor de tensão (D138); bit6: SELFTEST; bit7: BOARD (D162)
-  put_u16(p + 5, be_.systems());
+  uint8_t p[11] = {PROTO_VERSION, 0, 2, 0, uint8_t(be_.flags() | (be_.volt_select() ? 32 : 0) | (be_.selftest_supported() ? 64 : 0) | (be_.board_supported() ? 128 : 0)), 0, 0, 0, 0, 0, 0};   // bit5: seletor de tensão (D138); bit6: SELFTEST; bit7: BOARD (D162)
+  put_u16(p + 5, uint16_t(be_.systems()));
   put_u16(p + 7, OSCR_MAX_PAYLOAD);   // campo acrescentado ao fim (docs/referencia/protocolo.md, seção 3)
-  send(T_INFO_RESP, seq, p, 9);
+  put_u16(p + 9, uint16_t(be_.systems() >> 16));   // ids 16 a 31, campo acrescentado ao fim (D208); host antigo ignora
+  send(T_INFO_RESP, seq, p, 11);
 }
 
 void Session::do_board(uint8_t seq, const uint8_t* p, uint16_t len) {

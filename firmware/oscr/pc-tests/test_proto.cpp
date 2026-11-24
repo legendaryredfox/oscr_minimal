@@ -150,7 +150,7 @@ static void test_session_info_detect() {
   int frames = 0; bool info_ok = false, det_ok = false;
   for (uint8_t b : out) if (d.push(b)) {
     frames++;
-    if (d.type == T_INFO_RESP && d.seq == 5 && d.len == 9 && get_u16(d.payload() + 7) == OSCR_MAX_PAYLOAD && d.payload()[0] == PROTO_VERSION && (d.payload()[4] & 1)) info_ok = true;
+    if (d.type == T_INFO_RESP && d.seq == 5 && d.len == 11 && get_u16(d.payload() + 7) == OSCR_MAX_PAYLOAD && d.payload()[0] == PROTO_VERSION && (d.payload()[4] & 1)) info_ok = true;
     if (d.type == T_DETECT_RESP && d.seq == 6 && d.payload()[1] == 0 && get_u32(d.payload() + 2) == MockBackend::kRomSize) det_ok = true;
   }
   CHECK(frames == 2 && info_ok && det_ok);
@@ -208,6 +208,8 @@ static void test_erase_e_detect_com_opcoes() {
 // ---- VOLT: seletor de tensão dos slots (D138); o 5V fica sempre ligado (D139)
 struct VoltBackend : MockBackend {
   bool selector = false;
+  uint32_t mask = 0;               // máscara de sistemas do INFO (D208: ids 16 a 31 no fim)
+  uint32_t systems() override { return mask; }
   uint8_t volt = 1;                // 1 = 3,3 V, 2 = 5 V; a placa sobe em 3,3 V (estado seguro)
   bool chosen = false;
   int volt_calls = 0;
@@ -248,6 +250,9 @@ static void test_volt() {
   VoltBackend plain;                                                                              // placa sem seletor: 5 V fixo
   VoltRun q(plain);
   CHECK(q.ask(T_INFO, nullptr, 0, t, p) && t == T_INFO_RESP && !(p[4] & 32));
+  plain.mask = (1UL << 15) | (1UL << 16) | (1UL << 31);                                           // D208: bits 0..15 em u16 no offset 5, 16..31 em u16 no offset 9
+  CHECK(q.ask(T_INFO, nullptr, 0, t, p) && p.size() == 11 && get_u16(p.data() + 5) == 0x8000 && get_u16(p.data() + 9) == 0x8001);
+  plain.mask = 0;
   CHECK(q.ask(T_DETECT, det_snes, 1, t, p) && t == T_DETECT_RESP);                                // nada é recusado: o 5V está sempre ligado
   CHECK(q.ask(T_VOLT, st, 1, t, p) && t == T_VOLT_RESP && p.size() == 3 && p[0] == 0 && p[1] == 0 && p[2] == 0);
   CHECK(q.ask(T_VOLT, v3, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_COMANDO && plain.volt_calls == 0);   // sem seletor: não escolhe tensão

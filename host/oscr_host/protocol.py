@@ -231,10 +231,12 @@ def parse_info_resp(p: bytes) -> dict:
         raise ProtocolError("INFO_RESP curto")
     ver, ma, mi, pa, flags, systems = struct.unpack_from("<BBBBBH", p)
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
+    if len(p) >= 11:
+        systems |= struct.unpack_from("<H", p, 9)[0] << 16   # ids 16 a 31 (D208); firmware antigo não manda
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
             "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32), "selftest": bool(flags & 64), "board_profile": bool(flags & 128),
-            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 16 and systems & (1 << i)],
-            "system_ids": [i for i in range(16) if systems & (1 << i)]}
+            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 32 and systems & (1 << i)],
+            "system_ids": [i for i in range(32) if systems & (1 << i)]}
 
 
 def parse_board_resp(p: bytes) -> dict:

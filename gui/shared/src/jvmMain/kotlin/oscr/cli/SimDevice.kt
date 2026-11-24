@@ -93,7 +93,7 @@ class SimDevice(val rom: ByteArray = mockData(), var save: ByteArray = ByteArray
                 val rep = selftestReport.take(24)
                 push(Proto.T_SELFTEST_RESP, byteArrayOf(if (selftestReport.size > 24) 1 else 0, rep.size.toByte()) + rep.flatMap { listOf(it.first.toByte(), it.second.toByte(), it.third.toByte()) }.toByteArray())
             }
-            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, firmware.first.toByte(), firmware.second.toByte(), firmware.third.toByte(), ((if (voltSelect) 121 else 89) or (if (boardProfile) 128 else 0)).toByte()) + le16(systemsMask) + le16(Proto.MAX_PAYLOAD))
+            Proto.T_INFO -> push(Proto.T_INFO_RESP, byteArrayOf(1, firmware.first.toByte(), firmware.second.toByte(), firmware.third.toByte(), ((if (voltSelect) 121 else 89) or (if (boardProfile) 128 else 0)).toByte()) + le16(systemsMask and 0xFFFF) + le16(Proto.MAX_PAYLOAD) + le16(systemsMask ushr 16))
             Proto.T_DETECT -> {
                 val sys = f.payload.getOrNull(0)?.toInt()?.and(0xFF) ?: 0
                 if (sys == 7 && mdFlashName != null) push(Proto.T_DETECT_RESP, byteArrayOf(sys.toByte(), 0) + le32(8 shl 20) + le32(0) + byteArrayOf(0, mdFlashName.length.toByte()) + mdFlashName.encodeToByteArray())   // chip de flash do Mega Drive simulado (testes do limite de 2 MiB)

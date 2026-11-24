@@ -65,7 +65,7 @@ class Backend {
  public:
   virtual ~Backend() {}
   virtual uint8_t flags() = 0;       // bit0 MOCK, bit1 Si5351, bit2 PIC
-  virtual uint16_t systems() = 0;    // máscara: bit = id do sistema (1..6)
+  virtual uint32_t systems() = 0;    // máscara: bit = id do sistema (1..31); o INFO manda os bits 0..15 em u16 e 16..31 em outro u16 no fim (D208)
   virtual bool supports(uint8_t system) = 0;
   virtual void detect(uint8_t system, DetectInfo& out) = 0;
   // Abre a leitura de ROM/save; devolve false e `err` se não der.
@@ -112,7 +112,7 @@ class MockBackend : public Backend {
  public:
   static constexpr uint32_t kRomSize = 32768, kSaveSize = 8192;
   uint8_t flags() override { return 1; }
-  uint16_t systems() override { return 0; }
+  uint32_t systems() override { return 0; }
   bool supports(uint8_t s) override { return s == SYS_MOCK || s == 0; }
   void detect(uint8_t s, DetectInfo& o) override;
   bool open_read(uint8_t s, uint8_t kind, uint32_t& size, uint16_t& err) override;

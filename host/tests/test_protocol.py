@@ -76,3 +76,13 @@ def test_parsers():
 def test_padrao_mock():
     d = P.mock_data()
     assert len(d) == 32768 and d[0] == 0 and d[1] == 7 and d[256] == (256 * 7 + 1) & 0xFF
+
+
+def test_info_resp_mascara_32_bits():
+    """D208: o INFO leva os ids 16 a 31 num u16 no fim; firmware antigo (9 bytes) segue valendo."""
+    import struct
+    from oscr_host import protocol as P
+    base = bytes([1, 0, 2, 0, 0]) + struct.pack("<H", 1 << 15) + struct.pack("<H", 520)
+    assert P.parse_info_resp(base)["system_ids"] == [15]
+    novo = P.parse_info_resp(base + struct.pack("<H", 0x8001))
+    assert novo["system_ids"] == [15, 16, 31]

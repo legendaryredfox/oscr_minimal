@@ -114,7 +114,7 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     /** O firmware aceita o perfil da placa (BOARD, D162). */
     val boardProfile get() = flags and 128 != 0
     /** Ids dos sistemas que o firmware lê (a máscara `sistemas` do INFO; bit = id do sistema). */
-    val systemIds: Set<Int> get() = (0 until 16).filter { systemsMask and (1 shl it) != 0 }.toSet()
+    val systemIds: Set<Int> get() = (0 until 32).filter { systemsMask and (1 shl it) != 0 }.toSet()
 }
 
 /** Ações do BOARD e o bit do perfil (D162). */

@@ -71,7 +71,7 @@ class OscrClient(
     fun info(): DeviceInfo {
         val p = request(Proto.T_INFO, ByteArray(0), nextSeq(), setOf(Proto.T_INFO_RESP), timeoutMs).payload
         if (p.size < 7) throw ProtocolError(Fail.SHORT_REPLY, "INFO_RESP")
-        return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
+        return DeviceInfo(p.u8(0), "${p.u8(1)}.${p.u8(2)}.${p.u8(3)}", p.u8(4), p.u16(5) or (if (p.size >= 11) p.u16(9) shl 16 else 0), if (p.size >= 9) p.u16(7) else Proto.MAX_PAYLOAD)
     }
 
     /** BOARD: consulta ([Board.STATUS]) ou grava ([Board.SET] e os `flags`) o perfil da placa na EEPROM do firmware (D162). Só existe se o INFO tiver `boardProfile`. */
