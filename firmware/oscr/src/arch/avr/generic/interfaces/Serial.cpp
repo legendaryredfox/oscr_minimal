@@ -56,7 +56,7 @@ namespace OSCR::Serial
   {
     begin();
 
-#   if defined(ENABLE_UPDATER)
+#   if defined(ENABLE_UPDATER) && !OSCR_DUMPER // fork oscr_minimal: o PC fala o protocolo do dumper, não o atualizador; segurava todos os menus no binário
     OSCR::Updater::printVersionToSerial();
 #   endif /* ENABLE_UPDATER */
   }

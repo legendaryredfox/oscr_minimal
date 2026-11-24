@@ -62,7 +62,7 @@ namespace OSCR
 
   void tick()
   {
-# if defined(ENABLE_UPDATER) && !defined(ENABLE_SERIAL_OUTPUT) // Updater handled by interface when used as output
+# if defined(ENABLE_UPDATER) && !defined(ENABLE_SERIAL_OUTPUT) && !OSCR_DUMPER // fork oscr_minimal: sem atualizador no dumper (ver Serial.cpp); Updater handled by interface when used as output
     OSCR::Updater::check();
 # endif /* ENABLE_UPDATER */
 
