@@ -563,7 +563,9 @@ namespace OSCR::Cores::AtariJaguar
 
     OSCR::UI::ProgressBar::finish();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     OSCR::Databases::Standard::matchCRC();
+# endif /* !OSCR_DUMPER */
   }
 
   //*****************************************************************************

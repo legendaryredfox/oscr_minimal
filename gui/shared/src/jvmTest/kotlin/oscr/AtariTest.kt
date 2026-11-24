@@ -43,3 +43,13 @@ class Atari8Test {
         assertNull(Rules.atari8(0, 40)); assertNotNull(Rules.atari8(0, 24)); assertNull(Rules.atari8(1, 0)); assertNotNull(Rules.atari8(2, 8))
     }
 }
+
+/** F-20, D211: Atari Jaguar. */
+class JaguarTest {
+    @Test fun idEExtensao() { assertEquals(20, CartSystem.JAGUAR.id); assertEquals(".jag", CartSystem.JAGUAR.ext) }
+
+    @Test fun tamanhos() {
+        listOf(1024, 2048, 4096).forEach { assertNull(Rules.romSize(CartSystem.JAGUAR, it)) }
+        listOf(0, 512, 3072, 6144).forEach { assertNotNull(Rules.romSize(CartSystem.JAGUAR, it)) }
+    }
+}

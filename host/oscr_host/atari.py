@@ -49,3 +49,12 @@ def a8_kb(slot: int, kb: int) -> int:
 def lynx_bytes(block: int) -> int:
     """Bytes que o `readROM` do Lynx entrega para o bloco achado por `detectCart` (cabeçalho .lnx de 64 bytes e 256 blocos); 0 se o bloco não é 512, 1024 ou 2048."""
     return 64 + 256 * block if block in (512, 1024, 2048) else 0
+
+
+# Atari Jaguar (D211): só ROM; o cartucho não informa o tamanho (o `romSize` do núcleo é o índice 0, 1 ou 2).
+JAGUAR_SIZES = (1024, 2048, 4096)
+
+
+def jaguar_index(kb: int) -> int | None:
+    """Índice do tamanho no `romSize` do núcleo (1, 2 ou 4 MB); None se o `prg` não é 1024, 2048 ou 4096."""
+    return JAGUAR_SIZES.index(kb) if kb in JAGUAR_SIZES else None

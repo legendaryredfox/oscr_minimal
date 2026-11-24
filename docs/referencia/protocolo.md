@@ -92,6 +92,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 17 | Atari 7800 (adaptador de 32 pinos no slot SNES, 5 V, relógio do Si5351; F-20, D209) | `.a78` |
 | 18 | Atari 8 bits 400/800/XL/XE (adaptador de 30 pinos no slot SNES, 5 V; F-20, D210) | `.rom` |
 | 19 | Atari Lynx (adaptador de 34 pinos no slot SNES, 5 V; F-20, D210) | `.lnx` |
+| 20 | Atari Jaguar (adaptador com 74HC595 no slot SNES, 5 V; **adaptador pendente**; F-20, D211) | `.jag` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -111,6 +112,10 @@ Mesma ideia do 2600: os núcleos `Atari5200.cpp` e `Atari7800.cpp` do OSCR escol
 **8 bits:** o `readROM` do OSCR é chamado com o slot (`atari8right`) e o índice do tamanho (`romSize` do núcleo, que é um índice em `romSizes`) vindos do protocolo. `mapper` = slot (0 esquerdo, 1 direito; outro valor dá `ERRO 0x0004`); `prg_kb` = 8, 16, 32, 40, 64 ou 128 e só vale no slot esquerdo (o direito é sempre 8 KB e ignora o campo). Mudanças no núcleo: o `wait` de `checkStatus` (que `cartOn` chama e que espera um botão) e o `matchCRC` final ficam sob `#if !OSCR_DUMPER`. **Limite conhecido:** a troca de banco dos cartuchos XE (32, 64 e 128 KB) e do Necromancer (16 KB) pulsa o `PHI2` por PH1, que não chega ao slot SNES (`docs/planos/adaptador-a8bit.md`); esses cartuchos lêem o mesmo banco. Sem save. `DETECT`: `ATARI8`, `rom_size` pelas regras acima.
 
 **Lynx:** sem opções (`mapper` e `prg_kb` são ignorados). O próprio núcleo acha o tamanho do bloco (`detectCart`, procurando dados espelhados) e o `readROM` grava o cabeçalho `.lnx` de 64 bytes e 256 blocos; o `DETECT` devolve `LYNX` e `rom_size` = 64 + 256 × bloco (bloco de 512, 1024 ou 2048: 128, 256 ou 512 KB mais o cabeçalho). Mudanças no núcleo: `detectCart`, `readROM` e `lynxBlockSize` perdem o `static` (declarados em `AtariLynx.h`) e o `compareCRC` final fica sob `#if !OSCR_DUMPER`. Sem cartucho o `detectCart` não acha bloco (`status` 1). Sem save. **O adaptador está incompleto:** as linhas A12 a A19 e AUDIN estão PENDENTES (`docs/planos/adaptador-lynx.md`).
+
+### Opções para Atari Jaguar (D211)
+
+Só leitura de ROM. O `readROM` do OSCR lê 32 bits por vez (dados em PF, PK, PL e PC) e gera o endereço com 74HC595 (PE3, PE4, PE5 e PG5); `romSize` do núcleo (índice 0, 1 ou 2) é preenchido pela costura com o `prg_kb` do protocolo: **1024, 2048 ou 4096** (o cartucho não informa o tamanho; outro valor dá `ERRO 0x0004`). Única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`. A ordem dos bytes é a do núcleo (palavra alta e depois palavra baixa, cada uma com o byte alto primeiro). `DETECT` lê os 32 bytes do cabeçalho `ATARI APPROVED DATA HEADER ATRI!` em $400 (só para saber se há cartucho: `status` 1 se todos iguais, `$00` ou `$FF`) e devolve `JAGUAR` com `rom_size` = `prg_kb` × 1024. Sem save (a EEPROM 93Cx6 e o Memory Track do OSCR não foram ligados). **O adaptador não foi projetado:** nenhum slot tem PE3 (SER) e PL7 (D23) ao mesmo tempo (`docs/planos/adaptador-jaguar.md`).
 
 ### Opções para Vectrex (D205)
 

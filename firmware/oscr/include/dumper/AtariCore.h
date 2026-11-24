@@ -119,3 +119,12 @@ namespace oscr { namespace lynx
   }
 } }  // namespace oscr::lynx
 
+// Atari Jaguar (F-20, D211): só a leitura de ROM. O núcleo AtariJaguar.cpp lê 32 bits por vez (PF, PK, PL e PC) e gera o endereço com 74HC595 (PE3, PE4, PE5 e PG5);
+// o cartucho não diz o tamanho: `prg_kb` = 1024, 2048 ou 4096 (o `romSize` do núcleo é o índice 0, 1 ou 2).
+namespace oscr { namespace jag
+{
+  constexpr uint8_t kBad = 0xFF;
+  /// Índice do tamanho no `romSize` do núcleo (1, 2 ou 4 MB), `kBad` se não existe.
+  inline uint8_t sizeIndex(uint16_t kb) { return kb == 1024 ? 0 : (kb == 2048 ? 1 : (kb == 4096 ? 2 : kBad)); }
+} }  // namespace oscr::jag
+
