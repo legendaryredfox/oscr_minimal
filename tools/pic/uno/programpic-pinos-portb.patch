@@ -1,0 +1,15 @@
+--- b/ProgramPIC.ino	2026-11-24 17:48:13.249653270 -0300
++++ c/ProgramPIC.ino	2026-11-24 17:48:13.252653456 -0300
+@@ -47,9 +47,9 @@
+ // Pin mappings for the PIC programming shield.
+ #define PIN_MCLR        A1      // 0: MCLR is VPP voltage, 1: Reset PIC
+ #define PIN_ACTIVITY    A5      // LED that indicates read/write activity
+-#define PIN_VDD         2       // Controls the power to the PIC
+-#define PIN_CLOCK       4       // Clock pin
+-#define PIN_DATA        7       // Data pin
++#define PIN_VDD         8       // Controls the power to the PIC
++#define PIN_CLOCK       9       // Clock pin
++#define PIN_DATA        10      // Data pin
+ 
+ #define MCLR_RESET      HIGH    // PIN_MCLR state to reset the PIC
+ #define MCLR_VPP        LOW     // PIN_MCLR state to apply 13v to MCLR/VPP pin
