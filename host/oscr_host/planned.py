@@ -13,7 +13,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("jammer", "Little Jammer"), ("jammerpro", "Little Jammer Pro"),
     ("vb", "Virtual Boy"), ("pokemini", "Pokémon Mini"),
     ("odyssey2", "Odyssey 2"), ("pce", "PC Engine / TurboGrafx-16"), ("pcw", "Pocket Challenge W"),
-    ("rca2", "RCA Studio II"), ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
+    ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
     ("supercan", "Super A'can"), ("supervision", "Watara Supervision"),
     ("ti99", "TI-99/4A"), ("pyuuta", "Tomy Pyuuta"), ("trs80", "TRS-80"),
     ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"),

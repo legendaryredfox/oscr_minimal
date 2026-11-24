@@ -94,6 +94,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 19 | Atari Lynx (adaptador de 34 pinos no slot SNES, 5 V; F-20, D210) | `.lnx` |
 | 20 | Atari Jaguar (adaptador com 74HC595 no slot SNES, 5 V; **adaptador pendente**; F-20, D211) | `.jag` |
 | 21 | Emerson Arcadia 2001 (adaptador de 30 pinos no slot SNES, 5 V; F-20, D215) | `.bin` |
+| 22 | RCA Studio II (adaptador de 22 pinos no slot SNES, 5 V; F-20, D216) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -129,6 +130,10 @@ Usa o núcleo `Vectrex.cpp` do OSCR, só leitura de ROM. **A costura chama o `re
 ### Opções para Arcadia 2001 (D215)
 
 Usa o núcleo `Arcadia2001.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `romSizes`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 2, 4, 6 ou 8 (a tabela do menu do OSCR; o console enxerga a ROM em `$0000-$0FFF` e `$2000-$2FFF`); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000`: `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM do Arcadia não tem assinatura nem cabeçalho, e o núcleo do OSCR também não detecta nada: o tamanho vem sempre do PC e `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ArcCore.h`, testadas em `pc-tests/test_arc.cpp`.
+
+### Opções para RCA Studio II (D216)
+
+Usa o núcleo `RCAStudio2.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `romSizes`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é sempre **1** (outro valor dá `ERRO 0x0004`): o índice 1 do núcleo lê `$0400-$07FF` (1 KB; o menu do OSCR rotula os índices como "1" e "2" mas lê 512 B e 1 KB), e o índice 0 (512 B) não é oferecido. `DETECT` lê 32 bytes de `$0400`: `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM do Studio II não tem assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/RcaCore.h`, testadas em `pc-tests/test_rca.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 

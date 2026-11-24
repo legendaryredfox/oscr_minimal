@@ -251,7 +251,9 @@ namespace OSCR::Cores::RCAStudio2
 
     OSCR::Storage::Shared::close();
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (o ponteiro do banco é nulo); o PC confere o CRC32
     OSCR::Databases::Standard::matchCRC();
+# endif /* !OSCR_DUMPER */
   }
 
   //******************************************
