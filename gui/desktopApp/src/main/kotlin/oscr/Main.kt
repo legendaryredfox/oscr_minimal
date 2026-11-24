@@ -208,6 +208,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     val problem: Problem? = when {
         isNes -> Rules.nes(mapN, prgN, chrN)
         system == CartSystem.A2600 -> Rules.a2600(mapN)
+        system == CartSystem.A5200 || system == CartSystem.A7800 -> Rules.atari(system, mapN, prgN)
         system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
@@ -1043,6 +1044,20 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     }
                 }
                 problem?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
+            }
+            if (stub == null && (system == CartSystem.A5200 || system == CartSystem.A7800)) {
+                Callout(t(if (system == CartSystem.A5200) S.A5200_HINT else S.A7800_HINT), Tone.INFO)
+                val atariMaps = Atari.mappers(system)
+                val atariCur = atariMaps.firstOrNull { it.id == mapN }
+                LabeledField(t(S.ATARI_MAPPER)) {
+                    ComboBox(value = atariCur?.let { "${it.name} (${it.id})" } ?: "-", modifier = Modifier.fillMaxWidth()) { close ->
+                        atariMaps.forEach { m -> DropdownMenuItem(text = { Text("${m.name} (${m.id})") }, onClick = { close(); mapper = m.id.toString() }) }
+                    }
+                }
+                if (atariCur != null && atariCur.sized.isNotEmpty()) {
+                    OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
+                        supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
+                } else problem?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
             }
             if (stub == null && system == CartSystem.N64) {
                 Callout(t(S.N64_HINT), Tone.INFO)

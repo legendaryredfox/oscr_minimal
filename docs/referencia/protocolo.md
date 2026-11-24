@@ -88,11 +88,21 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 13 | Neo Geo Pocket / Color (3,3 V; adaptador ainda não projetado; F-20, D202) | `.ngp` (os jogos de Color podem ser renomeados para `.ngc`) |
 | 14 | Vectrex (adaptador de 36 pinos no slot SNES, 5 V; F-20, D205) | `.vec` |
 | 15 | Atari 2600 (adaptador de 24 pinos no slot SNES, 5 V; F-20, D206) | `.a26` |
+| 16 | Atari 5200 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D209) | `.a52` |
+| 17 | Atari 7800 (adaptador de 32 pinos no slot SNES, 5 V, relógio do Si5351; F-20, D209) | `.a78` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
 
 Usa o núcleo `Atari2600.cpp` do OSCR e **chama o `readROM` dele**: o método de leitura vem do id do mapper (`mapperDetail->id`, que o OSCR lê do banco `a2600-mappers` no SD); a costura aponta `mapperDetail` para um registro estático com o id do campo `mapper` do protocolo. Única mudança no núcleo: o `matchCRC` no fim do `readROM` fica sob `#if !OSCR_DUMPER` (como no `ST.cpp`). O cartucho não diz o mapper: o campo `mapper` é obrigatório e vale em `DETECT` (só para o `rom_size`), `DUMP_ROM`; `prg_kb` é ignorado. Ids aceitos (os do `switch` do `readROM`) e o tamanho que cada um lê: 0x20 2K, 0xC0 CV 2K, 0x40 4K, 0x3F Tigervision 8K, 0xE0 8K, 0xF8 8K, 0x08 F8SC 8K, 0xF9 Time Pilot 8K, 0xFE 8K, 0x0A UA 8K, 0xD0 DPC 10K, 0xFA 12K, 0xE7 8/12/16K, 0xF6 16K, 0x06 F6SC 16K, 0x3E 32K, 0xF4 32K, 0x04 F4SC 32K, 0xF0 64K, 0x07 X07 64K, 0xDF 128K, 0xBA 128K, 0xBB 256K. Outro id dá `ERRO 0x0004`. O E7 lê 8, 12 ou 16 KB conforme o conteúdo (`DETECT` dá `rom_size` 0 nele). `DETECT`: `status` 1 se os 32 bytes lidos de `$1000` são todos `$00` ou `$FF`, senão 0 (o 2600 não tem cabeçalho). `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/AtariCore.h` (`pc-tests/test_a26.cpp`); a mesma tabela em `host/oscr_host/a2600.py` e `gui/shared/.../A2600.kt` (`host/tests/test_a2600.py` confere as três). **Id 15 é o último que cabe na máscara de 16 bits do `INFO`**: o próximo sistema exige estender a máscara.
+
+### Opções para Atari 5200 e Atari 7800 (D209)
+
+Mesma ideia do 2600: os núcleos `Atari5200.cpp` e `Atari7800.cpp` do OSCR escolhem o método de leitura por `mapperDetail->id` e, nos mappers de tamanho variável, por `romSize`; a costura preenche os dois com o `mapper` e o `prg_kb` do protocolo e **chama o `readROM` do OSCR** (único desvio nos núcleos: o `matchCRC` final sob `#if !OSCR_DUMPER`). O cartucho não diz nem o mapper nem o tamanho. `mapper` é obrigatório; `prg_kb` só vale nos mappers que pedem tamanho e é ignorado nos outros. Combinação inválida: `ERRO 0x0004` (argumento) antes de ler.
+
+- **5200:** mapper 0 padrão, `prg_kb` 4, 8, 16 ou 32; 1 dois chips de 16 KB; 2 Bounty Bob Strikes Back, 40 KB.
+- **7800:** mapper 0 padrão, `prg_kb` 16, 32 ou 48; 1 SuperGame 128 KB; 2 SuperGame 144 KB [78S9]; 3 F-18 Hornet 64 KB; 4 Double Dragon/Rampage 128 KB; 5 e 6 64 KB; 7 bankset, `prg_kb` 32, 48, 64 ou 128 (o `readROM` lê duas vezes, HALT em 1 e em 0: 64, 96, 96 e 256 KB); 8 Crystal Quest/Bounty Bob 144 KB.
+- `DETECT` devolve `ATARI5200` ou `ATARI7800` e o `rom_size` pelas regras acima (0 se a combinação for inválida); slot vazio (o barramento lê sempre o mesmo valor, `$00` ou `$FF`) é `status` 2. Sem save (`E_SEM_SAVE`). As regras estão em `include/dumper/AtariCore.h` (`a52Kb`, `a78Kb`), `host/oscr_host/atari.py` e `Atari.kt`.
 
 ### Opções para Vectrex (D205)
 

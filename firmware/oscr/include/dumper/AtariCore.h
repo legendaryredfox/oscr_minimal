@@ -49,3 +49,44 @@ namespace oscr { namespace a26
     return (sample[0] == 0xFF || sample[0] == 0x00) ? kNoCart : kOk;
   }
 } }  // namespace oscr::a26
+
+// Atari 5200 e Atari 7800 (F-20, D209): 5 V, mesmo slot SNES. Como no 2600, o cartucho não diz o mapper nem o tamanho: o PC manda `mapper` (id do
+// `a5200-mappers` / `a7800-mappers` do OSCR) e `prg_kb`. Os tamanhos saem do `readROM` de cada núcleo (src/cores/Atari5200.cpp e Atari7800.cpp) e as
+// faixas aceitas de `prg_kb` saem das tabelas `a5200mapsize` e `a7800mapsize` do OSCR legado (vendor/oscr/legacy/Cart_Reader).
+namespace oscr { namespace atari
+{
+  /// 5200. Mapper 0: 4, 8, 16 ou 32 KB (o `prg_kb`); 1: dois chips de 16 KB; 2: Bounty Bob Strikes Back, 40 KB. Devolve os KB que o `readROM` lê, 0 se inválido.
+  inline uint16_t a52Kb(uint16_t mapper, uint16_t kb)
+  {
+    switch (mapper)
+    {
+      case 0: return (kb == 4 || kb == 8 || kb == 16 || kb == 32) ? kb : 0;
+      case 1: return 16;
+      case 2: return 40;
+      default: return 0;
+    }
+  }
+
+  /// KB que o `readStandard` do 7800 lê para o `romSize` dado (16, 32 ou 48).
+  inline uint16_t a78Std(uint16_t kb) { return kb > 32 ? 48 : (kb > 16 ? 32 : 16); }
+
+  /// 7800. Mapper 0: 16, 32 ou 48 KB; 1: SuperGame 128 KB; 2: 144 KB; 3: F-18 Hornet 64 KB; 4: Double Dragon/Rampage 128 KB; 5 e 6: 64 KB;
+  /// 7: bankset (o `readROM` lê duas vezes, com HALT em 1 e em 0; `prg_kb` de 32, 48, 64 ou 128: acima de 64 lê o SuperGame de 128 KB duas vezes, senão o padrão duas vezes);
+  /// 8: Crystal Quest/Bounty Bob 144 KB. Devolve os KB totais, 0 se inválido.
+  inline uint16_t a78Kb(uint16_t mapper, uint16_t kb)
+  {
+    switch (mapper)
+    {
+      case 0: return (kb == 16 || kb == 32 || kb == 48) ? kb : 0;
+      case 1: return 128;
+      case 2: return 144;
+      case 3: return 64;
+      case 4: return 128;
+      case 5: case 6: return 64;
+      case 7: return (kb == 32 || kb == 48 || kb == 64 || kb == 128) ? (kb > 64 ? 256 : 2 * a78Std(kb)) : 0;
+      case 8: return 144;
+      default: return 0;
+    }
+  }
+} }  // namespace oscr::atari
+

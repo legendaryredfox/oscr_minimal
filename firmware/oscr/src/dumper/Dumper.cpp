@@ -24,6 +24,8 @@
 # include "cores/NeoGeoPocket.h"
 # include "cores/Vectrex.h"
 # include "cores/Atari2600.h"
+# include "cores/Atari5200.h"
+# include "cores/Atari7800.h"
 # include "common/crdb/mapper.h"
 # include "cores/SelfTest.h"
 # include "dumper/Dumper.h"
@@ -322,6 +324,8 @@ namespace OSCR::Dumper
     namespace NG = OSCR::Cores::NeoGeoPocket;
     namespace VX = OSCR::Cores::Vectrex;
     namespace A2 = OSCR::Cores::Atari2600;
+    namespace A5 = OSCR::Cores::Atari5200;
+    namespace A7 = OSCR::Cores::Atari7800;
 
     /**
      * Atari 2600 (F-20, D206): o `readROM` do OSCR escolhe o método de leitura por `mapperDetail->id`, um registro do banco `a2600-mappers` do SD
@@ -336,6 +340,48 @@ namespace OSCR::Dumper
       for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = A2::readData(0x1000 + i);
       A2::cartOff();
       return oscr::a26::classify(sample, sizeof sample);
+    }
+    /**
+     * Atari 5200 e 7800 (F-20, D209): como no 2600, o `readROM` do OSCR escolhe o método por `mapperDetail->id` e, nos mappers de tamanho variável,
+     * por `romSize` (os dois globais que o menu do OSCR preenchia). A costura os preenche com o `mapper` e o `prg_kb` do PC e **chama o `readROM` do OSCR**
+     * (único desvio nos núcleos: o `matchCRC` final sob `#if !OSCR_DUMPER`, como no 2600).
+     */
+    uint8_t a52Probe()
+    {
+      uint8_t sample[32];
+      A5::cartOn();
+      PORTH &= ~(1 << 6);                                               // /8000 (PH6) baixo: ROM em $8000-$BFFF, onde ficam o início e o fim de todo cartucho do 5200
+      A5::cycleDelay(15);
+      for (uint8_t i = 0; i < 16; i++) { sample[i] = A5::readData(0x8000 + i); sample[16 + i] = A5::readData(0xBFF0 + i); }
+      PORTH |= (1 << 6);
+      A5::cartOff();
+      return oscr::a26::classify(sample, sizeof sample);
+    }
+    uint8_t a78Probe()
+    {
+      uint8_t sample[32];
+      A7::cartOn();
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = A7::readData(0xFFE0 + i);   // vetores e cabeçalho: no último banco, fixos em $C000-$FFFF
+      A7::cartOff();
+      return oscr::a26::classify(sample, sizeof sample);
+    }
+    void a52Read(uint16_t id, uint16_t kb)
+    {
+      a26Rec.id = id;
+      OSCR::Databases::Basic::mapperDetail = &a26Rec;
+      OSCR::Cores::fromCRDB = false;
+      OSCR::Cores::romSize = kb;
+      A5::readROM();
+      OSCR::Databases::Basic::mapperDetail = nullptr;
+    }
+    void a78Read(uint16_t id, uint16_t kb)
+    {
+      a26Rec.id = id;
+      OSCR::Databases::Basic::mapperDetail = &a26Rec;
+      OSCR::Cores::fromCRDB = false;
+      OSCR::Cores::romSize = kb;
+      A7::readROM();
+      OSCR::Databases::Basic::mapperDetail = nullptr;
     }
     void a26Read(uint16_t id)
     {
@@ -830,8 +876,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_FLASH; }
+      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -934,6 +980,21 @@ namespace OSCR::Dumper
           oscr::n64::formatName(out.name, sizeof(out.name), uint32_t(N6::crc1), OSCR::Cores::cartID, OSCR::Cores::fileName);
           out.rom_size = 0;                                         // o cabeçalho não diz o tamanho: o PC acha pelo CRC1 (base de dados) ou o usuário informa
           out.save_size = 0; out.save_type = 0;                     // nem o tipo de save
+          return;
+        }
+
+        if (system == oscr::SYS_A52 || system == oscr::SYS_A78)
+        {
+          uint8_t st = oscr::a26::kNoCart;
+          bool is52 = system == oscr::SYS_A52;
+          bool ran = runCore([&st, is52] { st = is52 ? a52Probe() : a78Probe(); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::a26::kNoCart) return;
+          strlcpy_P(out.name, is52 ? PSTR("ATARI5200") : PSTR("ATARI7800"), sizeof(out.name));
+          uint16_t kb = is52 ? oscr::atari::a52Kb(optMapper, optPrgKb) : oscr::atari::a78Kb(optMapper, optPrgKb);   // o DETECT leva mapper e prg_kb; combinação inválida deixa o tamanho em 0
+          out.rom_size = uint32_t(kb) * 1024UL;
+          out.save_size = 0; out.save_type = 0;
           return;
         }
 
@@ -1073,7 +1134,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
-        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
+        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1091,11 +1152,14 @@ namespace OSCR::Dumper
         uint16_t m64 = optMapper;
         uint16_t colvKb = optPrgKb, a26Id = optMapper;
         uint32_t ngpBytes = OSCR::Cores::cartSize;                    // `prepare` já leu o chip e aplicou o tamanho do PC
-        bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64, colvKb, a26Id, ngpBytes]
+        uint16_t a5romsize = optPrgKb;
+        bool ok = runCore([system, kind, saveType, r369, m369, mb369, m64, colvKb, a26Id, a5romsize, ngpBytes]
         {
           if (system == oscr::SYS_COLV) { colvRead(colvKb); return; }
           if (system == oscr::SYS_VEC) { vecRead(colvKb); return; }
           if (system == oscr::SYS_A26) { a26Read(a26Id); return; }
+          if (system == oscr::SYS_A52) { a52Read(a26Id, a5romsize); return; }
+          if (system == oscr::SYS_A78) { a78Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_NGP) { ngpRead(ngpBytes); return; }
           if (isNes(system))
           {
@@ -1189,7 +1253,7 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
-        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26) { err = oscr::E_SEM_SAVE; return false; }
+        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1583,6 +1647,17 @@ namespace OSCR::Dumper
             if (!oscr::n64::romMbValid(optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }
             OSCR::Cores::cartSize = optPrgKb;                                           // o `readRom` do OSCR conta em MB
           }
+          return true;
+        }
+        if (system == oscr::SYS_A52 || system == oscr::SYS_A78)
+        {
+          bool is52 = system == oscr::SYS_A52;
+          uint16_t kb = is52 ? oscr::atari::a52Kb(optMapper, optPrgKb) : oscr::atari::a78Kb(optMapper, optPrgKb);
+          if (kb == 0) { err = oscr::E_ARGUMENTO; return false; }                                   // mapper e prg_kb do OSCR (AtariCore.h)
+          uint8_t st = oscr::a26::kNoCart;
+          bool ran = runCore([&st, is52] { st = is52 ? a52Probe() : a78Probe(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::a26::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (system == oscr::SYS_A26)

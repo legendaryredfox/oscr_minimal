@@ -23,6 +23,14 @@ int main() {
   memset(b, 0xA5, 32); CHECK(classify(b, 32) == kOk);      // valor único que não é $00 nem $FF
   memset(b, 0xFF, 32); b[31] = 0x00; CHECK(classify(b, 32) == kOk);
   CHECK(classify(b, 1) == kNoCart);
-  printf("%d verificacoes do Atari 2600, %d falhas\n", g_n, g_fail);
+  // Atari 5200 e 7800 (D209)
+  using namespace oscr::atari;
+  CHECK(a52Kb(0, 4) == 4 && a52Kb(0, 8) == 8 && a52Kb(0, 16) == 16 && a52Kb(0, 32) == 32 && a52Kb(0, 12) == 0 && a52Kb(0, 0) == 0);
+  CHECK(a52Kb(1, 0) == 16 && a52Kb(1, 99) == 16 && a52Kb(2, 0) == 40 && a52Kb(3, 16) == 0);
+  CHECK(a78Kb(0, 16) == 16 && a78Kb(0, 32) == 32 && a78Kb(0, 48) == 48 && a78Kb(0, 64) == 0 && a78Kb(0, 8) == 0);
+  CHECK(a78Kb(1, 0) == 128 && a78Kb(2, 0) == 144 && a78Kb(3, 0) == 64 && a78Kb(4, 0) == 128 && a78Kb(5, 0) == 64 && a78Kb(6, 0) == 64 && a78Kb(8, 0) == 144 && a78Kb(9, 16) == 0);
+  CHECK(a78Kb(7, 32) == 64 && a78Kb(7, 48) == 96 && a78Kb(7, 64) == 96 && a78Kb(7, 128) == 256 && a78Kb(7, 16) == 0 && a78Kb(7, 144) == 0);
+  CHECK(a78Std(16) == 16 && a78Std(17) == 32 && a78Std(32) == 32 && a78Std(33) == 48 && a78Std(64) == 48);
+  printf("%d verificacoes do Atari 2600, 5200 e 7800, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }
