@@ -1,4 +1,4 @@
-# Gravar o PIC12F629 com Arduino Uno (ardpicprog)
+# Gravar o PIC12F629 com Arduino Uno
 
 Plano B, sem comprar programador. O circuito também existe como shield de PCB, em protoboard e em placa perfurada, em [`../shield_uno/README.md`](../shield_uno/README.md) (D102). Baseado no ardpicprog de Rhys Weatherley (GPL v3; circuitos e documentação
 CC BY-SA 2.5), https://rweather.github.io/ardpicprog/. O 12F629 está na lista dele, com autodetecção.
@@ -15,21 +15,25 @@ Hex a gravar: `firmware/cic_rp2040/third_party/snescic-lock-resync.hex`.
 | Opcional: LED vermelho + 1 kΩ do +13 V ao GND; LED amarelo + 220 Ω no A5 | o vermelho mostra que há 13 V |
 | PIC12F629-I/P virgem | direto na protoboard |
 
-## Ligações (confirmadas no esquema e no sketch do ardpicprog)
+## Ligações
 
 ```
 13 V (+) ──┬── 10 kΩ ──┬── PIC pino 4 (MCLR)
            │           └── coletor do transistor
            └── (LED vermelho + 1 kΩ ao GND, opcional)
 Uno A1 ── 4,7 kΩ ── base do transistor        emissor ── GND
-Uno D2 ── PIC pino 1 (Vdd)        100 nF entre o pino 1 e o pino 8, junto ao chip
-Uno D4 ── PIC pino 6 (clock)
-Uno D7 ── PIC pino 7 (dados)
+Uno D8  ── PIC pino 1 (Vdd)       100 nF entre o pino 1 e o pino 8, junto ao chip
+Uno D9  ── PIC pino 6 (clock)
+Uno D10 ── PIC pino 7 (dados)
 Uno GND ── PIC pino 8 (Vss) ── GND da fonte de 13 V   (GND comum!)
 PIC pinos 2, 3 e 5: sem ligação
 ```
 A1 em nível **baixo** deixa o MCLR em 13 V (gravação); em nível alto o transistor puxa o MCLR a GND (reset). O sketch
 aplica os 13 V no MCLR **antes** de ligar o Vdd, como a especificação de programação manda. Os 13 V nunca vão a um pino do Uno.
+
+**Os pinos D8, D9 e D10 exigem o sketch com patch** (o padrão do instalador, abaixo). O sketch original do ardpicprog usa D2, D4 e
+D7: com a fiação em um conjunto e o sketch no outro, o chip não responde (ID `0x3FFF`). A fiação D8/D9/D10 é a das figuras do
+shield, da protoboard e da placa perfurada (D221); A1 e A5 são iguais nos dois sketches.
 
 ## Antes de ligar
 
@@ -64,27 +68,26 @@ Resultado no Uno do usuário: assinatura `1E 95 0F` a 115200 baud (a 57600 não 
 
 ```
 sudo apt install git build-essential        # se ainda não tiver
-tools/pic/uno/instalar_ardpicprog.sh        # baixa (commit fixo), compila o programa do PC, prepara o sketch
+tools/pic/uno/instalar_ardpicprog.sh        # baixa (commit fixo), compila o programa do PC, prepara o sketch com os patches
 arduino-cli compile -b arduino:avr:uno tools/pic/bin/ProgramPIC
 arduino-cli upload  -b arduino:avr:uno -p /dev/ttyUSB0 tools/pic/bin/ProgramPIC     # ttyACM0 num Uno original
 ```
-> Estado: o instalador e o sketch **não foram compilados** aqui (o ambiente não permitiu rodar código baixado).
-> O sketch é de 2011 (`.pde`) e só inclui `avr/pgmspace.h`; se o compilador novo reclamar, veja a mensagem.
-> Feche o monitor serial da IDE antes de usar o `ardpicprog` (ele roubaria os dados).
+O instalador aplica por padrão os dois patches (pinos D8/D9/D10 e UART por polling). Se você já tinha rodado uma versão
+anterior dele, **rode de novo**: a cópia antiga em `tools/pic/bin/ProgramPIC/` pode estar sem os patches. Para o sketch original
+do upstream (D2/D4/D7): `PROGRAMPIC_PORTB=0 PROGRAMPIC_POLLING=0`.
 
-## Gravar (sintaxe da documentação do ardpicprog)
+> Feche o monitor serial da IDE antes de gravar (ele roubaria os dados).
+
+## Ler, gravar e conferir (`pic_texto.py`)
 
 ```
-A="tools/pic/bin/ardpicprog -p /dev/ttyUSB0"   # o padrão do programa é /dev/ttyACM0; use -p
-
-$A --list-devices                              # teste da comunicação: lista pic12f629 com *
-$A -o backup-virgem.hex --skip-ones            # lê o chip (autodetecta); guarde o arquivo
-$A --erase --burn -i firmware/cic_rp2040/third_party/snescic-lock-resync.hex -o lido.hex --skip-ones
-python3 -I tools/pic/comparar_hex.py firmware/cic_rp2040/third_party/snescic-lock-resync.hex lido.hex
+H=firmware/cic_rp2040/third_party/snescic-lock-resync.hex
+python3 tools/pic/pic_texto.py ler backup.hex          # ID, configuração e OSCCAL, lidos duas vezes: GUARDE este arquivo
+python3 tools/pic/pic_texto.py gravar $H --simular     # não escreve nada
+python3 tools/pic/pic_texto.py gravar $H               # grava, confere, falha se BG ou OSCCAL mudarem
+python3 tools/pic/pic_texto.py conferir $H
 ```
-`--burn` já relê o chip e verifica. Sem `--force-calibration`, o programa **preserva a calibração OSCCAL** do chip
-(a palavra 0x3FF) e ignora a do `.hex`: era a minha preocupação principal com o 12F629, e o programa trata disso sozinho.
-O `comparar_hex.py` é a segunda conferência: ignora essa palavra e confere o resto, inclusive a configuração (`0x3FD3`).
+(`--porta /dev/ttyACM0` num Uno original.) **Não use `ardpicprog --erase` nem `--burn`**: veja a seção seguinte.
 
 ## Uno com UART defeituoso: ler e gravar em texto (D214, 2026-11-24)
 
@@ -103,24 +106,13 @@ Duas causas independentes: (1) o `HardwareSerial` por interrupção trava neste 
 ligar o Vdd o primeiro comando precisa de mais que 5 µs (sem isso a configuração vinha como `0000`). Mesmo com os dois ajustes, o
 fluxo **binário** (`READBIN`) chega com cabeçalhos de pacote trocados e bytes sobrando; a causa **não foi achada**. O fluxo em
 **texto** (`READ`) saiu válido e correto em 26 de 26 leituras, e o texto detecta a corrupção (token que não é hexadecimal de 4
-dígitos). Por isso existe o `pic_texto.py`.
+dígitos). Por isso existe o `pic_texto.py`, hoje o caminho padrão.
 
-```
-# sketch com UART por polling e atraso maior depois de ligar o Vdd (os patches desta pasta)
-PROGRAMPIC_POLLING=1 tools/pic/uno/instalar_ardpicprog.sh                      # PROGRAMPIC_PORTB=1 junto: Vdd/clock/dados em D8/D9/D10
-arduino-cli compile -b arduino:avr:uno tools/pic/bin/ProgramPIC
-arduino-cli upload  -b arduino:avr:uno -p /dev/ttyUSB0 tools/pic/bin/ProgramPIC
-
-python3 -I tools/pic/pic_texto.py ler backup.hex                               # ID, configuração e OSCCAL, lidos duas vezes
-python3 -I tools/pic/pic_texto.py gravar firmware/cic_rp2040/third_party/snescic-lock-resync.hex --simular
-python3 -I tools/pic/pic_texto.py gravar firmware/cic_rp2040/third_party/snescic-lock-resync.hex
-python3 -I tools/pic/pic_texto.py conferir firmware/cic_rp2040/third_party/snescic-lock-resync.hex
-```
 - `programpic-uart-polling.patch`: UART sem interrupção (TX e RX por polling) e `DELAY_THLD0` de 5 para 2000 µs.
   **Com este sketch o `WRITEBIN` do `ardpicprog` não serve** (o RX por polling não tem buffer): grave só com o `pic_texto.py`.
-- `programpic-pinos-portb.patch` (opcional, `PROGRAMPIC_PORTB=1`): Vdd em D8, clock em D9 e dados em D10 em vez de D2, D4 e D7.
-  Foi a fiação usada na bancada, mas **não foi provado que os pinos ajudem** (o estudo acima foi todo em D8/D9/D10). O shield
-  `../shield_uno/` e os desenhos continuam em D2, D4 e D7; os desenhos da variante não estão no repositório.
+- `programpic-pinos-portb.patch`: Vdd em D8, clock em D9 e dados em D10 em vez de D2, D4 e D7. É a fiação usada na bancada
+  (cinco PICs gravados com ela) e a de toda a documentação. **Não foi provado que os pinos ajudem** com o defeito acima (o
+  estudo foi todo em D8/D9/D10).
 - `pic_texto.py gravar` **não apaga**: exige a memória de programa em branco (ou já igual ao hex), grava 4 palavras por
   comando, relê cada trecho e no fim compara tudo. Não escreve a calibração OSCCAL (`0x3FF`) e grava a configuração com
   `WRITE FORCE`, mantendo os bits BG (`0x3000`) lidos duas vezes antes de escrever; falha se BG ou OSCCAL mudarem (D220:
@@ -140,6 +132,7 @@ python3 -I tools/pic/pic_texto.py conferir firmware/cic_rp2040/third_party/snesc
 
 ## Problemas
 
-- **Não detecta o chip:** confira a ligação da tabela, o GND comum e se há 13 V no pino 4 durante a leitura.
+- **Não detecta o chip** (ID `0x3FFF` ou `0x0000`): confira se o sketch gravado usa os mesmos pinos da fiação, a ligação acima,
+  o GND comum, as soldas/contatos e se há 13 V no pino 4 **durante** a leitura (com o Uno parado o pino 4 fica perto de 0 V).
 - **Nada na serial:** feche o monitor serial; confira a porta (`ls /dev/ttyACM*`; o usuário precisa estar no grupo `dialout`).
 - **Erro de verificação:** grave de novo; se repetir, suspeite da fonte de 13 V (queda com carga) ou do contato na protoboard.

@@ -8,7 +8,9 @@ Este shield é o circuito do ardpicprog para o PIC12F629 em DIP-8 direto (a liga
 [`../uno/README.md`](../uno/README.md), D91), desenhado em KiCad. Há três jeitos de montar o mesmo circuito, na ordem
 de comodidade: **A.** PCB do shield (este projeto KiCad), **B.** protoboard, **C.** placa perfurada.
 
-> **Estado (2026-11-06):** nada foi encomendado, montado nem gravado em PIC. Conferido só no PC: ERC do esquemático
+> **Estado (2026-11-25):** v1.1 (pinos D8/D9/D10). **Nada foi encomendado**, e nem esta PCB nem os layouts de protoboard e de
+> placa perfurada desenhados aqui foram montados. O circuito foi usado em bancada numa montagem própria em placa perfurada
+> (cinco PICs gravados, D214 e D220). Conferido no PC: ERC do esquemático
 > sem avisos, DRC da PCB sem violações e sem pontos soltos, netlist da PCB contra a tabela de ligações do ardpicprog
 > (`scripts/check_netlist.py`), e os desenhos da protoboard e da placa perfurada (`scripts/protoboard.py`,
 > `scripts/perfboard.py`). A pinagem do Uno é a do footprint do Mega no projeto, cotas oficiais do Arduino; não foi
@@ -53,9 +55,9 @@ Lista **fio a fio** (faça um traço em cada fio que montar). Os fios pretos vã
 | ☐ | **preto** | LED vermelho (perna curta) | trilho preto de GND |
 | ☐ | **preto** | LED amarelo (perna curta) | trilho preto de GND |
 | ☐ | **preto** | negativo (−) da fonte | trilho preto de GND |
-| ☐ | **laranja** | D2 do Uno | pino 1 do chip e perna de cima do capacitor C1 |
-| ☐ | **verde** | D4 do Uno | pino 6 do chip |
-| ☐ | **azul** | D7 do Uno | pino 7 do chip |
+| ☐ | **laranja** | D8 do Uno | pino 1 do chip e perna de cima do capacitor C1 |
+| ☐ | **verde** | D9 do Uno | pino 6 do chip |
+| ☐ | **azul** | D10 do Uno | pino 7 do chip |
 | ☐ | **rosa** | pino 4 do chip (MCLR) | resistor R1 (10 kΩ) e coletor (C) do transistor |
 | ☐ | **roxo** | A1 do Uno | resistor R2 (4,7 kΩ), e dele à base (B) do transistor |
 | ☐ | **amarelo** | A5 do Uno | resistor R3 (220 Ω), e dele à perna longa (+) do LED amarelo |
@@ -71,19 +73,20 @@ Os pinos 2, 3 e 5 do chip **não levam fio**. O desenho (`docs/esquema-simples.s
                                         │              └── coletor do Q1 (BC547)
                                         └── R4 1 kΩ ── LED vermelho ── GND  (acende = há 13 V)
 Uno A1 ── R2 4,7 kΩ ── base do Q1        emissor do Q1 ── GND
-Uno D2 ── PIC pino 1 (Vdd)               100 nF entre o pino 1 e o GND, junto ao chip
-Uno D4 ── PIC pino 6 (clock)
-Uno D7 ── PIC pino 7 (dados)
+Uno D8  ── PIC pino 1 (Vdd)              100 nF entre o pino 1 e o GND, junto ao chip
+Uno D9  ── PIC pino 6 (clock)
+Uno D10 ── PIC pino 7 (dados)
 Uno A5 ── R3 220 Ω ── LED amarelo ── GND (atividade)
 Uno GND ── PIC pino 8 ── GND da fonte de 13 V   (GND comum!)
 PIC pinos 2, 3 e 5: sem ligação
 ```
 
 - A1 em nível **baixo** corta o transistor e deixa o MCLR em ~13 V (gravação); em nível alto o transistor puxa o
-  MCLR a GND (reset). O sketch aplica os 13 V **antes** de ligar o Vdd. Os pinos conferem com o `ProgramPIC.pde`
-  do ardpicprog (`PIN_MCLR A1`, `PIN_VDD 2`, `PIN_CLOCK 4`, `PIN_DATA 7`, `PIN_ACTIVITY A5`), então o sketch roda sem
-  alteração.
-- Os 13 V nunca vão a um pino do Uno. O PIC é alimentado pelo pino D2 do Uno (consumo de poucos mA).
+  MCLR a GND (reset). O sketch aplica os 13 V **antes** de ligar o Vdd.
+- **O sketch precisa do patch de pinos.** O `ProgramPIC.pde` do ardpicprog usa `PIN_VDD 2`, `PIN_CLOCK 4` e `PIN_DATA 7`;
+  este projeto usa 8, 9 e 10 (`PIN_MCLR A1` e `PIN_ACTIVITY A5` iguais). O instalador aplica o patch por padrão
+  ([`../uno/README.md`](../uno/README.md)). Até a v1.0 o shield usava D2/D4/D7 (D221).
+- Os 13 V nunca vão a um pino do Uno. O PIC é alimentado pelo pino D8 do Uno (consumo de poucos mA).
 - **D1 (1N5819) é opcional e vem desmontado (DNP)**; veja "Sem diodo por padrão" acima. Ele é um acréscimo deste
   projeto, o circuito original não tem. Na PCB, JP1 fica em paralelo com ele: fechado = sem diodo.
 - A placa também tem um cabeçalho ICSP (J2, ordem do PICkit: 1 MCLR, 2 Vdd, 3 GND, 4 dados, 5 clock) e três pontos de
@@ -127,14 +130,14 @@ lado oposto ao do desenho) e assim as pernas caem certas. Na dúvida, modo diodo
    com o Uno em reset (A1 alto) fica perto de 0 V; com A1 solto, ~13 V.
 4. Só então ponha o PIC (entalhe/pino 1 conforme o desenho) com tudo **desligado**; ligue a fonte por último e
    desligue-a primeiro.
-5. Feche o monitor serial da IDE antes de usar o `ardpicprog` (ele roubaria a porta).
+5. Feche o monitor serial da IDE antes de ler ou gravar (ele roubaria a porta).
 
 ## A. PCB do shield (`hardware/`)
 
 Placa de 2 camadas, 52,6 × 53,3 mm, 100% THT, que encaixa nos headers do Uno. O lado esquerdo (conector USB-B e jack
 do Uno) fica livre de propósito.
 
-- Projeto: `hardware/shield_uno.kicad_pro` (KiCad 9 ou 10). Fabricação: `fab/shield_uno-v1.0-jlcpcb.zip` (gerbers e
+- Projeto: `hardware/shield_uno.kicad_pro` (KiCad 9 ou 10). Fabricação: `fab/shield_uno-v1.1-jlcpcb.zip` (gerbers e
   furos, 2 camadas, 1,6 mm, HASL) e `fab/bom.csv`. **Nada foi encomendado.**
 - Montagem, do mais baixo ao mais alto:
   1. resistores (R1 a R4) e capacitor C1; **D1 não se monta** (DNP). Feche o **JP1** com um jumper, fio ou solda
@@ -172,7 +175,7 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 | Capacitor 100 nF | 1 | disquinho pequeno marcado **104** |
 | LED vermelho e LED amarelo | 1 de cada | a perna **longa** é o `+` |
 | Fios (jumpers) macho-macho | 11 | cores: preto 6, vermelho 2, laranja, azul, verde, roxo, amarelo (1 de cada; as cores ajudam, não são obrigatórias) |
-| Fios macho-fêmea para o Uno | 6 | um para cada pino do Uno: GND, D2, D4, D7, A1, A5 |
+| Fios macho-fêmea para o Uno | 6 | um para cada pino do Uno: GND, D8, D9, D10, A1, A5 |
 | Fonte de 13 V e multímetro | 1 | para a medição antes de ligar |
 
 ### Os 6 pinos do Uno
@@ -181,9 +184,9 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 
 | Pino do Uno | Cor do fio | Vai para | Para que serve |
 |---|---|---|---|
-| **D2** | laranja | furo c10 (pino 1 do PIC) | dá energia ao PIC (5 V) |
-| **D4** | verde | furo j12 (pino 6 do PIC) | clock da gravação |
-| **D7** | azul | furo j11 (pino 7 do PIC) | dados da gravação |
+| **D8** | laranja | furo c10 (pino 1 do PIC) | dá energia ao PIC (5 V) |
+| **D9** | verde | furo j12 (pino 6 do PIC) | clock da gravação |
+| **D10** | azul | furo j11 (pino 7 do PIC) | dados da gravação |
 | **A1** | roxo | furo d18 (resistor de 4,7 k) | liga e desliga os 13 V no MCLR |
 | **A5** | amarelo | furo j24 (resistor de 220) | acende o LED amarelo enquanto grava |
 | **GND** | preto | trilho − | terra comum |
@@ -220,7 +223,7 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 | O que | Onde |
 |---|---|
 | **Capacitor 100 nF (marcado 104)** | 1 em **b10**, 2 em **b8** |
-| fio **laranja** (D2 do Uno: alimenta o PIC) | do **Uno D2** ao furo **c10** |
+| fio **laranja** (D8 do Uno: alimenta o PIC) | do **Uno D8** ao furo **c10** |
 | fio **preto** (capacitor ao GND) | do furo **e8** ao trilho **-** |
 
 > O capacitor fica junto do pino 1, perto do chip.
@@ -231,8 +234,8 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 
 | O que | Onde |
 |---|---|
-| fio **azul** (D7 do Uno: dados) | do **Uno D7** ao furo **j11** |
-| fio **verde** (D4 do Uno: clock) | do **Uno D4** ao furo **j12** |
+| fio **azul** (D10 do Uno: dados) | do **Uno D10** ao furo **j11** |
+| fio **verde** (D9 do Uno: clock) | do **Uno D9** ao furo **j12** |
 
 #### Passo 5: Transistor e resistor de 10 k
 
@@ -303,7 +306,7 @@ Com o multímetro em **continuidade (bip)** e **tudo desligado**:
 | trilho `+` e trilho `−` | **sem** bip (senão há um curto) |
 | trilho `−` e o pino 8 do PIC (furo f10) | bip |
 | furo e13 (pino 4 do PIC) e furo a13 (transistor) | bip |
-| furo c10 (D2) e furo e10 (pino 1 do PIC) | bip |
+| furo c10 (D8) e furo e10 (pino 1 do PIC) | bip |
 
 **Depois:** siga "Antes de ligar" (medir o MCLR com o chip fora) e "Gravar".
 
@@ -325,14 +328,14 @@ ser fio nu. Os furos têm nome: letra da linha (A a N) e número da coluna (1 a 
 Ordem de montagem:
 
 1. Soldar o **soquete DIP-8** (colunas 13 e 16, linhas D a G; entalhe para cima = pino 1 em D13), os resistores, o
-   capacitor, os LEDs, o transistor, o borne J1 e a barra J3 (A5 a A10, de cima: GND, D2, D4, D7, A1, A5),
+   capacitor, os LEDs, o transistor, o borne J1 e a barra J3 (furos A5 a A10, da esquerda para a direita: GND, D8, D9, D10, A1, A5),
    nos furos da tabela [`docs/perfboard.md`](docs/perfboard.md).
 2. Passar os fios **na ordem da tabela de fios**, um a um, soldando as pontas e riscando na tabela. Os fios podem
    passar por cima de furos ocupados desde que sejam isolados; o trilho de GND (N5 a N21) é um fio nu soldado nos pontos
    marcados.
 3. Conferir com o multímetro, tudo desligado: GND (J3 GND) com o pino 8 do soquete, o emissor do transistor e os dois
    catodos; 13 V **sem** continuidade com o GND.
-4. Ligar o cabo Dupont: J3 GND, D2, D4, D7, A1, A5 aos mesmos pinos do Uno (nesta ordem na barra, da esquerda para a
+4. Ligar o cabo Dupont: J3 GND, D8, D9, D10, A1, A5 aos mesmos pinos do Uno (nesta ordem na barra, da esquerda para a
    direita). Siga "Antes de ligar" e "Gravar".
 
 **D1 não é montado (DNP):** no lugar dele há um fio de ponte de **E2 a I2** (coluna 2). Para usar o diodo, tire esse fio
@@ -342,22 +345,22 @@ Os pontos de teste e o ICSP ficam de fora nesta versão (o MCLR se mede no pino 
 
 ## Gravar
 
-O Uno precisa do sketch `ProgramPIC` do ardpicprog, e o PC do programa `ardpicprog`. Instalação e comandos estão em
-[`../uno/README.md`](../uno/README.md) (compilar com `tools/pic/uno/instalar_ardpicprog.sh`, subir o sketch com
-`arduino-cli`). Resumo, com o shield montado e o PIC no soquete:
+O Uno precisa do sketch `ProgramPIC` do ardpicprog **com os patches deste repositório**, e o PC usa o `pic_texto.py`.
+Instalação em [`../uno/README.md`](../uno/README.md). Resumo, com o shield montado e o PIC no soquete:
 
 ```
-A="tools/pic/bin/ardpicprog -p /dev/ttyUSB0"      # ttyACM0 num Uno original
-$A --list-devices                                  # teste da comunicação
-$A -o backup-virgem.hex --skip-ones                # lê o chip antes (guarda o OSCCAL)
-$A --erase --burn -i firmware/cic_rp2040/third_party/snescic-lock-resync.hex -o lido.hex --skip-ones
-python3 -I tools/pic/comparar_hex.py firmware/cic_rp2040/third_party/snescic-lock-resync.hex lido.hex
+H=firmware/cic_rp2040/third_party/snescic-lock-resync.hex
+python3 tools/pic/pic_texto.py ler backup.hex          # antes de tudo; guarde (OSCCAL e bits BG de fábrica)
+python3 tools/pic/pic_texto.py gravar $H               # grava e confere
+python3 tools/pic/pic_texto.py conferir $H
 ```
+Não use `ardpicprog --erase` nem `--burn` com este sketch (D214, D220).
 
 ## Problemas
 
 - **LED vermelho apagado:** fonte desligada, ou R4/LED ao contrário. Se a fonte puder estar invertida e não há D1, **desligue já** e meça a polaridade.
-- **Não detecta o chip:** confira o pino 1 do PIC, o GND comum entre fonte e Uno e se há ~13 V no pino 4 com A1 solto.
+- **Não detecta o chip:** confira se o sketch usa D8/D9/D10, o pino 1 do PIC, o GND comum entre fonte e Uno, os contatos e
+  se há ~13 V no pino 4 com A1 solto.
 - **13 V não chegam ao MCLR:** transistor com a pinagem errada (veja "Pinagem do transistor") ou R1 solto.
 - **Erro de verificação:** grave de novo; se repetir, queda da fonte sob carga ou mau contato (na protoboard).
 - **Nada na serial:** feche o monitor serial; confira a porta e o grupo `dialout`.

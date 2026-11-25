@@ -4,8 +4,9 @@
 # Fontes ficam em vendor/ardpicprog/ (ignorado pelo git); resultados em tools/pic/bin/.
 #
 # Uso: tools/pic/uno/instalar_ardpicprog.sh
-#      PROGRAMPIC_POLLING=1 tools/pic/uno/instalar_ardpicprog.sh    sketch com UART por polling (D214), para o Uno do usuario
-#      PROGRAMPIC_POLLING=1 PROGRAMPIC_PORTB=1 ...                  e com Vdd/clock/dados em D8/D9/D10 (D214)
+#      Padrao (D221): sketch com Vdd/clock/dados em D8/D9/D10 e UART por polling (D214), a fiacao da documentacao.
+#      Grave o PIC com tools/pic/pic_texto.py (o WRITEBIN do ardpicprog nao funciona com este sketch).
+#      PROGRAMPIC_PORTB=0 PROGRAMPIC_POLLING=0 ...                  sketch original do upstream, em D2/D4/D7
 set -euo pipefail
 
 REPO="https://github.com/rweather/ardpicprog.git"
@@ -35,15 +36,15 @@ cp "$BIN/ardpicprog-build/ardpicprog" "$BIN/ardpicprog"
 rm -rf "$BIN/ProgramPIC" && mkdir -p "$BIN/ProgramPIC"
 cp "$FONTE/ProgramPIC/ProgramPIC.pde" "$BIN/ProgramPIC/ProgramPIC.ino"
 # Variantes do sketch (D214), em patches sobre o original; o PORTB so vale junto com o polling.
-if [ "${PROGRAMPIC_POLLING:-0}" = 1 ]; then
+if [ "${PROGRAMPIC_POLLING:-1}" = 1 ]; then
   patch -s -p1 -d "$BIN/ProgramPIC" < "$RAIZ/tools/pic/uno/programpic-uart-polling.patch" \
     || { echo "O patch do polling nao aplicou" >&2; exit 1; }
-  if [ "${PROGRAMPIC_PORTB:-0}" = 1 ]; then
+  if [ "${PROGRAMPIC_PORTB:-1}" = 1 ]; then
     patch -s -p1 -d "$BIN/ProgramPIC" < "$RAIZ/tools/pic/uno/programpic-pinos-portb.patch" \
       || { echo "O patch dos pinos nao aplicou" >&2; exit 1; }
   fi
 elif [ "${PROGRAMPIC_PORTB:-0}" = 1 ]; then
-  echo "PROGRAMPIC_PORTB=1 exige PROGRAMPIC_POLLING=1" >&2; exit 1
+  echo "PROGRAMPIC_PORTB=1 exige o polling (nao passe PROGRAMPIC_POLLING=0)" >&2; exit 1
 fi
 
 echo "OK: $BIN/ardpicprog e o sketch em $BIN/ProgramPIC/"

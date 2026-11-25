@@ -145,7 +145,7 @@ def desenhar(passo):
                 S.append(f'<circle cx="{px}" cy="{py}" r="5.5" fill="#bbb" stroke="#111" stroke-width="1.5"/>')
 
     # plugs do Uno / fonte e fios
-    top_y = {"A5": 22, "D4": 52, "D7": 82}
+    top_y = {"A5": 22, "D9": 52, "D10": 82}
 
     def plug(nome, px, py, cor, novo, w=118):
         if novo:
@@ -173,9 +173,9 @@ def desenhar(passo):
                     py = top_y[pino]
                     pts = [(138, py), (hx, py), (hx, hy)]
                     plug("Uno " + pino, 20, py, c, novo)
-                elif pino == "D2":
+                elif pino == "D8":
                     pts = [(138, hy), (hx, hy)]
-                    plug("Uno D2", 20, hy, c, novo)
+                    plug("Uno D8", 20, hy, c, novo)
                 else:  # A1, pela direita
                     pts = [(W - 138, hy), (hx, hy)]
                     plug("Uno " + pino, W - 138, hy, c, novo)
@@ -236,7 +236,7 @@ TOPO10 = [("SCL", 18.796), ("SDA", 21.336), ("AREF", 23.876), ("GND", 26.416), (
 TOPO8 = [("7", 45.72), ("6", 48.26), ("5", 50.8), ("4", 53.34), ("3", 55.88), ("2", 58.42), ("1", 60.96), ("0", 63.5)]
 PWR = [("", 27.94), ("IOREF", 30.48), ("RESET", 33.02), ("3V3", 35.56), ("5V", 38.1), ("GND", 40.64), ("GND", 43.18), ("VIN", 45.72)]
 ANA = [("A0", 50.8), ("A1", 53.34), ("A2", 55.88), ("A3", 58.42), ("A4", 60.96), ("A5", 63.5)]
-ESCOLHIDOS = {("top", "GND"): "GND", ("top", "7"): "D7", ("top", "4"): "D4", ("top", "2"): "D2", ("ana", "A1"): "A1", ("ana", "A5"): "A5"}
+ESCOLHIDOS = {("top", "GND"): "GND", ("top", "10"): "D10", ("top", "9"): "D9", ("top", "8"): "D8", ("ana", "A1"): "A1", ("ana", "A5"): "A5"}
 
 
 def desenhar_uno():
@@ -263,7 +263,8 @@ def desenhar_uno():
             S.append(f'<rect x="{xx(xu) - 9}" y="{y - 9}" width="18" height="18" rx="3" fill="{cor or "#222"}" stroke="#fff" stroke-width="{3 if cor else 1}"/>')
             ty = y - 18 if lado == "top" else y + 28
             if k:
-                S.append(f'<text x="{xx(xu)}" y="{ty + (-12 if lado == "top" else 14)}" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">{k}</text>')
+                sobe = 22 if k == "D9" else 0
+                S.append(f'<text x="{xx(xu)}" y="{ty + (-12 - sobe if lado == "top" else 14)}" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">{k}</text>')
                 S.append(f'<text x="{xx(xu)}" y="{y + 5}" font-size="10" font-weight="bold" text-anchor="middle" fill="#fff">●</text>' if False else "")
             else:
                 S.append(f'<text x="{xx(xu)}" y="{ty}" font-size="9" text-anchor="middle" fill="#cfe">{lbl}</text>')
@@ -271,7 +272,7 @@ def desenhar_uno():
     faixa(TOPO8, 120, "", "top")
     faixa(PWR, 350, "", "pwr")
     faixa(ANA, 350, "", "ana")
-    S.append(f'<text x="{xx(36)}" y="82" font-size="13" fill="#333" text-anchor="middle">fileira de cima (pinos digitais)</text>')
+    S.append(f'<text x="{xx(55)}" y="72" font-size="13" fill="#333" text-anchor="middle">fileira de cima (pinos digitais)</text>')
     S.append(f'<text x="{xx(49)}" y="405" font-size="13" fill="#333" text-anchor="middle">fileira de baixo: energia (esq.) e analógicos A0 a A5 (dir.)</text>')
     # legenda
     y0 = 430
@@ -324,7 +325,7 @@ def texto_readme():
     L.append("| Capacitor 100 nF | 1 | disquinho pequeno marcado **104** |")
     L.append("| LED vermelho e LED amarelo | 1 de cada | a perna **longa** é o `+` |")
     L.append("| Fios (jumpers) macho-macho | 11 | cores: preto 6, vermelho 2, laranja, azul, verde, roxo, amarelo (1 de cada; as cores ajudam, não são obrigatórias) |")
-    L.append("| Fios macho-fêmea para o Uno | 6 | um para cada pino do Uno: GND, D2, D4, D7, A1, A5 |")
+    L.append("| Fios macho-fêmea para o Uno | 6 | um para cada pino do Uno: GND, D8, D9, D10, A1, A5 |")
     L.append("| Fonte de 13 V e multímetro | 1 | para a medição antes de ligar |")
     L.append("")
     L.append("### Os 6 pinos do Uno")
@@ -333,9 +334,9 @@ def texto_readme():
     L.append("")
     L.append("| Pino do Uno | Cor do fio | Vai para | Para que serve |")
     L.append("|---|---|---|---|")
-    uso = {"GND": "trilho −", "D2": "furo c10 (pino 1 do PIC)", "D4": "furo j12 (pino 6 do PIC)", "D7": "furo j11 (pino 7 do PIC)",
+    uso = {"GND": "trilho −", "D8": "furo c10 (pino 1 do PIC)", "D9": "furo j12 (pino 6 do PIC)", "D10": "furo j11 (pino 7 do PIC)",
            "A1": "furo d18 (resistor de 4,7 k)", "A5": "furo j24 (resistor de 220)"}
-    para = {"GND": "terra comum", "D2": "dá energia ao PIC (5 V)", "D4": "clock da gravação", "D7": "dados da gravação",
+    para = {"GND": "terra comum", "D8": "dá energia ao PIC (5 V)", "D9": "clock da gravação", "D10": "dados da gravação",
             "A1": "liga e desliga os 13 V no MCLR", "A5": "acende o LED amarelo enquanto grava"}
     for n, c in pb.PINOS_UNO.items():
         L.append(f"| **{n}** | {c} | {uso[n]} | {para[n]} |")
@@ -383,7 +384,7 @@ def texto_readme():
     L.append("| trilho `+` e trilho `−` | **sem** bip (senão há um curto) |")
     L.append("| trilho `−` e o pino 8 do PIC (furo f10) | bip |")
     L.append("| furo e13 (pino 4 do PIC) e furo a13 (transistor) | bip |")
-    L.append("| furo c10 (D2) e furo e10 (pino 1 do PIC) | bip |")
+    L.append("| furo c10 (D8) e furo e10 (pino 1 do PIC) | bip |")
     L.append("")
     L.append("**Depois:** siga \"Antes de ligar\" (medir o MCLR com o chip fora) e \"Gravar\".")
     L.append("")

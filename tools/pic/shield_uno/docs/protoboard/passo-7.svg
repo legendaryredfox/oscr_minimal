@@ -442,7 +442,7 @@
 <circle cx="352" cy="230" r="6" fill="#111111" stroke="#fff" stroke-width="2"/>
 <circle cx="352" cy="164" r="6" fill="#111111" stroke="#fff" stroke-width="2"/>
 <rect x="20" y="483" width="118" height="28" rx="7" fill="#fff" stroke="#f77f00" stroke-width="4"/>
-<text x="79.0" y="503" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D2</text>
+<text x="79.0" y="503" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D8</text>
 <polyline points="138,498 352,498" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <polyline points="138,498 352,498" fill="none" stroke="#f77f00" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="138" cy="498" r="6" fill="#f77f00" stroke="#fff" stroke-width="2"/>
@@ -452,13 +452,13 @@
 <circle cx="284" cy="430" r="6" fill="#111111" stroke="#fff" stroke-width="2"/>
 <circle cx="284" cy="164" r="6" fill="#111111" stroke="#fff" stroke-width="2"/>
 <rect x="20" y="67" width="118" height="28" rx="7" fill="#fff" stroke="#1d4ed8" stroke-width="4"/>
-<text x="79.0" y="87" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D7</text>
+<text x="79.0" y="87" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D10</text>
 <polyline points="138,82 386,82 386,230" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <polyline points="138,82 386,82 386,230" fill="none" stroke="#1d4ed8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="138" cy="82" r="6" fill="#1d4ed8" stroke="#fff" stroke-width="2"/>
 <circle cx="386" cy="230" r="6" fill="#1d4ed8" stroke="#fff" stroke-width="2"/>
 <rect x="20" y="37" width="118" height="28" rx="7" fill="#fff" stroke="#2a9d48" stroke-width="4"/>
-<text x="79.0" y="57" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D4</text>
+<text x="79.0" y="57" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D9</text>
 <polyline points="138,52 420,52 420,230" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <polyline points="138,52 420,52 420,230" fill="none" stroke="#2a9d48" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="138" cy="52" r="6" fill="#2a9d48" stroke="#fff" stroke-width="2"/>

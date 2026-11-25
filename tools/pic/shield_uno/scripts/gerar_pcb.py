@@ -133,8 +133,8 @@ def main():
     ds = b.GetDesignSettings()
     ds.SetBoardThickness(mm(1.6))
     b.GetTitleBlock().SetTitle("Programador de PIC12F629 - shield para Arduino Uno")
-    b.GetTitleBlock().SetDate("2026-11-06")
-    b.GetTitleBlock().SetRevision("v1.0")
+    b.GetTitleBlock().SetDate("2026-11-25")
+    b.GetTitleBlock().SetRevision("v1.1")
     b.GetTitleBlock().SetComment(0, "Circuito: ardpicprog (R. Weatherley), CC BY-SA 2.5")
     for nome in nets:
         if nome:
@@ -176,7 +176,7 @@ def main():
         linha(b, *pts[i], *pts[(i + 1) % len(pts)])
     # textos (portugues)
     texto(b, "PROGRAMADOR PIC12F629", 18.0, 37.6, 1.1, espessura=0.2)
-    texto(b, "UNO SHIELD v1.0 - 2026-11-06", 18.0, 46.4, 0.8)
+    texto(b, "UNO SHIELD v1.1 - 2026-11-25", 18.0, 46.4, 0.8)
     texto(b, "Circuito do ardpicprog (CC BY-SA 2.5)", 18.0, 47.9, 0.8)
     texto(b, "+13V", 18.6, 16.5, 0.9)
     texto(b, "GND", 23.8, 16.5, 0.9)

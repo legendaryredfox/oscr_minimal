@@ -29,10 +29,10 @@ PECAS = {
 FIOS = [
     ("W_GND_UNO", "UNO.GND", "rail-", "preto", "GND do Uno"),
     ("W_PIC8", "j10", "rail-", "preto", "pino 8 do PIC ao GND"),
-    ("W_D2", "c10", "UNO.D2", "laranja", "D2 do Uno: alimenta o PIC"),
+    ("W_D8", "c10", "UNO.D8", "laranja", "D8 do Uno: alimenta o PIC"),
     ("W_C1GND", "e8", "rail-", "preto", "capacitor ao GND"),
-    ("W_D7", "j11", "UNO.D7", "azul", "D7 do Uno: dados"),
-    ("W_D4", "j12", "UNO.D4", "verde", "D4 do Uno: clock"),
+    ("W_D10", "j11", "UNO.D10", "azul", "D10 do Uno: dados"),
+    ("W_D9", "j12", "UNO.D9", "verde", "D9 do Uno: clock"),
     ("W_Q1E", "e15", "rail-", "preto", "emissor do transistor ao GND"),
     ("W_13V", "e17", "rail+", "vermelho", "13 V para o resistor de 10 k e para o LED"),
     ("W_A1", "d18", "UNO.A1", "roxo", "A1 do Uno: comanda o transistor"),
@@ -47,8 +47,8 @@ PASSOS = [
     ("Fio de GND do Uno", [], ["W_GND_UNO"], "Todo o circuito precisa do mesmo GND do Uno."),
     ("O chip PIC12F629", ["U1"], ["W_PIC8"],
      "O PIC fica a cavaleiro do vao do meio, com o pino 1 em e10 (o entalhe do chip aponta para a esquerda)."),
-    ("Energia do chip", ["C1"], ["W_D2", "W_C1GND"], "O capacitor fica junto do pino 1, perto do chip."),
-    ("Dados e clock", [], ["W_D7", "W_D4"], ""),
+    ("Energia do chip", ["C1"], ["W_D8", "W_C1GND"], "O capacitor fica junto do pino 1, perto do chip."),
+    ("Dados e clock", [], ["W_D10", "W_D9"], ""),
     ("Transistor e resistor de 10 k", ["Q1", "R1"], ["W_Q1E", "W_13V"],
      "O transistor BC547 entra com o lado CHATO virado para voce (para a borda de baixo da figura): C, B, E da esquerda para a direita."),
     ("Comando do transistor", ["R2"], ["W_A1"], ""),
@@ -56,11 +56,11 @@ PASSOS = [
     ("LED amarelo (atividade)", ["R3", "D3"], ["W_A5", "W_LEDK2"], "A perna LONGA do LED e o +; ela vai no furo de numero menor."),
     ("Fonte de 13 V (por ultimo!)", [], ["W_FPOS", "W_FNEG"], "Fonte DESLIGADA e polaridade conferida com o multimetro."),
 ]
-PINOS_UNO = {"D2": "laranja", "D4": "verde", "D7": "azul", "A1": "roxo", "A5": "amarelo", "GND": "preto"}
+PINOS_UNO = {"D8": "laranja", "D9": "verde", "D10": "azul", "A1": "roxo", "A5": "amarelo", "GND": "preto"}
 
 # ---- expectativa
 ESPERADO = [
-    {"UNO.D2", "U1.1", "C1.1"}, {"UNO.D4", "U1.6"}, {"UNO.D7", "U1.7"},
+    {"UNO.D8", "U1.1", "C1.1"}, {"UNO.D9", "U1.6"}, {"UNO.D10", "U1.7"},
     {"U1.4", "Q1.C", "R1.1"}, {"UNO.A1", "R2.1"}, {"R2.2", "Q1.B"},
     {"UNO.GND", "FONTE.-", "U1.8", "Q1.E", "C1.2", "D2.K", "D3.K"},
     {"R1.2", "R4.1", "FONTE.+"}, {"R4.2", "D2.A"}, {"UNO.A5", "R3.1"}, {"R3.2", "D3.A"},
@@ -113,7 +113,7 @@ def verificar():
             if int(furo[1:]) not in COLS:
                 erros.append(f"fio {fid}: furo fora da figura {furo}")
         pai[f(tira(furo))] = f(tira(dest))
-    for uno in ("UNO.D2", "UNO.D4", "UNO.D7", "UNO.A1", "UNO.A5", "UNO.GND", "FONTE.+", "FONTE.-"):
+    for uno in ("UNO.D8", "UNO.D9", "UNO.D10", "UNO.A1", "UNO.A5", "UNO.GND", "FONTE.+", "FONTE.-"):
         pads[uno] = uno
     g = {}
     for nome, t in pads.items():

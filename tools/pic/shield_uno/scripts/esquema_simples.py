@@ -34,7 +34,7 @@ XQ = 1020            # centro do transistor
 XL = 1230            # coluna R4 + LED vermelho
 XF = 1420            # fonte
 PIN = {
-    "UNO.D4": (250, 300), "UNO.D7": (250, 350), "UNO.D2": (250, 460), "UNO.A1": (250, 540), "UNO.A5": (250, 700),
+    "UNO.D9": (250, 300), "UNO.D10": (250, 350), "UNO.D8": (250, 460), "UNO.A1": (250, 540), "UNO.A5": (250, 700),
     "UNO.GND": (250, RAIL_G),
     # PIC12F629 desenhado com o entalhe para BAIXO: esquerda de cima para baixo 5,6,7,8; direita 4,3,2,1
     "U1.5": (500, 250), "U1.6": (500, 300), "U1.7": (500, 350), "U1.8": (500, 400),
@@ -49,10 +49,10 @@ PIN = {
 }
 # ------------------------------------------------------------------ fios: (cor, [pontos], rotulo opcional)
 FIOS = [
-    ("laranja", [PIN["UNO.D2"], (XN, 460), (XN, 400)], None),                        # Uno D2 -> sobe ate o no do pino 1
+    ("laranja", [PIN["UNO.D8"], (XN, 460), (XN, 400)], None),                        # Uno D8 -> sobe ate o no do pino 1
     ("laranja", [PIN["U1.1"], (XC, 400), PIN["C1.1"]], None),                        # pino 1 -> capacitor
-    ("verde", [PIN["UNO.D4"], PIN["U1.6"]], None),
-    ("azul", [PIN["UNO.D7"], PIN["U1.7"]], None),
+    ("verde", [PIN["UNO.D9"], PIN["U1.6"]], None),
+    ("azul", [PIN["UNO.D10"], PIN["U1.7"]], None),
     ("preto", [PIN["U1.8"], (470, 400), (470, RAIL_G)], None),                      # pino 8 -> GND
     ("preto", [PIN["C1.2"], (XC, RAIL_G)], None),
     ("preto", [PIN["Q1.E"], (XQ, RAIL_G)], None),
@@ -234,7 +234,7 @@ def desenhar():
          texto(40, 80, "Cada fio colorido liga uma peça a outra. Fio da mesma cor = mesmo caminho. Monte tudo com a fonte DESLIGADA.", 17, cor="#444")]
     # ---- Uno
     S.append(caixa(40, 250, 210, 690, "ARDUINO UNO", "#dff0f7", "#0b5d7a"))
-    for nome, cor in (("D4", "verde"), ("D7", "azul"), ("D2", "laranja"), ("A1", "roxo"), ("A5", "amarelo"), ("GND", "preto")):
+    for nome, cor in (("D9", "verde"), ("D10", "azul"), ("D8", "laranja"), ("A1", "roxo"), ("A5", "amarelo"), ("GND", "preto")):
         y = PIN["UNO." + nome][1]
         S.append(f'<rect x="100" y="{y - 17}" width="150" height="34" rx="8" fill="#fff" stroke="{COR[cor]}" stroke-width="5"/>')
         S.append(texto(175, y + 6, nome, 19, "bold", ancora="middle"))
@@ -329,7 +329,7 @@ def desenhar():
     S.append(texto(112, ly + 84, "pulinho: um fio passa POR CIMA do outro, sem encostar.", 17))
     S.append(f'<path d="M66,{ly + 112} L90,{ly + 136} M66,{ly + 136} L90,{ly + 112}" stroke="#888" stroke-width="5"/>')
     S.append(texto(112, ly + 130, "X: pino do chip que não leva fio. Não ligue nada nele.", 17))
-    cores = [("laranja", "energia do chip (D2)"), ("verde", "relógio (D4)"), ("azul", "dados (D7)"), ("roxo", "comanda o transistor (A1)"),
+    cores = [("laranja", "energia do chip (D8)"), ("verde", "relógio (D9)"), ("azul", "dados (D10)"), ("roxo", "comanda o transistor (A1)"),
              ("amarelo", "luz amarela (A5)"), ("rosa", "MCLR, o pino dos 13 V"), ("vermelho", "13 V da fonte"), ("preto", "GND: o fio de volta")]
     for k, (c, t) in enumerate(cores):
         x = 800 + (k % 2) * 380
@@ -352,9 +352,9 @@ def frases():
         ("preto", "LED vermelho (perna curta)", "trilho preto de GND"),
         ("preto", "LED amarelo (perna curta)", "trilho preto de GND"),
         ("preto", "negativo (−) da fonte", "trilho preto de GND"),
-        ("laranja", "D2 do Uno", "pino 1 do chip e perna de cima do capacitor C1"),
-        ("verde", "D4 do Uno", "pino 6 do chip"),
-        ("azul", "D7 do Uno", "pino 7 do chip"),
+        ("laranja", "D8 do Uno", "pino 1 do chip e perna de cima do capacitor C1"),
+        ("verde", "D9 do Uno", "pino 6 do chip"),
+        ("azul", "D10 do Uno", "pino 7 do chip"),
         ("rosa", "pino 4 do chip (MCLR)", "resistor R1 (10 kΩ) e coletor (C) do transistor"),
         ("roxo", "A1 do Uno", "resistor R2 (4,7 kΩ), e dele à base (B) do transistor"),
         ("amarelo", "A5 do Uno", "resistor R3 (220 Ω), e dele à perna longa (+) do LED amarelo"),

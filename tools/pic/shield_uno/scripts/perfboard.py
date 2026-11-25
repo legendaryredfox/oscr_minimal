@@ -17,7 +17,7 @@ DOCS = Path(__file__).resolve().parent.parent / "docs"
 # ---- pecas: ref -> (descricao, {pino: (x, y)})
 PECAS = {
     "J3": ("Barra de 6 pinos macho (vai ao Uno por cabos Dupont)",
-           {"GND": (4, 0), "D2": (5, 0), "D4": (6, 0), "D7": (7, 0), "A1": (8, 0), "A5": (9, 0)}),
+           {"GND": (4, 0), "D8": (5, 0), "D9": (6, 0), "D10": (7, 0), "A1": (8, 0), "A5": (9, 0)}),
     "J1": ("Borne de parafuso 5,08 mm (entrada de 13 V)", {"1": (1, 2), "2": (3, 2)}),
     "U1": ("Soquete DIP-8 (entalhe para cima = pino 1 em cima a esquerda)",
            {"1": (12, 3), "2": (12, 4), "3": (12, 5), "4": (12, 6), "8": (15, 3), "7": (15, 4), "6": (15, 5), "5": (15, 6)}),
@@ -41,9 +41,9 @@ FIOS = [
     ("GND", [(14, 8), (14, 13)]),                           # Q1.E
     ("GND", [(15, 3), (18, 3), (18, 13)]),                  # U1 pino 8
     ("GND", [(20, 8), (20, 13)]),                           # D3.K
-    ("VDD", [(5, 0), (5, 3), (10, 3), (12, 3)]),            # D2 do Uno -> U1 pino 1, com C1.1 em (10,3)
-    ("CLK", [(6, 0), (6, 2), (17, 2), (17, 5), (15, 5)]),   # D4 -> U1 pino 6
-    ("DAT", [(7, 0), (7, 1), (16, 1), (16, 4), (15, 4)]),   # D7 -> U1 pino 7
+    ("VDD", [(5, 0), (5, 3), (10, 3), (12, 3)]),            # D8 do Uno -> U1 pino 1, com C1.1 em (10,3)
+    ("CLK", [(6, 0), (6, 2), (17, 2), (17, 5), (15, 5)]),   # D9 -> U1 pino 6
+    ("DAT", [(7, 0), (7, 1), (16, 1), (16, 4), (15, 4)]),   # D10 -> U1 pino 7
     ("VPP_CTL", [(8, 0), (8, 11), (17, 11), (17, 10)]),     # A1 -> R2.1
     ("BASE", [(13, 8), (13, 10)]),                          # Q1.B - R2.2
     ("MCLR", [(12, 6), (12, 8)]),                           # U1 pino 4 - Q1.C
@@ -58,9 +58,9 @@ FIOS = [
 
 # ---- grupos esperados (ref, pino)
 ESPERADO = {
-    "VDD": [("J3", "D2"), ("U1", "1"), ("C1", "1")],
-    "CLK": [("J3", "D4"), ("U1", "6")],
-    "DAT": [("J3", "D7"), ("U1", "7")],
+    "VDD": [("J3", "D8"), ("U1", "1"), ("C1", "1")],
+    "CLK": [("J3", "D9"), ("U1", "6")],
+    "DAT": [("J3", "D10"), ("U1", "7")],
     "MCLR": [("U1", "4"), ("R1", "2"), ("Q1", "C")],
     "VPP_CTL": [("J3", "A1"), ("R2", "1")],
     "BASE": [("R2", "2"), ("Q1", "B")],
@@ -137,7 +137,7 @@ CORES = {"GND": "#222222", "VDD": "#d62828", "CLK": "#2a9d8f", "DAT": "#1d4ed8",
 def desenhar():
     P = 28  # pixels por furo
     M = 40
-    W, H = TAM[0] * P + 2 * M, TAM[1] * P + 2 * M + 110
+    W, H = TAM[0] * P + 2 * M, TAM[1] * P + 2 * M + 126
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="DejaVu Sans, sans-serif">',
          f'<rect width="{W}" height="{H}" fill="white"/>',
          f'<rect x="{M - 14}" y="{M - 14}" width="{TAM[0] * P + 28 - P + 28}" height="{TAM[1] * P + 28 - P + 28}" rx="6" fill="#d9c27a" stroke="#8a7a3a"/>']
@@ -191,7 +191,7 @@ def desenhar():
     rot("J1 GND", cx(3), cy(2) + 24, "#111", 9)
     rot("ponte no lugar do D1", cx(1) + 12, cy(6), "#c2410c", 9, anchor="start")
     rot("(D1 opcional: E2 a I2)", cx(1) + 12, cy(6) + 12, "#c2410c", 9, anchor="start")
-    rot("U1 DIP-8", cx(13.5), cy(6) + 30)
+    rot("U1 DIP-8", cx(13.5), cy(2) + 12)
     for i, (x, y) in enumerate(((12, 3), (12, 4), (12, 5), (12, 6))):
         rot(str(i + 1), cx(x) - 14, cy(y) + 4, "#333", 9)
     for i, (x, y) in enumerate(((15, 6), (15, 5), (15, 4), (15, 3))):
@@ -207,10 +207,11 @@ def desenhar():
     rot("trilho de GND (fio nu)", cx(7), cy(13) + 20, "#222", 10)
     # legenda
     y0 = TAM[1] * P + 2 * M - 10
-    s.append(f'<text x="{M}" y="{y0}" font-size="12" font-weight="bold" fill="#111">Placa perfurada: lado dos componentes visto de cima; fios isolados no lado da solda (visto aqui por transparencia)</text>')
+    s.append(f'<text x="{M}" y="{y0}" font-size="12" font-weight="bold" fill="#111">Placa perfurada: lado dos componentes, visto de cima</text>')
+    s.append(f'<text x="{M}" y="{y0 + 16}" font-size="11" fill="#111">Fios isolados no lado da solda (vistos aqui por transparencia)</text>')
     for i, (net, cor) in enumerate(CORES.items()):
         xx = M + (i % 4) * 190
-        yy = y0 + 22 + (i // 4) * 20
+        yy = y0 + 38 + (i // 4) * 20
         s.append(f'<line x1="{xx}" y1="{yy - 4}" x2="{xx + 26}" y2="{yy - 4}" stroke="{cor}" stroke-width="4"/>')
         s.append(f'<text x="{xx + 32}" y="{yy}" font-size="11" fill="#111">{net}</text>')
     s.append("</svg>")

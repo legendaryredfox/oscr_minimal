@@ -53,7 +53,7 @@ ESQ = ["SCL", "SDA", "AREF", "GND1", "D13", "D12", "D11", "D10", "D9", "D8",
        "D7", "D6", "D5", "D4", "D3", "D2", "D1", "D0"]
 DIR = ["NC", "IORF", "RST1", "3V3", "5V1", "GND2", "GND3", "VIN",
        "A0", "A1", "A2", "A3", "A4", "A5"]
-USADOS = {"D2": "power_out", "D4": "bidirectional", "D7": "bidirectional",
+USADOS = {"D8": "power_out", "D9": "bidirectional", "D10": "bidirectional",
           "A1": "output", "A5": "output",
           "GND1": "passive", "GND2": "passive", "GND3": "passive"}
 
@@ -205,12 +205,12 @@ def main():
 
     # ---- Uno
     comp("uno_shield:Uno_R3_Shield", "A1", "Uno_R3_Shield", "uno_shield:Uno_R3_Shield", 71.12, 129.54, 0,
-         {"D2": "VDD", "D4": "CLK", "D7": "DAT", "A1": "VPP_CTL", "A5": "LED_ATIVO",
+         {"D8": "VDD", "D9": "CLK", "D10": "DAT", "A1": "VPP_CTL", "A5": "LED_ATIVO",
           "GND1": "GND", "GND2": "GND", "GND3": "GND"},
          "Headers do Arduino Uno R3", off=(-12, -30),
          nao_usados={n for n, p in PINOS["uno_shield:Uno_R3_Shield"].items() if p[4] == "no_connect"})
     texto("ARDUINO UNO (so estes pinos sao usados)", 40, 85, 1.5, True)
-    texto("D2 = Vdd do PIC; D4 = clock; D7 = dados; A1 = comando do MCLR (nivel baixo = 13 V); A5 = LED de atividade", 40, 90)
+    texto("D8 = Vdd do PIC; D9 = clock; D10 = dados; A1 = comando do MCLR (nivel baixo = 13 V); A5 = LED de atividade", 40, 90)
 
     # ---- Entrada de 13 V + diodo
     texto("1) ENTRADA DE 13 V", 160, 30, 1.5, True)
@@ -257,7 +257,7 @@ def main():
     comp(FLG, "#FLG01", "PWR_FLAG", "", 385, 245, 0, {"1": "GND"}, "", energia=True)
 
     texto("Programador de PIC12F629 (CIC do OSCR) para Arduino Uno - derivado do circuito do ardpicprog", 20, 20, 2.0, True)
-    texto("Circuito original: Rhys Weatherley (ardpicprog), CC BY-SA 2.5. Este shield: CC BY-SA 2.5. v1.0", 20, 26)
+    texto("Circuito original: Rhys Weatherley (ardpicprog), CC BY-SA 2.5. Este shield: CC BY-SA 2.5. v1.1", 20, 26)
 
     libs = "".join("".join("\t" + l + "\n" for l in LIBS[k].split("\n")) for k in sorted(LIBS))
     out = (f'(kicad_sch\n\t(version 20260101)\n\t(generator "eeschema")\n\t(generator_version "10.0")\n\t(uuid {ROOT})\n\t(paper "A3")\n'

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: CC-BY-SA-2.5
 # Gera gerbers, furos, BOM e o zip para a JLCPCB em fab/ (mesmos parametros de tools/export_fab.sh).
-# Uso: tools/pic/shield_uno/scripts/exportar_fab.sh [versao]      ex.: v1.0
+# Uso: tools/pic/shield_uno/scripts/exportar_fab.sh [versao]      ex.: v1.1
 set -euo pipefail
-VER=${1:-v1.0}
+VER=${1:-v1.1}
 D=$(cd "$(dirname "$0")/.." && pwd)
 PCB="$D/hardware/shield_uno.kicad_pcb"; SCH="$D/hardware/shield_uno.kicad_sch"
 G="$D/fab/gerbers"; mkdir -p "$G"; rm -f "$G"/*

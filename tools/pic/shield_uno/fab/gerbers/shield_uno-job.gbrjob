@@ -5,13 +5,13 @@
       "Application": "Pcbnew",
       "Version": "10.0.8-10.0.8~ubuntu24.04.1"
     },
-    "CreationDate": "2026-11-07T11:33:51-03:00"
+    "CreationDate": "2026-11-25T17:34:38-03:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "shield_uno",
       "GUID": "73686965-6c64-45f7-956e-6f2e6b696361",
-      "Revision": "v1.0"
+      "Revision": "v1.1"
     },
     "Size": {
       "X": 52.68,

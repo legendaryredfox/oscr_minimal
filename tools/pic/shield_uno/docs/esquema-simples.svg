@@ -4,11 +4,11 @@
 <text x="40" y="80" font-size="17" font-weight="normal" fill="#444" text-anchor="start">Cada fio colorido liga uma peça a outra. Fio da mesma cor = mesmo caminho. Monte tudo com a fonte DESLIGADA.</text>
 <rect x="40" y="250" width="210" height="690" rx="14" fill="#dff0f7" stroke="#0b5d7a" stroke-width="3"/><text x="145.0" y="280" font-size="20" font-weight="bold" fill="#222" text-anchor="middle">ARDUINO UNO</text>
 <rect x="100" y="283" width="150" height="34" rx="8" fill="#fff" stroke="#2a9d48" stroke-width="5"/>
-<text x="175" y="306" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D4</text>
+<text x="175" y="306" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D9</text>
 <rect x="100" y="333" width="150" height="34" rx="8" fill="#fff" stroke="#1d4ed8" stroke-width="5"/>
-<text x="175" y="356" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D7</text>
+<text x="175" y="356" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D10</text>
 <rect x="100" y="443" width="150" height="34" rx="8" fill="#fff" stroke="#f77f00" stroke-width="5"/>
-<text x="175" y="466" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D2</text>
+<text x="175" y="466" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">D8</text>
 <rect x="100" y="523" width="150" height="34" rx="8" fill="#fff" stroke="#9333ea" stroke-width="5"/>
 <text x="175" y="546" font-size="19" font-weight="bold" fill="#222" text-anchor="middle">A1</text>
 <rect x="100" y="683" width="150" height="34" rx="8" fill="#fff" stroke="#eab308" stroke-width="5"/>
@@ -113,11 +113,11 @@
 <path d="M66,1142 L90,1166 M66,1166 L90,1142" stroke="#888" stroke-width="5"/>
 <text x="112" y="1160" font-size="17" font-weight="normal" fill="#222" text-anchor="start">X: pino do chip que não leva fio. Não ligue nada nele.</text>
 <rect x="800" y="1036" width="46" height="18" rx="9" fill="#f77f00" stroke="#111" stroke-width="2"/>
-<text x="858" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">energia do chip (D2)</text>
+<text x="858" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">energia do chip (D8)</text>
 <rect x="1180" y="1036" width="46" height="18" rx="9" fill="#2a9d48" stroke="#111" stroke-width="2"/>
-<text x="1238" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">relógio (D4)</text>
+<text x="1238" y="1052" font-size="16" font-weight="normal" fill="#222" text-anchor="start">relógio (D9)</text>
 <rect x="800" y="1076" width="46" height="18" rx="9" fill="#1d4ed8" stroke="#111" stroke-width="2"/>
-<text x="858" y="1092" font-size="16" font-weight="normal" fill="#222" text-anchor="start">dados (D7)</text>
+<text x="858" y="1092" font-size="16" font-weight="normal" fill="#222" text-anchor="start">dados (D10)</text>
 <rect x="1180" y="1076" width="46" height="18" rx="9" fill="#9333ea" stroke="#111" stroke-width="2"/>
 <text x="1238" y="1092" font-size="16" font-weight="normal" fill="#222" text-anchor="start">comanda o transistor (A1)</text>
 <rect x="800" y="1116" width="46" height="18" rx="9" fill="#eab308" stroke="#111" stroke-width="2"/>

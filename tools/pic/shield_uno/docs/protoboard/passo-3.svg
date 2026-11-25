@@ -395,7 +395,7 @@
 <circle cx="352" cy="164" r="6" fill="#111111" stroke="#fff" stroke-width="2"/>
 <rect x="14" y="478" width="130" height="38" rx="10" fill="#fde047" fill-opacity=".6"/>
 <rect x="20" y="483" width="118" height="28" rx="7" fill="#fff" stroke="#f77f00" stroke-width="4"/>
-<text x="79.0" y="503" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D2</text>
+<text x="79.0" y="503" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">Uno D8</text>
 <polyline points="138,498 352,498" fill="none" stroke="#fde047" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
 <polyline points="138,498 352,498" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <polyline points="138,498 352,498" fill="none" stroke="#f77f00" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -412,6 +412,6 @@
 <text x="284" y="459" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">e8</text>
 <text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 3 de 9: Energia do chip</text>
 <text x="30" y="660" font-size="14" font-weight="normal" fill="#111">• C1: Capacitor 100 nF (marcado 104): 1 em b10, 2 em b8</text>
-<text x="30" y="680" font-size="14" font-weight="normal" fill="#111">• fio LARANJA: Uno D2 → furo c10</text>
+<text x="30" y="680" font-size="14" font-weight="normal" fill="#111">• fio LARANJA: Uno D8 → furo c10</text>
 <text x="30" y="700" font-size="14" font-weight="normal" fill="#111">• fio PRETO: furo e8 → trilho -</text>
 </svg>

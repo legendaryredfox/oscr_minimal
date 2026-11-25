@@ -195,7 +195,7 @@
 					)
 				)
 			)
-			(pin no_connect line
+			(pin bidirectional line
 				(at -17.78 3.81 0)
 				(length 5.08)
 				(name "D10"
@@ -213,7 +213,7 @@
 					)
 				)
 			)
-			(pin no_connect line
+			(pin bidirectional line
 				(at -17.78 1.27 0)
 				(length 5.08)
 				(name "D9"
@@ -231,7 +231,7 @@
 					)
 				)
 			)
-			(pin no_connect line
+			(pin power_out line
 				(at -17.78 -1.27 0)
 				(length 5.08)
 				(name "D8"
@@ -249,7 +249,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin no_connect line
 				(at -17.78 -3.81 0)
 				(length 5.08)
 				(name "D7"
@@ -303,7 +303,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin no_connect line
 				(at -17.78 -11.43 0)
 				(length 5.08)
 				(name "D4"
@@ -339,7 +339,7 @@
 					)
 				)
 			)
-			(pin power_out line
+			(pin no_connect line
 				(at -17.78 -16.51 0)
 				(length 5.08)
 				(name "D2"

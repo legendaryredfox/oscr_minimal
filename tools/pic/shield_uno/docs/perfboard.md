@@ -6,7 +6,7 @@ Furo = letra da linha + numero da coluna (ver o desenho `perfboard.png`). Vale p
 
 | Ref | Peca | Furos |
 |---|---|---|
-| J3 | Barra de 6 pinos macho (vai ao Uno por cabos Dupont) | GND: A5, D2: A6, D4: A7, D7: A8, A1: A9, A5: A10 |
+| J3 | Barra de 6 pinos macho (vai ao Uno por cabos Dupont) | GND: A5, D8: A6, D9: A7, D10: A8, A1: A9, A5: A10 |
 | J1 | Borne de parafuso 5,08 mm (entrada de 13 V) | 1: C2, 2: C4 |
 | U1 | Soquete DIP-8 (entalhe para cima = pino 1 em cima a esquerda) | 1: D13, 2: E13, 3: F13, 4: G13, 8: D16, 7: E16, 6: F16, 5: G16 |
 | C1 | 100 nF | 1: D11, 2: F11 |

@@ -20,27 +20,27 @@
 <text x="479.448" y="102" font-size="9" text-anchor="middle" fill="#cfe">12</text>
 <rect x="503.4680000000001" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
 <text x="512.4680000000001" y="102" font-size="9" text-anchor="middle" fill="#cfe">11</text>
-<rect x="536.488" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
-<text x="545.488" y="102" font-size="9" text-anchor="middle" fill="#cfe">10</text>
-<rect x="569.508" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
-<text x="578.508" y="102" font-size="9" text-anchor="middle" fill="#cfe">9</text>
-<rect x="602.528" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
-<text x="611.528" y="102" font-size="9" text-anchor="middle" fill="#cfe">8</text>
-<rect x="655.36" y="111" width="18" height="18" rx="3" fill="#1d4ed8" stroke="#fff" stroke-width="3"/>
-<text x="664.36" y="90" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D7</text>
+<rect x="536.488" y="111" width="18" height="18" rx="3" fill="#1d4ed8" stroke="#fff" stroke-width="3"/>
+<text x="545.488" y="90" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D10</text>
 
+<rect x="569.508" y="111" width="18" height="18" rx="3" fill="#2a9d48" stroke="#fff" stroke-width="3"/>
+<text x="578.508" y="68" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D9</text>
+
+<rect x="602.528" y="111" width="18" height="18" rx="3" fill="#f77f00" stroke="#fff" stroke-width="3"/>
+<text x="611.528" y="90" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D8</text>
+
+<rect x="655.36" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
+<text x="664.36" y="102" font-size="9" text-anchor="middle" fill="#cfe">7</text>
 <rect x="688.38" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
 <text x="697.38" y="102" font-size="9" text-anchor="middle" fill="#cfe">6</text>
 <rect x="721.4" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
 <text x="730.4" y="102" font-size="9" text-anchor="middle" fill="#cfe">5</text>
-<rect x="754.4200000000001" y="111" width="18" height="18" rx="3" fill="#2a9d48" stroke="#fff" stroke-width="3"/>
-<text x="763.4200000000001" y="90" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D4</text>
-
+<rect x="754.4200000000001" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
+<text x="763.4200000000001" y="102" font-size="9" text-anchor="middle" fill="#cfe">4</text>
 <rect x="787.44" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
 <text x="796.44" y="102" font-size="9" text-anchor="middle" fill="#cfe">3</text>
-<rect x="820.46" y="111" width="18" height="18" rx="3" fill="#f77f00" stroke="#fff" stroke-width="3"/>
-<text x="829.46" y="90" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">D2</text>
-
+<rect x="820.46" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
+<text x="829.46" y="102" font-size="9" text-anchor="middle" fill="#cfe">2</text>
 <rect x="853.48" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
 <text x="862.48" y="102" font-size="9" text-anchor="middle" fill="#cfe">1</text>
 <rect x="886.5" y="111" width="18" height="18" rx="3" fill="#222" stroke="#fff" stroke-width="1"/>
@@ -75,14 +75,14 @@
 <rect x="886.5" y="341" width="18" height="18" rx="3" fill="#eab308" stroke="#fff" stroke-width="3"/>
 <text x="895.5" y="392" font-size="22" font-weight="bold" text-anchor="middle" fill="#111">A5</text>
 
-<text x="538.0" y="82" font-size="13" fill="#333" text-anchor="middle">fileira de cima (pinos digitais)</text>
+<text x="785.0" y="72" font-size="13" fill="#333" text-anchor="middle">fileira de cima (pinos digitais)</text>
 <text x="707.0" y="405" font-size="13" fill="#333" text-anchor="middle">fileira de baixo: energia (esq.) e analógicos A0 a A5 (dir.)</text>
 <rect x="60" y="416" width="22" height="22" rx="4" fill="#f77f00" stroke="#333"/>
-<text x="90" y="433" font-size="14" fill="#111">D2: fio laranja</text>
+<text x="90" y="433" font-size="14" fill="#111">D8: fio laranja</text>
 <rect x="210" y="416" width="22" height="22" rx="4" fill="#2a9d48" stroke="#333"/>
-<text x="240" y="433" font-size="14" fill="#111">D4: fio verde</text>
+<text x="240" y="433" font-size="14" fill="#111">D9: fio verde</text>
 <rect x="360" y="416" width="22" height="22" rx="4" fill="#1d4ed8" stroke="#333"/>
-<text x="390" y="433" font-size="14" fill="#111">D7: fio azul</text>
+<text x="390" y="433" font-size="14" fill="#111">D10: fio azul</text>
 <rect x="510" y="416" width="22" height="22" rx="4" fill="#9333ea" stroke="#333"/>
 <text x="540" y="433" font-size="14" fill="#111">A1: fio roxo</text>
 <rect x="660" y="416" width="22" height="22" rx="4" fill="#eab308" stroke="#333"/>
