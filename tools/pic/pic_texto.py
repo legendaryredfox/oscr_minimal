@@ -11,9 +11,11 @@ Uso:
   pic_texto.py conferir ENTRADA.hex           compara o chip com o .hex
 Opções: --porta /dev/ttyUSB0
 
-Não toca na calibração OSCCAL (palavra 0x3FF) e preserva os bits BG da palavra de configuração (0x3000):
-o ProgramPIC já faz isso em WRITE sem FORCE. A comparação ignora esses dois itens e os bits 11 a 9 da configuração,
-que neste chip leem sempre 0 (o WRITE do ProgramPIC dá ERROR se tentar gravá-los em 1, mesmo gravando o resto).
+Não escreve a calibração OSCCAL (palavra 0x3FF) e mantém os bits BG da palavra de configuração (0x3000): a
+configuração é gravada com WRITE FORCE, com os BG lidos duas vezes antes de qualquer escrita. O WRITE sem FORCE do
+ProgramPIC lê os BG uma única vez antes de gravar, e num chip isso apagou um bit (D220). No fim, "gravar" falha se
+os BG ou o OSCCAL mudaram. A comparação com o .hex ignora esses dois itens e os bits 11 a 9 da configuração,
+que neste chip leem sempre 0.
 """
 import re
 import sys
@@ -129,8 +131,9 @@ class Programador:
             raise SystemExit(f"ID 0x{cfg[6]:04X} não é de um PIC12F629 (esperado 0x0F8x)")
         return cfg
 
-    def escrever(self, end, palavras):
-        r = self.cmd("WRITE %04X %s" % (end, " ".join("%04X" % w for w in palavras)), b"OK\r\n", 8.0)
+    def escrever(self, end, palavras, forcar=False):
+        verbo = "WRITE FORCE" if forcar else "WRITE"
+        r = self.cmd("%s %04X %s" % (verbo, end, " ".join("%04X" % w for w in palavras)), b"OK\r\n", 8.0)
         if "OK" not in r or "ERROR" in r:
             raise SystemExit(f"o sketch recusou WRITE em 0x{end:04X}: {r.strip()!r}")
 
@@ -181,16 +184,23 @@ def cmd_gravar(p, entrada, simular):
         i += len(grupo)
         if (i // POR_COMANDO) % 25 == 0:
             print(f"  {i}/{len(faltam)}")
+    bg = cfg[7] & MASCARA_BG                  # de identificar(): duas leituras iguais, antes de qualquer escrita
     if not simular and (cfg[7] & CFG_USADOS) != (cfg_esp & CFG_USADOS):
-        p.escrever(CFG, [cfg_esp & CFG_USADOS])
+        p.escrever(CFG, [bg | (cfg_esp & CFG_USADOS)], forcar=True)
     if simular:
         print("simulação concluída")
         return
     dif = diferencas(p, esperado, cfg_esp)
+    bg_fim = p.ler_confirmado(CFG, CFG)[0] & MASCARA_BG
+    if bg_fim != bg:
+        dif.append(f"bits BG mudaram: antes 0x{bg:04X}, agora 0x{bg_fim:04X} (anote o valor de antes)")
+    osc_fim = p.ler_confirmado(ULTIMA, ULTIMA)[0]
+    if osc_fim != osc:
+        dif.append(f"OSCCAL mudou: antes 0x{osc:04X}, agora 0x{osc_fim:04X} (anote o valor de antes)")
     if dif:
         print("\n".join(dif))
         raise SystemExit("FALHOU: há diferenças")
-    print("OK: programa e configuração conferem com o .hex (OSCCAL e BG preservados)")
+    print(f"OK: programa e configuração conferem com o .hex; BG 0x{bg:04X} e OSCCAL 0x{osc:04X} iguais aos de antes")
 
 
 def main():

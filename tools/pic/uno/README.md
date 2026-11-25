@@ -122,9 +122,14 @@ python3 -I tools/pic/pic_texto.py conferir firmware/cic_rp2040/third_party/snesc
   Foi a fiação usada na bancada, mas **não foi provado que os pinos ajudem** (o estudo acima foi todo em D8/D9/D10). O shield
   `../shield_uno/` e os desenhos continuam em D2, D4 e D7; os desenhos da variante não estão no repositório.
 - `pic_texto.py gravar` **não apaga**: exige a memória de programa em branco (ou já igual ao hex), grava 4 palavras por
-  comando, relê cada trecho e no fim compara tudo. Não escreve a calibração OSCCAL (`0x3FF`) e deixa os bits BG (`0x3000`) como
-  estão. A comparação da configuração ignora os bits 11 a 9, que este chip lê sempre como 0 (gravar `0x3FD3` dava `ERROR` no
+  comando, relê cada trecho e no fim compara tudo. Não escreve a calibração OSCCAL (`0x3FF`) e grava a configuração com
+  `WRITE FORCE`, mantendo os bits BG (`0x3000`) lidos duas vezes antes de escrever; falha se BG ou OSCCAL mudarem (D220:
+  o `WRITE` sem `FORCE`, que lê os BG uma única vez, apagou um bit num chip). A comparação da configuração ignora os bits 11 a 9, que este chip lê sempre como 0 (gravar `0x3FD3` dava `ERROR` no
   `WRITE` do sketch, embora o resto da palavra ficasse gravado: o chip ficou com `0x11D3`).
+- **Restaurar a calibração de um chip** (feito uma vez, D220, com o backup do `pic_texto.py ler` em mãos): `ERASE NOPRESERVE`
+  no sketch (o `ERASE` comum regravaria os BG errados), conferir que tudo ficou vazio e os BG voltaram a `11`, e devolver com
+  `WRITE FORCE` o OSCCAL (`0x3FF`), as palavras reservadas (`0x2004`, `0x2005`) e a configuração com os BG de fábrica
+  (`0x2007`); só então gravar. Só limpa bits: um bit zerado a mais só volta com outro apagamento. Não há comando pronto para isso.
 - **O apagamento (`ERASE`) falhou** e deixou um chip com os bits BG trocados (`0x11FF` virou `0x31FF`; o valor de fábrica era `01`).
   Recuperei com `WRITE FORCE 2007 11FF` no sketch (só limpa o bit 13). **Antes de apagar um PIC, guarde a configuração**
   (`pic_texto.py ler`) e, se os BG mudarem, devolva-os.
