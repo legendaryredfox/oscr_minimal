@@ -10,7 +10,7 @@ Hex a gravar: `firmware/cic_rp2040/third_party/snescic-lock-resync.hex`.
 |---|---|
 | Arduino Uno + cabo USB, protoboard, jumpers | |
 | Fonte de 13 V | veja "Antes de ligar" |
-| 1× transistor NPN pequeno (BC548, BC547, 2N3904, 2N2222) | confira a pinagem do SEU modelo (abaixo) |
+| 1× transistor NPN BC547 | substitutos: BC548, 2N3904, 2N2222; pinagem abaixo |
 | 4,7 kΩ (base), 10 kΩ (MCLR), 100 nF (Vdd do PIC) | |
 | Opcional: LED vermelho + 1 kΩ do +13 V ao GND; LED amarelo + 220 Ω no A5 | o vermelho mostra que há 13 V |
 | PIC12F629-I/P virgem | direto na protoboard |
@@ -19,9 +19,9 @@ Hex a gravar: `firmware/cic_rp2040/third_party/snescic-lock-resync.hex`.
 
 ```
 13 V (+) ──┬── 10 kΩ ──┬── PIC pino 4 (MCLR)
-           │           └── coletor do transistor
+           │           └── coletor do BC547
            └── (LED vermelho + 1 kΩ ao GND, opcional)
-Uno A1 ── 4,7 kΩ ── base do transistor        emissor ── GND
+Uno A1 ── 4,7 kΩ ── base do BC547             emissor ── GND
 Uno D8  ── PIC pino 1 (Vdd)       100 nF entre o pino 1 e o pino 8, junto ao chip
 Uno D9  ── PIC pino 6 (clock)
 Uno D10 ── PIC pino 7 (dados)
@@ -41,8 +41,8 @@ shield, da protoboard e da placa perfurada (D221); A1 e A5 são iguais nos dois 
    sem carga. Alvo: cerca de 13 V; fique dentro do Vpp do datasheet de programação (DS41191; não verifiquei os
    limites exatos: confira o máximo antes de ligar o chip).
 2. Confirme a polaridade do plug (+ no centro ou na lateral).
-3. **Pinagem do transistor:** BC547/BC548 (TO-92, lado plano para você, pernas para baixo) = C, B, E da esquerda
-   para a direita; 2N3904 e 2N2222 (TO-92) = E, B, C. Quem tem dúvida: modo diodo do multímetro; a base mede
+3. **Pinagem do transistor:** BC547 (TO-92, lado plano para você, pernas para baixo) = C, B, E da esquerda para a
+   direita (BC548 igual); os substitutos 2N3904 e 2N2222 (TO-92) = E, B, C. Quem tem dúvida: modo diodo do multímetro; a base mede
    cerca de 0,6 V para as duas outras pernas com o + na base (NPN).
 4. Sem o PIC no soquete, ligue só a fonte e meça o pino 4 com o A1 em reset (deve ficar perto de 0 V) e depois
    solto (13 V).
