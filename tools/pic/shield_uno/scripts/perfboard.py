@@ -25,7 +25,7 @@ PECAS = {
     "R1": ("10 k", {"1": (5, 8), "2": (9, 8)}),
     "R4": ("1 k", {"1": (5, 10), "2": (9, 10)}),
     "D2": ("LED vermelho (perna curta = catodo = K)", {"A": (11, 10), "K": (12, 10)}),
-    "Q1": ("BC547 (C, B, E da esquerda para a direita, lado chato para cima)", {"C": (12, 8), "B": (13, 8), "E": (14, 8)}),
+    "Q1": ("BC547 (C, B, E da esquerda para a direita; lado chato para baixo, virado para a linha N do GND)", {"C": (12, 8), "B": (13, 8), "E": (14, 8)}),
     "R2": ("4,7 k", {"1": (17, 10), "2": (13, 10)}),
     "R3": ("220", {"1": (20, 2), "2": (20, 6)}),
     "D3": ("LED amarelo (perna curta = catodo = K)", {"A": (20, 7), "K": (20, 8)}),
@@ -203,7 +203,7 @@ def desenhar():
     rot("R3 220", cx(20) + 16, cy(4), anchor="start", t=10)
     rot("D2", cx(11.5), cy(10) + 28, t=10)
     rot("D3", cx(20) + 22, cy(7.5), anchor="start", t=10)
-    rot("Q1 C B E", cx(13), cy(8) - 20, t=10)
+    rot("Q1 BC547 (C B E)", cx(13), cy(8) - 20, t=10)
     rot("trilho de GND (fio nu)", cx(7), cy(13) + 20, "#222", 10)
     # legenda
     y0 = TAM[1] * P + 2 * M - 10

@@ -29,7 +29,7 @@ de comodidade: **A.** PCB do shield (este projeto KiCad), **B.** protoboard, **C
 
 **Risco de ficar sem ele:** não há proteção contra a fonte ligada ao contrário (plugue com polaridade trocada,
 adaptador de centro negativo). Os caminhos passam por R1 (10 kΩ), R2 (4,7 kΩ) e R4 (1 kΩ), então as correntes ficam
-em miliampères e nada deve pegar fogo, mas pode queimar o LED vermelho (tensão reversa de ~5 V), o transistor ou o
+em miliampères e nada deve pegar fogo, mas pode queimar o LED vermelho (tensão reversa de ~5 V), o BC547 ou o
 PIC (o MCLR conduz ~1 mA pelo diodo interno do pino; não conferi o limite no datasheet). **Antes de ligar, confira a
 polaridade da fonte com o multímetro.** O bloqueio de D1 é a única proteção que a placa tem para isso; se a polaridade
 do seu plugue é conhecida e marcada, dispensá-lo é razoável. Se o Vpp medido no MCLR ficar **perto do limite baixo**
@@ -51,15 +51,15 @@ Lista **fio a fio** (faça um traço em cada fio que montar). Os fios pretos vã
 | ☐ | **preto** | GND do Uno | trilho preto de GND |
 | ☐ | **preto** | pino 8 do chip | trilho preto de GND |
 | ☐ | **preto** | capacitor C1 (perna de baixo) | trilho preto de GND |
-| ☐ | **preto** | emissor (E) do transistor | trilho preto de GND |
+| ☐ | **preto** | emissor (E) do BC547 | trilho preto de GND |
 | ☐ | **preto** | LED vermelho (perna curta) | trilho preto de GND |
 | ☐ | **preto** | LED amarelo (perna curta) | trilho preto de GND |
 | ☐ | **preto** | negativo (−) da fonte | trilho preto de GND |
 | ☐ | **laranja** | D8 do Uno | pino 1 do chip e perna de cima do capacitor C1 |
 | ☐ | **verde** | D9 do Uno | pino 6 do chip |
 | ☐ | **azul** | D10 do Uno | pino 7 do chip |
-| ☐ | **rosa** | pino 4 do chip (MCLR) | resistor R1 (10 kΩ) e coletor (C) do transistor |
-| ☐ | **roxo** | A1 do Uno | resistor R2 (4,7 kΩ), e dele à base (B) do transistor |
+| ☐ | **rosa** | pino 4 do chip (MCLR) | resistor R1 (10 kΩ) e coletor (C) do BC547 |
+| ☐ | **roxo** | A1 do Uno | resistor R2 (4,7 kΩ), e dele à base (B) do BC547 |
 | ☐ | **amarelo** | A5 do Uno | resistor R3 (220 Ω), e dele à perna longa (+) do LED amarelo |
 | ☐ | **vermelho** | positivo (+) da fonte | resistor R1 (o outro lado dele) e resistor R4 (1 kΩ), e dele à perna longa (+) do LED vermelho |
 
@@ -81,7 +81,7 @@ Uno GND ── PIC pino 8 ── GND da fonte de 13 V   (GND comum!)
 PIC pinos 2, 3 e 5: sem ligação
 ```
 
-- A1 em nível **baixo** corta o transistor e deixa o MCLR em ~13 V (gravação); em nível alto o transistor puxa o
+- A1 em nível **baixo** corta o BC547 e deixa o MCLR em ~13 V (gravação); em nível alto o BC547 puxa o
   MCLR a GND (reset). O sketch aplica os 13 V **antes** de ligar o Vdd.
 - **O sketch precisa do patch de pinos.** O `ProgramPIC.pde` do ardpicprog usa `PIN_VDD 2`, `PIN_CLOCK 4` e `PIN_DATA 7`;
   este projeto usa 8, 9 e 10 (`PIN_MCLR A1` e `PIN_ACTIVITY A5` iguais). O instalador aplica o patch por padrão
@@ -115,9 +115,9 @@ PIC pinos 2, 3 e 5: sem ligação
 | 3 | Ponto de teste (pino ou argola) | TP1 a TP3 | opcional |
 | 4 | Barras fêmea empilháveis do Uno (6, 8, 8 e 10 pinos) | A1 | só na PCB do shield |
 
-**Pinagem do transistor.** BC547 e BC548 (TO-92, lado chato para você, pernas para baixo): C, B, E da esquerda para a
-direita. 2N3904 e 2N2222: E, B, C. Na PCB o footprint é C, B, E; um 2N3904 entra **virado 180°** (lado chato para o
-lado oposto ao do desenho) e assim as pernas caem certas. Na dúvida, modo diodo do multímetro: a base mede cerca de
+**Pinagem do BC547.** TO-92, lado chato para você, pernas para baixo: C, B, E da esquerda para a direita (BC548
+igual). Nos substitutos 2N3904 e 2N2222: E, B, C. Na PCB o footprint é C, B, E; um 2N3904 entra **virado
+180°** (lado chato para o lado oposto ao do desenho) e assim as pernas caem certas. Na dúvida, modo diodo do multímetro: a base mede cerca de
 0,6 V para as outras duas pernas com o "+" na base (NPN).
 
 ## Antes de ligar (vale para as três montagens)
@@ -143,7 +143,7 @@ do Uno) fica livre de propósito.
   1. resistores (R1 a R4) e capacitor C1; **D1 não se monta** (DNP). Feche o **JP1** com um jumper, fio ou solda
      (se quiser o diodo: monte D1, com a faixa para o lado do K, e deixe o JP1 aberto);
   2. soquete DIP-8 (entalhe para o lado do pino 1, desenhado na serigrafia);
-  3. LEDs (perna curta = K, lado do quadrado) e transistor;
+  3. LEDs (perna curta = K, lado do quadrado) e BC547;
   4. cabeçalho ICSP, pontos de teste e borne;
   5. por último as barras empilháveis, **com o shield encaixado no Uno** para alinhar.
 - **Corte as pernas rente** na face de baixo: o Uno tem o ATmega328P e outras peças ali embaixo. Se sobrar perna,
@@ -237,7 +237,7 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 | fio **azul** (D10 do Uno: dados) | do **Uno D10** ao furo **j11** |
 | fio **verde** (D9 do Uno: clock) | do **Uno D9** ao furo **j12** |
 
-#### Passo 5: Transistor e resistor de 10 k
+#### Passo 5: BC547 e resistor de 10 k
 
 ![Passo 5](docs/protoboard/passo-5.png)
 
@@ -245,19 +245,19 @@ Os desenhos e as tabelas desta seção são gerados por `scripts/protoboard_dese
 |---|---|
 | **Transistor BC547** | C em **a13**, B em **a14**, E em **a15** |
 | **Resistor 10 k** (faixas marrom, preto, laranja, dourado) | 1 em **c13**, 2 em **c17** |
-| fio **preto** (emissor do transistor ao GND) | do furo **e15** ao trilho **-** |
+| fio **preto** (emissor do BC547 ao GND) | do furo **e15** ao trilho **-** |
 | fio **vermelho** (13 V para o resistor de 10 k e para o LED) | do furo **e17** ao trilho **+** |
 
-> O transistor BC547 entra com o lado CHATO virado para voce (para a borda de baixo da figura): C, B, E da esquerda para a direita.
+> O BC547 entra com o lado CHATO virado para voce (para a borda de baixo da figura): C, B, E da esquerda para a direita.
 
-#### Passo 6: Comando do transistor
+#### Passo 6: Comando do BC547
 
 ![Passo 6](docs/protoboard/passo-6.png)
 
 | O que | Onde |
 |---|---|
 | **Resistor 4,7 k** (faixas amarelo, violeta, vermelho, dourado) | 1 em **e18**, 2 em **e14** |
-| fio **roxo** (A1 do Uno: comanda o transistor) | do **Uno A1** ao furo **d18** |
+| fio **roxo** (A1 do Uno: comanda o BC547) | do **Uno A1** ao furo **d18** |
 
 #### Passo 7: LED vermelho (tem 13 V)
 
@@ -305,7 +305,7 @@ Com o multímetro em **continuidade (bip)** e **tudo desligado**:
 |---|---|
 | trilho `+` e trilho `−` | **sem** bip (senão há um curto) |
 | trilho `−` e o pino 8 do PIC (furo f10) | bip |
-| furo e13 (pino 4 do PIC) e furo a13 (transistor) | bip |
+| furo e13 (pino 4 do PIC) e furo a13 (coletor do BC547) | bip |
 | furo c10 (D8) e furo e10 (pino 1 do PIC) | bip |
 
 **Depois:** siga "Antes de ligar" (medir o MCLR com o chip fora) e "Gravar".
@@ -328,12 +328,12 @@ ser fio nu. Os furos têm nome: letra da linha (A a N) e número da coluna (1 a 
 Ordem de montagem:
 
 1. Soldar o **soquete DIP-8** (colunas 13 e 16, linhas D a G; entalhe para cima = pino 1 em D13), os resistores, o
-   capacitor, os LEDs, o transistor, o borne J1 e a barra J3 (furos A5 a A10, da esquerda para a direita: GND, D8, D9, D10, A1, A5),
+   capacitor, os LEDs, o BC547, o borne J1 e a barra J3 (furos A5 a A10, da esquerda para a direita: GND, D8, D9, D10, A1, A5),
    nos furos da tabela [`docs/perfboard.md`](docs/perfboard.md).
 2. Passar os fios **na ordem da tabela de fios**, um a um, soldando as pontas e riscando na tabela. Os fios podem
    passar por cima de furos ocupados desde que sejam isolados; o trilho de GND (N5 a N21) é um fio nu soldado nos pontos
    marcados.
-3. Conferir com o multímetro, tudo desligado: GND (J3 GND) com o pino 8 do soquete, o emissor do transistor e os dois
+3. Conferir com o multímetro, tudo desligado: GND (J3 GND) com o pino 8 do soquete, o emissor do BC547 e os dois
    catodos; 13 V **sem** continuidade com o GND.
 4. Ligar o cabo Dupont: J3 GND, D8, D9, D10, A1, A5 aos mesmos pinos do Uno (nesta ordem na barra, da esquerda para a
    direita). Siga "Antes de ligar" e "Gravar".
@@ -361,7 +361,7 @@ Não use `ardpicprog --erase` nem `--burn` com este sketch (D214, D220).
 - **LED vermelho apagado:** fonte desligada, ou R4/LED ao contrário. Se a fonte puder estar invertida e não há D1, **desligue já** e meça a polaridade.
 - **Não detecta o chip:** confira se o sketch usa D8/D9/D10, o pino 1 do PIC, o GND comum entre fonte e Uno, os contatos e
   se há ~13 V no pino 4 com A1 solto.
-- **13 V não chegam ao MCLR:** transistor com a pinagem errada (veja "Pinagem do transistor") ou R1 solto.
+- **13 V não chegam ao MCLR:** BC547 com a pinagem errada (veja "Pinagem do BC547") ou R1 solto.
 - **Erro de verificação:** grave de novo; se repetir, queda da fonte sob carga ou mau contato (na protoboard).
 - **Nada na serial:** feche o monitor serial; confira a porta e o grupo `dialout`.
 

@@ -293,8 +293,8 @@ def desenhar():
     qx = XQ - 50
     S.append(f'<rect x="{qx}" y="330" width="100" height="110" rx="12" fill="#444" stroke="#111" stroke-width="3"/>')
     S.append(texto(XQ, 372, "BC547", 17, "bold", "#fff", "middle"))
-    S.append(texto(XQ, 392, "(transistor)", 13, "normal", "#ddd", "middle"))
-    S.append(texto(XQ, 424, "chato p/ você", 12, "normal", "#ddd", "middle"))
+    S.append(texto(XQ, 392, "(Q1)", 13, "normal", "#ddd", "middle"))
+    S.append(texto(XQ, 424, "chato: C B E", 12, "normal", "#ddd", "middle"))
     for nome in ("C", "B", "E"):
         x, y = PIN["Q1." + nome]
         S.append(f'<circle cx="{x}" cy="{y}" r="13" fill="#fff" stroke="#111" stroke-width="2"/>' + texto(x, y + 6, nome, 16, "bold", "#111", "middle"))
@@ -317,7 +317,7 @@ def desenhar():
     S.append(texto(360, 288, "relógio: marca o ritmo", 14, ancora="middle", cor="#1f7a38"))
     S.append(texto(360, 338, "dados: o que vai gravar", 14, ancora="middle", cor=COR["azul"]))
     S.append(texto(360, 448, "energia do chip", 14, ancora="middle", cor="#b85c00"))
-    S.append(texto(360, 528, "comanda o transistor", 14, ancora="middle", cor=COR["roxo"]))
+    S.append(texto(360, 528, "comanda o BC547", 14, ancora="middle", cor=COR["roxo"]))
     S.append(texto(XN + 24, 234, "MCLR: 13 V para gravar", 14, "bold", COR["rosa"], "start"))
     # ---- legenda
     ly = 1030
@@ -329,7 +329,7 @@ def desenhar():
     S.append(texto(112, ly + 84, "pulinho: um fio passa POR CIMA do outro, sem encostar.", 17))
     S.append(f'<path d="M66,{ly + 112} L90,{ly + 136} M66,{ly + 136} L90,{ly + 112}" stroke="#888" stroke-width="5"/>')
     S.append(texto(112, ly + 130, "X: pino do chip que não leva fio. Não ligue nada nele.", 17))
-    cores = [("laranja", "energia do chip (D8)"), ("verde", "relógio (D9)"), ("azul", "dados (D10)"), ("roxo", "comanda o transistor (A1)"),
+    cores = [("laranja", "energia do chip (D8)"), ("verde", "relógio (D9)"), ("azul", "dados (D10)"), ("roxo", "comanda o BC547 (A1)"),
              ("amarelo", "luz amarela (A5)"), ("rosa", "MCLR, o pino dos 13 V"), ("vermelho", "13 V da fonte"), ("preto", "GND: o fio de volta")]
     for k, (c, t) in enumerate(cores):
         x = 800 + (k % 2) * 380
@@ -348,15 +348,15 @@ def frases():
         ("preto", "GND do Uno", "trilho preto de GND"),
         ("preto", "pino 8 do chip", "trilho preto de GND"),
         ("preto", "capacitor C1 (perna de baixo)", "trilho preto de GND"),
-        ("preto", "emissor (E) do transistor", "trilho preto de GND"),
+        ("preto", "emissor (E) do BC547", "trilho preto de GND"),
         ("preto", "LED vermelho (perna curta)", "trilho preto de GND"),
         ("preto", "LED amarelo (perna curta)", "trilho preto de GND"),
         ("preto", "negativo (−) da fonte", "trilho preto de GND"),
         ("laranja", "D8 do Uno", "pino 1 do chip e perna de cima do capacitor C1"),
         ("verde", "D9 do Uno", "pino 6 do chip"),
         ("azul", "D10 do Uno", "pino 7 do chip"),
-        ("rosa", "pino 4 do chip (MCLR)", "resistor R1 (10 kΩ) e coletor (C) do transistor"),
-        ("roxo", "A1 do Uno", "resistor R2 (4,7 kΩ), e dele à base (B) do transistor"),
+        ("rosa", "pino 4 do chip (MCLR)", "resistor R1 (10 kΩ) e coletor (C) do BC547"),
+        ("roxo", "A1 do Uno", "resistor R2 (4,7 kΩ), e dele à base (B) do BC547"),
         ("amarelo", "A5 do Uno", "resistor R3 (220 Ω), e dele à perna longa (+) do LED amarelo"),
         ("vermelho", "positivo (+) da fonte", "resistor R1 (o outro lado dele) e resistor R4 (1 kΩ), e dele à perna longa (+) do LED vermelho"),
     ]

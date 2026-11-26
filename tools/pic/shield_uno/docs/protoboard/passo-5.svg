@@ -454,7 +454,7 @@
 <circle cx="590" cy="130" r="6" fill="#d62828" stroke="#fff" stroke-width="2"/>
 <rect x="575.2" y="447" width="29.6" height="16" rx="4" fill="#111" fill-opacity=".85"/>
 <text x="590" y="459" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">e17</text>
-<text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 5 de 9: Transistor e resistor de 10 k</text>
+<text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 5 de 9: BC547 e resistor de 10 k</text>
 <text x="30" y="660" font-size="14" font-weight="normal" fill="#111">• Q1: Transistor BC547: C em a13, B em a14, E em a15</text>
 <text x="30" y="680" font-size="14" font-weight="normal" fill="#111">• R1: Resistor 10 k: 1 em c13, 2 em c17</text>
 <text x="30" y="700" font-size="14" font-weight="normal" fill="#111">• fio PRETO: furo e15 → trilho -</text>

@@ -13,7 +13,7 @@ Furo = letra da linha + numero da coluna (ver o desenho `perfboard.png`). Vale p
 | R1 | 10 k | 1: I6, 2: I10 |
 | R4 | 1 k | 1: K6, 2: K10 |
 | D2 | LED vermelho (perna curta = catodo = K) | A: K12, K: K13 |
-| Q1 | BC547 (C, B, E da esquerda para a direita, lado chato para cima) | C: I13, B: I14, E: I15 |
+| Q1 | BC547 (C, B, E da esquerda para a direita; lado chato para baixo, virado para a linha N do GND) | C: I13, B: I14, E: I15 |
 | R2 | 4,7 k | 1: K18, 2: K14 |
 | R3 | 220 | 1: C21, 2: G21 |
 | D3 | LED amarelo (perna curta = catodo = K) | A: H21, K: I21 |

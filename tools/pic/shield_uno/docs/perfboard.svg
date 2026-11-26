@@ -440,7 +440,7 @@
 <text x="616" y="152" font-size="10" font-weight="bold" text-anchor="start" fill="#111">R3 220</text>
 <text x="362.0" y="348" font-size="10" font-weight="bold" text-anchor="middle" fill="#111">D2</text>
 <text x="622" y="250.0" font-size="10" font-weight="bold" text-anchor="start" fill="#111">D3</text>
-<text x="404" y="244" font-size="10" font-weight="bold" text-anchor="middle" fill="#111">Q1 C B E</text>
+<text x="404" y="244" font-size="10" font-weight="bold" text-anchor="middle" fill="#111">Q1 BC547 (C B E)</text>
 <text x="236" y="424" font-size="10" font-weight="bold" text-anchor="middle" fill="#222">trilho de GND (fio nu)</text>
 <text x="40" y="462" font-size="12" font-weight="bold" fill="#111">Placa perfurada: lado dos componentes, visto de cima</text>
 <text x="40" y="478" font-size="11" fill="#111">Fios isolados no lado da solda (vistos aqui por transparencia)</text>

@@ -4571,7 +4571,7 @@
 		)
 		(uuid "577da90a-284a-438b-8458-258bd442d808")
 	)
-	(text "2) MCLR: 13 V (transistor cortado) ou GND (transistor ligado)"
+	(text "2) MCLR: 13 V (BC547 cortado) ou GND (BC547 ligado)"
 		(exclude_from_sim no)
 		(at 160 80 0)
 		(effects

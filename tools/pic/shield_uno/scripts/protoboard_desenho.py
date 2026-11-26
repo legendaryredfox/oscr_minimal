@@ -383,7 +383,7 @@ def texto_readme():
     L.append("|---|---|")
     L.append("| trilho `+` e trilho `−` | **sem** bip (senão há um curto) |")
     L.append("| trilho `−` e o pino 8 do PIC (furo f10) | bip |")
-    L.append("| furo e13 (pino 4 do PIC) e furo a13 (transistor) | bip |")
+    L.append("| furo e13 (pino 4 do PIC) e furo a13 (coletor do BC547) | bip |")
     L.append("| furo c10 (D8) e furo e10 (pino 1 do PIC) | bip |")
     L.append("")
     L.append("**Depois:** siga \"Antes de ligar\" (medir o MCLR com o chip fora) e \"Gravar\".")

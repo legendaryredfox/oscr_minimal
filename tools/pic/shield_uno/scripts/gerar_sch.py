@@ -225,10 +225,10 @@ def main():
     texto("Sem D1 a fonte tem que estar na polaridade certa. Medir o Vpp no TP1.", 160, 66)
 
     # ---- MCLR
-    texto("2) MCLR: 13 V (transistor cortado) ou GND (transistor ligado)", 160, 80, 1.5, True)
+    texto("2) MCLR: 13 V (BC547 cortado) ou GND (BC547 ligado)", 160, 80, 1.5, True)
     comp(R, "R1", "10k", fp_r, 190, 105, 90, {"1": "V13", "2": "MCLR"}, "Pull-up do MCLR para os 13 V")
     comp(Q, "Q1", "BC547", "Package_TO_SOT_THT:TO-92_Inline_Wide", 275, 105, 0, {"1": "MCLR", "2": "BASE", "3": "GND"},
-         "NPN pequeno: BC547/BC548 (CBE); 2N3904/2N2222 (EBC) entram virados 180 graus")
+         "BC547 (CBE); substitutos: BC548 (CBE) ou 2N3904/2N2222 (EBC, virados 180 graus)")
     comp(R, "R2", "4k7", fp_r, 235, 130, 90, {"1": "VPP_CTL", "2": "BASE"}, "Base do transistor, comandada pelo A1")
 
     # ---- PIC

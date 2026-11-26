@@ -28,7 +28,7 @@ Uno D10 ── PIC pino 7 (dados)
 Uno GND ── PIC pino 8 (Vss) ── GND da fonte de 13 V   (GND comum!)
 PIC pinos 2, 3 e 5: sem ligação
 ```
-A1 em nível **baixo** deixa o MCLR em 13 V (gravação); em nível alto o transistor puxa o MCLR a GND (reset). O sketch
+A1 em nível **baixo** deixa o MCLR em 13 V (gravação); em nível alto o BC547 puxa o MCLR a GND (reset). O sketch
 aplica os 13 V no MCLR **antes** de ligar o Vdd, como a especificação de programação manda. Os 13 V nunca vão a um pino do Uno.
 
 **Os pinos D8, D9 e D10 exigem o sketch com patch** (o padrão do instalador, abaixo). O sketch original do ardpicprog usa D2, D4 e
@@ -41,7 +41,7 @@ shield, da protoboard e da placa perfurada (D221); A1 e A5 são iguais nos dois 
    sem carga. Alvo: cerca de 13 V; fique dentro do Vpp do datasheet de programação (DS41191; não verifiquei os
    limites exatos: confira o máximo antes de ligar o chip).
 2. Confirme a polaridade do plug (+ no centro ou na lateral).
-3. **Pinagem do transistor:** BC547 (TO-92, lado plano para você, pernas para baixo) = C, B, E da esquerda para a
+3. **Pinagem do BC547** (TO-92, lado plano para você, pernas para baixo): C, B, E da esquerda para a
    direita (BC548 igual); os substitutos 2N3904 e 2N2222 (TO-92) = E, B, C. Quem tem dúvida: modo diodo do multímetro; a base mede
    cerca de 0,6 V para as duas outras pernas com o + na base (NPN).
 4. Sem o PIC no soquete, ligue só a fonte e meça o pino 4 com o A1 em reset (deve ficar perto de 0 V) e depois

@@ -460,7 +460,7 @@
 <circle cx="624" cy="464" r="6" fill="#9333ea" stroke="#fff" stroke-width="2"/>
 <rect x="609.2" y="481" width="29.6" height="16" rx="4" fill="#111" fill-opacity=".85"/>
 <text x="624" y="493" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">d18</text>
-<text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 6 de 9: Comando do transistor</text>
+<text x="30" y="640" font-size="16" font-weight="bold" fill="#111">PASSO 6 de 9: Comando do BC547</text>
 <text x="30" y="660" font-size="14" font-weight="normal" fill="#111">• R2: Resistor 4,7 k: 1 em e18, 2 em e14</text>
 <text x="30" y="680" font-size="14" font-weight="normal" fill="#111">• fio ROXO: Uno A1 → furo d18</text>
 </svg>
