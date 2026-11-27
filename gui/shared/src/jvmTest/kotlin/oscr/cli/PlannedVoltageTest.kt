@@ -7,7 +7,7 @@ import kotlin.test.*
 /** H-4 (P-16), igual a host/tests/test_planned.py: o `systems` marca os adaptadores de 3,3 V da comunidade. */
 class PlannedVoltageTest {
     @Test fun marcaOsDe3v3() {
-        assertEquals(setOf("leapster", "jammerpro", "vsmile"), PLANNED_SYSTEMS.filter { it.needs3v3 }.map { it.key }.toSet())
+        assertEquals(setOf("leapster", "jammerpro"), PLANNED_SYSTEMS.filter { it.needs3v3 }.map { it.key }.toSet())
         val out = StringBuilder()
         val io = CliIo({ out.appendLine(it) }, { }, false, false, { null }, { emptyList() }, { _, _ -> error("sem porta") }, ".")
         assertEquals(0, Cli.run(listOf("--json", "systems"), io))

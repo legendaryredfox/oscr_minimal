@@ -15,9 +15,9 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
     ("supercan", "Super A'can"),
     ("ti99", "TI-99/4A"), ("trs80", "TRS-80"),
-    ("vsmile", "V.Smile"), ("ws", "WonderSwan"), ("msx", "MSX"),
+    ("ws", "WonderSwan"), ("msx", "MSX"),
     ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),
 )
 
 # Adaptadores de 3,3 V da comunidade (P-16, H-4): não podem ir num slot de 5 V. Conferido contra a tabela de docs/historico/pesquisa-comunidade.md por tools/check_adaptadores.py.
-NEEDS_3V3: frozenset[str] = frozenset({"leapster", "jammerpro", "vsmile"})
+NEEDS_3V3: frozenset[str] = frozenset({"leapster", "jammerpro"})

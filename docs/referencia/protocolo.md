@@ -102,6 +102,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 27 | Fairchild Channel F (adaptador de 22 pinos no slot SNES, 5 V; VGG de 12 V pendente; F-20, D224) | `.bin` |
 | 28 | Magnavox Odyssey 2 / Philips Videopac (adaptador de 30 pinos no slot SNES, 5 V; F-20, D226) | `.bin` |
 | 29 | Pokémon Mini (adaptador de 32 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D227) | `.min` |
+| 30 | V.Smile (adaptador de 48 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D228) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -161,6 +162,10 @@ Usa o núcleo `BallyAstrocade.cpp` do OSCR, só leitura de ROM. A costura chama 
 ### Opções para Fairchild Channel F (D224)
 
 Usa o núcleo `ChannelF.cpp` do OSCR, só leitura de ROM, pelo protocolo ROMC do F8 (o cartucho não tem barramento de endereço). `mapper` escolhe a função do OSCR: **0** = `readROM` (procura o cabeçalho `$55` seguido de `$08`, `$2B`, `$AA` ou `$BB` e grava `prg_kb` KB dali; a costura liga e desliga o cartucho, que o `readROM` não liga), **1** = `read16K` ("Read 16K" do menu: 16 KB brutos, sem procurar cabeçalho); outro valor dá `ERRO 0x0004`. `prg_kb` vale sempre: 2, 3, 4 ou 6 (índice da tabela `romSizes`; o `read16K` também o usa para pular a BIOS nos de 4 KB); outro valor dá `ERRO 0x0004`. Única mudança no núcleo: os dois `matchCRC` sob `#if !OSCR_DUMPER`. `DETECT` repete a procura do `readROM` (até `$4800` leituras): `status` 0 com cabeçalho, 1 se todos os bytes forem iguais a `$00` ou `$FF` (slot vazio), 4 se há dados sem cabeçalho; `rom_size` é o tamanho do arquivo que o modo e o `prg_kb` do `DETECT` dariam (0 sem tamanho válido). Com `status` 4, `DUMP_ROM` no modo 0 responde `ERRO 0x0007` (o `readROM` não gravaria nada); o modo 1 segue. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ChfCore.h`, testadas em `pc-tests/test_chf.cpp`.
+
+### Opções para V.Smile (D228)
+
+Usa o núcleo `VSmile.cpp` do OSCR, só leitura de ROM, em palavras de 16 bits. A costura chama o `readROM` do OSCR com `romSize` = índice da tabela `romSizes`; única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`. Sem `mapper`. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 4096, 6144 (dois chips: 4 MB com CSB1 e 2 MB com CSB2), 8192 ou 16384 (V.Motion: 8 MB com CSB1 e 8 MB com CSB1 e CSB2); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 16 palavras do início do primeiro chip com o `read_rom_word` do núcleo: `status` 1 se todos os bytes forem iguais a `$00` ou `$FF` (slot vazio), senão 0; `rom_size` é o tamanho que o `prg_kb` do `DETECT` daria (0 sem tamanho válido). O fork não confere assinatura. O núcleo pede 3,3 V: o adaptador precisa de regulador próprio (`docs/planos/adaptador-vsmile.md`). `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/VsmCore.h`, testadas em `pc-tests/test_vsm.cpp`.
 
 ### Opções para Pokémon Mini (D227)
 

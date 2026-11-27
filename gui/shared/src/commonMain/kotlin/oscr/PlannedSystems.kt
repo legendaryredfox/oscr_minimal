@@ -17,6 +17,6 @@ val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
     PlannedSystem("satellaview", "Satellaview (BS-X)"), PlannedSystem("sfm", "SF Memory"),
     PlannedSystem("supercan", "Super A'can"),
     PlannedSystem("ti99", "TI-99/4A"), PlannedSystem("trs80", "TRS-80"),
-    PlannedSystem("vsmile", "V.Smile", true), PlannedSystem("ws", "WonderSwan"), PlannedSystem("msx", "MSX"),
+    PlannedSystem("ws", "WonderSwan"), PlannedSystem("msx", "MSX"),
     PlannedSystem("gbsmart", "Game Boy Smart Card"), PlannedSystem("gbmem", "Game Boy Memory"),
 )
