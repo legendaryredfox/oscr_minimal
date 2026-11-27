@@ -25,6 +25,10 @@ namespace OSCR::Dumper
   /// Fator de correção do Si5351 (ppb) guardado na EEPROM pelo comando CLOCK (F-3); 0 se não há. Lido por `ClockGen::initialize()` no boot.
   int32_t clockOffset();
 
+  /// Antes do `clockgen.init` do OSCR (D240): confere, com limite de tempo, que um Si5351 responde no I²C e saiu do SYS_INIT.
+  /// Falso se não há módulo, se o barramento está preso ou se ele não fica pronto; aí `ClockGen::initialize()` desiste sem travar.
+  bool clockgenProbe();
+
   /// Achado do autoteste (cores/SelfTest.cpp): 1 = pino `a` em curto com GND, 2 = pinos `a` e `b` em curto, 3 = falta o pull-up de 1 kΩ no D7, 4 = sem Si5351.
   /// Pinos na numeração do Arduino (54 em diante = A0...). Só vale durante o comando SELFTEST.
   void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b);

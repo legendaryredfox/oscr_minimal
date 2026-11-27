@@ -35,6 +35,7 @@ namespace OSCR
 
 # if OSCR_DUMPER
       clock_offset = OSCR::Dumper::clockOffset();
+      if (!OSCR::Dumper::clockgenProbe()) return false;   // D240: sem Si5351 que responda, desiste em vez de travar no I²C
 # endif
 
       i2c_found = clockgen.init(SI5351_CRYSTAL_LOAD_8PF, 0, clock_offset);

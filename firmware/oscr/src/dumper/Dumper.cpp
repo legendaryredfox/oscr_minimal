@@ -2516,6 +2516,26 @@ namespace OSCR::Dumper
     return ppb;
   }
 
+  // D240: a Wire do Arduino não tem limite de tempo por padrão e o `init` da biblioteca do Si5351 espera o SYS_INIT sem limite.
+  // Um módulo sem 5V ou mal encaixado prende SDA/SCL em nível baixo e o firmware parava ainda no boot, antes de abrir a serial.
+  bool clockgenProbe()
+  {
+#if defined(ENABLE_CLOCKGEN)
+    Wire.setWireTimeout(25000, true);   // 25 ms por operação, com reset do TWI; vale para todo uso do I²C daqui em diante
+    Wire.begin();
+    Wire.beginTransmission(SI5351_BUS_BASE_ADDR);
+    if (Wire.endTransmission() != 0) return false;   // 2: ninguém respondeu no endereço; 5: barramento preso
+    for (uint8_t i = 0; i < 100; i++)                 // até ~100 ms pelo SYS_INIT (bit 7 do registro de estado)
+    {
+      Wire.beginTransmission(SI5351_BUS_BASE_ADDR);
+      Wire.write(uint8_t(SI5351_DEVICE_STATUS));
+      if (Wire.endTransmission() == 0 && Wire.requestFrom(uint8_t(SI5351_BUS_BASE_ADDR), uint8_t(1)) == 1 && !(Wire.read() & 0x80)) return true;
+      delay(1);
+    }
+#endif
+    return false;
+  }
+
   // noipa (D235): com LTO, o avr-gcc 15.2 gravava 0 fixo em `b` (o segundo pino de cada par chegava ao PC como "D0").
   __attribute__((noipa)) void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
   {
