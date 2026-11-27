@@ -37,6 +37,7 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 | H-6, H-7 | Instalador com as imagens do firmware e o avrdude; `.deb` e AppImage | feito em parte (D169): `.deb` gerado e nunca instalado; dmg e msi só com CI |
 | K-1, K-2, K-4 | `tools/check_all_boards.py`; ligações abertas; resumo das placas no `CLAUDE.md` | feito (D161) |
 | K-3 | Corrente do U3 com GBA e N64 | estimativa (D171, `docs/historico/pesquisas-2026-11.md#estimativa-corrente-u3`); medir na bancada |
+| K-5 | Área livre sobre o USB-B do Mega: R1.1 (LED) e, na `16_bits` e na `snes`, R2.1 (**+5V**) ficam sobre a carcaça do USB-B (GND); na `megadrive` e na `megadrive_sms`, C4.1 (5V) também. 16 das 22 versões; só `16_and_8_bits`, `completa` e `gb_gba` estão livres (D238). Mover as peças e pôr no `tools/check_all_boards.py` a verificação da área | **pendente** |
 | D-1, D-2 | `continuacao.md` curto; registro da D159 | feito (D159, D161) |
 | D-3 | Diff do upstream `oscr-firmware` | feito (D168) |
 | D-4 | Pesquisar de novo Little Jammer, Little Jammer Pro, Super A'Can, SF Memory, Pocket Challenge W e PV-1000 nos repositórios | **pendente** (trabalho de rede e leitura longa) |
