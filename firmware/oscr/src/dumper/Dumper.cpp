@@ -123,6 +123,7 @@ namespace OSCR::Dumper
     bool errorFlag = false;
     jmp_buf escape;
     bool armed = false;
+    bool clockTest = false;                     // saídas de teste do CLOCK ligadas (o fim de todo comando as desliga: runCore zera)
 
     uint8_t rxBuf[OSCR_MAX_PAYLOAD];
     uint8_t txBuf[OSCR_MAX_PAYLOAD + 10];
@@ -189,7 +190,8 @@ namespace OSCR::Dumper
       }
 
       armed = false;
-      OSCR::Power::disableCartridge();
+      OSCR::Power::disableCartridge();           // chama ClockGen::stop(): as saídas de teste do CLOCK também param
+      clockTest = false;
       OSCR::Storage::Shared::sharedFile.close();
       return ok && (softErrors || !errorFlag);
     }
@@ -199,7 +201,7 @@ namespace OSCR::Dumper
     {
       oscr::StreamSink * inner = nullptr;
       uint32_t bytes = 0;
-      bool write(uint8_t const * data, size_t len) override { bytes += len; return inner->write(data, len); }
+      bool write(uint8_t const * data, size_t len) override { if (!inner->write(data, len)) return false; bytes += len; return true; }   // conta só o que o PC aceitou
     };
 
     struct CountingSource : oscr::StreamSource
@@ -208,6 +210,7 @@ namespace OSCR::Dumper
       uint32_t bytes = 0;
       size_t read(uint8_t * data, size_t len) override { size_t n = inner->read(data, len); bytes += n; return n; }
       uint32_t size() const override { return inner->size(); }
+      bool failed() const override { return inner->failed(); }
     };
 
     CountingSink countingSink;
@@ -220,7 +223,7 @@ namespace OSCR::Dumper
 
     /**
      * GBA sem a base de dados do OSCR: lê o cabeçalho, confere o logo da Nintendo e o checksum e acha o tamanho da ROM pelo espelhamento
-     * (o menor deslocamento em que a ROM se repete; sem espelho até 16 MB, 32 MB). O tipo de save vem do usuário (campo `mapper`).
+     * (o menor deslocamento em que a ROM se repete ou o barramento devolve o próprio endereço; sem nenhum dos dois até 16 MB, 32 MB). O tipo de save vem do usuário (campo `mapper`).
      * Devolve 0 = ok, 1 = sem cartucho, 4 = há dados mas o checksum do cabeçalho não confere.
      */
     uint8_t gbaProbe(uint8_t saveOption)
@@ -236,12 +239,19 @@ namespace OSCR::Dumper
         buf[w + 1] = word >> 8;
       }
 
+      // Fim da ROM: ou ela se repete (espelho), ou o barramento devolve o endereço que ficou nas linhas AD (metade do endereço em bytes,
+      // 16 bits baixos), como o GBATEK descreve para a área sem ROM (D241). 0xFFFF não conta: pode ser enchimento dentro da ROM.
       uint32_t size = 32UL << 20;
       for (uint32_t cand = 256UL << 10; cand <= (16UL << 20); cand <<= 1)
       {
-        bool mirror = true;
-        for (uint8_t i = 0; i < 64 && mirror; i += 2) mirror = GBA::readWord(cand + i) == GBA::readWord(i);
-        if (mirror) { size = cand; break; }
+        bool mirror = true, openBus = true;
+        for (uint8_t i = 0; i < 64 && (mirror || openBus); i += 2)
+        {
+          uint16_t w = GBA::readWord(cand + i);
+          mirror = mirror && w == GBA::readWord(i);
+          openBus = openBus && w == uint16_t((cand + i) >> 1);
+        }
+        if (mirror || openBus) { size = cand; break; }
       }
       GBA::cartOff();
 
@@ -438,7 +448,7 @@ namespace OSCR::Dumper
     bool a8ClockPresent()
     {
 #if defined(ENABLE_CLOCKGEN)
-      return OSCR::ClockGen::exists() || OSCR::ClockGen::initialize();
+      return OSCR::ClockGen::initialize();        // confere de novo se o módulo ainda responde (D241)
 #else
       return false;
 #endif
@@ -1040,7 +1050,6 @@ namespace OSCR::Dumper
       b[6] = clockCheck(b);
       for (uint8_t i = 0; i < 7; i++) EEPROM.update(kClockEeprom + i, b[i]);
     }
-    bool clockTest = false;                     // saídas de teste do CLOCK ligadas
     oscr::SelfTestReport * selfTestOut = nullptr;   // preenchido por noteSelfTest() durante o SELFTEST
     bool voltChosen = false;                    // o usuário escolheu 3,3 V (cartucho marcado como 3,3 V): o host pede confirmação antes de subir para 5 V
 
@@ -1067,8 +1076,9 @@ namespace OSCR::Dumper
       checksum = 0; romSize = 0; numBanks = 0; sramSize = 0;
       SN::getCartInfo();
       SN::cartOff();
-      if (abortHit) return (checksum == 0 || checksum == 0xFFFF) ? 1 : 4;
-      if ((romSize == 0 || numBanks < 1) && !(forcedType != 0 && sizeKb != 0)) return 1;
+      bool forced = forcedType != 0 && sizeKb != 0;                 // o PC disse tipo e tamanho: o cabeçalho não decide mais nada
+      if (abortHit && !forced) return (checksum == 0 || checksum == 0xFFFF) ? 1 : 4;
+      if ((romSize == 0 || numBanks < 1) && !forced) return 1;
 
       if (forcedType)                                             // tipo imposto pelo PC
       {
@@ -1254,7 +1264,7 @@ namespace OSCR::Dumper
       bool clock_supported() override { return true; }
       bool clock(uint8_t action, int32_t ppb, oscr::ClockInfo & out, uint16_t & err) override
       {
-        bool present = OSCR::ClockGen::exists() || OSCR::ClockGen::initialize();   // módulo ligado depois do boot: tenta de novo
+        bool present = OSCR::ClockGen::initialize();   // módulo ligado depois do boot, ou que parou de responder: confere de novo (D241)
         int32_t cur = 0;
         bool stored = loadClockPpb(cur);
         if (action != oscr::CLOCK_STATUS && !present) { err = oscr::E_CARTUCHO_IO; return false; }
@@ -2518,20 +2528,37 @@ namespace OSCR::Dumper
 
   // D240: a Wire do Arduino não tem limite de tempo por padrão e o `init` da biblioteca do Si5351 espera o SYS_INIT sem limite.
   // Um módulo sem 5V ou mal encaixado prende SDA/SCL em nível baixo e o firmware parava ainda no boot, antes de abrir a serial.
+  // D241: antes de começar, solta o barramento se um escravo ficou segurando o SDA no meio de um byte (Mega reiniciado pelo DTR no meio de
+  // uma leitura, com o módulo ainda ligado): até 9 pulsos no SCL e um STOP. A espera do SYS_INIT tem limite de tempo total, não por tentativa.
   bool clockgenProbe()
   {
 #if defined(ENABLE_CLOCKGEN)
+    Wire.end();                                     // o TWI solta os pinos para o resgate abaixo
+    pinMode(SDA, INPUT_PULLUP);
+    pinMode(SCL, INPUT_PULLUP);
+    delayMicroseconds(10);
+    for (uint8_t i = 0; i < 9 && !digitalRead(SDA); i++)
+    {
+      digitalWrite(SCL, LOW); pinMode(SCL, OUTPUT); delayMicroseconds(5);   // dreno aberto: só puxa para baixo, nunca força o nível alto
+      pinMode(SCL, INPUT_PULLUP); delayMicroseconds(5);
+    }
+    digitalWrite(SDA, LOW); pinMode(SDA, OUTPUT); delayMicroseconds(5);     // START + STOP com o SCL alto: o escravo volta ao estado ocioso
+    pinMode(SDA, INPUT_PULLUP); delayMicroseconds(5);
+
     Wire.setWireTimeout(25000, true);   // 25 ms por operação, com reset do TWI; vale para todo uso do I²C daqui em diante
     Wire.begin();
     Wire.beginTransmission(SI5351_BUS_BASE_ADDR);
     if (Wire.endTransmission() != 0) return false;   // 2: ninguém respondeu no endereço; 5: barramento preso
-    for (uint8_t i = 0; i < 100; i++)                 // até ~100 ms pelo SYS_INIT (bit 7 do registro de estado)
+    uint32_t t0 = millis();
+    do                                               // até 100 ms no total pelo SYS_INIT (bit 7 do registro de estado)
     {
       Wire.beginTransmission(SI5351_BUS_BASE_ADDR);
       Wire.write(uint8_t(SI5351_DEVICE_STATUS));
-      if (Wire.endTransmission() == 0 && Wire.requestFrom(uint8_t(SI5351_BUS_BASE_ADDR), uint8_t(1)) == 1 && !(Wire.read() & 0x80)) return true;
+      uint8_t e = Wire.endTransmission();
+      if (e == 5) return false;                      // barramento preso de novo: não insiste
+      if (e == 0 && Wire.requestFrom(uint8_t(SI5351_BUS_BASE_ADDR), uint8_t(1)) == 1 && !(Wire.read() & 0x80)) return true;
       delay(1);
-    }
+    } while (millis() - t0 < 100);
 #endif
     return false;
   }
@@ -2540,6 +2567,13 @@ namespace OSCR::Dumper
   __attribute__((noipa)) void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
   {
     if (selfTestOut != nullptr) selfTestOut->add(kind, a, b);
+  }
+
+  // O fluxo do PC morreu no meio de uma gravação (ABORT ou PC parado): para o núcleo antes que ele grave dados velhos no cartucho.
+  void streamDead()
+  {
+    errorFlag = true;
+    if (armed) longjmp(escape, 1);
   }
 
   [[ noreturn ]] void fatal()

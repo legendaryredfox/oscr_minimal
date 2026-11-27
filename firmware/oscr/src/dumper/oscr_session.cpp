@@ -202,7 +202,7 @@ int Session::wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms) {
     uint32_t el = io_.now_ms(io_.ctx) - start;
     if (el >= timeout_ms) return 0;
     if (!next_frame(timeout_ms - el)) return 0;
-    if (dec_.type == T_ABORT) return -1;
+    if (dec_.type == T_ABORT) { abort_seq_ = dec_.seq; return -1; }
     if (dec_.seq != seq || dec_.len < 4) continue;
     if (get_u32(dec_.payload()) != off) continue;
     if (dec_.type == T_ACK) return 1;
@@ -230,7 +230,8 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
     send(T_BEGIN, seq, bp, 7);
     r = wait_ack(seq, 0, 500);
   }
-  if (r <= 0) { be_.close_read(); send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+  if (r < 0) { be_.close_read(); reply_abort(); return; }
+  if (r == 0) { be_.close_read(); send_error(seq, E_REENVIOS, "begin"); return; }
   send_stage(seq, STAGE_READ, 0, size);
 
   uint32_t crc = 0;
@@ -249,7 +250,8 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
       io_.write(io_.ctx, tx_, frame);   // o mesmo buffer é reenviado em caso de NAK/timeout
       r = wait_ack(seq, off, 400);
     }
-    if (r <= 0) { be_.close_read(); send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "bloco"); return; }
+    if (r < 0) { be_.close_read(); reply_abort(); return; }
+    if (r == 0) { be_.close_read(); send_error(seq, E_REENVIOS, "bloco"); return; }
   }
   be_.close_read();
   uint8_t ep[8];
@@ -259,7 +261,8 @@ void Session::do_read(uint8_t seq, uint8_t type, uint8_t sys, uint16_t block, co
     send(T_END, seq, ep, 8);
     r = wait_ack(seq, size, 500);
   }
-  if (r <= 0) send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "end");
+  if (r < 0) reply_abort();
+  else if (r == 0) send_error(seq, E_REENVIOS, "end");
 }
 
 void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind) {
@@ -306,13 +309,15 @@ void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind
 // ---------------------------------------------------------------- modo fluxo (núcleos do OSCR)
 // Dispositivo -> PC: os dados chegam por `write` à medida que o núcleo lê o cartucho; saem em DATA de `block` bytes, cada um com ACK.
 struct StreamOut : StreamSink {
-  Session& s; uint8_t seq; uint16_t block, fill = 0; uint32_t off = 0, crc = 0; uint16_t fail = 0;
+  Session& s; uint8_t seq; uint16_t block, fill = 0; uint32_t off = 0, crc = 0; uint16_t fail = 0; bool aborted = false;
   StreamOut(Session& se, uint8_t sq, uint16_t b) : s(se), seq(sq), block(b) {}
+  // Depois de uma falha nada mais sai: nem o bloco pendente, nem o CRC muda (o núcleo do OSCR pode seguir lendo o cartucho e chamar write/flush de novo).
   bool flush() {
+    if (fail) return false;
     if (!fill) return true;
     uint8_t* tx = s.tx_;
     put_u32(tx + 6, off);
-    crc = crc32_update(crc, tx + 10, fill);
+    uint32_t ncrc = crc32_update(crc, tx + 10, fill);   // só vale depois do ACK
     tx[0] = MAGIC0; tx[1] = MAGIC1; tx[2] = T_DATA; tx[3] = seq;
     put_u16(tx + 4, uint16_t(4 + fill));
     put_u32(tx + 6 + 4 + fill, crc32_update(0, tx + 2, 4 + 4 + fill));
@@ -322,8 +327,8 @@ struct StreamOut : StreamSink {
       s.io_.write(s.io_.ctx, tx, frame);
       r = s.wait_ack(seq, off, 400);
     }
-    if (r <= 0) { fail = (r < 0) ? E_ABORTADO : E_REENVIOS; return false; }
-    off += fill; fill = 0;
+    if (r <= 0) { aborted = r < 0; fail = aborted ? E_ABORTADO : E_REENVIOS; fill = 0; return false; }
+    crc = ncrc; off += fill; fill = 0;
     return true;
   }
   bool write(const uint8_t* d, size_t n) override {
@@ -346,13 +351,16 @@ void Session::do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t bl
     send(T_BEGIN, seq, bp, 7);
     r = wait_ack(seq, 0, 500);
   }
-  if (r <= 0) { send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "begin"); return; }
+  if (r < 0) { reply_abort(); return; }
+  if (r == 0) { send_error(seq, E_REENVIOS, "begin"); return; }
   send_stage(seq, STAGE_READ, 0, 0);
   StreamOut out(*this, seq, block);
   uint16_t err = E_CARTUCHO_IO;
   bool ok = be_.stream_read(sys, kind, out, err);
-  if (ok && !out.flush()) ok = false;
-  if (!ok) { send_error(seq, out.fail ? out.fail : err); return; }
+  if (ok && !out.fail) ok = out.flush();
+  if (out.aborted) { reply_abort(); return; }            // o núcleo pode ter devolvido "ok" sem saber que o PC desistiu
+  if (out.fail) { send_error(seq, out.fail); return; }
+  if (!ok) { send_error(seq, err); return; }
   uint8_t ep[8];
   put_u32(ep, out.off); put_u32(ep + 4, out.crc);
   r = 0;
@@ -360,20 +368,22 @@ void Session::do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t bl
     send(T_END, seq, ep, 8);
     r = wait_ack(seq, out.off, 500);
   }
-  if (r <= 0) send_error(seq, r < 0 ? E_ABORTADO : E_REENVIOS, "end");
+  if (r < 0) reply_abort();
+  else if (r == 0) send_error(seq, E_REENVIOS, "end");
 }
 
 // PC -> dispositivo: o núcleo pede bytes com `read`; o ACK de cada bloco só sai depois que o núcleo consumiu o bloco inteiro,
 // para o PC não mandar o próximo enquanto o cartucho ainda grava (o buffer da UART do AVR tem 64 bytes).
 struct StreamIn : StreamSource {
-  Session& s; uint8_t seq; uint32_t total, expected = 0, crc = 0; uint16_t cur_len = 0, cur_pos = 0; bool have = false, dead = false; uint32_t last_off = 0;
+  Session& s; uint8_t seq; uint32_t total, expected = 0, crc = 0; uint16_t cur_len = 0, cur_pos = 0; bool have = false, dead = false, aborted = false; uint32_t last_off = 0;
   StreamIn(Session& se, uint8_t sq, uint32_t size) : s(se), seq(sq), total(size) {}
   uint32_t size() const override { return total; }
+  bool failed() const override { return dead; }
   bool fetch() {
     uint32_t last = s.io_.now_ms(s.io_.ctx);
     while (s.io_.now_ms(s.io_.ctx) - last < 5000) {
       if (!s.next_frame(200)) continue;
-      if (s.dec_.type == T_ABORT) { dead = true; return false; }
+      if (s.dec_.type == T_ABORT) { s.abort_seq_ = s.dec_.seq; dead = aborted = true; return false; }
       if (s.dec_.seq != seq) continue;
       last = s.io_.now_ms(s.io_.ctx);
       if (s.dec_.type == T_H_DATA && s.dec_.len >= 4) {
@@ -417,6 +427,7 @@ void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t k
   send_stage(seq, STAGE_WRITE, 0, size);
   StreamIn in(*this, seq, size);
   bool ok = kind == KIND_ROM ? be_.stream_write_rom(sys, in, err) : be_.stream_write(sys, in, err);
+  if (in.aborted) { reply_abort(); return; }
   if (in.dead) { send_error(seq, E_REENVIOS, "timeout"); return; }
   if (!ok) { send_error(seq, err); return; }
   in.ack();                                              // confirma o último bloco, já consumido

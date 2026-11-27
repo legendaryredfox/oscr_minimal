@@ -18,7 +18,15 @@ namespace OSCR
     bool initialize()
     {
 #if defined(ENABLE_CLOCKGEN)
-      if (i2c_found) return true;
+      if (i2c_found)
+      {
+# if OSCR_DUMPER
+        if (OSCR::Dumper::clockgenProbe()) return true;   // D241: confere se o módulo achado antes ainda responde
+        i2c_found = false;                                 // parou de responder: tenta de novo do zero
+# else
+        return true;
+# endif
+      }
 
 # ifdef OPTION_CLOCKGEN_USE_CALIBRATION
       if (!Calibration::readClockOffset(clock_offset))
@@ -38,7 +46,13 @@ namespace OSCR
       if (!OSCR::Dumper::clockgenProbe()) return false;   // D240: sem Si5351 que responda, desiste em vez de travar no I²C
 # endif
 
+# if OSCR_DUMPER
+      Wire.clearWireTimeoutFlag();
+# endif
       i2c_found = clockgen.init(SI5351_CRYSTAL_LOAD_8PF, 0, clock_offset);
+# if OSCR_DUMPER
+      if (i2c_found && Wire.getWireTimeoutFlag()) i2c_found = false;   // D241: o `init` devolve true pelo primeiro ACK mesmo se a configuração não chegou ao chip
+# endif
 
       if (i2c_found) stop();
 

@@ -394,6 +394,89 @@ static void test_clock() {
   CHECK(n.ask(T_CLOCK, on, 1, t, p) && t == T_ERRO && get_u16(p.data()) == E_CARTUCHO_IO);
 }
 
+// ---- fluxo que morre no meio (revisão de 2026-11-27): nada de bloco velho reenviado, ABORT recebe ACK(0), o núcleo de gravação vê a falha
+struct PushBackend : MockBackend {
+  bool streams() override { return true; }
+  bool supports(uint8_t) override { return true; }
+  bool stream_read(uint8_t, uint8_t, StreamSink& out, uint16_t&) override {
+    uint8_t b[256];
+    for (uint32_t off = 0; off < 4096; off += 256) {                    // como os núcleos do OSCR: ignora o retorno de write e segue lendo
+      for (int i = 0; i < 256; i++) b[i] = uint8_t(off + i);
+      out.write(b, 256);
+    }
+    return true;
+  }
+  uint32_t got = 0; bool saw_failed = false;
+  bool stream_write(uint8_t, StreamSource& in, uint16_t&) override {
+    uint8_t b[64];
+    for (;;) { size_t n = in.read(b, sizeof b); got += uint32_t(n); if (n < sizeof b) { saw_failed = in.failed(); break; } }
+    return true;                                                        // como os núcleos do OSCR: não conferem a contagem
+  }
+};
+
+struct Host2 {                                  // host programável: decide o que responder a cada quadro do dispositivo
+  std::deque<uint8_t> to_dev; uint32_t now = 0;
+  uint8_t dbuf[OSCR_MAX_PAYLOAD]; Decoder dec{dbuf, sizeof dbuf};
+  int data = 0, ends = 0, errs = 0, dacks = 0; uint16_t err = 0; uint8_t dack_seq = 0; uint32_t dack_off = 0xFFFFFFFF;
+  bool ack_data = true, abort_after_first = false;
+  void send(uint8_t type, uint8_t seq, const uint8_t* p, uint16_t len) {
+    uint8_t out[1100]; size_t n = encode_frame(out, type, seq, p, len);
+    for (size_t i = 0; i < n; i++) to_dev.push_back(out[i]);
+  }
+  void ack(uint8_t seq, uint32_t off) { uint8_t p[4]; put_u32(p, off); send(T_ACK, seq, p, 4); }
+  void on_byte(uint8_t b) {
+    if (!dec.push(b)) return;
+    if (dec.type == T_BEGIN) ack(dec.seq, 0);
+    else if (dec.type == T_DATA) {
+      data++;
+      if (abort_after_first && data == 1) { send(T_ABORT, 9, nullptr, 0); return; }
+      if (ack_data) ack(dec.seq, get_u32(dec.payload()));
+    }
+    else if (dec.type == T_END) ends++;
+    else if (dec.type == T_ERRO) { errs++; err = get_u16(dec.payload()); }
+    else if (dec.type == T_D_ACK) { dacks++; dack_seq = dec.seq; dack_off = get_u32(dec.payload()); }
+  }
+};
+static int  h2read(void* c, uint32_t to) { Host2* h = (Host2*)c; if (h->to_dev.empty()) { h->now += to ? to : 1; return -1; } uint8_t b = h->to_dev.front(); h->to_dev.pop_front(); return b; }
+static void h2write(void* c, const uint8_t* d, size_t n) { for (size_t i = 0; i < n; i++) ((Host2*)c)->on_byte(d[i]); }
+static uint32_t h2now(void* c) { return ((Host2*)c)->now; }
+
+static void test_stream_failures() {
+  static uint8_t rx[OSCR_MAX_PAYLOAD], tx[OSCR_MAX_PAYLOAD + 10];
+  const uint8_t dump[3] = {SYS_SNES, 0, 1};                              // bloco de 256 bytes
+  {   // PC para de confirmar: 4 envios do 1º bloco e mais nada (antes, o flush final reenviava o bloco velho e somava o CRC de novo)
+    Host2 h; h.ack_data = false; PushBackend be;
+    Session s(Io{&h, h2read, h2write, h2now}, be, rx, sizeof rx, tx, sizeof tx);
+    h.send(T_DUMP_ROM, 1, dump, 3); s.poll();
+    CHECK(h.data == 4 && h.ends == 0 && h.errs == 1 && h.err == E_REENVIOS);
+  }
+  {   // ABORT no meio da leitura: ACK(0) com o seq do ABORT, sem END nem ERRO, sem outro DATA
+    Host2 h; h.abort_after_first = true; PushBackend be;
+    Session s(Io{&h, h2read, h2write, h2now}, be, rx, sizeof rx, tx, sizeof tx);
+    h.send(T_DUMP_ROM, 1, dump, 3); s.poll();
+    CHECK(h.data == 1 && h.ends == 0 && h.errs == 0 && h.dacks == 1 && h.dack_seq == 9 && h.dack_off == 0);
+  }
+  uint8_t ws[7] = {SYS_SNES, 0, 0, 0, 0, 0, 0}; put_u32(ws + 1, 256);
+  uint8_t blk[4 + 64] = {0};
+  {   // ABORT no meio da gravação: o núcleo vê failed(), o PC recebe ACK(0)
+    Host2 h; PushBackend be;
+    Session s(Io{&h, h2read, h2write, h2now}, be, rx, sizeof rx, tx, sizeof tx);
+    h.send(T_WRITE_SAVE, 1, ws, 7);
+    put_u32(blk, 0); h.send(T_H_DATA, 1, blk, sizeof blk);
+    h.send(T_ABORT, 9, nullptr, 0);
+    s.poll();
+    CHECK(be.saw_failed && be.got == 64 && h.errs == 0 && h.dack_seq == 9 && h.dack_off == 0);
+  }
+  {   // PC parado no meio da gravação: o núcleo vê failed(), o PC recebe E_REENVIOS
+    Host2 h; PushBackend be;
+    Session s(Io{&h, h2read, h2write, h2now}, be, rx, sizeof rx, tx, sizeof tx);
+    h.send(T_WRITE_SAVE, 1, ws, 7);
+    put_u32(blk, 0); h.send(T_H_DATA, 1, blk, sizeof blk);
+    s.poll();
+    CHECK(be.saw_failed && be.got == 64 && h.errs == 1 && h.err == E_REENVIOS);
+  }
+}
+
 int main() {
   test_crc();
   test_info_frame_bytes();
@@ -406,6 +489,7 @@ int main() {
   test_board();
   test_selftest();
   test_clock();
+  test_stream_failures();
   printf("%d verificações, %d falhas\n", g_n, g_fail);
   return g_fail ? 1 : 0;
 }

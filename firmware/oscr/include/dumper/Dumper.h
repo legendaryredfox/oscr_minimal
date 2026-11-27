@@ -33,6 +33,9 @@ namespace OSCR::Dumper
   /// Pinos na numeração do Arduino (54 em diante = A0...). Só vale durante o comando SELFTEST.
   void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b);
 
+  /// O fluxo de entrada (WRITE_SAVE, WRITE_ROM) morreu antes do fim: volta ao laço de comandos sem deixar o núcleo seguir gravando. Fora de um comando, só marca o erro.
+  void streamDead();
+
   /// Erro fatal dos núcleos (UI::fatalError*): volta ao laço de comandos sem terminar a função do núcleo.
   [[ noreturn ]] void fatal();
 }

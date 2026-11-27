@@ -57,6 +57,8 @@ struct StreamSource {
   virtual ~StreamSource() {}
   virtual size_t read(uint8_t* data, size_t len) = 0;
   virtual uint32_t size() const = 0;
+  // O fluxo morreu (ABORT ou PC parado) antes do fim: o núcleo tem que parar de gravar no cartucho (StreamFile chama Dumper::streamDead).
+  virtual bool failed() const { return false; }
 };
 
 // Fornece os dados. No firmware real, cada sistema (SNES, NES, MD, GBA) implementa isto;
@@ -139,6 +141,7 @@ class Session {
   uint8_t* tx_;
   uint16_t tx_cap_;
   uint32_t last_byte_ms_ = 0;
+  uint8_t abort_seq_ = 0;                   // seq do último ABORT recebido no meio de um fluxo (a resposta é ACK(0) com ele)
 
   bool next_frame(uint32_t timeout_ms);     // espera um quadro válido (true) ou o tempo esgotar
   void send(uint8_t type, uint8_t seq, const uint8_t* payload, uint16_t len);
@@ -161,6 +164,7 @@ class Session {
   friend struct StreamIn;
   // 1 = ACK(off), 0 = NAK/timeout, -1 = ABORT
   int wait_ack(uint8_t seq, uint32_t off, uint32_t timeout_ms);
+  void reply_abort() { send_offset(T_D_ACK, abort_seq_, 0); }   // protocolo.md: ABORT a qualquer momento recebe ACK(0)
   bool in_tx_ok(uint16_t payload) const { return size_t(payload) + 10 <= tx_cap_; }
 };
 

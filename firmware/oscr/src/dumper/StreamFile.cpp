@@ -13,7 +13,7 @@ namespace OSCR::Storage
   bool StreamFile::open(char const *, oflag_t oflag)
   {
     opened = true;
-    writing = (oflag & (O_WRITE | O_CREAT | O_TRUNC)) != 0;
+    writing = (oflag & (O_WRITE | O_RDWR | O_CREAT | O_TRUNC)) != 0;   // O_RDWR conta como escrita, como diz StreamFile.h
     writeError = false;
     pos = 0;
     hasPeek = false;
@@ -61,7 +61,11 @@ namespace OSCR::Storage
       hasPeek = false;
     }
     oscr::StreamSource * in = OSCR::Dumper::source();
-    if (in != nullptr && got < count) got += in->read(dst + got, count - got);
+    if (in != nullptr && got < count)
+    {
+      got += in->read(dst + got, count - got);
+      if (got < count && in->failed()) OSCR::Dumper::streamDead();   // as rotinas de gravação do OSCR não conferem a contagem e gravariam o buffer velho
+    }
     pos += got;
     return static_cast<int>(got);
   }
@@ -78,10 +82,14 @@ namespace OSCR::Storage
     {
       uint8_t b;
       oscr::StreamSource * in = OSCR::Dumper::source();
-      if (writing || in == nullptr || in->read(&b, 1) != 1) return -1;
+      if (writing || in == nullptr) return -1;
+      if (in->read(&b, 1) != 1)
+      {
+        if (in->failed()) OSCR::Dumper::streamDead();
+        return -1;
+      }
       peeked = b;
-      hasPeek = true;
-      pos++;                                   // o byte já saiu do fluxo
+      hasPeek = true;                          // `pos` só anda quando o `read` entregar o byte
     }
     return peeked;
   }
