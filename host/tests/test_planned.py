@@ -38,7 +38,7 @@ def test_adaptadores_de_3v3_marcados(capsys):
     assert r.returncode == 0, r.stdout
     assert main(["--json", "systems"]) == 0
     o = json.loads(capsys.readouterr().out)
-    assert {p["name"] for p in o["planned"] if p["voltage"] == "3v3"} == set(NEEDS_3V3) == {"leapster", "jammerpro", "pokemini", "vsmile"}
+    assert {p["name"] for p in o["planned"] if p["voltage"] == "3v3"} == set(NEEDS_3V3) == {"leapster", "jammerpro", "vsmile"}
     assert main(["--lang", "pt-BR", "systems"]) == 0
     out = capsys.readouterr().out
     assert "leapster" in out and "[3,3 V]" in out and "não pode ir num slot de 5 V" in out

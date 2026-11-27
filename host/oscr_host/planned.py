@@ -10,7 +10,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("c64", "Commodore 64"), ("vic20", "Commodore VIC-20"),
     ("cps3", "Capcom CPS3"), ("intellivision", "Intellivision"), ("leapster", "Leapster"),
     ("jammer", "Little Jammer"), ("jammerpro", "Little Jammer Pro"),
-    ("vb", "Virtual Boy"), ("pokemini", "Pokémon Mini"),
+    ("vb", "Virtual Boy"),
     ("pce", "PC Engine / TurboGrafx-16"), ("pcw", "Pocket Challenge W"),
     ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
     ("supercan", "Super A'can"),
@@ -20,4 +20,4 @@ PLANNED: tuple[tuple[str, str], ...] = (
 )
 
 # Adaptadores de 3,3 V da comunidade (P-16, H-4): não podem ir num slot de 5 V. Conferido contra a tabela de docs/historico/pesquisa-comunidade.md por tools/check_adaptadores.py.
-NEEDS_3V3: frozenset[str] = frozenset({"leapster", "jammerpro", "pokemini", "vsmile"})
+NEEDS_3V3: frozenset[str] = frozenset({"leapster", "jammerpro", "vsmile"})

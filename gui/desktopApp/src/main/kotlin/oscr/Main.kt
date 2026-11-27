@@ -1044,6 +1044,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.RCA2) Callout(t(S.RCA2_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.PYUUTA) Callout(t(S.PYUUTA_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
+            if (stub == null && system == CartSystem.POKEMINI) Callout(t(S.POKEMINI_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.PV1000) Callout(t(S.PV1000_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.ASTROCADE) Callout(t(S.ASTROCADE_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.ODYSSEY2) {
