@@ -106,6 +106,7 @@ Use um cartucho simples: SNES LoROM. Escolha o sistema, faça `detect` e depois 
 |---|---|
 | Cartucho não detectado | Cartucho todo encaixado; um cartucho por vez; limpeza dos contatos; slot reto; pinos 1 e 2 do slot; VCC do slot (5 V). |
 | CRC diverge | Contato oxidado (limpe com álcool isopropílico); sistema/mapper errado; refaça o dump 3 vezes; compare com o banco. |
+| Autoteste acusa curto entre dois pinos, mas o multímetro não apita | Fuga por resíduo de fluxo: o autoteste usa o pull-up interno do Mega (20 a 50 kΩ) e acusa ligações de até algumas dezenas de kΩ, que o bipe do multímetro não pega. Lave o shield com álcool isopropílico, passe limpa-contatos nos slots e seque bem antes de ligar (D242). Se o curto só aparece com o shield no Mega, veja também se alguma perna encosta no Mega (D239). |
 | SNES SA-1 não lê | PIC no soquete, com o `.hex` certo; módulo Si5351 instalado; pinos D40/D41/CLK2. |
 | Porta serial não aparece | Cabo USB-C só de carga (troque); no Linux, adicione-se ao grupo `dialout` (`sudo usermod -aG dialout $USER` e reinicie a sessão); clone com CH340 aparece como `/dev/ttyUSB0`; no Windows/macOS instale o driver CH340. |
 | LED não acende | Polaridade (ânodo no 5V); resistor R1; o LED é ativo em nível baixo (D38). |
