@@ -46,7 +46,7 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 
 ## O que falta sem placa
 
-- **F-20, sistemas restantes (19):** Casio Loopy, Commodore 64, VIC-20, Capcom CPS3, Intellivision, Leapster (3,3 V), Little Jammer, Little Jammer Pro (3,3 V), Virtual Boy, PC Engine / TurboGrafx-16, Pocket Challenge W, Satellaview e SF Memory como sistemas próprios (os cartuchos já são lidos pelo SNES, F-11), Super A'can, TI-99/4A, TRS-80, WonderSwan, Game Boy Smart Card e Game Boy Memory (já gravados pelo GB, F-17). Lista idêntica em `host/oscr_host/planned.py` e `PlannedSystems.kt` (`test_planned.py`). A máscara `systems()` do firmware é `uint32_t`: o id 31 (MSX, D230) foi o último que cabe; o próximo sistema (id 32) exige alargá-la (firmware, host, Kotlin, `INFO`).
+- **F-20, sistemas restantes (19):** Casio Loopy, Commodore 64, VIC-20, Capcom CPS3, Intellivision, Leapster (3,3 V), Little Jammer, Little Jammer Pro (3,3 V), Virtual Boy, PC Engine / TurboGrafx-16, Pocket Challenge W, Satellaview e SF Memory como sistemas próprios (os cartuchos já são lidos pelo SNES, F-11), Super A'can, TI-99/4A, TRS-80, WonderSwan, Game Boy Smart Card e Game Boy Memory (já gravados pelo GB, F-17). Lista idêntica em `host/oscr_host/planned.py` e `PlannedSystems.kt` (`test_planned.py`). A máscara `systems()` do firmware tem 64 bits desde a D232: o próximo id é 32, e cabem até o 63.
 - **MSX (D230), resto:** busca do jogo por nome na GUI e na CLI pela base `database/oscr/json/msx.json` (traz mapper, índice do tamanho e da SRAM, sem CRC32), como o NES faz com a base dele; /IORQ, /M1 e /RFSH do adaptador (pull-up?).
 - **F-16, resto:** dois chips no mesmo cartucho e detectar o limite de 2 MiB pelo padrão de leitura (resto do MD-13).
 - **D-4** (acima).

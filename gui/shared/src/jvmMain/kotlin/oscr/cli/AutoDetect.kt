@@ -27,4 +27,4 @@ internal fun resolveAuto(io: CliIo, c: Conn, a: Args): Args {
     return a.withOpt("system", s.name.lowercase())
 }
 
-fun DeviceInfo.supportedIds(): Set<Int> = (0..31).filter { systemsMask and (1 shl it) != 0 }.toSet()
+fun DeviceInfo.supportedIds(): Set<Int> = (0..63).filter { systemsMask and (1L shl it) != 0L }.toSet()

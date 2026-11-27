@@ -9,7 +9,7 @@ import kotlin.test.*
 class BoardsTest {
     private val all = (1..11).toSet()
     private fun info(systems: Set<Int> = all, firmware: String = "0.2.0", board: Boolean = true, volt: Boolean = false): DeviceInfo =
-        DeviceInfo(1, firmware, (if (board) 128 else 0) or (if (volt) 32 else 0), systems.sumOf { 1 shl it }, 1024)
+        DeviceInfo(1, firmware, (if (board) 128 else 0) or (if (volt) 32 else 0), systems.sumOf { 1L shl it }, 1024)
     private fun img(systems: Set<Int> = all, fw: Triple<Int, Int, Int> = Triple(0, 2, 0), id: String = "completa") = FirmwareImage(id, File("/x.hex"), fw, systems, "0".repeat(64))
     private fun plan(p: BoardProfile, i: DeviceInfo?, st: BoardState?, imgs: List<FirmwareImage>) = BoardPlanner.plan(p, i, st, imgs)
 

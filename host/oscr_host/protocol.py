@@ -233,10 +233,12 @@ def parse_info_resp(p: bytes) -> dict:
     max_payload = struct.unpack_from("<H", p, 7)[0] if len(p) >= 9 else MAX_PAYLOAD
     if len(p) >= 11:
         systems |= struct.unpack_from("<H", p, 9)[0] << 16   # ids 16 a 31 (D208); firmware antigo não manda
+    if len(p) >= 15:
+        systems |= struct.unpack_from("<I", p, 11)[0] << 32  # ids 32 a 63 (D232); firmware antigo não manda
     return {"proto": ver, "firmware": f"{ma}.{mi}.{pa}", "flags": flags, "max_payload": max_payload,
             "mock": bool(flags & 1), "si5351": bool(flags & 2), "pic": bool(flags & 4), "write_rom": bool(flags & 8), "flash_prog": bool(flags & 16), "voltage_select": bool(flags & 32), "selftest": bool(flags & 64), "board_profile": bool(flags & 128),
-            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 32 and systems & (1 << i)],
-            "system_ids": [i for i in range(32) if systems & (1 << i)]}
+            "systems": [n for n, (i, _) in SYSTEMS.items() if i < 64 and systems & (1 << i)],
+            "system_ids": [i for i in range(64) if systems & (1 << i)]}
 
 
 def parse_board_resp(p: bytes) -> dict:

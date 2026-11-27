@@ -86,3 +86,20 @@ def test_info_resp_mascara_32_bits():
     assert P.parse_info_resp(base)["system_ids"] == [15]
     novo = P.parse_info_resp(base + struct.pack("<H", 0x8001))
     assert novo["system_ids"] == [15, 16, 31]
+
+
+def test_info_resp_mascara_64_bits():
+    """D232: os ids 32 a 63 vão num u32 no fim (INFO de 15 bytes); o de 11 bytes (D208) segue valendo."""
+    import struct
+    from oscr_host import protocol as P
+    from oscr_host import sim
+    base = bytes([1, 0, 2, 0, 0]) + struct.pack("<H", 0) + struct.pack("<H", 520) + struct.pack("<H", 0x8000)
+    assert P.parse_info_resp(base)["system_ids"] == [31]
+    assert P.parse_info_resp(base + struct.pack("<I", 0x80000001))["system_ids"] == [31, 32, 63]
+    mask = (1 << 2) | (1 << 31) | (1 << 32) | (1 << 50)
+    from oscr_host.client import Client
+    t, _dev, stop, th = sim.start(sim.MockDevice(systems=mask))   # o simulador monta o INFO de 15 bytes
+    try:
+        assert Client(t, timeout=1.0).info()["system_ids"] == [2, 31, 32, 50]
+    finally:
+        stop.set(); th.join(2)

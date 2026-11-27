@@ -25,7 +25,7 @@ ENV = "SerialASCII"
 
 
 def firmware_version() -> str:
-    m = re.search(r"uint8_t p\[9\] = \{PROTO_VERSION, (\d+), (\d+), (\d+),", (FW / "src/dumper/oscr_session.cpp").read_text())
+    m = re.search(r"uint8_t p\[\d+\] = \{PROTO_VERSION, (\d+), (\d+), (\d+),", (FW / "src/dumper/oscr_session.cpp").read_text())
     if not m:
         sys.exit("não achei a versão do firmware em oscr_session.cpp (do_info)")
     return ".".join(m.groups())
@@ -35,7 +35,7 @@ def system_ids() -> list[int]:
     proto = (FW / "src/dumper/oscr_proto.h").read_text()
     enum = re.search(r"SYS_SNES = 1,.*?SYS_MOCK = 255", proto, re.S).group(0)
     ids = {n: int(v) for n, v in re.findall(r"SYS_(\w+) = (\d+)", enum)}
-    line = re.search(r"uint16_t systems\(\) override \{ return (.*?); \}", (FW / "src/dumper/Dumper.cpp").read_text()).group(1)
+    line = re.search(r"uint\d+_t systems\(\) override \{ return (.*?); \}", (FW / "src/dumper/Dumper.cpp").read_text()).group(1)
     names = re.findall(r"oscr::SYS_(\w+)", line)
     return sorted(ids[n] for n in names)
 

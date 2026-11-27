@@ -165,7 +165,7 @@ class MockDevice:
             self._send(t, P.T_SELFTEST_RESP, f.seq, bytes([1 if len(self.selftest_report) > 24 else 0, len(rep)]) + b"".join(bytes(x) for x in rep))
         elif f.type == P.T_INFO:
             # proto, firmware (0.2.0 por padrão), flags (bit0 = MOCK), máscara de sistemas (0: só o modo MOCK)
-            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, *self.firmware, 0b1011001 | (0b100000 if self.volt_select else 0) | (0b10000000 if self.board_profile else 0)]) + (self.systems & 0xFFFF).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little") + (self.systems >> 16).to_bytes(2, "little"))
+            self._send(t, P.T_INFO_RESP, f.seq, bytes([P.PROTO_VERSION, *self.firmware, 0b1011001 | (0b100000 if self.volt_select else 0) | (0b10000000 if self.board_profile else 0)]) + (self.systems & 0xFFFF).to_bytes(2, "little") + P.MAX_PAYLOAD.to_bytes(2, "little") + ((self.systems >> 16) & 0xFFFF).to_bytes(2, "little") + (self.systems >> 32).to_bytes(4, "little"))
         elif f.type == P.T_DETECT:
             sysid = f.payload[0] if f.payload else 0
             if sysid in (0, 255):

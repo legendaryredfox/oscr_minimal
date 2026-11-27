@@ -113,7 +113,7 @@ class FrameDecoder {
     }
 }
 
-data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val systemsMask: Int, val maxPayload: Int) {
+data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val systemsMask: Long, val maxPayload: Int) {
     val mock get() = flags and 1 != 0
     val si5351 get() = flags and 2 != 0
     val writeRom get() = flags and 8 != 0
@@ -125,7 +125,7 @@ data class DeviceInfo(val proto: Int, val firmware: String, val flags: Int, val 
     /** O firmware aceita o perfil da placa (BOARD, D162). */
     val boardProfile get() = flags and 128 != 0
     /** Ids dos sistemas que o firmware lê (a máscara `sistemas` do INFO; bit = id do sistema). */
-    val systemIds: Set<Int> get() = (0 until 32).filter { systemsMask and (1 shl it) != 0 }.toSet()
+    val systemIds: Set<Int> get() = (0 until 64).filter { systemsMask and (1L shl it) != 0L }.toSet()
 }
 
 /** Ações do BOARD e o bit do perfil (D162). */
