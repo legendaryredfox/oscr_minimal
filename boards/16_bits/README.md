@@ -6,11 +6,9 @@
 
 Versão mínima da placa de 5 slots (`../16_and_8_bits/`): só os slots **SNES** (62p, 2,5 mm) e **Mega Drive** (64p, 2,54 mm). Shield para Arduino Mega 2560 R3, 100% THT, só USB, **5 V** em tudo (sem regulador de 3,3 V). Um cartucho por vez.
 
-**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca; os 3 `starved_thermal` foram resolvidos na revisão de 2026-11-06, D97), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 e v1.3 com seletor de tensão). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
+**Estado:** DRC 0 erros e 0 ligações abertas (só 5 avisos de biblioteca), netlist confere com `docs/pinmap.md`, gerbers das três versões em `fab/` (v1.0, v1.2 e v1.3 com seletor de tensão). A v1.0 em `fab/dumper-v1.0-jlcpcb.zip` é a antiga `rev2` (D97, D110); a v1.0 original, com trilhas de alimentação em 0,3 mm, foi encomendada pelo usuário em 2026-11-06 (informado no chat) e seus gerbers saíram do repositório. Nenhuma versão foi montada nem testada com cartucho.
 
-> **D130 e D140:** a v1.2 saiu sem os 12 TVS (D3 a D14) e a v1.3 também ficou sem eles, sem o R15 e sem as redes RN de 470 Ω (2026-11-09).
-
-## Versões (D128, 2026-11-07)
+## Versões
 
 Nenhuma versão tem o botão de reset nem o circuito de desligar o 5V dos slots por software (o bloco de troca de cartucho, D126 a D128, foi retirado em D139: para trocar o cartucho, desligue o USB). A **v1.3** leva o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138); sem TVS nem resistores de 470 Ω em série (D140), então **confira a tensão que o cartucho suporta antes de inserir**. Cada pasta de versão (`hardware-v1.0/` etc.) tem os PNGs do render 3D (cima e baixo) e o `README.md` da versão.
 
@@ -20,19 +18,7 @@ Nenhuma versão tem o botão de reset nem o circuito de desligar o 5V dos slots 
 | v1.2 | `hardware-v1.2/` | **não** (sem TVS) | **não** | `hardware-v1.2/render-cima.png`, `hardware-v1.2/render-baixo.png` |
 | v1.3 | `hardware-v1.3/` | sim | **não** | `hardware-v1.3/render-cima.png`, `hardware-v1.3/render-baixo.png` (`render.png`) |
 
-Detalhes, o que saiu e o que entrou: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado). **As seções "v. 1.2 final" e "Revisão" abaixo são o histórico de 2026-11-04 a 06; onde falam de chave de 5V, Q1, SW1 ou reset, não valem para nenhuma versão (D139).**
-
-## v. 1.2 final: proteção e pull-up (2026-11-06, D108; chave de 5V e reset retirados)
-
-O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, **menos o RP2040** (esse fica sozinho na v. 1.3, se der certo). Resistores série e TVS (DNP) nas 12 linhas de controle e pull-up de `/VRES` (DNP). O botão de reset, a chave de 5V dos slots comandada pelo D19 e os furos M3 do Mega saíram depois. A placa foi roteada de novo. Detalhes, lista de peças e testes de bancada: `docs/v12-final.md`. **Nada foi montado nem medido.**
-
-## Revisão final v. 1.2 (2026-11-06, D107)
-
-Estudo final em `docs/estudo-final-v1.2.md`. Aplicado: **C4 junto do PIC** (de 21,7 mm para 2,5 mm do VDD, e 3,6 mm do GND; duas vias no lugar do pad antigo), **aviso do USB no silk** ("NÃO COLOQUE NEM RETIRE O CARTUCHO COM USB LIGADO"), data do silk 2026-11-06 e rótulos C5, C6 e U2 visíveis. DRC 0 erros e 0 ligações abertas, netlist confere. Projeto fechado; o que sobra vai para a v. 1.3.
-
-## Revisão v. 1.2 (2026-11-04)
-
-Além do silk `v. 1.2`: `/CART` (B32 do slot Mega Drive) ligado ao D50 do Mega para detectar cartucho; capacitores extras C5 (junto ao A31) e C6 (junto ao A2); seis pontos de teste (`/UWR`, `/CE`, `5V`, `GND`, `/OE`, `/WE`) numa fileira acima do cabeçalho do Mega. Ficaram de fora, por falta de espaço sem refazer o roteamento: resistores série e TVS nas linhas do cartucho. Detalhe: `docs/planos/melhorias-megadrive-hardware.md` e `docs/decisoes.md` D87. O firmware ainda **não lê** `/CART`.
+Detalhes, o que saiu e o que entrou em cada versão: [`docs/versoes.md`](docs/versoes.md). O RP2040 continua fora (só depois de validado, `docs/planos/placa-v1.3-rp2040.md`). O histórico das revisões da v1.2 (D87, D107, D108) está em `docs/decisoes.md`; o que ficou de fora por falta de espaço (resistores série e TVS nas linhas de endereço e dados) está em `docs/planos/melhorias-megadrive.md`. O firmware ainda **não lê** `/CART` (D50).
 
 ## Diferenças em relação à `16_and_8_bits`
 

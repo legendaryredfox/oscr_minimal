@@ -42,7 +42,7 @@ Regras gerais: PRG múltiplo de 16 KB, CHR múltiplo de 8 KB. Mappers 79, 87, 78
 - Cada leitura usa o `NesBus` com a sequência de porta copiada do OSCR (`oscr_avr_buses.h`): o teste no PC confere as sequências, mas **não** os tempos (M2, /ROMSEL, ~33 ns na escrita segura de D57).
 - Só um cartucho por vez, e os que mantêm estado entre operações (MMC1, MMC5, VRC) são reinicializados em `nes_setup_mapper`; o OSCR assume alimentação nova a cada leitura.
 
-> **Atualização (D64):** a espera em ms (mapper 34) e os mappers da seção 4.5 foram feitos, menos o 97. Veja `docs/historico/achados-oscr-original.md` para o que o firmware novo do OSCR muda (quase nada).
+> **Atualização (D64):** a espera em ms (mapper 34) e os mappers da seção 4.5 foram feitos, menos o 97. O firmware novo do OSCR tem as mesmas sequências de barramento do antigo: não traz mapper novo.
 
 ## 4. O que o OSCR faz e o firmware ainda não, por motivo
 

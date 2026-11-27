@@ -63,8 +63,6 @@ Este projeto não é uma reimplementação: o firmware é o do OSCR e as placas 
 | `boards/<placa>/hardware-<versão>/` (uma pasta por versão), `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |
 | `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
 | `docs/referencia/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
-| `docs/historico/revisao-codigo.md` | Revisão de código da base toda (achados, gravidade, o que foi corrigido) |
-| `docs/historico/revisao-ux.md` | Revisão de UX/UI da GUI, da CLI e do hardware, com capturas de tela |
 | `docs/referencia/protocolo.md`, `docs/referencia/cli.md`, `docs/referencia/fork-oscr.md`, `docs/referencia/funcoes-oscr.md` | Protocolo serial, guia da CLI, plano do fork do firmware e inventário das funções do OSCR |
 | `docs/planos/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/` | CIC do SNES com RP2040-Zero no lugar do PIC (ainda não validado; as placas atuais usam o PIC12F629) |
 | `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |

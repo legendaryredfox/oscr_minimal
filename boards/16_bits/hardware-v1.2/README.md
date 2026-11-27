@@ -26,7 +26,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 
 ## Resistores série R3 a R14: existiam e foram retirados (D145)
 
-A v. 1.2 de 2026-11-06 (D108) tinha 12 resistores em série, um em cada linha de controle entre o pino do Mega e o slot do Mega Drive: `D2` a `D9` e `D14` a `D17` (/WRAM, Refresh, /ASEL, EDCLK, /CE, /IRQ ou /UWR, /WR ou /LWR, /RD ou /CAS0, /PAWR, /TIME, /VRES e as demais; lista em `docs/v12-final.md`).
+A v. 1.2 de 2026-11-06 (D108) tinha 12 resistores em série, um em cada linha de controle entre o pino do Mega e o slot do Mega Drive: `D2` a `D9` e `D14` a `D17` (/WRAM, Refresh, /ASEL, EDCLK, /CE, /IRQ ou /UWR, /WR ou /LWR, /RD ou /CAS0, /PAWR, /TIME, /VRES e as demais; lista em `../docs/versoes.md`).
 
 - **Para que serviam:** limitar a corrente nessas linhas. O Mega é 5 V e um cartucho ou adaptador pode ligar a linha ao GND, ao 5 V ou a algo errado (curto, mau contato, tensão alta, ruído); o resistor protegeria o pino do ATmega2560 e o cartucho. Só nas linhas de **controle**, que o Mega aciona como saída. Endereço e dados mudam de direção a cada leitura e precisam ser rápidos, então já iam direto. Montados como 0 Ω (um fio), a leitura era igual à do OSCR; 47 a 100 Ω protegeriam mais, mas deixariam a borda do sinal mais lenta.
 - **Por que saíram:** o OSCR original não tem nenhum resistor nessas linhas (o HW5 liga o Mega direto ao slot), com 0 Ω não protegiam nada, e o valor maior nunca foi testado em hardware. Cada linha agora vai direto do pino do Mega ao slot, no mesmo roteamento (as duas redes de cada resistor viraram uma só). A proteção que sobra é o F1.

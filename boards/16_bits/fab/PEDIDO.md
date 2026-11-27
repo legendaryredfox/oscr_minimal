@@ -25,7 +25,7 @@ Se a pré-visualização mostrar outra coisa, **não pague**: avise.
 
 ## Revisão final da v. 1.2 (2026-11-06, D108): o que antes era da v1.3
 
-O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos o RP2040. Detalhes e testes de bancada: `docs/v12-final.md`. **A placa foi roteada de novo** (Freerouting, 0 não roteadas; DRC 0 erros, `check_netlist` OK): as trilhas não são as da versão anterior desta pasta.
+O usuário levou para a v. 1.2 tudo o que estava planejado para a v. 1.3, menos o RP2040. Detalhes: `docs/versoes.md`. **A placa foi roteada de novo** (Freerouting, 0 não roteadas; DRC 0 erros, `check_netlist` OK): as trilhas não são as da versão anterior desta pasta.
 
 - 12 resistores série (R3 a R14, 0 Ω) e 12 TVS (D3 a D14, **DNP**) nas linhas de controle; pull-up de `/VRES` (R15, DNP).
 - Compras a mais: 12 resistores 0 Ω (ou 47 a 100 Ω). Os TVS e o R15 só se for usar.

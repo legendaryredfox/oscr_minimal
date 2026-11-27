@@ -4,7 +4,7 @@
 
 Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). Tem proteção das linhas de controle (resistores em série R3 a R14; sem TVS desde a D140). Os fatos do SNES (PIC, Si5351, SA-1) são os de `boards/snes/docs/componentes-opcionais.md`.
 
-> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware-v1.3/dumper.kicad_sch`, `docs/bom.md`, `docs/v12-final.md`, firmware.
+> **Nada aqui foi testado em hardware.** Fontes: netlist de `hardware-v1.3/dumper.kicad_sch`, `docs/bom.md`, `docs/versoes.md`, firmware.
 
 ## Peças do SNES (U1, U2, R2)
 
@@ -18,7 +18,7 @@ Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). Tem proteção das linhas de c
 
 | Peça | Retirar? | O que deixa de funcionar |
 |---|---|---|
-| **R3 a R14** (0 Ω de fábrica, 12 unidades) | **Não: são ligações** | Série das linhas D2 a D9 e D14 a D17. Com 0 Ω são fios; **sem eles as linhas ficam abertas** e nenhum cartucho (SNES ou Mega Drive) lê ou grava. Trocar por 47 a 100 Ω é opcional (proteção, `docs/v12-final.md`) |
+| **R3 a R14** (0 Ω de fábrica, 12 unidades) | **Não: são ligações** | Série das linhas D2 a D9 e D14 a D17. Com 0 Ω são fios; **sem eles as linhas ficam abertas** e nenhum cartucho (SNES ou Mega Drive) lê ou grava. Trocar por 47 a 100 Ω é opcional (proteção, `docs/versoes.md`) |
 
 ## Demais
 

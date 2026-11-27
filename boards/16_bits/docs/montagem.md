@@ -39,7 +39,7 @@ Ver `boards/16_bits/docs/bom.md` (quantidades e referências). Resumo:
 
 ## 3. Ordem de solda (do mais baixo para o mais alto)
 
-1. **Resistores** R1 e R2 (deitados, como no silkscreen) e os de 2,54 mm (em pé, como no desenho): **R3 a R14 como 0 Ω** (um fio ou resistor de 0 Ω; troque por 47 a 100 Ω só depois dos testes da v12-final). **Não monte R15 nem D3 a D14** (DNP).
+1. **Resistores** R1 e R2 (deitados, como no silkscreen) e os de 2,54 mm (em pé, como no desenho): **R3 a R14 como 0 Ω** (um fio ou resistor de 0 Ω; troque por 47 a 100 Ω só depois do teste de bancada de `docs/versoes.md`).
 2. **Capacitores cerâmicos de 100 nF**: C2, C3, C4, C5, C6. O **C4** fica logo acima do soquete do PIC (D107): o corpo toca de leve a borda do soquete, então solde-o com as pernas dobradas rente e o corpo um pouco inclinado para cima, sem forçar o soquete.
 3. **Soquete DIP-8 (U2)**, tradicional, com o chanfro alinhado ao silkscreen e **sem o PIC**. O PIC nunca é soldado: fica no soquete para poder ser trocado ou regravado.
 4. **LED (D1)**, respeitando a polaridade: o lado reto do LED é o cátodo e o quadrado do silkscreen marca o pino do cátodo (K, ligado ao resistor R1).

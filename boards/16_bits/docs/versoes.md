@@ -35,3 +35,7 @@ HWDIR=hardware-v1.2 GDIR=gerbers-v1.2 tools/export_fab.sh 16_bits v1.2
 tools/export_fab.sh 16_bits v1.3
 tools/render_board.sh 16_bits v1.0 v1.2 v1.3
 ```
+
+## Teste de bancada dos resistores série (v1.3; nada foi feito)
+
+Monte R3 a R14 com 0 Ω (fio) no primeiro teste: a placa se comporta como a v1.2. Para proteger as 12 linhas de controle de verdade, troque por 47 a 100 Ω, repita o dump de um cartucho de SNES e de um de Mega Drive e compare o CRC32; aumente o valor só se os dumps continuarem iguais. Resistores e TVS nas linhas de endereço e de dados (cerca de 44 redes) não cabem numa placa de duas camadas sem aumentar muito o tamanho.
