@@ -31,7 +31,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Satellaview BS-X: ler e gravar Memory Pack, ler e gravar SRAM | firmware + PC | ✅ ler o Memory Pack (`bsx-pack`, 1 MB) e ler e gravar a SRAM (`bsx-sram`, 32 KB) (D187, nunca rodou); ✅ gravar o Memory Pack (`rom-write -s snes --chip bsx-pack`, D190, destrutivo, com backup; nunca rodou) |
 | Sufami Turbo: ler slot A e B | firmware | ✅ `dump --accessory sufami-a/b` (D178; nunca rodou) |
 | Game Processor RAM (GPC): ler e gravar 512 KB | firmware | ✅ `save-read/save-write --accessory gpc` (D178; nunca rodou) |
-| Calibrar o relógio (Si5351) | firmware + PC | ⬜ |
+| Calibrar o relógio (Si5351) | firmware + PC | ✅ `clock-cal` grava o fator na EEPROM (D167); calibrar de verdade pede frequencímetro |
 | Cx4, SA-1, S-DD1 etc. com chip especial | firmware | ✅ (ler) |
 
 ## NES / Famicom
@@ -43,10 +43,10 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 | Escolher mapper, tamanhos e RAM (menu + banco CRDB) | **PC** (campos e base NES 2.0) | ✅ |
 | Identificar por CRC32 | **PC** (base No-Intro / NES 2.0) | ✅ |
 | Navegar a base de dados | **PC** | ✅ (busca) |
-| Mappers de leitura além dos 37 já ligados (o upstream trata mais de 100; o 30 entrou em D78) | firmware | ⬜ (ver `docs/referencia/limites.md`) |
+| Mappers de leitura além dos já ligados (lista em `docs/referencia/uso.md` seção 3; o upstream trata mais de 100) | firmware | ⬜ clones de MMC3 e multicartuchos, só com o cartucho (`docs/referencia/limites.md`) |
 | Flash repro: NES Maker (SST 39SF010A/020A/040, mapper 30) | firmware (laço) + PC (arquivo) | ✅ `WRITE_ROM` (D77; nunca rodou); conferência por leitura de volta (D78) |
 | Flash repro: A29040B (mapper 0, PRG e CHR) | firmware + PC | ✅ `WRITE_ROM` (D77; nunca rodou); conferência por leitura de volta (D78) |
-| EEPROM 24C01/24C02 dos mappers 159 e 16 (ler e gravar) | firmware | ⬜ |
+| EEPROM 24C01/24C02 dos mappers 159 e 16 (ler e gravar) | firmware | ✅ (D184, sem cartucho) |
 
 ## Mega Drive / Genesis
 
@@ -78,7 +78,7 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 |---|---|---|
 | Relógio (RTC) do MBC3: ler e acertar (`gb-rtc`; código próprio, o OSCR não lê o RTC) | firmware + PC | ✅ D192, `-i` D193 (nunca rodou em cartucho) |
 | Ler ROM, ler e gravar SRAM (sem mapper, MBC1, 1M, 2, 3, 5, 6, 7, MMM01, TAMA5, Camera) | firmware | ✅ (MBC6 só leitura) |
-| Flash do MBC6 (`save-write` grava SRAM de 32 KB + Flash de 1 MB pela `writeSRAMFLASH_MBC6` do OSCR), ROM do TAMA5 (`readROM` do OSCR já troca o banco do TAMA5) | firmware | ✅ já ligado no `GB::writeSave`/`readROM` (D186 conferiu; **destrutivo e nunca rodou**); ⬜ RTC do MBC3: o OSCR não tem, seria código novo |
+| Flash do MBC6 (`save-write` grava SRAM de 32 KB + Flash de 1 MB pela `writeSRAMFLASH_MBC6` do OSCR), ROM do TAMA5 (`readROM` do OSCR já troca o banco do TAMA5) | firmware | ✅ já ligado no `GB::writeSave`/`readROM` (D186 conferiu; **destrutivo e nunca rodou**); ✅ RTC do MBC3 (o OSCR não tem): `gb-rtc` lê e grava (D192, D193) |
 | Flash repro: 29F/39SF (DIY MBC3, DIY MBC5, HDR MBC30, HDR GB Cam 1º e 2º jogo, Orange FM, 39SF MBC5) e CFI | firmware + PC | ✅ `WRITE_ROM` (D84; nunca rodou); conferência por leitura de volta |
 | Flash repro: CFI + save | PC (`rom-write` e depois `save-write`) | ✅ em dois comandos (D84) |
 | GB Smart (ler e gravar a flash de 4 MB) | firmware + PC | ✅ ler (`DUMP_ROM` do GB com `mapper` 6, D186) e gravar (`rom-write --chip gb-smart`, D189; destrutivo, nunca rodou); ⬜ Game Menu e trocar jogo |
@@ -131,4 +131,6 @@ Cada chip novo é uma rotina em `firmware/oscr/src/dumper/` copiada da sequênci
 
 ## Outros sistemas do OSCR (stubs na GUI)
 
-**ColecoVision: ler ROM ✅ (D201), Neo Geo Pocket ✅ (D202), Vectrex ✅ (D205) Atari 2600 ✅ (D206), Atari 5200 ✅ e Atari 7800 ✅ (D209), Atari 8 bits ✅ e Atari Lynx ✅ (D210), Atari Jaguar ✅ ROM, EEPROM e Memory Track (D211, D212), Arcadia 2001 ✅ (D215), RCA Studio II ✅ (D216), Tomy Pyuuta ✅ (D217), Watara Supervision ✅ (D218), Casio PV-1000 ✅ (D219), Bally Astrocade ✅ (D223), Fairchild Channel F ✅ ROM e Read 16K (D224), Magnavox Odyssey 2 ✅ (D226), Pokémon Mini ✅ (D227), V.Smile ✅ (D228); código, nunca rodou em hardware; adaptadores não projetados.** Atari 2600/5200/7800/8-bit/Jaguar/Lynx, Bally Astrocade, Casio Loopy e PV-1000, Channel F, Commodore 64 e VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Virtual Boy, Pokémon Mini, Neo Geo Pocket, Odyssey 2, PC Engine, Pocket Challenge W, Super A'can, Watara Supervision, TI-99/4A, Tomy Pyuuta, TRS-80, Vectrex, V.Smile, WonderSwan, MSX. Todos ⬜, cada um com a sua pinagem e (alguns) adaptador; o hardware da placa `completa/` é o ponto de partida.
+**ColecoVision: ler ROM ✅ (D201), Neo Geo Pocket ✅ (D202), Vectrex ✅ (D205) Atari 2600 ✅ (D206), Atari 5200 ✅ e Atari 7800 ✅ (D209), Atari 8 bits ✅ e Atari Lynx ✅ (D210), Atari Jaguar ✅ ROM, EEPROM e Memory Track (D211, D212), Arcadia 2001 ✅ (D215), RCA Studio II ✅ (D216), Tomy Pyuuta ✅ (D217), Watara Supervision ✅ (D218), Casio PV-1000 ✅ (D219), Bally Astrocade ✅ (D223), Fairchild Channel F ✅ ROM e Read 16K (D224), Magnavox Odyssey 2 ✅ (D226), Pokémon Mini ✅ (D227), V.Smile ✅ (D228); código, nunca rodou em hardware; adaptadores não projetados.** Pinagem de cada adaptador: `docs/planos/adaptadores.md`.
+
+⬜ Faltam 20 (lista em `docs/planos/pendencias.md`): Casio Loopy, Commodore 64, VIC-20, CPS3, Intellivision, Leapster, Little Jammer e Pro, Virtual Boy, PC Engine, Pocket Challenge W, Super A'can, TI-99/4A, TRS-80, WonderSwan, MSX, e Satellaview, SF Memory, GB Smart Card e GB Memory como sistemas próprios (os cartuchos já são lidos pelo SNES e pelo GB).

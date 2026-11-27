@@ -5,7 +5,7 @@
 Shield para **Arduino Mega 2560 (R3)** que lê ROMs e saves de cartuchos pela USB, direto para o PC.
 Sem LCD, sem cartão SD. Somente um cartucho por vez.
 
-> **Estado:** 8 placas com projeto KiCad e gerbers, firmware (fork do OSCR com protocolo serial), CLI Python, CLI e GUI em Kotlin (pt-BR, en, ru, zh). **Nenhuma placa foi montada e nada foi testado com cartucho real**: só os testes automáticos no PC, as verificações de hardware abaixo e, em 2026-11-21, a primeira execução num Mega sem shield (`docs/referencia/teste-de-bancada.md`) rodaram. Ver "O que foi testado e o que falta".
+> **Estado:** 12 placas com projeto KiCad e gerbers, firmware (fork do OSCR com protocolo serial), CLI Python, CLI e GUI em Kotlin (pt-BR, en, ru, zh). **Nenhuma placa foi montada e nada foi testado com cartucho real**: só os testes automáticos no PC, as verificações de hardware abaixo e, em 2026-11-21, a primeira execução num Mega sem shield (`docs/referencia/teste-de-bancada.md`) rodaram. Ver "O que foi testado e o que falta".
 
 ## Atribuição
 
@@ -38,7 +38,7 @@ Este projeto não é uma reimplementação: o firmware é o do OSCR e as placas 
 
 ### Firmware: o que é do OSCR e o que é daqui
 
-- **Base:** o firmware novo do OSCR (`vendor/oscr/firmware`), copiado para `firmware/oscr/`. Quem escolhe os núcleos é o `user.ini`: SNES (com Sufami Turbo, GPC, Satellaview e SF Memory), NES/Famicom, Mega Drive, Master System, N64, GB/GBC/GBA, programador de flash e o autoteste. Outros consoles do upstream (por exemplo Atari 7800 e Commodore 64) **não estão ligados**.
+- **Base:** o firmware novo do OSCR (`vendor/oscr/firmware`), copiado para `firmware/oscr/`. Quem escolhe os núcleos é o `user.ini`: SNES (com Sufami Turbo, GPC, Satellaview e SF Memory), NES/Famicom, Mega Drive, Master System, N64, GB/GBC/GBA, programador de flash e o autoteste, mais 19 outros sistemas por adaptador no slot SNES (F-20: Atari 2600/5200/7800/8 bits/Lynx/Jaguar, ColecoVision, Neo Geo Pocket, Vectrex, Arcadia 2001, RCA Studio II, Tomy Pyuuta, Supervision, PV-1000, Bally Astrocade, Channel F, Odyssey 2, Pokémon Mini e V.Smile; adaptadores ainda não desenhados, `docs/planos/adaptadores.md`). Os outros consoles do upstream (por exemplo Commodore 64 e PC Engine) **não estão ligados** (`docs/planos/pendencias.md`).
 - **Regra do projeto:** chamar a função do OSCR direto e escrever código próprio só nas costuras. Onde divergimos, o motivo está em `docs/decisoes.md`.
 - **Código só daqui** (`firmware/oscr/src/dumper/`): o protocolo e a sessão; o `StreamFile`, arquivo virtual que no lugar do SD manda os bytes pela serial; o laço de comandos; o perfil da placa (`BOARD`, na EEPROM); o comando de tensão (`VOLT`); a calibração do Si5351 (`CLOCK`, guardada na EEPROM, no lugar do arquivo `snes_clk.txt` do SD); e o `SELFTEST`.
 - **Remendos no upstream:** poucos e marcados com `OSCR_DUMPER` ou "fork": o tipo do arquivo e do `sd` em `Storage`, a UI de texto muda (`ClockedSerial.mute`), os tratamentos de erro e de `waitButton` do `ascii.cpp` e o `main.cpp` (laço próprio no lugar do menu).
@@ -63,7 +63,8 @@ Este projeto não é uma reimplementação: o firmware é o do OSCR e as placas 
 | `boards/<placa>/hardware-<versão>/` (uma pasta por versão), `fab/`, `docs/` | Projeto KiCad 10 (`dumper.kicad_pro/_sch/_pcb`), gerbers e zip da JLCPCB (`fab/PEDIDO.md` diz como pedir) e `bom.md`/`montagem.md` de cada placa |
 | `boards/_lib/` | Símbolos e footprints KiCad compartilhados entre as variantes |
 | `docs/referencia/uso.md` | **Guia de uso**: casos de uso, cenários por sistema e solução de problemas |
-| `docs/referencia/protocolo.md`, `docs/referencia/cli.md`, `docs/referencia/fork-oscr.md`, `docs/referencia/funcoes-oscr.md` | Protocolo serial, guia da CLI, plano do fork do firmware e inventário das funções do OSCR |
+| `docs/referencia/protocolo.md`, `docs/referencia/cli.md`, `docs/referencia/fork-oscr.md`, `docs/referencia/funcoes-oscr.md`, `docs/referencia/limites.md` | Protocolo serial, guia da CLI, o que o fork muda no OSCR, inventário das funções do OSCR e limites conhecidos |
+| `docs/planos/` | O que ainda não foi feito: `pendencias.md` (ids e o que falta), `adaptadores.md` (adaptadores da F-20), `melhorias-megadrive.md`, `placa-v1.3-rp2040.md` |
 | `docs/planos/placa-v1.3-rp2040.md`, `firmware/cic_rp2040/` | CIC do SNES com RP2040-Zero no lugar do PIC (ainda não validado; as placas atuais usam o PIC12F629) |
 | `firmware/`, `host/`, `gui/` | Comuns a todas as variantes |
 | `database/oscr/` | Base de jogos (24 007, CRC32) do OSCR legado, GPL v3, mais `json/` (bases do `oscr-databases`, 4,9 mil CRC32 novos; o repositório de origem não declara licença, D127); carregada sozinha pelo host e pela GUI (D88, D127) |
@@ -92,7 +93,7 @@ O código de leitura dos cartuchos vem do OSCR; o que muda por sistema é o adap
 ## Aviso
 
 - **Use por sua conta e risco.** Hardware e software saem sem garantia (CC BY 4.0 e GPL v3). Placas e firmware são experimentais.
-- **Um cartucho por vez.** As placas levam 5 V aos slots de SNES, NES, Famicom e Mega Drive; só o slot GBA é 3,3 V (regulador próprio). Desligue o USB antes de trocar de cartucho e **não use adaptador de GB/GBA** em placa sem o slot GBA.
+- **Um cartucho por vez.** As placas levam 5 V aos slots de SNES, NES, Famicom, Mega Drive e Master System; os slots GBA e N64 são 3,3 V (regulador próprio), e as versões com seletor de tensão podem pôr o slot em 3,3 V. Desligue o USB antes de trocar de cartucho e **não use adaptador de GB/GBA** em placa sem o slot GBA.
 - **Gravar ROM apaga o chip**, e abortar no meio deixa o chip pela metade. Faça backup do save antes de gravar e comece por cartuchos sem valor (`docs/referencia/uso.md`, seção 7).
 - **Uso legal.** A ferramenta serve para fazer cópia de segurança dos cartuchos que você possui. Este repositório não distribui ROMs, BIOS nem chaves; `database/oscr/` só tem listas de nomes e CRC32 do OSCR.
 - Nintendo, Super Nintendo, Famicom, Game Boy, Sega, Mega Drive e outros nomes são marcas dos seus donos, citadas só para dizer com o que o projeto é compatível. Sem vínculo com essas empresas nem com o projeto OSCR.
@@ -101,29 +102,11 @@ O código de leitura dos cartuchos vem do OSCR; o que muda por sistema é o adap
 
 Cobertura medida (Python 90 %, Kotlin 91,7 % das linhas, C++ puro no PC) e o que nenhum teste alcança: [`docs/referencia/cobertura-testes.md`](docs/referencia/cobertura-testes.md).
 
-**Testado (2026-11-06; tudo no PC, nada em hardware):**
+**Testado no PC (2026-11-27, D228):** host Python (`cd host && python3 -m pytest -q`, 478 testes), firmware (`make -C firmware/oscr/pc-tests test`, 26 binários de protocolo e regras puras; `pio run -e SerialASCII` compila, 77 % do flash), GUI e CLI Kotlin (`cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin`; a janela abre em display virtual, `tools/gui_smoke.sh`), as 12 placas em 22 versões (`python3 tools/check_all_boards.py`: ERC, DRC sem ligação aberta, netlist contra o `pinmap.md`, silk e SHA-256 dos zips; 0 erros na D191) e as tabelas dos adaptadores (`tools/check_adaptador_*.py`). O CI (`.github/workflows/ci.yml`) nunca executou.
 
-| Parte | O que rodou | Resultado |
-|---|---|---|
-| Host Python (`host/`) | `cd host && python3 -m pytest -q` | 142 testes passam |
-| Firmware, núcleos testáveis no PC | `make -C firmware/oscr/pc-tests test` (protocolo, sessão, plano do SNES, núcleo de flash do Mega Drive etc.) | passam (inclui 21 verificações do plano do SNES e 734 do núcleo de flash do Mega Drive) |
-| Firmware, compilação | `pio run -e SerialASCII` em `firmware/oscr` | compila para o Mega 2560 |
-| GUI e CLI Kotlin | `cd gui && ./gradlew :shared:jvmTest :desktopApp:compileKotlin :cliApp:compileKotlin` | testes passam, os dois módulos compilam; a janela foi vista só em display virtual |
-| Placas (as 8) | ERC, DRC (`--schematic-parity`) e `tools/check_netlist.py --board <placa>` | ERC sem violações; DRC sem erros nem ligações abertas (só avisos de biblioteca e de paridade); netlist confere com o `pinmap.md` de cada placa |
-| Gerbers | `16_bits` v1.0 (a antiga `rev2`, D110): zip idêntico ao exportado de `hardware-v1.0`; prévias 3D das placas novas vistas | ok |
-| CI (`.github/workflows/ci.yml`) | **nunca executou**; a primeira execução será ao publicar | pendente |
+**Em hardware:** só um Mega sem shield, sem Si5351 e sem cartucho (2026-11-21, D196 a D199: baud, gravação do firmware pela GUI, autoteste, perfil da placa). Cinco PIC12F629 gravados e conferidos por leitura, nenhum testado num cartucho (D214, D220).
 
-**Falta (nada disso foi feito):**
-
-- **Hardware.**
-  - Montar uma placa, medir continuidade e tensão e rodar o primeiro dump (SNES LoROM, NES mapper 0 ou um Mega Drive simples) comparando o CRC32 com o No-Intro.
-  - Conferir com as peças reais as medidas dos slots e do módulo Si5351 (D17, D23), o lado da etiqueta (D27, D28) e a altura dos espaçadores (D25).
-  - Revisar à mão, no KiCad, os layouts feitos por autoroteador (`megadrive`, `snes`, `nes`, `famicom`, `famicom_nes`, `gb_gba`).
-  - A única placa encomendada até agora é a `16_bits` v1.0 original (trilhas de alimentação em 0,3 mm); o repositório guarda no lugar dela a v1.0 revisada, a antiga `rev2` (D110).
-- **Firmware.** Os núcleos do OSCR só rodam no AVR, então nenhum teste os cobre. Pontos prováveis de ajuste: tempos de leitura do NES, 1.000.000 baud, `Power::setVoltage` sem VSELECT e o laço de gravação de flash. Roteiro e ordem de risco das gravações em `docs/referencia/uso.md`, seção 7.
-- **GUI e CLI.** Serial a 1.000.000 baud em Linux, macOS e Windows, janela estreita, revisão das traduções ru e zh por falantes nativos, empacotamento (deb/AppImage, dmg, msi). `save-write` ainda não relê o save depois de gravar.
-- **Funções do OSCR que faltam** (SF Memory, Satellaview, mais mappers do NES, outros sistemas etc.): `docs/referencia/funcoes-oscr.md`.
-- **Próximas sessões:** revisão do código, gravar o firmware no Arduino pelo programa desktop e pela CLI (hoje é com o PlatformIO), e testes com as placas.
+**Falta:** montar uma placa e fazer o primeiro dump comparando o CRC32 com o No-Intro (roteiro na seção 7 de `docs/referencia/uso.md` e em `docs/referencia/teste-de-bancada.md`); conferir as medidas dos slots e do Si5351, o lado da etiqueta e os espaçadores com as peças reais; revisar à mão no KiCad os layouts do autoroteador; desenhar os adaptadores da F-20; serial a 1.000.000 baud em macOS e Windows; revisão das traduções ru e zh; dmg e msi. A única placa encomendada é a `16_bits` v1.0 original. Lista completa e o que falta do OSCR: `docs/planos/pendencias.md` e `docs/referencia/funcoes-oscr.md`.
 
 ## CIC do SNES: alternativas ao chip de 8 pinos
 
@@ -133,9 +116,10 @@ As placas com SNES usam hoje o **PIC12F629** (DIP-8, em soquete, gravado com o `
 
 ```
 python3 tools/check_netlist.py --board <placa>        # netlist do esquemático vs boards/<placa>/docs/pinmap.md
-kicad-cli sch erc boards/<placa>/hardware/dumper.kicad_sch                # ERC
-kicad-cli pcb drc --schematic-parity boards/<placa>/hardware/dumper.kicad_pcb   # DRC
-tools/export_fab.sh <placa> v1.0                      # gerbers, furos, BOM e zip em boards/<placa>/fab/
+kicad-cli sch erc boards/<placa>/hardware-<versão>/dumper.kicad_sch                # ERC
+kicad-cli pcb drc --schematic-parity boards/<placa>/hardware-<versão>/dumper.kicad_pcb   # DRC
+python3 tools/check_all_boards.py                     # todas as placas e versões de uma vez
+tools/export_fab.sh <placa> <versão>                  # gerbers, furos, BOM e zip em boards/<placa>/fab/
 ```
 
 ## Recriar o `vendor/` (não versionado)

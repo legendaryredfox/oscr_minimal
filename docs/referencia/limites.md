@@ -14,7 +14,7 @@ O que cada sistema lê e grava hoje está na tabela da seção 3 de `docs/refere
 
 - **3,3 V.** GB e GBC entram pelo slot GBA, com adaptador, a 3,3 V; o OSCR lê GB a 5 V. A maioria dos cartuchos lê bem a 3,3 V; se um GB antigo falhar (bits trocados, CRC diferente a cada leitura), a saída de hardware seria um jumper que ligue o VCC do slot ao 5 V só para GB, nunca com GBA (D56). **Não foi feito.**
 - **MBC1M** só para as 6 coletâneas identificadas por título e checksum; outra coletânea sai como MBC1 comum, com os bancos trocados. **MMM01** até 1 MB e só as 4 coletâneas reconhecidas por título.
-- **MBC6:** a flash de 1 MB só é lida; a gravação do OSCR não foi portada (um erro estragaria o save, D61).
+- **MBC6:** `save-write` grava a SRAM de 32 KB e a flash de 1 MB pela `writeSRAMFLASH_MBC6` do OSCR (D186): destrutivo e nunca rodou; um erro estraga o save de 1 MB, então faça o `save-read` antes.
 - **Não lidos:** o infravermelho do HuC1 e o relógio do HuC3; os 32 bytes de RAM interna do TAMA5; a imagem da GB Camera (só a SRAM); o acelerômetro do MBC7 (não é ROM nem save). O RTC do MBC3 é lido e gravado (D192), o que o OSCR não faz.
 - O checksum do cabeçalho (`$14D`) é a única validação de "tem cartucho": cabeçalho corrompido dá `status 4`. O checksum global (`$14E/$14F`) não é conferido; o host mostra o CRC32 para a comparação manual.
 - Ponto mais provável de ajuste em bancada: atraso nos pulsos de CLK em `$A080` do MBC7 a 3,3 V (D60).
