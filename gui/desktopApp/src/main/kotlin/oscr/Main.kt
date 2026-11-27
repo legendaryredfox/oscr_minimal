@@ -213,11 +213,12 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         system == CartSystem.A5200 || system == CartSystem.A7800 -> Rules.atari(system, mapN, prgN)
         system == CartSystem.A8BIT -> Rules.atari8(mapN, prgN)
         system == CartSystem.ODYSSEY2 -> Rules.odyssey2(mapN, prgN)
+        system == CartSystem.MSX -> Rules.msx(mapN, prgN)
         system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.VSMILE -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
-    val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else null
+    val ramProblem: Problem? = if (isNes) Rules.nesRam(mapN, ramN) else if (system == CartSystem.MSX) Rules.msxRam(mapN, ramN) else null
 
     fun dropConnection(msg: S? = S.NOT_CONNECTED) {
         transport?.close(); client = null; transport = null; info = null; voltSt = null
@@ -262,7 +263,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     }
 
     fun mapperArg() = (if (system == CartSystem.GBA) gbaType else if (system == CartSystem.JAGUAR) jagSave else mapper).toIntOrNull() ?: 0
-    fun ramArg() = if (isNes) ramN else 0
+    fun ramArg() = if (isNes || system == CartSystem.MSX) ramN else 0
     fun snesTypeArg() = if (system == CartSystem.SNES) snesTypeSel else 0
     val accGpc = system == CartSystem.SNES && Proto.SNES_SAVE_ACCESSORIES.keys.any { snesTypeSel == Proto.SNES_ACCESSORIES.getValue(it) }                  // acessórios do SNES (F-10, D178), no mesmo campo do tipo de ROM
     val accSufami = system == CartSystem.SNES && snesTypeSel in Proto.SNES_ACCESSORIES.filterKeys { it !in Proto.SNES_SAVE_ACCESSORIES }.values
@@ -1046,6 +1047,25 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.POKEMINI) Callout(t(S.POKEMINI_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.VSMILE) Callout(t(S.VSMILE_HINT), Tone.WARN)
+            if (stub == null && system == CartSystem.MSX) {
+                Callout(t(S.MSX_HINT), Tone.INFO)
+                LabeledField(t(S.MSX_MAPPER)) {
+                    ComboBox(value = Msx.mapper(mapN)?.let { Msx.label(it) } ?: "-", modifier = Modifier.fillMaxWidth()) { close ->
+                        Msx.MAPPERS.forEach { m ->
+                            DropdownMenuItem(text = { Text(Msx.label(m)) }, onClick = {
+                                close(); mapper = m.id.toString()
+                                if (m.rom.size == 1) prgKb = m.rom[0].toString()                 // tamanho fixo: já preenche
+                                ramKb = if (m.ram.size == 1) m.ram[0].toString() else "0"
+                            })
+                        }
+                    }
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(4) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null, modifier = Modifier.width(160.dp))
+                    OutlinedTextField(ramKb, { ramKb = it.filter(Char::isDigit).take(2) }, label = { Text(t(S.RAM_KB)) }, singleLine = true, modifier = Modifier.width(120.dp))
+                }
+                problem?.let { Callout(describeProblem(lang, it), Tone.ERROR) }
+            }
             if (stub == null && system == CartSystem.PV1000) Callout(t(S.PV1000_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.ASTROCADE) Callout(t(S.ASTROCADE_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.ODYSSEY2) {

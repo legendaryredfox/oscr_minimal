@@ -121,6 +121,18 @@ object Rules {
         else -> romSize(CartSystem.ODYSSEY2, kb)
     }
 
+    /** MSX (F-20, D230): mapper 0 a 14 e KB de ROM na faixa do mapper (Msx.kt, igual a MsxCore.h). */
+    fun msx(mapper: Int, kb: Int): Problem? {
+        val m = Msx.mapper(mapper) ?: return Problem(S.V_UNSUPPORTED_MAPPER, mapper)
+        return if (kb in m.rom) null else Problem(S.V_MSX_SIZE)
+    }
+
+    /** MSX: KB de SRAM na faixa do mapper; 0 = o usuário ainda não pediu save (só a leitura do save confere). */
+    fun msxRam(mapper: Int, kb: Int): Problem? {
+        val m = Msx.mapper(mapper) ?: return Problem(S.V_UNSUPPORTED_MAPPER, mapper)
+        return if (kb in m.ram) null else Problem(S.V_MSX_RAM)
+    }
+
     fun atari8(slot: Int, kb: Int): Problem? = if (Atari.a8Kb(slot, kb) != 0) null else Problem(S.V_A8_SIZE)
 
     /** Leitura do GBA 369-in-1 (F-18, D174): bloco (0 a 63) e tamanho em MB, as mesmas regras do firmware (Gba369.kt). */

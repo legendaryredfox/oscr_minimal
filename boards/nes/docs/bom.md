@@ -69,12 +69,12 @@ Placa só NES (`boards/nes/`, 72 pinos). Tem Si5351; não tem PIC, R2 nem regula
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
-| **U1** módulo Si5351 + header | Sim, sem perda conhecida | O `CLK0` vai ao pino 37 do slot NES, como no OSCR HW5. O firmware atual não usa esse clock para ler NES | Nenhum conhecido. Se aparecer um cartucho que precise de clock externo, a falta seria nele; não achei nenhum no código |
+| **U1** módulo Si5351 + header | **Não**: parte fixa da placa (D231) | O `CLK0` vai ao pino 37 do slot NES, como no OSCR HW5. O firmware atual não usa esse clock para ler NES | Nenhum conhecido. Se aparecer um cartucho que precise de clock externo, a falta seria nele; não achei nenhum no código |
 | **D1** LED + **R1** 220 Ω | Sim | Some a indicação de atividade | Nenhum |
 | **C2** 100 nF (VCC do slot, pino 36) | Não recomendado | Desacoplamento do cartucho. Sem ele, leituras podem sair erradas | Mappers que consomem mais (MMC5, FME-7) e os com bateria. Inferência |
 | **C1** 470 µF | Não recomendado | Reserva do 5 V | Todos |
 
-Como o Si5351 é a peça mais cara e mais difícil de achar certa, **a placa funciona para NES sem ele**. Se a meta for só NES, `boards/famicom/` (sem Si5351) é a versão sem nada opcional. As limitações de mappers estão em `docs/referencia/limites.md` e valem para qualquer montagem.
+O Si5351 foi comprado e é **parte fixa** da placa (decisão do usuário, 2026-11-27, D231): monte sempre, mesmo que o firmware atual não use o clock do NES. As limitações de mappers estão em `docs/referencia/limites.md` e valem para qualquer montagem.
 
 #### F1, J1 e seletor de tensão (D138)
 

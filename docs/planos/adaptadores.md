@@ -25,6 +25,7 @@ Regras que valem para todos:
 - [Adaptador do Magnavox Odyssey 2 / Philips Videopac para o slot SNES (F-20, D226)](#adaptador-odyssey2)
 - [Adaptador do Pokémon Mini para o slot SNES (F-20, D227)](#adaptador-pokemini)
 - [Adaptador do V.Smile para o slot SNES (F-20, D228)](#adaptador-vsmile)
+- [Adaptador do MSX para o slot SNES (F-20, D230)](#adaptador-msx)
 
 <a id="adaptador-coleco"></a>
 
@@ -924,3 +925,68 @@ Pinos fixos do conector: VCC no 24, no 25 e no 27 (3,3 V do LDO do adaptador, ve
 - **Conector:** o quadro diz 48 pinos a 2,54 mm, com uma divisão entre os pinos 14/38 e 15/39 (a linha `|---------|` no quadro); medir a borda do cartucho antes de escolher a peça.
 - **Tamanho:** o cartucho não informa. Pela base do OSCR (`legacy/sd/vsmilecart.txt`), 67 de 74 jogos têm 8 MB; os de 6 MB (Alphabet Park Adventure, Care Bears) têm dois chips; os de 16 MB são do V.Motion (Cars 2, Shrek Forever After, Super WHY!, Toy Story 3).
 - A sondagem do firmware (16 palavras do início do primeiro chip) só separa slot vazio de cartucho; o fork não confere assinatura. O V.Smile não tem save no cartucho.
+
+<a id="adaptador-msx"></a>
+
+## Adaptador do MSX para o slot SNES (F-20, D230)
+
+O núcleo `MSX.cpp` do OSCR usa o barramento do slot SNES em bytes: endereço A0 a A15 em PF e PK, dados D0 a D7 em PC. O `cartOn` deixa **/SLTSL** (PH3) baixo o tempo todo (cartucho selecionado) e **/RESET** (PH0) alto; o `readData` põe o endereço, desce **/RD** (PH6), lê PC e sobe /RD; o `writeData` (troca de banco dos mappers e escrita da SRAM) põe o dado em PC e dá um pulso em **/WR** (PH5). Os chip selects **/CS1** ($4000 a $7FFF), **/CS2** ($8000 a $BFFF) e **/CS12** ($4000 a $BFFF) vão em PL0, PL1 e PL2 (A16, A17 e A18 do slot SNES); **/MERQ** vai em PH4 e só desce nos mappers HAL Note, MSX-DOS2 e Super Lode Runner. Os sinais de controle são ativos em nível baixo. O cartucho não diz o mapper nem o tamanho: vêm sempre do PC (faixas em `firmware/oscr/include/dumper/MsxCore.h`). O adaptador não foi desenhado: falta o PCB.
+
+### Tensão: 5 V
+
+O núcleo pede 5 V (`setVoltage(k5V)`), o mesmo VCC fixo do slot SNES: o +5V do cartucho (45 e 47) vai direto ao 5 V do slot (27 e 58), sem regulador. Os +12V (48) e -12V (50) não existem na placa e ficam sem ligação: nenhum dos mappers do núcleo os usa.
+
+### Fonte (conferida)
+
+Pinagem do cartucho: o quadro "Cartridge Pinout, 50P 2.54mm pitch connector" no começo de `firmware/oscr/src/cores/MSX.cpp` (pinos pares do lado da frente, ímpares do lado de trás), com a lista "CONTROL PINS" logo abaixo (sinal do MSX, porta AVR e pino do slot SNES). As portas de controle vêm do `cartOn` e dos `#define` do mesmo arquivo. Pinos do slot e portas: `boards/16_and_8_bits/docs/pinmap.md` (SNES). `python3 tools/check_adaptador_msx.py` confere o quadro, a lista de controle, o pinmap e as portas que o núcleo usa. Adaptador da comunidade: `docs/historico/pesquisa-comunidade.md` (`msx`).
+
+| Sinal | Pino do slot SNES | Porta AVR | Pino do conector (50P) |
+|---|---|---|---|
+| A0 | 17 | PF0 | 28 |
+| A1 | 16 | PF1 | 27 |
+| A2 | 15 | PF2 | 30 |
+| A3 | 14 | PF3 | 29 |
+| A4 | 13 | PF4 | 32 |
+| A5 | 12 | PF5 | 31 |
+| A6 | 11 | PF6 | 22 |
+| A7 | 10 | PF7 | 21 |
+| A8 | 9 | PK0 | 24 |
+| A9 | 8 | PK1 | 17 |
+| A10 | 7 | PK2 | 20 |
+| A11 | 6 | PK3 | 19 |
+| A12 | 37 | PK4 | 23 |
+| A13 | 38 | PK5 | 26 |
+| A14 | 39 | PK6 | 25 |
+| A15 | 40 | PK7 | 18 |
+| D0 | 19 | PC0 | 34 |
+| D1 | 20 | PC1 | 33 |
+| D2 | 21 | PC2 | 36 |
+| D3 | 22 | PC3 | 35 |
+| D4 | 50 | PC4 | 38 |
+| D5 | 51 | PC5 | 37 |
+| D6 | 52 | PC6 | 40 |
+| D7 | 53 | PC7 | 39 |
+| /RESET | 26 | PH0 | 15 |
+| /SLTSL | 49 | PH3 | 4 |
+| /MERQ | 18 | PH4 | 12 |
+| /WR | 54 | PH5 | 13 |
+| /RD | 23 | PH6 | 14 |
+| /CS1 | 41 | PL0 | 1 |
+| /CS2 | 42 | PL1 | 2 |
+| /CS12 | 43 | PL2 | 3 |
+
+Pinos fixos do conector: +5V no 45 e no 47 (slot 27 e 58); GND no 41 e no 43 (slot 5 e 36). **CLOCK (42) no pino 57 do slot SNES** (CLK1 do Si5351), ver abaixo.
+
+Sem ligação: RSV (5 e 16), /WAIT (7, saída do cartucho que o núcleo não lê), /INT (8), /BUSDIR (10), SW1 (44), SW2 (46), +12V (48), SOUNDIN (49) e -12V (50).
+
+**CLOCK (42): pino 57 do slot SNES, CLK1 do Si5351 (D230, como o PHI2 do Atari 8 bits na D213).** A lista do núcleo diz "CLOCK(PH1) - SNES CPUCLK", mas nas nossas placas (e no HW5) o pino 57 do slot SNES (CPU clock) vem do **Si5351 CLK1**, e o PH1 não chega ao slot SNES (vai ao Mega Drive B19 e ao NES 2). O núcleo só põe PH1 como saída em nível alto. O Si5351 é parte fixa das placas (decisão do usuário, 2026-11-27, D231): a costura do firmware programa o CLK1 em 3,579545 MHz (o relógio do Z80 do MSX) enquanto o núcleo lê ou grava, e o desliga depois. A maioria dos cartuchos de ROM não usa o clock; os de som (SCC, FM) podem usar.
+
+**PENDENTE: /IORQ (11), /M1 (9) e /RFSH (6).** São entradas do cartucho que o núcleo não conduz; soltas, podem flutuar. Candidato: resistor de pull-up de 10 kΩ para o +5V em cada um (nível alto, inativo). Conferir com o adaptador da comunidade.
+
+### Pontos a conferir com o cartucho na mão
+
+- **/IORQ, /M1 e /RFSH:** ver acima. **CLOCK:** conferir no osciloscópio os 3,58 MHz no pino 42 do conector.
+- **Conector:** 50 pinos a 2,54 mm (quadro do núcleo); medir a borda do cartucho antes de escolher a peça.
+- **Mapper e tamanho:** o cartucho não informa. A base do OSCR (`database/oscr/json/msx.json`) traz o mapper e o índice do tamanho de cada jogo, sem CRC32.
+- **SRAM:** só os mappers ASCII8, ASCII16, Game Master 2, HAL Note, Koei e PAC/FM-PAC têm save; o tamanho também vem do PC. A gravação nunca rodou em hardware: fazer backup do save antes.
+- A sondagem do firmware (`setCS` do núcleo e 32 bytes de $4000) só separa slot vazio de cartucho; o cabeçalho "AB" é só informativo (nome `MSX` ou `MSX (SEM AB)` no `DETECT`).

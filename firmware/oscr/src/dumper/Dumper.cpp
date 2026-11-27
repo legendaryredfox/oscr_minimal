@@ -32,6 +32,7 @@
 # include "cores/Odyssey2.h"
 # include "cores/PokemonMini.h"
 # include "cores/VSmile.h"
+# include "cores/MSX.h"
 # include "cores/Supervision.h"
 # include "cores/Atari2600.h"
 # include "cores/Atari5200.h"
@@ -78,6 +79,7 @@
 # include "dumper/OdyCore.h"
 # include "dumper/PkmCore.h"
 # include "dumper/VsmCore.h"
+# include "dumper/MsxCore.h"
 # include "dumper/SvCore.h"
 # include "dumper/AtariCore.h"
 # include "dumper/N64Core.h"
@@ -108,6 +110,8 @@ namespace OSCR::Cores::Atari8 { extern uint8_t romSize; extern bool atari8right;
 // `romSize` (índice 0 a 2) e os dois últimos words lidos ficam no .cpp do núcleo Jaguar, sem declaração no cabeçalho.
 // `ody2mapper` (0 = A10 sem ligação, 1 = A10 ligado) e `ody2size` (índice em `romSizes`) ficam no .cpp do núcleo Odyssey 2, sem declaração no cabeçalho: o `readROM` do OSCR lê os dois.
 namespace OSCR::Cores::Odyssey2 { extern uint8_t ody2mapper; extern uint8_t ody2size; }
+// `msxmapper` (0 a 14) fica no .cpp do núcleo MSX, sem declaração no cabeçalho: o `readROM`, o `readRAM` e o `writeRAM` do OSCR leem o campo (D230).
+namespace OSCR::Cores::MSX { extern uint8_t msxmapper; }
 namespace OSCR::Cores::AtariJaguar { extern uint8_t romSize; extern uint16_t tempDataLO; extern uint16_t tempDataHI; extern int eepSize; extern uint32_t flaSize; extern uint16_t flashID; }
 
 namespace OSCR::Dumper
@@ -362,6 +366,7 @@ namespace OSCR::Dumper
     namespace OD = OSCR::Cores::Odyssey2;
     namespace PK = OSCR::Cores::PokemonMini;
     namespace VS = OSCR::Cores::VSmile;
+    namespace MX = OSCR::Cores::MSX;
     namespace SV = OSCR::Cores::Supervision;
     namespace A2 = OSCR::Cores::Atari2600;
     namespace A5 = OSCR::Cores::Atari5200;
@@ -815,6 +820,67 @@ namespace OSCR::Dumper
     }
 
     /**
+     * MSX (F-20, D230): a leitura da ROM chama o `readROM` do OSCR, a do save o `readRAM` e a gravação o `writeRAM`, com `msxmapper` (0 a 14),
+     * `romSize` e `sramSize` = índices das tabelas do núcleo, que saem do que o PC informou (o menu "Set Mapper" do OSCR lê a faixa de cada mapper
+     * de um arquivo do cartão SD; a mesma tabela está em `MsxCore.h`). Única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`.
+     * O `writeRAM` do OSCR não liga o cartucho (no menu, o `readROM` ou o `readRAM` já tinham configurado as portas): o fork chama `cartOn` antes.
+     * A sondagem usa o `setCS` do OSCR (procura o cabeçalho "AB" em $4000 com cada chip select) e lê 32 bytes de $4000 com o `readData` do OSCR.
+     * CLOCK (D230, como o PHI2 do Atari 8 bits na D213): o núcleo segura PH1 alto, mas PH1 não chega ao slot SNES; o CLOCK do cartucho vai ao pino 57 do slot
+     * (CLK1 do Si5351, parte fixa das placas) e a costura programa o CLK1 em 3,579545 MHz (o relógio do Z80 do MSX) enquanto o núcleo roda.
+     */
+    void msxClock(bool on)
+    {
+#if defined(ENABLE_CLOCKGEN)
+      if (!a8ClockPresent()) return;
+      if (on) OSCR::ClockGen::clockgen.set_freq(357954500ULL, SI5351_CLK1);   // unidade da biblioteca: 0,01 Hz
+      OSCR::ClockGen::clockgen.output_enable(SI5351_CLK1, on ? 1 : 0);
+#else
+      (void)on;
+#endif
+    }
+    uint8_t msxProbe(bool & header)
+    {
+      uint8_t sample[32];
+      msxClock(true);
+      MX::cartOn();
+      MX::setCS();
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = MX::readData(0x4000 + i);
+      MX::disableCS();
+      MX::cartOff();
+      msxClock(false);
+      header = oscr::msx::hasHeader(sample, sizeof sample);
+      return oscr::msx::classify(sample, sizeof sample);
+    }
+    void msxRead(uint16_t mapper, uint16_t kb)
+    {
+      OSCR::Cores::fromCRDB = false;
+      MX::msxmapper = uint8_t(mapper);
+      OSCR::Cores::romSize = oscr::msx::romIndex(mapper, kb);           // índice da tabela `romSizes` do núcleo
+      msxClock(true);
+      MX::readROM();                                                    // liga e desliga o cartucho e abre/fecha o "arquivo" sozinha
+      msxClock(false);
+    }
+    void msxReadSave(uint16_t mapper, uint16_t kb)
+    {
+      OSCR::Cores::fromCRDB = false;
+      MX::msxmapper = uint8_t(mapper);
+      OSCR::Cores::sramSize = oscr::msx::ramIndex(mapper, kb);          // índice da tabela `ramSizes` do núcleo
+      msxClock(true);
+      MX::readRAM();                                                    // liga e desliga o cartucho e abre/fecha o "arquivo" sozinha
+      msxClock(false);
+    }
+    void msxWriteSave(uint16_t mapper, uint16_t kb)
+    {
+      MX::msxmapper = uint8_t(mapper);
+      OSCR::Cores::sramSize = oscr::msx::ramIndex(mapper, kb);
+      msxClock(true);
+      MX::cartOn();
+      MX::writeRAM();                                                   // a conferência é do PC: relê o save e compara
+      MX::cartOff();
+      msxClock(false);
+    }
+
+    /**
      * ColecoVision (F-20, D201; D215): a leitura chama o `readROM` do OSCR (índice em `romSize`); única mudança no núcleo: o `matchCRC` final (base do cartão SD,
      * inexistente aqui) sob `#if !OSCR_DUMPER`. A sondagem lê 32 bytes de $8000 com `readData` do OSCR. O núcleo não detecta o cartucho: a classificação é de `ColvCore.h`.
      */
@@ -1238,8 +1304,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_A8) | (1UL << oscr::SYS_LYNX) | (1UL << oscr::SYS_JAG) | (1UL << oscr::SYS_ARC) | (1UL << oscr::SYS_RCA2) | (1UL << oscr::SYS_PYU) | (1UL << oscr::SYS_SV) | (1UL << oscr::SYS_PV) | (1UL << oscr::SYS_BALLY) | (1UL << oscr::SYS_CHF) | (1UL << oscr::SYS_ODY2) | (1UL << oscr::SYS_POKE) | (1UL << oscr::SYS_VSMILE) | (1UL << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2 || system == oscr::SYS_POKE || system == oscr::SYS_VSMILE || system == oscr::SYS_FLASH; }
+      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_A8) | (1UL << oscr::SYS_LYNX) | (1UL << oscr::SYS_JAG) | (1UL << oscr::SYS_ARC) | (1UL << oscr::SYS_RCA2) | (1UL << oscr::SYS_PYU) | (1UL << oscr::SYS_SV) | (1UL << oscr::SYS_PV) | (1UL << oscr::SYS_BALLY) | (1UL << oscr::SYS_CHF) | (1UL << oscr::SYS_ODY2) | (1UL << oscr::SYS_POKE) | (1UL << oscr::SYS_VSMILE) | (1UL << oscr::SYS_MSX) | (1UL << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2 || system == oscr::SYS_POKE || system == oscr::SYS_VSMILE || system == oscr::SYS_MSX || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -1468,6 +1534,20 @@ namespace OSCR::Dumper
           return;
         }
 
+        if (system == oscr::SYS_MSX)
+        {
+          uint8_t st = oscr::msx::kNoCart; bool header = false;
+          bool ran = runCore([&st, &header] { st = msxProbe(header); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::msx::kNoCart) return;
+          strlcpy_P(out.name, header ? PSTR("MSX") : PSTR("MSX (SEM AB)"), sizeof(out.name));
+          out.rom_size = oscr::msx::romBytes(optMapper, optPrgKb);      // o cartucho não diz mapper nem tamanho: o DETECT leva os dois (0 sem combinação válida)
+          out.save_size = oscr::msx::ramBytes(optMapper, optPrgKb);     // o mesmo campo é o KB do save quando o PC estima a leitura do save
+          out.save_type = 0;
+          return;
+        }
+
         if (system == oscr::SYS_VSMILE)
         {
           uint8_t st = oscr::vsm::kNoCart;
@@ -1677,6 +1757,7 @@ namespace OSCR::Dumper
         else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (isSega(system)) { }                                      // SRAM de 32 KB sempre (o usuário sabe se o cartucho tem)
         else if (system == oscr::SYS_JAG) { }                             // EEPROM ou Memory Track: o `mapper` já foi validado em `prepare`
+        else if (system == oscr::SYS_MSX) { }                             // mapper e tamanho do save já validados em `prepare`
         else if (kind == oscr::KIND_SAVE && saveType == 0 && !isMdBram(system)) { err = oscr::E_SEM_SAVE; return false; }
         if (kind == oscr::KIND_ROM && isMdBram(system)) { err = oscr::E_ARGUMENTO; return false; }   // a RAM de backup do Sega CD não tem ROM
 
@@ -1702,6 +1783,7 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_ODY2) { odyRead(a26Id, colvKb); return; }
           if (system == oscr::SYS_POKE) { pkmRead(); return; }
           if (system == oscr::SYS_VSMILE) { vsmRead(colvKb); return; }
+          if (system == oscr::SYS_MSX) { if (kind == oscr::KIND_SAVE) msxReadSave(a26Id, colvKb); else msxRead(a26Id, colvKb); return; }
           if (system == oscr::SYS_A26) { a26Read(a26Id); return; }
           if (system == oscr::SYS_A52) { a52Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_A78) { a78Read(a26Id, a5romsize); return; }
@@ -1815,21 +1897,23 @@ namespace OSCR::Dumper
                           : system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
                           : (system == oscr::SYS_GB ? gbSaveBytes()
                           : (system == oscr::SYS_JAG ? jagSaveBytes(optMapper)
+                          : (system == oscr::SYS_MSX ? oscr::msx::ramBytes(optMapper, optPrgKb)
                           : (system == oscr::SYS_N64 ? oscr::n64::saveBytes(saveType)
                           : (isSega(system) ? oscr::sms::kSramBytes
                           : (isMdBram(system) ? MD::bramSize
-                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize)))))));
+                          : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize))))))));
 
-        if ((system != oscr::SYS_GB && system != oscr::SYS_JAG && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_JAG && system != oscr::SYS_MSX && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
         activeSource = &countingSource;
         OSCR::Storage::Shared::sharedFile.open("save", O_RDONLY);    // o "arquivo" é o que o PC manda
-        uint16_t jagMap = optMapper;
-        bool ok = runCore([system, saveType, jagMap]
+        uint16_t jagMap = optMapper, msxKb = optPrgKb;
+        bool ok = runCore([system, saveType, jagMap, msxKb]
         {
           if (system == oscr::SYS_JAG) { jagWriteSave(jagMap); return; }
+          if (system == oscr::SYS_MSX) { msxWriteSave(jagMap, msxKb); return; }
           if (isNes(system))
           {
             NE::cartOn();
@@ -2289,6 +2373,18 @@ namespace OSCR::Dumper
           bool ran = runCore([&st] { st = pkmProbe(); });
           if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
           if (st == oscr::pkm::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
+          return true;
+        }
+        if (system == oscr::SYS_MSX)
+        {
+          if (!oscr::msx::validMapper(optMapper)) { err = oscr::E_ARGUMENTO; return false; }                         // mapper 0 a 14, sempre informado pelo PC
+          if (forSave && !oscr::msx::hasSave(optMapper)) { err = oscr::E_SEM_SAVE; return false; }                  // só ASCII8, ASCII16, Game Master 2, HAL Note, Koei e PAC/FM-PAC têm SRAM
+          if (forSave ? oscr::msx::ramIndex(optMapper, optPrgKb) == oscr::msx::kBadIndex
+                      : oscr::msx::romIndex(optMapper, optPrgKb) == oscr::msx::kBadIndex) { err = oscr::E_ARGUMENTO; return false; }   // KB de ROM (ou de SRAM) dentro da faixa do mapper
+          uint8_t st = oscr::msx::kNoCart; bool header = false;
+          bool ran = runCore([&st, &header] { st = msxProbe(header); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::msx::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (system == oscr::SYS_VSMILE)

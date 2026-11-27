@@ -83,7 +83,7 @@ Placa de 7 slots: SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA (`boa
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
 | **U2** PIC12F629 (CIC) + soquete | **Perde o SA-1** | O PIC emula o CIC do SNES; o SA-1 só responde com ele rodando | Só **SA-1** (Super Mario RPG, Kirby Super Star, Kirby's Dream Land 3, Jikkyou Oshaberi Parodius, Dragon Ball Z: Hyper Dimension e outros; lista não exaustiva em `snes/docs/bom.md`). NES, Famicom, Mega Drive, Master System e GBA não usam |
-| **U1** módulo Si5351 | **Perde o SA-1**; o PIC fica sem clock | SNES: clock mestre (pino 1), CPU (57) e CIC (56). NES: o `CLK0` vai ao pino 37, mas o firmware atual não o usa | SA-1; futuros Satellaview e SF Memory. NES: nenhum conhecido |
+| **U1** módulo Si5351 | **Não**: parte fixa da placa (D231) | SNES: clock mestre (pino 1), CPU (57) e CIC (56). NES: o `CLK0` vai ao pino 37, mas o firmware atual não o usa | SA-1; futuros Satellaview e SF Memory. NES: nenhum conhecido |
 | **R2** 1 kΩ (pull-up de D7, `/IRQ` do SNES) | Sim, com cuidado | `/IRQ` solta. D7 também é o `/UWR` do Mega Drive (pino B29); o pull-up estava no HW5 | Nenhum conhecido. Inferência |
 | **U3** MCP1700-3302E + **C7**, **C8** (1 µF) + **C9**, **C11** | **Perde o GBA, o GB, o GBC e o N64** | Os slots GBA e N64 só têm 3,3 V, vindo do U3. Sem ele, sem energia nos slots. Nunca ligar o GBA ou o N64 ao 5 V | Todos os GBA, GB e GBC. SNES, NES, Famicom, Mega Drive e Master System não dependem |
 | **D1** LED + **R1** 220 Ω | Sim | Indicação de atividade | Nenhum |

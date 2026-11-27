@@ -62,7 +62,7 @@ Placa só SNES/Super Famicom (`boards/snes/`). Esta tabela diz o que acontece se
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
 | **U2** PIC12F629 (CIC) + soquete | **Perde o SA-1** | O PIC emula o CIC do console; o SA-1 só responde com o CIC rodando (D54). O resto da leitura segue | Só cartuchos **SA-1** (lista abaixo). LoROM, HiROM, ExHiROM, SuperFX, S-DD1, SPC7110 e Cx4 não dependem dele |
-| **U1** módulo Si5351 | **Perde o SA-1** e o PIC fica sem clock | Sai o clock mestre (pino 1, 21,477 MHz), o do CPU (pino 57) e o do CIC (pino 56). O PIC recebe o CLK2 do Si5351: sem módulo, o PIC também não roda, mesmo montado | Os mesmos SA-1. Futuros: **Satellaview (BS-X)** e **SF Memory Cassette**, que o OSCR lê com o clock mestre (ainda não portados, `docs/referencia/funcoes-oscr.md`). Os demais cartuchos comuns não dependem |
+| **U1** módulo Si5351 | **Não**: parte fixa da placa (D231) | Sai o clock mestre (pino 1, 21,477 MHz), o do CPU (pino 57) e o do CIC (pino 56). O PIC recebe o CLK2 do Si5351: sem módulo, o PIC também não roda, mesmo montado | Os mesmos SA-1. Futuros: **Satellaview (BS-X)** e **SF Memory Cassette**, que o OSCR lê com o clock mestre (ainda não portados, `docs/referencia/funcoes-oscr.md`). Os demais cartuchos comuns não dependem |
 | **R2** 1 kΩ (pull-up do `/IRQ`, D7) | Sim, sem perda conhecida | A linha `/IRQ` (pino 18 do slot) fica solta. O firmware atual só configura o pino como entrada na abertura e não o lê depois | Nenhum conhecido. Inferência: o OSCR HW5 tem o resistor; não achei uso dele nos cores ligados |
 | **D1** LED + **R1** 220 Ω | Sim | Some a indicação de atividade (D38) | Nenhum |
 | **TP1 a TP5** pontos de teste | Sim | Só o acesso para medir `5V`, `GND`, `/RD`, `/WR`, `/IRQ` | Nenhum |
@@ -71,9 +71,9 @@ Placa só SNES/Super Famicom (`boards/snes/`). Esta tabela diz o que acontece se
 | **C1** 470 µF | Não recomendado | Reserva de carga na entrada de 5 V; sem ela, picos do cartucho derrubam o 5 V do Mega e podem reiniciá-lo | Todos, na pior hora (início da leitura) |
 | **SNES1**, pinos macho longos, A1 | Não | Sem eles não há placa | — |
 
-#### Cartuchos SA-1 (afetados por U1 ou U2 ausentes)
+#### Cartuchos SA-1 (afetados pelo U2 ausente)
 
-Lista de jogos que usam o chip SA-1, para conferir antes de montar sem o PIC ou sem o Si5351. **Não é exaustiva** (vem da memória, não de uma lista do OSCR): Super Mario RPG, Kirby Super Star (Kirby's Fun Pak), Kirby's Dream Land 3, Jikkyou Oshaberi Parodius, Dragon Ball Z: Hyper Dimension, SD Gundam G NEXT, Marvelous: Another Treasure Island, Masters New: Harukanaru Augusta 3, Pebble Beach no Hotou, PGA Tour 96, PGA European Tour, Power Rangers Zeo: Battle Racers, Itoi Shigesato no Bass Tsuri No. 1, J.League '96 Dream Stadium, Daisenryaku Expert WWII e outros jogos de shogi. O byte de chips do cabeçalho (`$34` ou `$35`, mapa `$23`) mostra se é SA-1.
+Lista de jogos que usam o chip SA-1, para conferir antes de montar sem o PIC (o Si5351 é parte fixa, D231). **Não é exaustiva** (vem da memória, não de uma lista do OSCR): Super Mario RPG, Kirby Super Star (Kirby's Fun Pak), Kirby's Dream Land 3, Jikkyou Oshaberi Parodius, Dragon Ball Z: Hyper Dimension, SD Gundam G NEXT, Marvelous: Another Treasure Island, Masters New: Harukanaru Augusta 3, Pebble Beach no Hotou, PGA Tour 96, PGA European Tour, Power Rangers Zeo: Battle Racers, Itoi Shigesato no Bass Tsuri No. 1, J.League '96 Dream Stadium, Daisenryaku Expert WWII e outros jogos de shogi. O byte de chips do cabeçalho (`$34` ou `$35`, mapa `$23`) mostra se é SA-1.
 
 #### Combinações práticas
 
@@ -81,10 +81,8 @@ Lista de jogos que usam o chip SA-1, para conferir antes de montar sem o PIC ou 
 |---|---|---|
 | Completa (U1 + U2) | Tudo que o firmware suporta, inclusive SA-1 | — |
 | Sem PIC, com Si5351 | LoROM, HiROM, ExHiROM, SuperFX, S-DD1, SPC7110, Cx4 | SA-1 |
-| Sem Si5351, sem PIC | os mesmos | SA-1 e, quando portados, Satellaview e SF Memory |
-| Sem Si5351, com PIC | os mesmos | SA-1 (o PIC não tem clock) |
 
-Dá para montar o soquete do PIC e do Si5351 vazios e completar depois: ambos são removíveis.
+O Si5351 é parte fixa da placa (decisão do usuário, 2026-11-27, D231): as montagens sem ele saíram da tabela. Dá para montar o soquete do PIC vazio e completar depois.
 
 #### Limites que não dependem de peça
 

@@ -65,12 +65,12 @@ Placa NES + Famicom + Master System (`boards/8_bits/`). Tem Si5351 (só o NES us
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
-| **U1** módulo Si5351 + header | Sim, sem perda conhecida | O `CLK0` só vai ao pino 37 do NES; o firmware atual não o usa. O Famicom não tem pino de clock | Nenhum conhecido |
+| **U1** módulo Si5351 + header | **Não**: parte fixa da placa (D231) | O `CLK0` só vai ao pino 37 do NES; o firmware atual não o usa. O Famicom não tem pino de clock | Nenhum conhecido |
 | **D1** LED + **R1** 220 Ω | Sim | Some a indicação de atividade | Nenhum |
 | **C2**, **C3**, **C4** 100 nF (VCC do NES, do Famicom e do SMS) | Não recomendado | Desacoplamento de cada slot | Mappers que consomem mais e os com bateria. Inferência |
 | **C1** 470 µF | Não recomendado | Reserva do 5 V | Todos |
 
-Um cartucho por vez (os três slots dividem os mesmos barramentos). Sem o Si5351, a placa lê Famicom e Master System e só os mappers do NES que não usam o clock.
+Um cartucho por vez (os três slots dividem os mesmos barramentos). O Si5351 é parte fixa da placa (D231): monte sempre.
 
 #### F1, J1 e seletor de tensão (D138)
 

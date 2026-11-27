@@ -93,7 +93,7 @@ Placa SNES + Mega Drive v1.2 (`boards/16_bits/`). Tem proteção das linhas de c
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
 | **U2** PIC12F629 (CIC) + soquete | **Perde o SA-1** | O PIC emula o CIC; o SA-1 só responde com ele rodando (D54) | Só cartuchos **SA-1** (Super Mario RPG, Kirby Super Star, Kirby's Dream Land 3, Jikkyou Oshaberi Parodius, Dragon Ball Z: Hyper Dimension e outros; lista não exaustiva em `snes/docs/bom.md`) |
-| **U1** módulo Si5351 | **Perde o SA-1**; o PIC fica sem clock | Sai o clock mestre, o do CPU e o do CIC (que o PIC também usa) | SA-1; futuros Satellaview e SF Memory. **Mega Drive não usa** o Si5351 |
+| **U1** módulo Si5351 | **Não**: parte fixa da placa (D231) | Sai o clock mestre, o do CPU e o do CIC (que o PIC também usa) | SA-1; futuros Satellaview e SF Memory. **Mega Drive não usa** o Si5351 |
 | **R2** 1 kΩ (pull-up de D7) | Sim, com cuidado | D7 é o `/IRQ` do SNES **e** o `/UWR` do Mega Drive (pino B29 do slot). Sem o pull-up, essa linha fica solta quando o pino está como entrada. A placa `megadrive/` (sem R2) mostra que o Mega Drive vive sem ele | Nenhum conhecido. Inferência; não medido |
 
 #### Linhas de controle (R3 a R14)

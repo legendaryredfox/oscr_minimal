@@ -68,12 +68,12 @@ Placa Famicom + NES (`boards/famicom_nes/`). Tem Si5351 (só o NES usa); sem PIC
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
-| **U1** módulo Si5351 + header | Sim, sem perda conhecida | O `CLK0` só vai ao pino 37 do NES; o firmware atual não o usa. O Famicom não tem pino de clock | Nenhum conhecido |
+| **U1** módulo Si5351 + header | **Não**: parte fixa da placa (D231) | O `CLK0` só vai ao pino 37 do NES; o firmware atual não o usa. O Famicom não tem pino de clock | Nenhum conhecido |
 | **D1** LED + **R1** 220 Ω | Sim | Some a indicação de atividade | Nenhum |
 | **C2**, **C3** 100 nF (VCC do NES e do Famicom) | Não recomendado | Desacoplamento de cada slot | Mappers que consomem mais e os com bateria. Inferência |
 | **C1** 470 µF | Não recomendado | Reserva do 5 V | Todos |
 
-Um cartucho por vez (os dois slots dividem os mesmos barramentos). Sem o Si5351, a placa vira uma `famicom` com um slot NES a mais.
+Um cartucho por vez (os dois slots dividem os mesmos barramentos). O Si5351 é parte fixa da placa (D231): monte sempre.
 
 #### F1, J1 e seletor de tensão (D138)
 
