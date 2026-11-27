@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Atari 2600 (docs/planos/adaptador-a2600.md, D206) contra
+"""Confere a tabela do adaptador do Atari 2600 (docs/planos/adaptadores.md#adaptador-a2600, D206) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/Atari2600.cpp (pino do conector -> sinal);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa (A0-A7 PF, A8-A12 PK0-PK4, D0-D7 PC).
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-a2600.md"
+DOC = secao_doc("a2600")
 CORE = ROOT / "firmware/oscr/src/cores/Atari2600.cpp"
 
 

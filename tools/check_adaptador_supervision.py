@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Watara Supervision (docs/planos/adaptador-supervision.md, D218) contra
+"""Confere a tabela do adaptador do Watara Supervision (docs/planos/adaptadores.md#adaptador-supervision, D218) contra
 1. o quadro "Cartridge Pinout" (duas colunas) no começo de firmware/oscr/src/cores/Supervision.cpp (pino do conector -> sinal);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa: A0-A7 em PF, A8-A15 em PK, A16 em PL0, D0-D7 em PC, /RD em PH6 e /WR em PH5.
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-supervision.md"
+DOC = secao_doc("supervision")
 CORE = ROOT / "firmware/oscr/src/cores/Supervision.cpp"
 
 

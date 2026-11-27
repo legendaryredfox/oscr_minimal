@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Fairchild Channel F (docs/planos/adaptador-channelf.md, D224) contra
+"""Confere a tabela do adaptador do Fairchild Channel F (docs/planos/adaptadores.md#adaptador-channelf, D224) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/ChannelF.cpp (pino do conector -> sinal; o sinal fica à direita do número);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa: ROMC0-ROMC4 em PF0-PF4, D0-D7 em PC, PHI em PH3, /INTREQ em PH4 e WRITE em PH5 (lista "CONTROL PINS" do núcleo).
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-channelf.md"
+DOC = secao_doc("channelf")
 CORE = ROOT / "firmware/oscr/src/cores/ChannelF.cpp"
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do RCA Studio II (docs/planos/adaptador-rca2.md, D216) contra
+"""Confere a tabela do adaptador do RCA Studio II (docs/planos/adaptadores.md#adaptador-rca2, D216) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/RCAStudio2.cpp (pino do conector -> sinal; uma coluna só);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa (A0-A7 em PF, D0-D7 em PC, /MRD em PH3, TPA em PH6).
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-rca2.md"
+DOC = secao_doc("rca2")
 CORE = ROOT / "firmware/oscr/src/cores/RCAStudio2.cpp"
 
 

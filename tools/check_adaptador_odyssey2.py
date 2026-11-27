@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Magnavox Odyssey 2 (docs/planos/adaptador-odyssey2.md, D226) contra
+"""Confere a tabela do adaptador do Magnavox Odyssey 2 (docs/planos/adaptadores.md#adaptador-odyssey2, D226) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/Odyssey2.cpp (duas colunas: pino numerado na frente, letra atrás);
 2. a lista CONTROL PINS do mesmo quadro (sinal -> porta AVR);
 3. o pinmap do slot SNES (pino do slot -> porta AVR);
@@ -14,9 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-odyssey2.md"
+DOC = secao_doc("odyssey2")
 CORE = ROOT / "firmware/oscr/src/cores/Odyssey2.cpp"
 LETTERS = "ABCDEFGHJKLMNPR"     # fileira de trás: 15 letras, sem I, O e Q
 

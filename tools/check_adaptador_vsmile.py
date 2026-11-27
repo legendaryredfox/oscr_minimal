@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do V.Smile (docs/planos/adaptador-vsmile.md, D228) contra
+"""Confere a tabela do adaptador do V.Smile (docs/planos/adaptadores.md#adaptador-vsmile, D228) contra
 1. o quadro "Cartridge pinout" no começo de firmware/oscr/src/cores/VSmile.cpp (linhas `SINAL -| 25    1 |- SINAL`);
 2. os `#define VSMILE_*_HIGH` de firmware/oscr/include/cores/VSmile.h (sinal de controle -> bit de PORTH);
 3. o pinmap do slot SNES (pino do slot -> porta AVR);
@@ -14,9 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-vsmile.md"
+DOC = secao_doc("vsmile")
 CORE = ROOT / "firmware/oscr/src/cores/VSmile.cpp"
 HEADER = ROOT / "firmware/oscr/include/cores/VSmile.h"
 

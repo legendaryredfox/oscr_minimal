@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Neo Geo Pocket (docs/planos/adaptador-ngp.md, D203) contra o pinmap do slot SNES
+"""Confere a tabela do adaptador do Neo Geo Pocket (docs/planos/adaptadores.md#adaptador-ngp, D203) contra o pinmap do slot SNES
 (boards/16_and_8_bits/docs/pinmap.md) e contra as portas que o núcleo NeoGeoPocket.cpp usa.
 
 1. cada sinal da tabela cai no pino do slot SNES cuja porta AVR é a que a tabela diz (pinmap);
@@ -15,7 +15,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DOC = ROOT / "docs/planos/adaptador-ngp.md"
+sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
+DOC = secao_doc("ngp")
 PINMAP = ROOT / "boards/16_and_8_bits/docs/pinmap.md"
 CORE = ROOT / "firmware/oscr/src/cores/NeoGeoPocket.cpp"
 

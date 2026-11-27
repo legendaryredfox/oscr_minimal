@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere as tabelas dos adaptadores do Atari 5200 e do Atari 7800 (docs/planos/adaptador-a5200.md e adaptador-a7800.md, D209) contra
+"""Confere as tabelas dos adaptadores do Atari 5200 e do Atari 7800 (docs/planos/adaptadores.md#adaptador-a5200 e docs/planos/adaptadores.md#adaptador-a7800, D209) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/Atari5200.cpp e Atari7800.cpp (pino do conector -> sinal);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa (A0-A7 PF, A8-A15 PK0-PK7, D0-D7 PC e os controles de cada sistema).
@@ -13,13 +13,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
 SYSTEMS = {
-    "5200": dict(doc="docs/planos/adaptador-a5200.md", core="firmware/oscr/src/cores/Atari5200.cpp", n_pins=36,
+    "5200": dict(doc="a5200", core="firmware/oscr/src/cores/Atari5200.cpp", n_pins=36,
                  control={"/4000": "PH5", "/8000": "PH6"}, fixed={26: "+5V", 12: "GND", 13: "GND", 14: "GND", 23: "GND", 24: "GND", 25: "GND"},
                  free={11: "N/C", 28: "N/C", 18: "INTERLOCK", 36: "INTERLOCK", 30: "AUD"}, addr_bits=14),
-    "7800": dict(doc="docs/planos/adaptador-a7800.md", core="firmware/oscr/src/cores/Atari7800.cpp", n_pins=32,
+    "7800": dict(doc="a7800", core="firmware/oscr/src/cores/Atari7800.cpp", n_pins=32,
                  control={"R/W": "PH6", "HALT": "PH0", "CLK": "-"}, fixed={13: "+5V", 14: "GND", 30: "GND"},
                  free={31: "IRQ", 18: "AUD"}, addr_bits=16),
 }
@@ -63,7 +64,7 @@ def check(tag: str, cfg: dict) -> list[str]:
     if len(cp) != cfg["n_pins"]:
         errs.append(f"{tag}: quadro do núcleo com {len(cp)} pinos (esperado {cfg['n_pins']})")
     rows = []
-    for line in (ROOT / cfg["doc"]).read_text(encoding="utf-8").splitlines():
+    for line in secao_doc(cfg["doc"]).read_text(encoding="utf-8").splitlines():
         m = re.match(r"^\| ([AD]\d+|/4000|/8000|R/W|HALT|CLK) \| (\d+) \| (P[A-Z]\d|-) \| (\d+) \|$", line)
         if m:
             rows.append(m.groups())

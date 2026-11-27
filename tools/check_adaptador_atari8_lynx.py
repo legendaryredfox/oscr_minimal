@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere as tabelas dos adaptadores do Atari 8 bits e do Atari Lynx (docs/planos/adaptador-a8bit.md e adaptador-lynx.md, D210) contra
+"""Confere as tabelas dos adaptadores do Atari 8 bits e do Atari Lynx (docs/planos/adaptadores.md#adaptador-a8bit e docs/planos/adaptadores.md#adaptador-lynx, D210) contra
 1. o quadro de pinos no começo de firmware/oscr/src/cores/Atari8.cpp e AtariLynx.cpp (pino do conector -> sinal);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa. No Lynx só os sinais confirmados pelo código entram na tabela; A12 a A19 e AUDIN estão PENDENTES (o teste exige que o documento diga isso).
@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
 
@@ -96,19 +97,19 @@ def main() -> int:
     pins = snes_pins()
     # --- Atari 8 bits
     po = a8_pinout()
-    e, used = check("a8bit", ROOT / "docs/planos/adaptador-a8bit.md", po, 26, 12, {"/S4": "PH6", "/S5": "PH3", "R/W": "PH5", "/CCTL": "PL0", "PHI2": "-"},
+    e, used = check("a8bit", secao_doc("a8bit"), po, 26, 12, {"/S4": "PH6", "/S5": "PH3", "R/W": "PH5", "/CCTL": "PL0", "PHI2": "-"},
                     {"13": "+5V", "B": "GND"}, {"A": "RD4", "14": "RD5"}, 30)  # type: ignore[misc]
     errs += e
     if sorted(used) != sorted(po):
         errs.append(f"a8bit: pinos do conector que faltam ou sobram: {sorted(set(po) ^ set(used))}")
-    doc8 = (ROOT / "docs/planos/adaptador-a8bit.md").read_text(encoding="utf-8")
+    doc8 = (secao_doc("a8bit")).read_text(encoding="utf-8")
     if "PENDENTE" in doc8:
         errs.append("a8bit: o documento não deveria ter mais PENDENTE (o PHI2 vai ao pino 57, D213)")
     if any(v[1] == "PH1" for v in pins.values()):
         errs.append("a8bit: o pinmap SNES passou a ter PH1; revisar a nota do PHI2")
     # --- Lynx
     pl = lynx_pinout()
-    e, used = check("lynx", ROOT / "docs/planos/adaptador-lynx.md", pl, 21, 10, {}, {"1": "GND"}, {"31": "VCC", "33": "VCC", "34": "SWVCC"}, 34)  # type: ignore[misc]
+    e, used = check("lynx", secao_doc("lynx"), pl, 21, 10, {}, {"1": "GND"}, {"31": "VCC", "33": "VCC", "34": "SWVCC"}, 34)  # type: ignore[misc]
     errs += e
     pend = {"26", "25", "24", "23", "19", "20", "21", "22", "32"}   # A12 a A19 e AUDIN
     if (set(pl) - set(used)) != pend:
@@ -116,7 +117,7 @@ def main() -> int:
     for k in sorted(pend, key=int):
         if not re.fullmatch(r"A1[2-9]|AUDIN", pl.get(k, "")):
             errs.append(f"lynx: pino {k} do quadro deveria ser A12-A19 ou AUDIN, é '{pl.get(k)}'")
-    doc_l = (ROOT / "docs/planos/adaptador-lynx.md").read_text(encoding="utf-8")
+    doc_l = (secao_doc("lynx")).read_text(encoding="utf-8")
     if "PENDENTES" not in doc_l:
         errs.append("lynx: o documento tem que listar A12 a A19 e AUDIN como PENDENTES")
     for p, want in ((5, "GND"), (36, "GND"), (27, "5V (fixo)"), (58, "5V (fixo)")):

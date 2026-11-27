@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Pokémon Mini (docs/planos/adaptador-pokemini.md, D227) contra
+"""Confere a tabela do adaptador do Pokémon Mini (docs/planos/adaptadores.md#adaptador-pokemini, D227) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/PokemonMini.cpp (fileira B1 a B17 à esquerda, A1 a A15 à direita);
 2. a lista CONTROL PINS do mesmo quadro (sinal -> porta AVR);
 3. o pinmap do slot SNES (pino do slot -> porta AVR);
@@ -15,9 +15,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-pokemini.md"
+DOC = secao_doc("pokemini")
 CORE = ROOT / "firmware/oscr/src/cores/PokemonMini.cpp"
 KEYS = [f"B{n}" for n in range(1, 18)] + [f"A{n}" for n in range(1, 16)]   # 32 pinos: B1-B17 e A1-A15
 

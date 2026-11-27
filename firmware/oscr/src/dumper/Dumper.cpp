@@ -659,7 +659,7 @@ namespace OSCR::Dumper
 
     /**
      * Watara Supervision (F-20, D218): a leitura chama o `readROM` do OSCR (índice em `romSize`); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`.
-     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptador-supervision.md).
+     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptadores.md#adaptador-supervision).
      * A ROM não tem assinatura: a sondagem liga o cartucho, lê 32 bytes de $8000 com o `readByte` do OSCR (RD já baixo no `cartOn`) e só separa slot vazio de slot com dados.
      */
     uint8_t svProbe()
@@ -772,7 +772,7 @@ namespace OSCR::Dumper
 
     /**
      * Pokémon Mini (F-20, D227): a leitura chama o `readROM` do OSCR (sempre 512 KB); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`.
-     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptador-pokemini.md).
+     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptadores.md#adaptador-pokemini).
      * O fork não confere assinatura: a sondagem lê 32 bytes de $2100 com o `readData` do OSCR (trava A10 a A20 com HALE e A0 a A9 com LALE) e só separa slot vazio de slot com dados.
      */
     uint8_t pkmProbe()
@@ -792,7 +792,7 @@ namespace OSCR::Dumper
     /**
      * V.Smile (F-20, D228): a leitura chama o `readROM` do OSCR com `romSize` = índice da tabela `romSizes` (4, 6, 8 ou 16 MB; 6 MB lê o segundo chip
      * com CSB2, 16 MB o segundo chip do V.Motion com CSB1 e CSB2); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`.
-     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptador-vsmile.md).
+     * O núcleo pede 3,3 V (`setVoltage(k3V3)`); o slot SNES é 5 V fixo, então o adaptador precisa do próprio regulador (docs/planos/adaptadores.md#adaptador-vsmile).
      * O fork não confere assinatura: a sondagem lê 16 palavras do início do primeiro chip com o `read_rom_word` do OSCR e só separa slot vazio de slot com dados.
      */
     uint8_t vsmProbe()

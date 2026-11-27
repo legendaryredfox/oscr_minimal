@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do Bally Astrocade (docs/planos/adaptador-astrocade.md, D223) contra
+"""Confere a tabela do adaptador do Bally Astrocade (docs/planos/adaptadores.md#adaptador-astrocade, D223) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/BallyAstrocade.cpp (pino do conector -> sinal; uma coluna só);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa (A0-A7 em PF, A8-A12 em PK0-PK4, D0-D7 em PC, /ENABLE em PH3).
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-astrocade.md"
+DOC = secao_doc("astrocade")
 CORE = ROOT / "firmware/oscr/src/cores/BallyAstrocade.cpp"
 
 

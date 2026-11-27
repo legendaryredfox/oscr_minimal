@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere docs/planos/adaptador-jaguar.md (D211) contra o pinmap do slot SNES e do Mega Drive: os pinos que a tabela lista batem com as portas, e o conflito
+"""Confere docs/planos/adaptadores.md#adaptador-jaguar (D211) contra o pinmap do slot SNES e do Mega Drive: os pinos que a tabela lista batem com as portas, e o conflito
 documentado continua verdadeiro (PE3 só no Mega Drive, PL7 só fora dele). Sai com 1 se algo divergir; se o pinmap mudar e o conflito sumir, avisa para revisar o documento."""
 from __future__ import annotations
 
@@ -9,8 +9,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 PINMAP = ROOT / "boards/16_and_8_bits/docs/pinmap.md"
-DOC = ROOT / "docs/planos/adaptador-jaguar.md"
+DOC = secao_doc("jaguar")
 
 
 def section(prefix: str) -> dict[str, str]:
@@ -51,7 +53,7 @@ def main() -> int:
                 errs.append(f"{sig}: pino {pin} do slot SNES é {snes.get(str(pin))} no pinmap (tabela diz {n})")
     # o conflito documentado
     if "PE3" in by_port_snes:
-        errs.append("PE3 chegou ao slot SNES: o conflito do adaptador do Jaguar acabou, revisar docs/planos/adaptador-jaguar.md")
+        errs.append("PE3 chegou ao slot SNES: o conflito do adaptador do Jaguar acabou, revisar docs/planos/adaptadores.md#adaptador-jaguar")
     if by_port_md.get("PE3") != "B15":
         errs.append("PE3 deveria estar no pino B15 do slot Mega Drive")
     if "PL7" in by_port_md:

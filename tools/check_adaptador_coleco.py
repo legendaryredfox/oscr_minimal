@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Confere a tabela do adaptador do ColecoVision (docs/planos/adaptador-coleco.md, D204) contra
+"""Confere a tabela do adaptador do ColecoVision (docs/planos/adaptadores.md#adaptador-coleco, D204) contra
 1. o quadro "Cartridge Pinout" no começo de firmware/oscr/src/cores/Colecovision.cpp (pino do conector -> sinal);
 2. o pinmap do slot SNES (pino do slot -> porta AVR);
 3. as portas que o núcleo usa (A0-A7 PF, A8-A14 PK, D0-D7 PC, /8000 PH3, /A000 PH4, /C000 PH5, /E000 PH6).
@@ -13,9 +13,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from adaptadores_doc import secao_doc  # noqa: E402
 from check_adaptador_ngp import snes_pins  # noqa: E402
 
-DOC = ROOT / "docs/planos/adaptador-coleco.md"
+DOC = secao_doc("coleco")
 CORE = ROOT / "firmware/oscr/src/cores/Colecovision.cpp"
 
 
