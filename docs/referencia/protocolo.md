@@ -98,6 +98,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 23 | Tomy Pyuuta (adaptador de 36 pinos no slot SNES, 5 V; F-20, D217) | `.bin` |
 | 24 | Watara Supervision (adaptador de 40 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D218) | `.sv` |
 | 25 | Casio PV-1000 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D219) | `.bin` |
+| 26 | Bally Astrocade (adaptador de 26 pinos no slot SNES, 5 V; F-20, D223) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -149,6 +150,10 @@ Usa o núcleo `Supervision.cpp` do OSCR, só leitura de ROM. A costura chama o `
 ### Opções para Casio PV-1000 (D219)
 
 Usa o núcleo `CasioPV1000.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `PV1000`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 8 (usa /CS1) ou 16 (usa /CS2); outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` (primeiro com /CS1 baixo e, se vier vazio, com /CS2 baixo): `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. A ROM do PV-1000 não tem assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/PvCore.h`, testadas em `pc-tests/test_pv.cpp`.
+
+### Opções para Bally Astrocade (D223)
+
+Usa o núcleo `BallyAstrocade.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `BALLY`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 2, 4 ou 8; outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` (com /ENABLE baixo, pelo `readData` do núcleo): `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. O fork não confere assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/BallyCore.h`, testadas em `pc-tests/test_bally.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 

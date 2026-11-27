@@ -6,7 +6,6 @@ Sem id no protocolo, sem hardware, sem firmware. A mesma lista está em gui/shar
 from __future__ import annotations
 
 PLANNED: tuple[tuple[str, str], ...] = (
-    ("astrocade", "Bally Astrocade"),
     ("loopy", "Casio Loopy"), ("channelf", "Fairchild Channel F"),
     ("c64", "Commodore 64"), ("vic20", "Commodore VIC-20"),
     ("cps3", "Capcom CPS3"), ("intellivision", "Intellivision"), ("leapster", "Leapster"),

@@ -33,7 +33,7 @@ object Proto {
 
 /** Sistemas e extensão do arquivo de ROM. */
 enum class CartSystem(val id: Int, val ext: String) {
-    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), N64(11, ".z64"), COLECO(12, ".col"), NGP(13, ".ngp"), VECTREX(14, ".vec"), A2600(15, ".a26"), A5200(16, ".a52"), A7800(17, ".a78"), A8BIT(18, ".rom"), LYNX(19, ".lnx"), JAGUAR(20, ".jag"), ARCADIA(21, ".bin"), RCA2(22, ".bin"), PYUUTA(23, ".bin"), SUPERVISION(24, ".sv"), PV1000(25, ".bin"), MOCK(255, ".bin");
+    SNES(1, ".sfc"), NES(2, ".nes"), FAMICOM(3, ".nes"), MD(4, ".md"), GBA(5, ".gba"), GB(6, ".gb"), FLASH(7, ".bin"), SMS(8, ".sms"), GG(9, ".gg"), SG1000(10, ".sg"), N64(11, ".z64"), COLECO(12, ".col"), NGP(13, ".ngp"), VECTREX(14, ".vec"), A2600(15, ".a26"), A5200(16, ".a52"), A7800(17, ".a78"), A8BIT(18, ".rom"), LYNX(19, ".lnx"), JAGUAR(20, ".jag"), ARCADIA(21, ".bin"), RCA2(22, ".bin"), PYUUTA(23, ".bin"), SUPERVISION(24, ".sv"), PV1000(25, ".bin"), ASTROCADE(26, ".bin"), MOCK(255, ".bin");
 }
 
 /**
