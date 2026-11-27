@@ -704,10 +704,14 @@ namespace OSCR::Cores::SFM
     numBanks = (long(romSize) * 1024 * 1024 / 8) / (32768 + (long(romType) * 32768));
 
     //Check SD card for alt config, pass CRC32 of snesHeader but filter out 0000 and FFFF checksums
+# if !OSCR_DUMPER   // fork oscr_minimal: sem SD nem base de dados (o ponteiro do banco é nulo); o PC confere o CRC32 (D225)
     if ((0x0000 != checksum) && (0xFFFF != checksum))
     {
       OSCR::Cores::SNES::checkAltConf(checksum, crc);
     }
+# else
+    (void)crc;
+# endif
 
     // Get name
     uint8_t myByte = 0;

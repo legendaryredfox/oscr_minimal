@@ -64,6 +64,7 @@ O firmware novo identifica o jogo por uma base (CRDB) lida do cartão SD. Sem SD
 - O PC (host/GUI) consulta uma base do usuário (No-Intro, NES 2.0 XML ou a CRDB do OSCR, em arquivo local) pelo CRC32 e mostra o nome do jogo, a versão e se o dump confere.
 - Para o **NES**, onde o cartucho não diz o mapper, o PC escolhe mapper, PRG, CHR e RAM na base (por nome do jogo escolhido pelo usuário) e os manda como opções do `DUMP_ROM`, que o protocolo já aceita. A tabela mapper → faixas válidas de tamanho (`crdbNESMapperRecord`) também fica no PC.
 - Ficam fora do firmware: `CRDB`, o navegador de base, os arquivos `.crdb`. Isso economiza flash e remove a dependência do SD.
+- **Conferido em D225 (2026-11-27):** o `.hex` não tem mais nenhum código de banco nem do SdFat. Toda chamada de banco que um núcleo faz num caminho que o dumper usa fica sob `#if !OSCR_DUMPER` (`matchCRC`, `compareCRC`, `checkAltConf`); as duas últimas que faltavam eram as do `readROM` do SMS e do `checkcart` do SFM. Os fontes `src/common/CRDB.cpp`, `src/common/crdb/` e `src/apps/CRDBBrowser.cpp` continuam compilando (os menus dos núcleos, que o dumper não chama, os citam), mas o linker os descarta. Sobram só os ponteiros `romDetail` e `mapperDetail` (4 B de RAM), que os núcleos leem.
 - Os arquivos da base **não vêm no clone** do OSCR (`databases/` está vazio). O usuário traz a base; o formato do No-Intro (`.dat` XML) e o da CRDB têm leitor simples no host.
 
 ### 3.3 Host (`host/`) e GUI (`gui/`)

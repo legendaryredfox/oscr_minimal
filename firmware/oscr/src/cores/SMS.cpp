@@ -868,11 +868,13 @@ namespace OSCR::Cores::SMS
 
     OSCR::UI::ProgressBar::finish(); // Update progress bar
 
+# if !OSCR_DUMPER   // fork oscr_minimal: não há banco de dados no cartão SD (abrir o banco dá fatalError e o dump terminaria em erro); o PC confere o CRC32 (D225)
     if (OSCR::Databases::Basic::compareCRC(FS(target)))
     {
       OSCR::Storage::Shared::rename_P(OSCR::Databases::Basic::crdb->record()->data()->name, ext);
       OSCR::UI::printValue(OSCR::Strings::Common::Name, OSCR::Databases::Basic::crdb->record()->data()->name);
     }
+# endif /* !OSCR_DUMPER */
   }
 
   //******************************************
