@@ -2516,7 +2516,8 @@ namespace OSCR::Dumper
     return ppb;
   }
 
-  void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
+  // noipa (D235): com LTO, o avr-gcc 15.2 gravava 0 fixo em `b` (o segundo pino de cada par chegava ao PC como "D0").
+  __attribute__((noipa)) void noteSelfTest(uint8_t kind, uint8_t a, uint8_t b)
   {
     if (selfTestOut != nullptr) selfTestOut->add(kind, a, b);
   }
