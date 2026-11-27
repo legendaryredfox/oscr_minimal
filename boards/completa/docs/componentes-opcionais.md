@@ -2,7 +2,7 @@
 
 Placa de 7 slots: SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA (`boards/completa/`). Um cartucho por vez.
 
-> **Nada aqui foi testado em hardware.** Fontes: `docs/bom.md`, `pinmap.md`, firmware, D54 e `docs/referencia/limites-gb.md`.
+> **Nada aqui foi testado em hardware.** Fontes: `docs/bom.md`, `pinmap.md`, firmware, D54 e `docs/referencia/limites.md`.
 
 | Peça | Retirar? | O que deixa de funcionar | Jogos afetados |
 |---|---|---|---|
@@ -18,7 +18,7 @@ Placa de 7 slots: SNES, NES, Famicom, Mega Drive, Master System, N64 e GBA (`boa
 
 Como os slots dividem os mesmos barramentos, pode-se montar só os slots que o usuário vai usar; os demais ficam vazios sem prejuízo, **menos** o desacoplamento de cada slot (montar o capacitor do slot usado). Sem PIC e sem Si5351 a placa lê tudo menos SA-1. Sem U3 e seus capacitores perde-se tudo do GBA (inclusive GB/GBC por adaptador) e do N64, mas os slots podem continuar vazios.
 
-Sobre GB/GBC a 3,3 V: ver `docs/referencia/limites-gb.md` (alguns GB antigos podem falhar; jumper para 5 V só para GB/GBC, nunca GBA).
+Sobre GB/GBC a 3,3 V: ver `docs/referencia/limites.md` (alguns GB antigos podem falhar; jumper para 5 V só para GB/GBC, nunca GBA).
 
 ## F1, J1 e seletor de tensão (D138)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Verifica todas as placas e versões de uma vez (K-1, docs/planos/pendencias-sem-placa-spec.md).
+"""Verifica todas as placas e versões de uma vez (K-1, docs/planos/pendencias.md).
 
 Para cada boards/<placa>/hardware-<versão>/:
   - ERC e DRC (com paridade esquemático x PCB) pelo kicad-cli, em JSON;

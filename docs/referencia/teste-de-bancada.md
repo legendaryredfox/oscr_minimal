@@ -1,6 +1,6 @@
 # Teste de bancada: da placa montada ao primeiro dump (somente leitura)
 
-Modelo: o `MANUFACTURING_TEST.md` e a matriz de validação do `n64cartreader` (`references/repos/n64cartreader/docs`), vindos da análise de `docs/historico/pesquisa-repos-referencia-2026-11-13.md` (D160, P3). Este procedimento **nunca grava nem apaga** nada num cartucho: a suíte `tools/hwtest/hwtest.py` recusa qualquer comando de escrita. Gravar (`save-write`, `rom-write`) só depois de tudo aqui passar, e sempre com o aval do usuário naquele momento (regras em `docs/referencia/uso.md`, seção 6).
+Modelo: o `MANUFACTURING_TEST.md` e a matriz de validação do `n64cartreader` (`references/repos/n64cartreader/docs`), vindos da análise de `docs/historico/pesquisas-2026-11.md#pesquisa-repos-referencia` (D160, P3). Este procedimento **nunca grava nem apaga** nada num cartucho: a suíte `tools/hwtest/hwtest.py` recusa qualquer comando de escrita. Gravar (`save-write`, `rom-write`) só depois de tudo aqui passar, e sempre com o aval do usuário naquele momento (regras em `docs/referencia/uso.md`, seção 6).
 
 ## O que se precisa
 

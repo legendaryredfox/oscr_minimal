@@ -80,4 +80,4 @@ Dez GPIO no total. O lado do Mega (D40 = PG1, D41 = PG0) não muda: `boards/16_b
 
 ## Depois do RP2040
 
-Na fila, pedido do usuário em 2026-11-17: adaptador passante para capturar o barramento do Mega Drive com um Pier Solar (`docs/planos/adaptador-passante-pier-solar.md`). Só depois de fechada a decisão do RP2040.
+Na fila, pedido do usuário em 2026-11-17: adaptador passante para capturar o barramento do Mega Drive com um Pier Solar (`docs/planos/melhorias-megadrive.md`). Só depois de fechada a decisão do RP2040.

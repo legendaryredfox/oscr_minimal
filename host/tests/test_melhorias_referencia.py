@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Melhorias vindas da análise dos repositórios de referência (D160, docs/historico/pesquisa-repos-referencia-2026-11-13.md)."""
+"""Melhorias vindas da análise dos repositórios de referência (D160, docs/historico/pesquisas-2026-11.md#pesquisa-repos-referencia)."""
 
 
 def test_sound_um_bel_se_deu_certo_e_tres_se_falhou(capsys):

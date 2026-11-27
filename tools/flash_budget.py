@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Orçamento de flash e RAM do firmware (F-0a e F-0e, docs/planos/pendencias-sem-placa-spec.md).
+"""Orçamento de flash e RAM do firmware (F-0a e F-0e, docs/planos/pendencias.md).
 
   flash_budget.py check [--env SerialASCII ...] [--flash-max 95] [--ram-max 80]
       Compila cada ambiente (pio run) e falha se o flash passar de --flash-max % ou a RAM de --ram-max %
