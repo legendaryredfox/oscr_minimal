@@ -13,7 +13,7 @@ val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
     PlannedSystem("cps3", "Capcom CPS3"), PlannedSystem("intellivision", "Intellivision"), PlannedSystem("leapster", "Leapster", true),
     PlannedSystem("jammer", "Little Jammer"), PlannedSystem("jammerpro", "Little Jammer Pro", true),
     PlannedSystem("vb", "Virtual Boy"), PlannedSystem("pokemini", "Pokémon Mini", true),
-    PlannedSystem("odyssey2", "Odyssey 2"), PlannedSystem("pce", "PC Engine / TurboGrafx-16"), PlannedSystem("pcw", "Pocket Challenge W"),
+    PlannedSystem("pce", "PC Engine / TurboGrafx-16"), PlannedSystem("pcw", "Pocket Challenge W"),
     PlannedSystem("satellaview", "Satellaview (BS-X)"), PlannedSystem("sfm", "SF Memory"),
     PlannedSystem("supercan", "Super A'can"),
     PlannedSystem("ti99", "TI-99/4A"), PlannedSystem("trs80", "TRS-80"),

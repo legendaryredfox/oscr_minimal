@@ -93,6 +93,7 @@ object Rules {
         CartSystem.JAGUAR -> if (kb in setOf(1024, 2048, 4096)) null else Problem(S.V_JAGUAR_SIZE)     // o cartucho não informa o tamanho (AtariCore.h, `jag::sizeIndex`)
         CartSystem.SUPERVISION -> if (kb in setOf(32, 64, 512)) null else Problem(S.V_SUPERVISION_SIZE)     // o cartucho não informa o tamanho (SvCore.h)
         CartSystem.PV1000 -> if (kb in setOf(8, 16)) null else Problem(S.V_PV1000_SIZE)     // o cartucho não informa o tamanho (PvCore.h)
+        CartSystem.ODYSSEY2 -> if (kb in setOf(2, 4, 8, 12, 16)) null else Problem(S.V_ODY2_SIZE)     // o cartucho não informa o tamanho (OdyCore.h)
         CartSystem.CHANNELF -> if (kb in setOf(2, 3, 4, 6)) null else Problem(S.V_CHANNELF_SIZE)     // o cartucho não informa o tamanho (ChfCore.h)
         CartSystem.ASTROCADE -> if (kb in setOf(2, 4, 8)) null else Problem(S.V_ASTROCADE_SIZE)     // o cartucho não informa o tamanho (BallyCore.h)
         CartSystem.PYUUTA -> if (kb in setOf(8, 16, 32)) null else Problem(S.V_PYUUTA_SIZE)     // o cartucho não informa o tamanho (PyuCore.h)
@@ -112,6 +113,13 @@ object Rules {
     }
 
     /** Atari 8 bits (D210): o slot direito ignora o tamanho; o esquerdo pede um dos tamanhos da tabela do núcleo. */
+    /** Odyssey 2 (F-20, D226): mapper 0 (A10 sem ligação) com 2, 4, 8, 12 ou 16 KB; mapper 1 (A10 ligado) só com 4 KB, como `OdyCore.h` (`argsValid`). */
+    fun odyssey2(mapper: Int, kb: Int): Problem? = when {
+        mapper == 1 && kb != 4 -> Problem(S.V_ODY2_A10)
+        mapper != 0 && mapper != 1 -> Problem(S.V_UNSUPPORTED_MAPPER, mapper)
+        else -> romSize(CartSystem.ODYSSEY2, kb)
+    }
+
     fun atari8(slot: Int, kb: Int): Problem? = if (Atari.a8Kb(slot, kb) != 0) null else Problem(S.V_A8_SIZE)
 
     /** Leitura do GBA 369-in-1 (F-18, D174): bloco (0 a 63) e tamanho em MB, as mesmas regras do firmware (Gba369.kt). */

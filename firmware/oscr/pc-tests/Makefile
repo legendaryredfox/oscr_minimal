@@ -5,7 +5,7 @@ CXXFLAGS ?= -std=c++11 -Wall -Wextra -O1
 SRC = ../src/dumper/oscr_proto.cpp ../src/dumper/oscr_session.cpp
 HDR = ../src/dumper/oscr_proto.h ../src/dumper/oscr_session.h
 
-test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc build/test_mdextra build/test_mdbank build/test_gbacc build/test_colv build/test_ngp build/test_vec build/test_arc build/test_rca build/test_pyu build/test_sv build/test_pv build/test_bally build/test_chf build/test_a26
+test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms build/test_n64 build/test_snes_type build/test_nes build/test_gba369 build/test_snesacc build/test_mdextra build/test_mdbank build/test_gbacc build/test_colv build/test_ngp build/test_vec build/test_arc build/test_rca build/test_pyu build/test_sv build/test_pv build/test_bally build/test_chf build/test_ody build/test_a26
 	./build/test_nes
 	./build/test_gba369
 	./build/test_snesacc
@@ -24,6 +24,7 @@ test: build/test_proto build/test_snes_plan build/test_mdflash build/test_sms bu
 	./build/test_pv
 	./build/test_bally
 	./build/test_chf
+	./build/test_ody
 	./build/test_a26
 	./build/test_n64
 	./build/test_proto
@@ -73,6 +74,10 @@ build/test_bally: test_bally.cpp ../include/dumper/BallyCore.h
 build/test_chf: test_chf.cpp ../include/dumper/ChfCore.h
 	mkdir -p build
 	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_chf.cpp
+
+build/test_ody: test_ody.cpp ../include/dumper/OdyCore.h
+	mkdir -p build
+	$(CXX) -std=c++11 -Wall -Wextra -O1 -o $@ test_ody.cpp
 
 build/test_a26: test_a26.cpp ../include/dumper/AtariCore.h
 	mkdir -p build

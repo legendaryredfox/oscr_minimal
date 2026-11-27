@@ -212,6 +212,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         system == CartSystem.A2600 -> Rules.a2600(mapN)
         system == CartSystem.A5200 || system == CartSystem.A7800 -> Rules.atari(system, mapN, prgN)
         system == CartSystem.A8BIT -> Rules.atari8(mapN, prgN)
+        system == CartSystem.ODYSSEY2 -> Rules.odyssey2(mapN, prgN)
         system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
@@ -1045,6 +1046,15 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.PV1000) Callout(t(S.PV1000_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.ASTROCADE) Callout(t(S.ASTROCADE_HINT), Tone.INFO)
+            if (stub == null && system == CartSystem.ODYSSEY2) {
+                Callout(t(S.ODY2_HINT), Tone.INFO)
+                LabeledField(t(S.ODY2_MAPPER)) {
+                    ComboBox(value = t(if (mapN == 1) S.ODY2_MAPPER_A10 else S.ODY2_MAPPER_STD), modifier = Modifier.fillMaxWidth()) { close ->
+                        DropdownMenuItem(text = { Text(t(S.ODY2_MAPPER_STD)) }, onClick = { close(); mapper = "0" })
+                        DropdownMenuItem(text = { Text(t(S.ODY2_MAPPER_A10)) }, onClick = { close(); mapper = "1"; prgKb = "4" })
+                    }
+                }
+            }
             if (stub == null && system == CartSystem.CHANNELF) {
                 Callout(t(S.CHANNELF_HINT), Tone.INFO)
                 LabeledField(t(S.CHF_MODE)) {
@@ -1108,7 +1118,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                         supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
                 }
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF)) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.ODYSSEY2)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }

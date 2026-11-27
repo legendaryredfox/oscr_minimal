@@ -100,6 +100,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 25 | Casio PV-1000 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D219) | `.bin` |
 | 26 | Bally Astrocade (adaptador de 26 pinos no slot SNES, 5 V; F-20, D223) | `.bin` |
 | 27 | Fairchild Channel F (adaptador de 22 pinos no slot SNES, 5 V; VGG de 12 V pendente; F-20, D224) | `.bin` |
+| 28 | Magnavox Odyssey 2 / Philips Videopac (adaptador de 30 pinos no slot SNES, 5 V; F-20, D226) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -159,6 +160,10 @@ Usa o núcleo `BallyAstrocade.cpp` do OSCR, só leitura de ROM. A costura chama 
 ### Opções para Fairchild Channel F (D224)
 
 Usa o núcleo `ChannelF.cpp` do OSCR, só leitura de ROM, pelo protocolo ROMC do F8 (o cartucho não tem barramento de endereço). `mapper` escolhe a função do OSCR: **0** = `readROM` (procura o cabeçalho `$55` seguido de `$08`, `$2B`, `$AA` ou `$BB` e grava `prg_kb` KB dali; a costura liga e desliga o cartucho, que o `readROM` não liga), **1** = `read16K` ("Read 16K" do menu: 16 KB brutos, sem procurar cabeçalho); outro valor dá `ERRO 0x0004`. `prg_kb` vale sempre: 2, 3, 4 ou 6 (índice da tabela `romSizes`; o `read16K` também o usa para pular a BIOS nos de 4 KB); outro valor dá `ERRO 0x0004`. Única mudança no núcleo: os dois `matchCRC` sob `#if !OSCR_DUMPER`. `DETECT` repete a procura do `readROM` (até `$4800` leituras): `status` 0 com cabeçalho, 1 se todos os bytes forem iguais a `$00` ou `$FF` (slot vazio), 4 se há dados sem cabeçalho; `rom_size` é o tamanho do arquivo que o modo e o `prg_kb` do `DETECT` dariam (0 sem tamanho válido). Com `status` 4, `DUMP_ROM` no modo 0 responde `ERRO 0x0007` (o `readROM` não gravaria nada); o modo 1 segue. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ChfCore.h`, testadas em `pc-tests/test_chf.cpp`.
+
+### Opções para Magnavox Odyssey 2 / Videopac (D226)
+
+Usa o núcleo `Odyssey2.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR com `ody2mapper` = `mapper` e `ody2size` = índice de `prg_kb` na tabela `romSizes`; única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`. `mapper` é o mapper da base do OSCR: **0** = cartucho comum (A10 sem ligação): 2 KB de `$0400`, 4 KB somando `$1400`, 8 KB somando `$2400` e `$3400`; 12 e 16 KB (Videopac+) trocam de banco pelo `bankSwitch` do núcleo (6 ou 8 bancos de 2 KB, do último ao primeiro); **1** = A10 ligado (Videopac 31 Musician e 40 4 in 1 Row): 4 KB contínuos de `$0000`. `prg_kb` vale sempre: 2, 4, 8, 12 ou 16 com o mapper 0; só 4 com o mapper 1; outra combinação dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0400` (com /PSEN baixo, pelo `readData` do núcleo): `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0; `rom_size` é o tamanho do arquivo que o `mapper` e o `prg_kb` do `DETECT` dariam (0 sem combinação válida). O fork não confere assinatura. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/OdyCore.h`, testadas em `pc-tests/test_ody.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 

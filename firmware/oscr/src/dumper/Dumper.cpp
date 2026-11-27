@@ -29,6 +29,7 @@
 # include "cores/CasioPV1000.h"
 # include "cores/BallyAstrocade.h"
 # include "cores/ChannelF.h"
+# include "cores/Odyssey2.h"
 # include "cores/Supervision.h"
 # include "cores/Atari2600.h"
 # include "cores/Atari5200.h"
@@ -72,6 +73,7 @@
 # include "dumper/PvCore.h"
 # include "dumper/BallyCore.h"
 # include "dumper/ChfCore.h"
+# include "dumper/OdyCore.h"
 # include "dumper/SvCore.h"
 # include "dumper/AtariCore.h"
 # include "dumper/N64Core.h"
@@ -100,6 +102,8 @@ namespace OSCR::Cores::N64 { extern uint16_t eepPages; extern OSCR::CRC32::crc32
 // `romSize` (índice em `romSizes`) e `atari8right` ficam no .cpp do núcleo Atari8, sem declaração no cabeçalho (como `mmc6` do NES): o `readROM` do OSCR lê os dois.
 namespace OSCR::Cores::Atari8 { extern uint8_t romSize; extern bool atari8right; }
 // `romSize` (índice 0 a 2) e os dois últimos words lidos ficam no .cpp do núcleo Jaguar, sem declaração no cabeçalho.
+// `ody2mapper` (0 = A10 sem ligação, 1 = A10 ligado) e `ody2size` (índice em `romSizes`) ficam no .cpp do núcleo Odyssey 2, sem declaração no cabeçalho: o `readROM` do OSCR lê os dois.
+namespace OSCR::Cores::Odyssey2 { extern uint8_t ody2mapper; extern uint8_t ody2size; }
 namespace OSCR::Cores::AtariJaguar { extern uint8_t romSize; extern uint16_t tempDataLO; extern uint16_t tempDataHI; extern int eepSize; extern uint32_t flaSize; extern uint16_t flashID; }
 
 namespace OSCR::Dumper
@@ -351,6 +355,7 @@ namespace OSCR::Dumper
     namespace PV = OSCR::Cores::CasioPV1000;
     namespace BA = OSCR::Cores::BallyAstrocade;
     namespace CF = OSCR::Cores::ChannelF;
+    namespace OD = OSCR::Cores::Odyssey2;
     namespace SV = OSCR::Cores::Supervision;
     namespace A2 = OSCR::Cores::Atari2600;
     namespace A5 = OSCR::Cores::Atari5200;
@@ -736,6 +741,27 @@ namespace OSCR::Dumper
       CF::cartOn();                                                     // o `readROM` do núcleo não liga o cartucho (o menu do OSCR também não): a costura liga e desliga
       CF::readROM();
       CF::cartOff();
+    }
+
+    /**
+     * Magnavox Odyssey 2 / Videopac (F-20, D226): a leitura chama o `readROM` do OSCR com `ody2mapper` (0 = A10 sem ligação, 1 = A10 ligado) e `ody2size`
+     * (índice de 2, 4, 8, 12 ou 16 KB; 12 e 16 KB trocam de banco pelo `bankSwitch` do núcleo); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`.
+     * O fork não confere assinatura: a sondagem lê 32 bytes de $0400 com o `readData` do OSCR (que baixa e sobe /PSEN em PH6) e só separa slot vazio de slot com dados.
+     */
+    uint8_t odyProbe()
+    {
+      uint8_t sample[32];
+      OD::cartOn();
+      for (uint8_t i = 0; i < sizeof sample; i++) sample[i] = OD::readData(oscr::ody::kBase + i);
+      OD::cartOff();
+      return oscr::ody::classify(sample, sizeof sample);
+    }
+    void odyRead(uint16_t mapper, uint16_t kb)
+    {
+      OSCR::Cores::fromCRDB = false;
+      OD::ody2mapper = uint8_t(mapper);                                 // o mesmo campo que o `setCart` do OSCR copia da base (D226)
+      OD::ody2size = oscr::ody::sizeIndex(kb);                          // índice da tabela `romSizes` do núcleo: 2, 4, 8, 12 ou 16 KB
+      OD::readROM();                                                    // liga e desliga o cartucho e abre/fecha o "arquivo" sozinha
     }
 
     /**
@@ -1162,8 +1188,8 @@ namespace OSCR::Dumper
       }
 
       uint8_t flags() override { return 8 | 16; }     // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
-      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_A8) | (1UL << oscr::SYS_LYNX) | (1UL << oscr::SYS_JAG) | (1UL << oscr::SYS_ARC) | (1UL << oscr::SYS_RCA2) | (1UL << oscr::SYS_PYU) | (1UL << oscr::SYS_SV) | (1UL << oscr::SYS_PV) | (1UL << oscr::SYS_BALLY) | (1UL << oscr::SYS_CHF) | (1UL << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_FLASH; }
+      uint32_t systems() override { return (1UL << oscr::SYS_SNES) | (1UL << oscr::SYS_NES) | (1UL << oscr::SYS_FAMICOM) | (1UL << oscr::SYS_MD) | (1UL << oscr::SYS_GBA) | (1UL << oscr::SYS_GB) | (1UL << oscr::SYS_SMS) | (1UL << oscr::SYS_GG) | (1UL << oscr::SYS_SG1000) | (1UL << oscr::SYS_N64) | (1UL << oscr::SYS_COLV) | (1UL << oscr::SYS_NGP) | (1UL << oscr::SYS_VEC) | (1UL << oscr::SYS_A26) | (1UL << oscr::SYS_A52) | (1UL << oscr::SYS_A78) | (1UL << oscr::SYS_A8) | (1UL << oscr::SYS_LYNX) | (1UL << oscr::SYS_JAG) | (1UL << oscr::SYS_ARC) | (1UL << oscr::SYS_RCA2) | (1UL << oscr::SYS_PYU) | (1UL << oscr::SYS_SV) | (1UL << oscr::SYS_PV) | (1UL << oscr::SYS_BALLY) | (1UL << oscr::SYS_CHF) | (1UL << oscr::SYS_ODY2) | (1UL << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2 || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -1366,6 +1392,19 @@ namespace OSCR::Dumper
           return;
         }
 
+        if (system == oscr::SYS_ODY2)
+        {
+          uint8_t st = oscr::ody::kNoCart;
+          bool ran = runCore([&st] { st = odyProbe(); });
+          if (!ran) { out.status = 1; return; }
+          out.status = st;
+          if (st == oscr::ody::kNoCart) return;
+          strlcpy_P(out.name, PSTR("ODYSSEY2"), sizeof(out.name));
+          out.rom_size = oscr::ody::fileBytes(optMapper, optPrgKb);    // o cartucho não diz o tamanho: sai do que o PC informou (0 sem combinação válida)
+          out.save_size = 0; out.save_type = 0;
+          return;
+        }
+
         if (system == oscr::SYS_CHF)
         {
           uint8_t st = oscr::chf::kNoCart;
@@ -1553,7 +1592,7 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
         if (system == oscr::SYS_MD && kind == oscr::KIND_ROM && optMapper != 0 && !OSCR::Dumper::MdBank::sizeValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 1, 2 ou 3 e tamanho em KB (D181, D183)
-        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
+        if ((system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2) && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // cartucho de ColecoVision não tem save
         if (!prepare(system, kind == oscr::KIND_SAVE, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -1584,6 +1623,7 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_PV) { pvRead(colvKb); return; }
           if (system == oscr::SYS_BALLY) { ballyRead(colvKb); return; }
           if (system == oscr::SYS_CHF) { chfRead(a26Id, colvKb); return; }
+          if (system == oscr::SYS_ODY2) { odyRead(a26Id, colvKb); return; }
           if (system == oscr::SYS_A26) { a26Read(a26Id); return; }
           if (system == oscr::SYS_A52) { a52Read(a26Id, a5romsize); return; }
           if (system == oscr::SYS_A78) { a78Read(a26Id, a5romsize); return; }
@@ -1689,7 +1729,7 @@ namespace OSCR::Dumper
           err = gbRtcNone ? oscr::E_SEM_SAVE : oscr::E_CARTUCHO_IO;
           return ok && !gbRtcNone;
         }
-        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF) { err = oscr::E_SEM_SAVE; return false; }
+        if (system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2) { err = oscr::E_SEM_SAVE; return false; }
         if (!prepare(system, true, err)) return false;
 
         uint8_t saveType = OSCR::Cores::saveType;
@@ -2153,6 +2193,15 @@ namespace OSCR::Dumper
           bool ran = runCore([&st] { st = arcProbe(); });
           if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
           if (st == oscr::arc::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
+          return true;
+        }
+        if (system == oscr::SYS_ODY2)
+        {
+          if (!oscr::ody::argsValid(optMapper, optPrgKb)) { err = oscr::E_ARGUMENTO; return false; }   // mapper 0 com 2, 4, 8, 12 ou 16 KB; mapper 1 só com 4 KB
+          uint8_t st = oscr::ody::kNoCart;
+          bool ran = runCore([&st] { st = odyProbe(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::ody::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           return true;
         }
         if (system == oscr::SYS_CHF)
