@@ -93,6 +93,7 @@ object Rules {
         CartSystem.JAGUAR -> if (kb in setOf(1024, 2048, 4096)) null else Problem(S.V_JAGUAR_SIZE)     // o cartucho não informa o tamanho (AtariCore.h, `jag::sizeIndex`)
         CartSystem.SUPERVISION -> if (kb in setOf(32, 64, 512)) null else Problem(S.V_SUPERVISION_SIZE)     // o cartucho não informa o tamanho (SvCore.h)
         CartSystem.PV1000 -> if (kb in setOf(8, 16)) null else Problem(S.V_PV1000_SIZE)     // o cartucho não informa o tamanho (PvCore.h)
+        CartSystem.CHANNELF -> if (kb in setOf(2, 3, 4, 6)) null else Problem(S.V_CHANNELF_SIZE)     // o cartucho não informa o tamanho (ChfCore.h)
         CartSystem.ASTROCADE -> if (kb in setOf(2, 4, 8)) null else Problem(S.V_ASTROCADE_SIZE)     // o cartucho não informa o tamanho (BallyCore.h)
         CartSystem.PYUUTA -> if (kb in setOf(8, 16, 32)) null else Problem(S.V_PYUUTA_SIZE)     // o cartucho não informa o tamanho (PyuCore.h)
         CartSystem.RCA2 -> if (kb == 1) null else Problem(S.V_RCA2_SIZE)     // o cartucho não informa o tamanho; o readROM do OSCR lê 1 KB (RcaCore.h)

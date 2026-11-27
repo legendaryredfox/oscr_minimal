@@ -99,6 +99,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 24 | Watara Supervision (adaptador de 40 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D218) | `.sv` |
 | 25 | Casio PV-1000 (adaptador de 36 pinos no slot SNES, 5 V; F-20, D219) | `.bin` |
 | 26 | Bally Astrocade (adaptador de 26 pinos no slot SNES, 5 V; F-20, D223) | `.bin` |
+| 27 | Fairchild Channel F (adaptador de 22 pinos no slot SNES, 5 V; VGG de 12 V pendente; F-20, D224) | `.bin` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -154,6 +155,10 @@ Usa o núcleo `CasioPV1000.cpp` do OSCR, só leitura de ROM. A costura chama o `
 ### Opções para Bally Astrocade (D223)
 
 Usa o núcleo `BallyAstrocade.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR (`romSize` = índice da tabela `BALLY`); única mudança no núcleo: o `matchCRC` final (base do cartão SD, que não existe aqui) sob `#if !OSCR_DUMPER`. `prg_kb` é o **tamanho em KB** e vale sempre: 2, 4 ou 8; outro valor dá `ERRO 0x0004`. `DETECT` lê 32 bytes de `$0000` (com /ENABLE baixo, pelo `readData` do núcleo): `status` 1 se todos iguais a `$00` ou `$FF` (slot vazio), senão 0. O fork não confere assinatura: `rom_size` é 0. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/BallyCore.h`, testadas em `pc-tests/test_bally.cpp`.
+
+### Opções para Fairchild Channel F (D224)
+
+Usa o núcleo `ChannelF.cpp` do OSCR, só leitura de ROM, pelo protocolo ROMC do F8 (o cartucho não tem barramento de endereço). `mapper` escolhe a função do OSCR: **0** = `readROM` (procura o cabeçalho `$55` seguido de `$08`, `$2B`, `$AA` ou `$BB` e grava `prg_kb` KB dali; a costura liga e desliga o cartucho, que o `readROM` não liga), **1** = `read16K` ("Read 16K" do menu: 16 KB brutos, sem procurar cabeçalho); outro valor dá `ERRO 0x0004`. `prg_kb` vale sempre: 2, 3, 4 ou 6 (índice da tabela `romSizes`; o `read16K` também o usa para pular a BIOS nos de 4 KB); outro valor dá `ERRO 0x0004`. Única mudança no núcleo: os dois `matchCRC` sob `#if !OSCR_DUMPER`. `DETECT` repete a procura do `readROM` (até `$4800` leituras): `status` 0 com cabeçalho, 1 se todos os bytes forem iguais a `$00` ou `$FF` (slot vazio), 4 se há dados sem cabeçalho; `rom_size` é o tamanho do arquivo que o modo e o `prg_kb` do `DETECT` dariam (0 sem tamanho válido). Com `status` 4, `DUMP_ROM` no modo 0 responde `ERRO 0x0007` (o `readROM` não gravaria nada); o modo 1 segue. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ChfCore.h`, testadas em `pc-tests/test_chf.cpp`.
 
 ### Opções para Neo Geo Pocket (D202)
 
