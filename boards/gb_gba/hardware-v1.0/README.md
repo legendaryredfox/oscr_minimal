@@ -39,7 +39,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 | R1 | 220R | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | 1 |
 | U1 | MCP1700-3302E/TO (3,3 V) | `Package_TO_SOT_THT:TO-92` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

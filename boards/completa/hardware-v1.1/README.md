@@ -78,7 +78,7 @@ A v1.0 mais a proteção: seletor de tensão 3,3 V/5 V nos slots NES, Famicom, M
 | U3 | MCP1700-3302E/TO (3,3 V) | `Package_TO_SOT_THT:TO-92` | 1 |
 | U4 | LD1117V33 | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

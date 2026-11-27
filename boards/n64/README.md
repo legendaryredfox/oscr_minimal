@@ -16,7 +16,7 @@
 
 ## O que a placa leva e o que cada peça faz
 
-Detalhe em `docs/componentes-opcionais.md`. Resumo:
+Detalhe em `docs/bom.md`. Resumo:
 
 | Peça | Sem ela |
 |---|---|
@@ -36,7 +36,7 @@ O `CLAUDE.md` (seção 4) deixava o N64 fora das placas anteriores; esta placa n
 
 Regras gerais: `CLAUDE.md`. Layout da pasta: `boards/README.md`.
 
-**Peças opcionais:** [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+**Peças opcionais:** [`docs/bom.md`](docs/bom.md).
 
 ## Versões
 

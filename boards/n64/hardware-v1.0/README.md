@@ -41,7 +41,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 | U1 | Si5351_Module | `Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical` | 1 |
 | U2 | MCP1700-3302E/TO (3,3 V) | `Package_TO_SOT_THT:TO-92` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

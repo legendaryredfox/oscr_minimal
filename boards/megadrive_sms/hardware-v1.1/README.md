@@ -68,7 +68,7 @@ Sem as redes RN (D140), foi roteada de novo pelo Freerouting (0 ligações abert
 | SMS1 | SMS_Slot | `dumper:SMS_Slot` | 1 |
 | U1 | LD1117V33 | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

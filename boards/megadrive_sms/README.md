@@ -53,6 +53,6 @@ kicad-cli pcb drc boards/megadrive_sms/hardware-v1.0/dumper.kicad_pcb
 tools/export_fab.sh megadrive_sms v1.0
 ```
 
-Peças opcionais: [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
+Peças opcionais: [`docs/bom.md`](docs/bom.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
 
 Atribuição: baseado no Open Source Cartridge Reader de sanni (CC BY 4.0).

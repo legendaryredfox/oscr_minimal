@@ -59,7 +59,7 @@ PLACAS = {
                   "Resistores série (0 Ω) nas 12 linhas de controle (**sem os TVS**, D130), pull-up de `/VRES` (DNP), `/CART` no D50, C5, C6, pontos de teste e três furos M3 alinhados com o Mega. Sem a chave de 5V (Q1) e sem o botão de reset (D128); D19 e RST ficam sem ligação."),
                  ("v1.3", "hardware-v1.3", "gerbers-v1.3", False,
                   "A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138), sem R15, TVS nem resistores de 470 Ω em série (D140). Roteada pelo Freerouting: **revisar no KiCad antes de encomendar**. Sem as RN, os TVS e o R15 (D140), foi roteada de novo pelo Freerouting (0 ligações abertas; as antigas `/A4` e `/D17` fecharam).")]),
-    "megadrive": dict(nome="megadrive", slots="Mega Drive (64p, 2,54 mm), 5 V", extra="Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/componentes-opcionais.md`).",
+    "megadrive": dict(nome="megadrive", slots="Mega Drive (64p, 2,54 mm), 5 V", extra="Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/bom.md`).",
                       versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "")]),
     "megadrive_sms": dict(nome="megadrive_sms", slots="Mega Drive (64p, 2,54 mm) e Master System / Mark III (50p, 2,54 mm), 5 V ou 3,3 V (seletor na v1.1); **um cartucho por vez**", extra="Sem Si5351 e sem PIC (pino 47, Clock, do slot SMS sem ligação).",
                           versoes=[("v1.0", "hardware-v1.0", "gerbers-v1.0", False, ""), ("v1.1", "hardware-v1.1", "gerbers-v1.1", False, "Sem as redes RN (D140), foi roteada de novo pelo Freerouting (0 ligações abertas): **revisar o layout no KiCad**. Nada montado nem testado.")]),
@@ -145,7 +145,7 @@ def gerar(placa):
         md += ["## Lista de peças", "", "| Referências | Valor | Footprint | Qtd |", "|---|---|---|---|"]
         for r in linhas:
             md.append(f"| {r['Ref']} | {r['Valor']} | `{r['Footprint']}` | {r['Qtd']} |")
-        md += ["", "Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.", ""]
+        md += ["", "Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.", ""]
         chk = f"python3 tools/check_netlist.py --board {placa} {'--sem-tvs ' if (placa, v) == ('16_bits', 'v1.2') else ''}boards/{placa}/{hw}/dumper.kicad_sch"
         gx = ""
         sem_chk = (placa, v) == ("16_bits", "v1.0")   # o pinmap atual inclui C5, C6, D3 a D14 e TP2, que a v1.0 não tem

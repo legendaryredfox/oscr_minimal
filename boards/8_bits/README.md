@@ -42,6 +42,6 @@ tools/export_fab.sh 8_bits v1.1
 4. Revisar o layout no KiCad (autoroteador).
 5. Sem furos de fixação no Mega (só os 4 de canto): a força de inserir o cartucho passa pelos pinos dos headers.
 
-**Peças opcionais:** [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
+**Peças opcionais:** [`docs/bom.md`](docs/bom.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
 
 Atribuição: baseado no Open Source Cartridge Reader de sanni (CC BY 4.0).

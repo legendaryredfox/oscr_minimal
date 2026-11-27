@@ -73,7 +73,7 @@ A v1.2 mais o seletor de tensão 3,3 V/5 V do slot Mega Drive (D138), sem R15, T
 | U2 | PIC12F629 (em soquete; snescic-lock-resync) | `Package_DIP:DIP-8_W7.62mm` | 1 |
 | U3 | LD1117V33 | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

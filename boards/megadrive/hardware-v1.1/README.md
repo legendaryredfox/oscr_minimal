@@ -9,7 +9,7 @@ Versão **v1.1** da placa [`megadrive`](../README.md): shield 100% THT para Ardu
 | | |
 |---|---|
 | Slots | Mega Drive (64p, 2,54 mm), 5 V |
-| Circuitos | Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/componentes-opcionais.md`). |
+| Circuitos | Si5351 e PIC12F629 (herdados da `16_bits`, ver `docs/bom.md`). |
 | Tamanho | 107,1 × 110,1 mm |
 | Projeto KiCad | [`hardware-v1.1/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.1/`, `../fab/dumper-v1.1-jlcpcb.zip` |
@@ -63,7 +63,7 @@ O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligam
 | R4 | 220R | `Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical` | 1 |
 | U1 | LD1117V33 | `Package_TO_SOT_THT:TO-220-3_Vertical` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 

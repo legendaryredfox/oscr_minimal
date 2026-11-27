@@ -5,7 +5,7 @@
 ## 0. 选择板子和要买的东西
 
 1. 在 [`boards/README.md`](../../boards/README.md) 中按系统选板子（每块板的当前版本见 `boards/versoes.json`）。**v1.0** 是带保险丝的最简版本；**v1.1**（有的话）增加 3.3 V/5 V 电压选择器。
-2. 元件：`boards/<板子>/docs/bom.md` 和 `componentes-opcionais.md`。没有符号的元件（排针、垫柱、USB 线）列在 BOM 末尾。
+2. 元件：`boards/<板子>/docs/bom.md`（末尾列出缺少各个可选元件时会失去什么）。没有符号的元件（排针、垫柱、USB 线）列在 BOM 末尾。
 3. 下单：`boards/<板子>/fab/PEDIDO.md`（版本 zip、预览核对、SHA-256）。**付款前请在 KiCad 中检查布线**（由自动布线器完成）。
 
 ## 1. 焊接与组装

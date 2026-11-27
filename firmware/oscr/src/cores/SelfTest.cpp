@@ -7,7 +7,7 @@
 # include "ui.h"
 # include "cores/SelfTest.h"
 # if OSCR_DUMPER
-#   include "dumper/Dumper.h"   // fork oscr_minimal: o PC recebe o que o teste achou (README-FORK.md)
+#   include "dumper/Dumper.h"   // fork oscr_minimal: o PC recebe o que o teste achou (docs/referencia/fork-oscr.md)
 # endif
 
 namespace OSCR::Cores::SelfTest

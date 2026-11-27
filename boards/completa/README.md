@@ -44,6 +44,6 @@ tools/export_fab.sh completa v1.1
 5. **N64 e D7:** o R2 puxa o D7 a 5 V (SNES `/IRQ`), e o N64 quer o pull-up da EEPROM em 3,3 V. No OSCR o pull-up acompanha o VCC; aqui fica em 5 V. O Mega já dirige o D7 a 5 V em 3,3 V (D140), então não é um risco novo, mas é uma tensão a mais no pino da EEPROM: se só o N64 for usado, o R2 pode ser retirado. **Corrente do U3 (250 mA) com o N64 não conferida.**
 6. Revisar o layout no KiCad (autoroteador). Placa grande: confira as trilhas de +5V/VCC_CART e o 3,3 V do GBA.
 
-**Peças opcionais:** [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
+**Peças opcionais:** [`docs/bom.md`](docs/bom.md). BOM: [`docs/bom.md`](docs/bom.md). Montagem: [`docs/montagem.md`](docs/montagem.md).
 
 Atribuição: baseado no Open Source Cartridge Reader de sanni (CC BY 4.0).

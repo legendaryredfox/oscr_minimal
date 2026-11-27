@@ -5,7 +5,7 @@ Modelled on the `md_rewriter` guide (`md_rewriter/docs/guide/`). This guide only
 ## 0. Pick the board and what to buy
 
 1. Pick the board in [`boards/README.md`](../../boards/README.md) (by systems; the current version of each is in `boards/versoes.json`). **v1.0** is the minimal one with a fuse; **v1.1** (where it exists) adds the 3.3 V/5 V voltage selector.
-2. Parts: `boards/<board>/docs/bom.md` and `componentes-opcionais.md`. Parts without a symbol (pins, spacers, USB cable) are at the end of the BOM.
+2. Parts: `boards/<board>/docs/bom.md` (at the end, what is lost without each optional part). Parts without a symbol (pins, spacers, USB cable) are at the end of the BOM.
 3. Ordering the board: `boards/<board>/fab/PEDIDO.md` (version zip, preview check, SHA-256). **Review the layout in KiCad before paying** (it was routed by an autorouter).
 
 ## 1. Soldering and assembly

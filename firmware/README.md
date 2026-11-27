@@ -2,24 +2,23 @@
 
 | Pasta | O que é |
 |---|---|
-| `oscr/` | **Firmware atual**: fork do firmware novo do OSCR (`vendor/oscr/firmware`), sem SD, com o laço do protocolo serial em `src/dumper/`. Plano e estado: `docs/referencia/fork-oscr.md`; alterações no upstream: `oscr/README-FORK.md`. |
-| `oscr/pc-tests/` | Testes do protocolo no PC (framing, CRC32, sessão, modo MOCK e modo fluxo) e o `sim_stdio` que o teste cruzado do `host/` usa. |
-| `arquivo/` | **Arquivado (D76)**: o firmware próprio anterior (`oscr_serial/`, `arduino/`, `platformio/`). Ver `arquivo/README.md`. |
+| `oscr/` | **Firmware atual**: fork do firmware novo do OSCR (`vendor/oscr/firmware`), sem SD, com o laço do protocolo serial em `src/dumper/`. O que muda no upstream, como o fluxo serial se comporta e o orçamento de flash: `docs/referencia/fork-oscr.md`. |
+| `oscr/pc-tests/` | Testes no PC do protocolo (framing, CRC32, sessão, modo MOCK e modo fluxo), das regras puras de cada sistema (`include/dumper/*Core.h`) e o `sim_stdio` que o teste cruzado do `host/` usa. |
+| `cic_rp2040/` | CIC do SNES num RP2040-Zero, no lugar do PIC12F629 (não validado; `docs/planos/placa-v1.3-rp2040.md`). |
+| `arquivo/` | **Arquivado (D76)**: o firmware próprio anterior. Ver `arquivo/README.md`. |
 
 ## Compilar e gravar o firmware atual
 
 ```
 cd firmware/oscr
-pio run -e SerialASCII               # compila para o Mega 2560 (o ambiente usa user.ini: só SNES, NES, Mega Drive, GB/GBC/GBA)
-pio run -e SerialASCII -t upload     # grava
+~/.platformio/penv/bin/pio run -e SerialASCII               # compila para o Mega 2560
+~/.platformio/penv/bin/pio run -e SerialASCII -t upload     # grava (ou: dumper firmware-flash, ou o cartão da GUI)
+python3 ../../tools/flash_budget.py check                   # flash e RAM dentro do limite (95 % e 80 %)
 ```
 
-Baud do protocolo: 1.000.000 (`OSCR_DUMPER_BAUD`; para o fallback compile com `-DOSCR_DUMPER_BAUD=115200`). Última medida: 121.722 B de flash (47,9%) e 3.360 B de RAM (41,0%).
-**Nunca rodou em hardware.** O firmware do OSCR só roda no AVR; o que dá para testar no PC é o protocolo.
-
-## Testar no PC
+Baud do protocolo: 1.000.000 (`monitor_speed` no `user.ini`). O firmware do OSCR só roda no AVR; no PC dá para testar o protocolo e as regras puras:
 
 ```
-make -C firmware/oscr/pc-tests test        # 16 verificações do protocolo
-python -m pytest host                      # inclui o teste cruzado Python x protocolo em C++ (sim_stdio)
+make -C firmware/oscr/pc-tests test
+(cd host && python3 -m pytest -q)          # inclui o teste cruzado Python x protocolo em C++ (sim_stdio)
 ```

@@ -36,7 +36,7 @@ kicad-cli pcb drc boards/famicom/hardware-v1.1/dumper.kicad_pcb
 tools/export_fab.sh famicom v1.0
 ```
 
-**Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/componentes-opcionais.md`](docs/componentes-opcionais.md).
+**Peças opcionais:** o que se perde ao retirar cada componente, e que jogos são afetados, está em [`docs/bom.md`](docs/bom.md).
 
 ## Versões
 

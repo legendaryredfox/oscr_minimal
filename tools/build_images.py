@@ -4,7 +4,7 @@
 
 O manifest.json (e a cópia manifest.tsv, para o Kotlin) diz, de cada imagem, a versão do firmware, os sistemas que ela lê e o SHA-256 do .hex. A versão e os sistemas saem do código-fonte
 (`oscr_session.cpp` e `Dumper.cpp`), então não dá para o manifest mentir sobre o que foi compilado. Hoje há uma imagem só (`completa`):
-imagens separadas só se o orçamento de flash estourar (docs/referencia/fork-oscr.md, seção 6).
+imagens separadas só se o orçamento de flash estourar (docs/referencia/fork-oscr.md, seção 4).
 
 Uso: python3 tools/build_images.py [--no-build] [--out firmware/images]
 Os .hex e o manifest não vão para o git (são resultado de compilação); a release do programa os embute (H-7).

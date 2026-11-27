@@ -5,7 +5,7 @@ Modelo: o guia do `md_rewriter` (`md_rewriter/docs/guide/`). Este guia só amarr
 ## 0. Escolha a placa e o que comprar
 
 1. Escolha a placa em [`boards/README.md`](../../boards/README.md) (por sistemas; a versão atual de cada uma está em `boards/versoes.json`). A **v1.0** é a mínima com fusível; a **v1.1** (onde existe) tem o seletor de tensão 3,3 V/5 V.
-2. Peças: `boards/<placa>/docs/bom.md` e `componentes-opcionais.md`. Peças que não têm símbolo (pinos, espaçadores, cabo USB) estão no fim da BOM.
+2. Peças: `boards/<placa>/docs/bom.md` (no fim, o que se perde sem cada peça opcional). Peças que não têm símbolo (pinos, espaçadores, cabo USB) estão no fim da BOM.
 3. Pedido da placa: `boards/<placa>/fab/PEDIDO.md` (zip da versão, conferência da pré-visualização e SHA-256). **Revise o layout no KiCad antes de pagar** (roteamento por autoroteador).
 
 ## 1. Soldagem e montagem

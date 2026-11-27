@@ -44,7 +44,7 @@ Mínima que funciona, com o fusível F1 (D144). Roteada pelo Freerouting: **revi
 | SMS1 | SMS_Slot | `dumper:SMS_Slot` | 1 |
 | U1 | Si5351_Module | `Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical` | 1 |
 
-Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/componentes-opcionais.md` da placa.
+Gerada do esquemático desta versão (`kicad-cli sch export bom`). Peças marcadas DNP ou opcionais: `docs/bom.md` da placa.
 
 ## Verificação e fábrica (da raiz do repositório)
 
