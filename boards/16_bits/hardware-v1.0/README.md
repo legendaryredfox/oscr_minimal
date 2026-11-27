@@ -15,7 +15,7 @@ Versão **v1.0** da placa [`16_bits`](../README.md): shield 100% THT para Arduin
 | Fábrica (JLCPCB) | `../fab/gerbers-v1.0/`, `../fab/dumper-v1.0-jlcpcb.zip` |
 | Renders | `render-cima.png`, `render-baixo.png` |
 | Proteção | F1: suporte de fusível 5×20 mm, 500 mA, em série com o 5 V dos slots (acrescentado em 2026-11-09, D144) |
-| Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |
+| Estado | A placa encomendada (gerbers de 2026-11-03, sem o F1) chegou e foi montada em 2026-11-27: encaixe no Mega e footprints dos slots SNES e Mega Drive conferidos pelo usuário (D233). Teste elétrico e com cartucho ainda não feitos |
 
 ## Troca de cartucho
 

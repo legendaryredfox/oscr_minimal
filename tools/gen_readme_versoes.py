@@ -18,6 +18,8 @@ BOARDS = ROOT / "boards"
 TROCA = ("O 5V dos slots vai direto do Mega e **não é cortado por software** (o desligamento por software foi retirado, D139). "
          "Para trocar o cartucho, **desligue a placa tirando o cabo USB** do Mega; nunca com a USB ligada.")
 
+ESTADO_PADRAO = "Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar"
+ESTADO = {("16_bits", "v1.0"): "A placa encomendada (gerbers de 2026-11-03, sem o F1) chegou e foi montada em 2026-11-27: encaixe no Mega e footprints dos slots SNES e Mega Drive conferidos pelo usuário (D233). Teste elétrico e com cartucho ainda não feitos"}
 NOMES_SLOT = {"MD1": "Mega Drive", "SMS1": "Master System", "NES1": "NES", "FC1": "Famicom", "SNES1": "SNES", "GBA1": "GBA", "N64": "N64"}
 SEL_CFG = json.loads((Path(__file__).resolve().parent / "troca" / "boards.json").read_text())
 
@@ -120,7 +122,7 @@ def gerar(placa):
                f"| Projeto KiCad | [`{hw}/`](.) (`dumper.kicad_pro`, `.kicad_sch`, `.kicad_pcb`) |",
                f"| Fábrica (JLCPCB) | `../fab/{gd}/`, `../fab/dumper-{v}-jlcpcb.zip` |",
                f"| Renders | `render-cima.png`, `render-baixo.png` |",
-               "| Estado | Nada montado nem testado com cartucho; revisar o layout no KiCad antes de encomendar |", ""]
+               f"| Estado | {ESTADO.get((placa, v), ESTADO_PADRAO)} |", ""]
         md += ["## Troca de cartucho", "", TROCA, ""]
         md += protecao(placa, linhas)
         if nota:
