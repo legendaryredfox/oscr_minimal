@@ -118,6 +118,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
     var showAdvanced by remember { mutableStateOf(false) }
     var firstRun by remember { mutableStateOf(!Prefs.firstRunDone) }
     var mapper by remember { mutableStateOf("0") }
+    var gbsGames by remember { mutableStateOf<List<GbSmart.Game>>(emptyList()) }   // jogos do GB Smart do último Detectar (D249)
     var clkMeasured by remember { mutableStateOf("") }
     var clkTarget by remember { mutableStateOf("4000000") }
     var gbaType by remember { mutableStateOf("3") }
@@ -618,6 +619,17 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         if (planned != null) return
         if (isFlash) { actFpId(); return }
         val c = client ?: return
+        if (system == CartSystem.GBSMART) {                            // D249: o Game Menu do OSCR, um DETECT por índice
+            run(S.STAGE_DETECTING) {
+                val games = withContext(Dispatchers.IO) { GbSmart.listGames { n -> c.detect(system, n, 0, 0) } }
+                if (games == null) { gbsGames = emptyList(); say(t(S.CART_NONE)); return@run }
+                gbsGames = games
+                say(f(S.GBS_LIST, games.size))
+                games.forEach { g -> say("${g.index}: ${g.title.ifEmpty { "?" }} — ${t(S.ROM_LABEL)}: ${g.romSize}, ${t(S.SAVE_LABEL)}: ${g.saveSize}" + if (g.headerOk) "" else " (${t(S.CART_BAD_HEADER)})") }
+                if (mapN != GbSmart.WHOLE && games.none { it.index == mapN }) mapper = if (games.isEmpty()) GbSmart.WHOLE.toString() else "0"
+            }
+            return
+        }
         run(S.STAGE_DETECTING) {
             val r = withContext(Dispatchers.IO) { c.detect(system, 0, 0, snesTypeArg()) }
             val st = when (r.status) { 0 -> S.CART_FOUND; 1 -> S.CART_NONE; 2 -> S.CART_UNSUPPORTED; 4 -> S.CART_BAD_HEADER; else -> S.CART_HW_ERROR }
@@ -663,7 +675,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                     say(t(S.ERR_PREFIX) + ": " + m); extra += m
                 }
             }
-            val chk = if (accSufami) verifyRom(CartSystem.MOCK, ByteArray(0)) else verifyRom(system, res.data)      // o cabeçalho do Sufami Turbo não é o do SNES
+            val chk = if (accSufami) verifyRom(CartSystem.MOCK, ByteArray(0)) else verifyRom(if (system == CartSystem.GBSMART && mapN != GbSmart.WHOLE) CartSystem.GB else system, res.data)      // o cabeçalho do Sufami Turbo não é o do SNES; um jogo do GB Smart é uma ROM de GB
             if (chk.status == CheckStatus.OK) { val m = "${t(S.CHECKSUM_OK)} (${chk.name} ${chk.hex(chk.expected)})"; say(m); extra += m }
             else if (chk.status == CheckStatus.MISMATCH) { val m = "${t(S.CHECKSUM_BAD)}: ${chk.hex(chk.expected)} / ${chk.hex(chk.computed)}"; say(m); extra += m }
             if (system == CartSystem.GBA && !r369) {                    // o 369-in-1 tem vários jogos: sem tipo de save pela base nem pela ROM
@@ -674,7 +686,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                 else if (h != null) "${t(S.GBA_SAVE_IN_ROM)}: ${h.tag}, ${h.label} → ${t(S.GBA_SAVE_TYPE)}: ${h.type}" else t(S.GBA_SAVE_NONE)
                 say(m); extra += m
             }
-            val ext = if (accSufami) Proto.snesAccExt(Proto.SNES_ACCESSORIES.entries.first { it.value == snesTypeSel }.key) else if (system == CartSystem.GB && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
+            val ext = if (accSufami) Proto.snesAccExt(Proto.SNES_ACCESSORIES.entries.first { it.value == snesTypeSel }.key) else if ((system == CartSystem.GB || system == CartSystem.GBSMART && mapN != GbSmart.WHOLE) && res.data.size > 0x143 && (res.data[0x143].toInt() and 0x80) != 0) ".gbc" else system.ext
             val game = db?.identify(system, res.data)
             if (db != null) {
                 val m = if (game != null) "${t(S.GAME_LABEL)}: ${game.entry.name} (${game.entry.source})" else t(S.GAME_NOT_FOUND)
@@ -1048,6 +1060,16 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.POKEMINI) Callout(t(S.POKEMINI_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.VSMILE) Callout(t(S.VSMILE_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.TRS80) Callout(t(S.TRS80_HINT), Tone.INFO)
+            if (stub == null && system == CartSystem.GBSMART) {
+                Callout(t(S.GBSMART_HINT), Tone.INFO)
+                LabeledField(t(S.GBS_GAME)) {
+                    val cur = if (mapN == GbSmart.WHOLE) t(S.GBS_WHOLE) else gbsGames.firstOrNull { it.index == mapN }?.let { "${it.index}: ${it.title.ifEmpty { "?" }}" } ?: mapN.toString()
+                    ComboBox(value = cur, modifier = Modifier.fillMaxWidth()) { close ->
+                        gbsGames.forEach { g -> DropdownMenuItem(text = { Text("${g.index}: ${g.title.ifEmpty { "?" }} (${g.romSize / 1024} KB)") }, onClick = { close(); mapper = g.index.toString() }) }
+                        DropdownMenuItem(text = { Text(t(S.GBS_WHOLE)) }, onClick = { close(); mapper = GbSmart.WHOLE.toString() })
+                    }
+                }
+            }
             if (stub == null && system == CartSystem.MSX) {
                 Callout(t(S.MSX_HINT), Tone.INFO)
                 LabeledField(t(S.MSX_MAPPER)) {

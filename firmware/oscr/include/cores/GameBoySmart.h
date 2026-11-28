@@ -11,8 +11,21 @@
 /**
  * @brief System core for Game Boy Smart Modules
  */
+#   define GB_SMART_GAMES_PER_PAGE 6
+
 namespace OSCR::Cores::GameBoySmart
 {
+  // fork oscr_minimal (D249): a struct e o tamanho da página saíram do .cpp para a costura do dumper chamar o `getGames` (o "Game Menu" pela serial).
+  struct GBSmartGameInfo {
+    uint8_t start_bank;
+    uint8_t rom_type;
+    uint8_t rom_size;
+    uint8_t sram_size;
+    char title[16];
+  };
+
+  extern uint16_t gameMenuStartBank;   // fork (D249): banco onde o `getGames` começa a procurar; avança uma página por chamada
+
   void menu();
   void gameMenu();
   bool gameOptionsMenu();

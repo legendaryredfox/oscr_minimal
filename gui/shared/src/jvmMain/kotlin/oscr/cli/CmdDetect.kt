@@ -9,6 +9,19 @@ internal fun cmdDetect(io: CliIo, a0: Args): Int {
     if (wantChip && a0.opts["system"] != "md") throw CliError("usage", Msg.t("detect.flash_id_md_only"), EXIT_USAGE)
     val c = connect(io, a0)
     val a = if (a0.opts["system"] == "auto") resolveAuto(io, c, a0) else a0
+    if (a.opts["system"] == "gbsmart") {                  // D249: lista os jogos do Game Menu (um DETECT por índice); o índice vai no --mapper do dump e do save
+        val games = try { GbSmart.listGames { n -> c.client.detect(CartSystem.GBSMART, n, 0, 0) } } finally { c.transport.close() }
+        if (games == null) {
+            emit(io, a, linkedMapOf("ok" to false, "system" to CartSystem.GBSMART.id, "status" to 1, "games" to emptyList<Any>()), listOf("gbsmart: ${Msg.t("detect.status.1")}"))
+            return EXIT_NO_CART
+        }
+        val lines = mutableListOf(Msg.t("gbs.header", "n" to games.size))
+        games.forEach { g -> lines += Msg.t("gbs.line", "i" to g.index, "title" to g.title.ifEmpty { Msg.t("detect.unknown_title") }, "rom" to g.romSize, "save" to g.saveSize) + (if (g.headerOk) "" else Msg.t("gbs.bad_header")) }
+        lines += Msg.t("gbs.hint")
+        emit(io, a, linkedMapOf("ok" to true, "system" to CartSystem.GBSMART.id, "status" to 0,
+            "games" to games.map { Json.obj("index" to it.index, "title" to it.title, "rom_size" to it.romSize, "save_size" to it.saveSize, "header_ok" to it.headerOk) }), lines)
+        return EXIT_OK
+    }
     var chip: MdFlashChip? = null
     val adapter = if (a.opts["system"] in setOf("sms", "gg", "sg1000")) (a.opts["mapper"]?.toIntOrNull() ?: 0) else 0     // o adaptador (campo mapper) muda a fiação dos barramentos
     val r = try {

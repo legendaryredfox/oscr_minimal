@@ -9,8 +9,6 @@
 # include "cores/GameBoy.h"
 # include "cores/GameBoySmart.h"
 
-# define GB_SMART_GAMES_PER_PAGE 6
-
 namespace OSCR::Cores::GameBoySmart
 {
   using OSCR::Cores::GameBoy::writeByte;
@@ -43,14 +41,6 @@ namespace OSCR::Cores::GameBoySmart
     gbSmartGameMenuItem4,
     OSCR::Strings::MenuOptions::RefreshCart,
     OSCR::Strings::MenuOptions::Back,
-  };
-
-  struct GBSmartGameInfo {
-    uint8_t start_bank;
-    uint8_t rom_type;
-    uint8_t rom_size;
-    uint8_t sram_size;
-    char title[16];
   };
 
   uint32_t gbSmartSize = 32 * 131072;
@@ -149,6 +139,8 @@ namespace OSCR::Cores::GameBoySmart
     uint8_t gameSubMenu = 0;
     size_t i = 0;;
     struct GBSmartGameInfo gbSmartGames[GB_SMART_GAMES_PER_PAGE];
+
+    gameMenuStartBank = 0x02;   // fork (D249): estava no `cartOn`, que o `getGames` chama a cada página
 
     do
     {
@@ -254,7 +246,8 @@ namespace OSCR::Cores::GameBoySmart
       signature[i] = readByte(0x0104 + i);
     }
 
-    gameMenuStartBank = 0x02;
+    // fork oscr_minimal (D249): o `gameMenuStartBank = 0x02` que ficava aqui saiu para o começo do `gameMenu`, como no `setup_GBSmart` do OSCR antigo
+    // (GBS.ino). O `getGames` chama este `cartOn`, então a volta ao banco 2 a cada chamada prendia a lista nos 6 primeiros jogos ("..." nunca avançava).
   }
 
   void cartOff()

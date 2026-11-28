@@ -28,7 +28,7 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 | F-17 | GB/GBC: acessórios (Pelican, Mega Memory, GameShark, GB Memory, GB Smart), RTC do MBC3 | feito (D186, D188, D189, D192, D193) |
 | F-18 | GBA: 369-in-1; repro pelo slot GB | feito (D174, D175) |
 | F-19 | N64: flash repro, Gameshark, Xplorer 64 | feito (D176, D177) |
-| F-20 | Outros sistemas do OSCR, um por vez, só os que cabem num slot existente com adaptador (D-C) | 21 feitos (D201 a D230 e D248, `docs/planos/adaptadores.md`); faltam os da seção abaixo |
+| F-20 | Outros sistemas do OSCR, um por vez, só os que cabem num slot existente com adaptador (D-C) | 22 feitos (D201 a D230, D248 e D249, `docs/planos/adaptadores.md`); faltam os da seção abaixo |
 | H-0, H-0b | Dispositivo falso na CLI Kotlin; `tools/gui_smoke.sh` | feito (D157, D161) |
 | H-1 | `save-convert` | feito (D163); qual operação cada emulador pede não foi conferido |
 | H-2, H-3 | Link do NESCartDB; baud de 500.000 no fallback | feito (D166) |
@@ -47,7 +47,7 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 
 ## O que falta sem placa
 
-- **F-20, sistemas restantes (18):** Casio Loopy, Commodore 64, VIC-20, Capcom CPS3, Intellivision, Leapster (3,3 V), Little Jammer, Little Jammer Pro (3,3 V), Virtual Boy, PC Engine / TurboGrafx-16, Pocket Challenge W, Satellaview e SF Memory como sistemas próprios (os cartuchos já são lidos pelo SNES, F-11), Super A'can, TI-99/4A, WonderSwan, Game Boy Smart Card e Game Boy Memory (já gravados pelo GB, F-17). Lista idêntica em `host/oscr_host/planned.py` e `PlannedSystems.kt` (`test_planned.py`). A máscara `systems()` do firmware tem 64 bits desde a D232: o próximo id é 33, e cabem até o 63.
+- **F-20, sistemas restantes (17):** Casio Loopy, Commodore 64, VIC-20, Capcom CPS3, Intellivision, Leapster (3,3 V), Little Jammer, Little Jammer Pro (3,3 V), Virtual Boy, PC Engine / TurboGrafx-16, Pocket Challenge W, Satellaview e SF Memory como sistemas próprios (os cartuchos já são lidos pelo SNES, F-11), Super A'can, TI-99/4A, WonderSwan e Game Boy Memory (já lido e gravado pelo GB, F-17). Lista idêntica em `host/oscr_host/planned.py` e `PlannedSystems.kt` (`test_planned.py`). A máscara `systems()` do firmware tem 64 bits desde a D232: o próximo id é 34, e cabem até o 63.
 - **MSX (D230), resto:** busca do jogo por nome na GUI e na CLI pela base `database/oscr/json/msx.json` (traz mapper, índice do tamanho e da SRAM, sem CRC32), como o NES faz com a base dele; /IORQ, /M1 e /RFSH do adaptador (pull-up?).
 - **F-16, resto:** dois chips no mesmo cartucho e detectar o limite de 2 MiB pelo padrão de leitura (resto do MD-13).
 - **D-4** (acima).

@@ -18,5 +18,5 @@ val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
     PlannedSystem("supercan", "Super A'can"),
     PlannedSystem("ti99", "TI-99/4A"),
     PlannedSystem("ws", "WonderSwan"),
-    PlannedSystem("gbsmart", "Game Boy Smart Card"), PlannedSystem("gbmem", "Game Boy Memory"),
+    PlannedSystem("gbmem", "Game Boy Memory"),
 )

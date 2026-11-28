@@ -66,7 +66,7 @@ def snes_acc_ext(name: str) -> str:
 
 SYSTEMS = {  # nome -> (id, extensão)
     "snes": (1, ".sfc"), "nes": (2, ".nes"), "famicom": (3, ".nes"),
-    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "n64": (11, ".z64"), "coleco": (12, ".col"), "ngp": (13, ".ngp"), "vectrex": (14, ".vec"), "a2600": (15, ".a26"), "a5200": (16, ".a52"), "a7800": (17, ".a78"), "a8bit": (18, ".rom"), "lynx": (19, ".lnx"), "jaguar": (20, ".jag"), "arcadia": (21, ".bin"), "rca2": (22, ".bin"), "pyuuta": (23, ".bin"), "supervision": (24, ".sv"), "pv1000": (25, ".bin"), "astrocade": (26, ".bin"), "channelf": (27, ".bin"), "odyssey2": (28, ".bin"), "pokemini": (29, ".min"), "vsmile": (30, ".bin"), "msx": (31, ".rom"), "trs80": (32, ".ccc"), "mock": (255, ".bin"),
+    "md": (4, ".md"), "gba": (5, ".gba"), "gb": (6, ".gb"), "flash": (7, ".bin"), "sms": (8, ".sms"), "gg": (9, ".gg"), "sg1000": (10, ".sg"), "n64": (11, ".z64"), "coleco": (12, ".col"), "ngp": (13, ".ngp"), "vectrex": (14, ".vec"), "a2600": (15, ".a26"), "a5200": (16, ".a52"), "a7800": (17, ".a78"), "a8bit": (18, ".rom"), "lynx": (19, ".lnx"), "jaguar": (20, ".jag"), "arcadia": (21, ".bin"), "rca2": (22, ".bin"), "pyuuta": (23, ".bin"), "supervision": (24, ".sv"), "pv1000": (25, ".bin"), "astrocade": (26, ".bin"), "channelf": (27, ".bin"), "odyssey2": (28, ".bin"), "pokemini": (29, ".min"), "vsmile": (30, ".bin"), "msx": (31, ".rom"), "trs80": (32, ".ccc"), "gbsmart": (33, ".gb"), "mock": (255, ".bin"),
 }
 SYSTEM_BY_ID = {v[0]: k for k, v in SYSTEMS.items()}
 

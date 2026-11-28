@@ -82,6 +82,7 @@
 # include "dumper/VsmCore.h"
 # include "dumper/MsxCore.h"
 # include "dumper/TrsCore.h"
+# include "dumper/GbSmartCore.h"
 # include "dumper/SvCore.h"
 # include "dumper/AtariCore.h"
 # include "dumper/N64Core.h"
@@ -393,6 +394,47 @@ namespace OSCR::Dumper
       case kRtc: gbRtcRead(); break;
       default: break;
       }
+    }
+
+    /**
+     * GB Smart Card 32M (F-20, D249): o "Game Menu" do OSCR (`GameBoySmart::gameMenu` e `gameOptionsMenu`) pela serial. O jogo N sai do `getGames` do OSCR,
+     * página a página (6 jogos por chamada; a correção do fork na D249 faz a página avançar); escolher o jogo é o `remapStartBank` do OSCR seguido do
+     * `checkCart` do GB, e a leitura e a gravação são o `readROM`, o `readSRAM` e o `writeSRAM` do GB, como no menu. O que vem do fork: parar na primeira
+     * entrada com tamanho inválido (o `getGames` lê um banco apagado depois do último jogo e devolve lixo) e o limite de páginas.
+     */
+    namespace GSM = OSCR::Cores::GameBoySmart;
+    GSM::GBSmartGameInfo gbsGame;                                   // jogo escolhido em `prepare`, usado de novo na leitura e na gravação
+
+    uint8_t gbsFind(uint16_t n, GSM::GBSmartGameInfo & out)
+    {
+      GSM::gameMenuStartBank = 0x02;                                // o começo do `gameMenu` do OSCR
+      uint16_t idx = 0;
+      for (uint8_t page = 0; page < oscr::gbs::kMaxPages; page++)
+      {
+        GSM::GBSmartGameInfo g[GB_SMART_GAMES_PER_PAGE];
+        bool hasMenu = false; uint8_t num = 0;
+        GSM::getGames(g, hasMenu, num);
+        if (!hasMenu)                                               // sem o menu "GB16M": um jogo só no banco 0 (ou slot vazio, o `checkCart` decide)
+        {
+          out = g[0];
+          if (n == 0) return oscr::gbs::kOk;
+          return gbProbe() == 1 ? oscr::gbs::kNoCart : oscr::gbs::kPastEnd;
+        }
+        for (uint8_t i = 0; i < num; i++, idx++)
+        {
+          if (oscr::gbs::isEnd(g[i].rom_size)) return oscr::gbs::kPastEnd;
+          if (idx == n) { out = g[i]; return oscr::gbs::kOk; }
+        }
+        if (num < GB_SMART_GAMES_PER_PAGE || GSM::gameMenuStartBank > 0xFE) return oscr::gbs::kPastEnd;
+      }
+      return oscr::gbs::kPastEnd;
+    }
+
+    /// Escolhe o jogo como o `gameMenu` do OSCR: `remapStartBank` e depois `checkCart` (0, 1 ou 4, como `gbProbe`).
+    uint8_t gbsSelect(GSM::GBSmartGameInfo const & g)
+    {
+      GSM::remapStartBank(g.start_bank, g.rom_size, g.sram_size);
+      return gbProbe();
     }
 
     namespace SM = OSCR::Cores::SMS;
@@ -1371,8 +1413,8 @@ namespace OSCR::Dumper
       // bit1: Si5351 achado no boot ou no último `ClockGen::initialize()` (D247; `exists()`, sem I²C: o `initialize()` pararia as saídas de teste do CLOCK);
       // bit3: o firmware aceita WRITE_ROM (flash repro); bit4: programador de flash genérico (sistema 7, ERASE)
       uint8_t flags() override { return (OSCR::ClockGen::exists() ? 2 : 0) | 8 | 16; }
-      uint64_t systems() override { return (1ULL << oscr::SYS_SNES) | (1ULL << oscr::SYS_NES) | (1ULL << oscr::SYS_FAMICOM) | (1ULL << oscr::SYS_MD) | (1ULL << oscr::SYS_GBA) | (1ULL << oscr::SYS_GB) | (1ULL << oscr::SYS_SMS) | (1ULL << oscr::SYS_GG) | (1ULL << oscr::SYS_SG1000) | (1ULL << oscr::SYS_N64) | (1ULL << oscr::SYS_COLV) | (1ULL << oscr::SYS_NGP) | (1ULL << oscr::SYS_VEC) | (1ULL << oscr::SYS_A26) | (1ULL << oscr::SYS_A52) | (1ULL << oscr::SYS_A78) | (1ULL << oscr::SYS_A8) | (1ULL << oscr::SYS_LYNX) | (1ULL << oscr::SYS_JAG) | (1ULL << oscr::SYS_ARC) | (1ULL << oscr::SYS_RCA2) | (1ULL << oscr::SYS_PYU) | (1ULL << oscr::SYS_SV) | (1ULL << oscr::SYS_PV) | (1ULL << oscr::SYS_BALLY) | (1ULL << oscr::SYS_CHF) | (1ULL << oscr::SYS_ODY2) | (1ULL << oscr::SYS_POKE) | (1ULL << oscr::SYS_VSMILE) | (1ULL << oscr::SYS_MSX) | (1ULL << oscr::SYS_TRS80) | (1ULL << oscr::SYS_FLASH); }
-      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2 || system == oscr::SYS_POKE || system == oscr::SYS_VSMILE || system == oscr::SYS_MSX || system == oscr::SYS_TRS80 || system == oscr::SYS_FLASH; }
+      uint64_t systems() override { return (1ULL << oscr::SYS_SNES) | (1ULL << oscr::SYS_NES) | (1ULL << oscr::SYS_FAMICOM) | (1ULL << oscr::SYS_MD) | (1ULL << oscr::SYS_GBA) | (1ULL << oscr::SYS_GB) | (1ULL << oscr::SYS_SMS) | (1ULL << oscr::SYS_GG) | (1ULL << oscr::SYS_SG1000) | (1ULL << oscr::SYS_N64) | (1ULL << oscr::SYS_COLV) | (1ULL << oscr::SYS_NGP) | (1ULL << oscr::SYS_VEC) | (1ULL << oscr::SYS_A26) | (1ULL << oscr::SYS_A52) | (1ULL << oscr::SYS_A78) | (1ULL << oscr::SYS_A8) | (1ULL << oscr::SYS_LYNX) | (1ULL << oscr::SYS_JAG) | (1ULL << oscr::SYS_ARC) | (1ULL << oscr::SYS_RCA2) | (1ULL << oscr::SYS_PYU) | (1ULL << oscr::SYS_SV) | (1ULL << oscr::SYS_PV) | (1ULL << oscr::SYS_BALLY) | (1ULL << oscr::SYS_CHF) | (1ULL << oscr::SYS_ODY2) | (1ULL << oscr::SYS_POKE) | (1ULL << oscr::SYS_VSMILE) | (1ULL << oscr::SYS_MSX) | (1ULL << oscr::SYS_TRS80) | (1ULL << oscr::SYS_GBSMART) | (1ULL << oscr::SYS_FLASH); }
+      bool supports(uint8_t system) override { return system == oscr::SYS_SNES || isNes(system) || system == oscr::SYS_MD || system == oscr::SYS_GBA || system == oscr::SYS_GB || isSega(system) || system == oscr::SYS_N64 || system == oscr::SYS_COLV || system == oscr::SYS_NGP || system == oscr::SYS_VEC || system == oscr::SYS_A26 || system == oscr::SYS_A52 || system == oscr::SYS_A78 || system == oscr::SYS_A8 || system == oscr::SYS_LYNX || system == oscr::SYS_JAG || system == oscr::SYS_ARC || system == oscr::SYS_RCA2 || system == oscr::SYS_PYU || system == oscr::SYS_SV || system == oscr::SYS_PV || system == oscr::SYS_BALLY || system == oscr::SYS_CHF || system == oscr::SYS_ODY2 || system == oscr::SYS_POKE || system == oscr::SYS_VSMILE || system == oscr::SYS_MSX || system == oscr::SYS_TRS80 || system == oscr::SYS_GBSMART || system == oscr::SYS_FLASH; }
       bool streams() override { return true; }
 
       // GBA: o campo `mapper` do protocolo é o tipo de save (numeração do OSCR); valores acima de 6 são recusados.
@@ -1760,6 +1802,31 @@ namespace OSCR::Dumper
           return;
         }
 
+        if (system == oscr::SYS_GBSMART)
+        {
+          bool whole = optMapper == oscr::gbs::kWhole;
+          if (!oscr::gbs::validIndex(optMapper)) { out.status = oscr::gbs::kPastEnd; return; }
+          uint16_t n = whole ? 0 : optMapper;
+          uint8_t st = oscr::gbs::kNoCart;
+          runCore([&st, n] { st = gbsFind(n, gbsGame); if (st == oscr::gbs::kOk) st = gbsSelect(gbsGame); GB::cartOff(); });
+          out.status = st;
+          if (st != oscr::gbs::kOk && st != oscr::gbs::kBadHeader) return;
+          if (whole)
+          {
+            out.status = oscr::gbs::kOk;                            // há cartucho: o resto é o `readFlash` do OSCR, que não olha cabeçalho
+            strlcpy_P(out.name, PSTR("GBSMART"), sizeof(out.name));
+            out.rom_size = oscr::gbs::kFlashBytes;
+            out.save_size = 0; out.save_type = 0;
+            return;
+          }
+          out.rom_size = uint32_t(GB::romBanks) * 16384UL;
+          out.save_size = gbSaveBytes();
+          out.save_type = out.save_size ? 1 : 0;
+          memcpy(out.name, gbsGame.title, sizeof gbsGame.title < sizeof(out.name) ? sizeof gbsGame.title : sizeof(out.name));
+          out.name[sizeof(out.name) - 1] = 0;                       // título que o `getOneGame` do OSCR leu (só letras e números)
+          return;
+        }
+
         if (system == oscr::SYS_GB)
         {
           uint8_t st = 1;
@@ -1817,9 +1884,11 @@ namespace OSCR::Dumper
           return ok && countingSink.bytes > 0;
         }
 
-        if (system == oscr::SYS_GB && kind == oscr::KIND_ROM && optMapper != 0)       // acessórios do Game Boy (F-17, D186): sem cabeçalho de jogo, só leitura
+        bool gbsWhole = system == oscr::SYS_GBSMART && optMapper == oscr::gbs::kWhole;
+        if (gbsWhole && kind == oscr::KIND_SAVE) { err = oscr::E_SEM_SAVE; return false; }   // a flash inteira não tem save: o save é de um jogo
+        if ((system == oscr::SYS_GB && kind == oscr::KIND_ROM && optMapper != 0) || gbsWhole)   // acessórios do Game Boy (F-17, D186) e a flash do GB Smart (D249): sem cabeçalho de jogo
         {
-          uint16_t acc = optMapper;
+          uint16_t acc = gbsWhole ? uint16_t(OSCR::Dumper::GbAcc::kGbSmart) : optMapper;
           if (!OSCR::Dumper::GbAcc::valid(acc)) { err = oscr::E_ARGUMENTO; return false; }
           countingSink.inner = &sink; countingSink.bytes = 0;
           activeSink = &countingSink;
@@ -1837,6 +1906,7 @@ namespace OSCR::Dumper
         if (isNes(system)) { if (kind == oscr::KIND_SAVE && nesRamBytes == 0) { err = oscr::E_SEM_SAVE; return false; } }
         else if (system == oscr::SYS_SNES) { if (kind == oscr::KIND_SAVE && OSCR::Cores::sramSize < 1) { err = oscr::E_SEM_SAVE; return false; } }
         else if (system == oscr::SYS_GB) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }
+        else if (system == oscr::SYS_GBSMART) { if (kind == oscr::KIND_SAVE && gbSaveBytes() == 0) { err = oscr::E_SEM_SAVE; return false; } }   // `prepare` já escolheu o jogo
         else if (isSega(system)) { }                                      // SRAM de 32 KB sempre (o usuário sabe se o cartucho tem)
         else if (system == oscr::SYS_JAG) { }                             // EEPROM ou Memory Track: o `mapper` já foi validado em `prepare`
         else if (system == oscr::SYS_MSX) { }                             // mapper e tamanho do save já validados em `prepare`
@@ -1915,6 +1985,13 @@ namespace OSCR::Dumper
             GB::cartOff();
             return;
           }
+          if (system == oscr::SYS_GBSMART)
+          {
+            gbsSelect(gbsGame);                                     // `prepare` achou o jogo; o menu do OSCR remapeia e relê o cabeçalho antes de cada operação
+            if (kind == oscr::KIND_ROM) GB::readROM(); else GB::readSRAM();
+            GB::cartOff();
+            return;
+          }
           if (isSega(system))
           {
             if (kind == oscr::KIND_ROM) SM::readROM(); else SM::readSRAM();     // as duas ligam e desligam o cartucho sozinhas
@@ -1978,7 +2055,7 @@ namespace OSCR::Dumper
         uint8_t saveType = OSCR::Cores::saveType;
         uint32_t expected = isNes(system) ? nesRamBytes
                           : system == oscr::SYS_GBA ? gbaSaveBytes(saveType)
-                          : (system == oscr::SYS_GB ? gbSaveBytes()
+                          : (system == oscr::SYS_GB || system == oscr::SYS_GBSMART ? gbSaveBytes()
                           : (system == oscr::SYS_JAG ? jagSaveBytes(optMapper)
                           : (system == oscr::SYS_MSX ? oscr::msx::ramBytes(optMapper, optPrgKb)
                           : (system == oscr::SYS_N64 ? oscr::n64::saveBytes(saveType)
@@ -1986,7 +2063,7 @@ namespace OSCR::Dumper
                           : (isMdBram(system) ? MD::bramSize
                           : (system == oscr::SYS_SNES ? uint32_t(OSCR::Cores::sramSize) * 128UL : (saveType == 4 ? MD::eepSize : OSCR::Cores::sramSize))))))));
 
-        if ((system != oscr::SYS_GB && system != oscr::SYS_JAG && system != oscr::SYS_MSX && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
+        if ((system != oscr::SYS_GB && system != oscr::SYS_GBSMART && system != oscr::SYS_JAG && system != oscr::SYS_MSX && system != oscr::SYS_SNES && !isSega(system) && !isNes(system) && saveType == 0 && !isMdBram(system)) || expected == 0) { err = oscr::E_SEM_SAVE; return false; }
         if (in.size() != expected) { err = oscr::E_ARGUMENTO; return false; }
 
         countingSource.inner = &in; countingSource.bytes = 0;
@@ -2018,6 +2095,13 @@ namespace OSCR::Dumper
           if (system == oscr::SYS_GB)
           {
             GB::writeSave();
+            GB::cartOff();
+            return;
+          }
+          if (system == oscr::SYS_GBSMART)
+          {
+            gbsSelect(gbsGame);
+            GB::writeSRAM();              // o "Write SRAM" do Game Menu do OSCR; a conferência é do PC (relê o save e compara)
             GB::cartOff();
             return;
           }
@@ -2573,6 +2657,17 @@ namespace OSCR::Dumper
           if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
           if (st == oscr::sms::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
           if (!forSave && OSCR::Cores::cartSize == 0) { err = oscr::E_ARGUMENTO; return false; }     // sem cabeçalho e sem tamanho informado
+          return true;
+        }
+        if (system == oscr::SYS_GBSMART)
+        {
+          if (!oscr::gbs::validIndex(optMapper) || optMapper == oscr::gbs::kWhole) { err = oscr::E_ARGUMENTO; return false; }   // a flash inteira não passa por aqui
+          uint8_t st = oscr::gbs::kNoCart; uint16_t n = optMapper;
+          bool ran = runCore([&st, n] { st = gbsFind(n, gbsGame); if (st == oscr::gbs::kOk) st = gbsSelect(gbsGame); GB::cartOff(); });
+          if (!ran) { err = oscr::E_CARTUCHO_IO; return false; }
+          if (st == oscr::gbs::kNoCart) { err = oscr::E_SEM_CARTUCHO; return false; }
+          if (st == oscr::gbs::kPastEnd) { err = oscr::E_ARGUMENTO; return false; }   // o cartucho tem menos jogos
+          if (st != oscr::gbs::kOk) { err = oscr::E_CARTUCHO_IO; return false; }     // checksum do cabeçalho do jogo errado
           return true;
         }
         if (system == oscr::SYS_GB)

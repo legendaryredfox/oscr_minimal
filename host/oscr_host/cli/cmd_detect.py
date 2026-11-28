@@ -2,11 +2,14 @@
 """Comando detect."""
 from __future__ import annotations
 
+import sys
+
 from .. import protocol as P
 from . import common, ui
 from .common import system_id
 from .. import autodetect as AUTO
 from .. import n64 as N64
+from .. import gbsmart as GBS
 from .messages import tr
 from .errors import CliError, EXIT_NO_CART, EXIT_OK, EXIT_USAGE
 from .md_chip import md_chip_line, md_flash_chip
@@ -23,6 +26,20 @@ def cmd_detect(args) -> int:
         args.system = found[0]
         if not args.json:
             print(tr("auto.found", system=args.system), file=sys.stderr)
+    if args.system == "gbsmart":                           # D249: lista os jogos do Game Menu (um DETECT por índice); o índice escolhido vai no --mapper do dump e do save
+        try:
+            games = GBS.list_games(lambda sid, n: c.detect(sid, n, 0, 0))
+        finally:
+            t.close()
+        if games is None:
+            emit(args, {"ok": False, "system": GBS.SID, "status": GBS.ST_NO_CART, "games": []}, [f"gbsmart: {tr('detect.status.1')}"])
+            return EXIT_NO_CART
+        lines = [tr("gbs.header", n=len(games))]
+        lines += [tr("gbs.line", i=g["index"], title=g["title"] or tr("detect.unknown_title"), rom=g["rom_size"], save=g["save_size"])
+                  + ("" if g["header_ok"] else tr("gbs.bad_header")) for g in games]
+        lines.append(tr("gbs.hint"))
+        emit(args, {"ok": True, "system": GBS.SID, "status": 0, "games": games}, lines)
+        return EXIT_OK
     sega = args.system in ("sms", "gg", "sg1000")          # o adaptador (campo mapper) muda a fiação dos barramentos; os outros sistemas ignoram as opções no DETECT
     r = c.detect(system_id(args.system), args.mapper if sega else 0, 0, common.snes_type_code(args))   # SNES: o tipo forçado vai no 3º campo (F-2)
     if args.system == "n64" and r["status"] == 0:
@@ -33,7 +50,7 @@ def cmd_detect(args) -> int:
             t.close()
             raise CliError("usage", tr("detect.flash_id_md_only"), EXIT_USAGE)
         flash = md_flash_chip(c, info)
-    status = {k: tr(f"detect.status.{k}") for k in range(5)}
+    status = {k: tr(f"detect.status.{k}") for k in range(6)}
     lines = [f"{P.SYSTEM_BY_ID.get(r['system'], r['system'])}: {status.get(r['status'], r['status'])}"]
     if r["status"] == 0:
         lines.append(tr("detect.title_line", name=r["name"] or tr("detect.unknown_title"), rom=r["rom_size"], save=r["save_size"]))

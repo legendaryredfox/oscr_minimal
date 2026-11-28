@@ -16,7 +16,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("supercan", "Super A'can"),
     ("ti99", "TI-99/4A"),
     ("ws", "WonderSwan"),
-    ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),
+    ("gbmem", "Game Boy Memory"),
 )
 
 # Adaptadores de 3,3 V da comunidade (P-16, H-4): não podem ir num slot de 5 V. Conferido contra a tabela de docs/historico/pesquisa-comunidade.md por tools/check_adaptadores.py.

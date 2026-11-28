@@ -106,6 +106,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 30 | V.Smile (adaptador de 48 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D228) | `.bin` |
 | 31 | MSX (adaptador de 50 pinos no slot SNES, 5 V; ROM e SRAM; F-20, D230). Último id dos 32 bits; os ids 32 a 63 vão em `sistemas_ext` (D232) | `.rom` |
 | 32 | TRS-80 Color Computer (adaptador de 40 pinos no slot SNES, 5 V; F-20, D248). Primeiro id de `sistemas_ext` | `.ccc` |
+| 33 | GB Smart Card 32M, o Game Menu do OSCR (slot GBA com o adaptador GB, como o Game Boy; F-20, D249) | `.gb` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -169,6 +170,18 @@ Usa o núcleo `ChannelF.cpp` do OSCR, só leitura de ROM, pelo protocolo ROMC do
 ### Opções para TRS-80 Color Computer (D248)
 
 Usa o núcleo `TRS80.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR com `romSize` = índice da tabela `romSizes` (o `readROM` pulsa o `/RESET`, lê a partir de `$C000` com o `/CTS` e, nos tamanhos grandes, troca de banco); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`. Sem `mapper`. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 2, 4, 8, 10, 16, 32 (Mind-Roll: o segundo chip de 16 KB pelo `/SCS`, lido em `$8000`), 64 ou 128 (Predator e RoboCop: bancos de 16 KB trocados por escrita em `$FF40`); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 32 bytes de `$C000` com o `readData` do núcleo: `status` 1 se todos forem iguais a `$00` ou `$FF` (slot vazio), senão 0; `name` = `TRS80`; `rom_size` é o tamanho que o `prg_kb` do `DETECT` daria (0 sem tamanho válido). O fork não confere assinatura. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O sinal E do cartucho (PH1 no núcleo) não chega ao slot SNES: o adaptador o prende em nível alto (`docs/planos/adaptadores.md#adaptador-trs80`). Regras puras em `include/dumper/TrsCore.h`, testadas em `pc-tests/test_trs.cpp`.
+
+### Opções para GB Smart Card 32M (D249)
+
+Usa o núcleo `GameBoySmart.cpp` do OSCR e o do Game Boy, na ordem do **Game Menu** do OSCR (`gameMenu` e `gameOptionsMenu`). `mapper` é o **índice do jogo** (0 = o primeiro jogo depois do menu, até 126) ou **255** = a flash inteira. A costura chama o `getGames` do OSCR página a página (6 jogos por chamada) até o jogo pedido, depois o `remapStartBank` dele e o `checkCart` do GB; a leitura e a gravação são o `readROM`, o `readSRAM` e o `writeSRAM` do GB, como no menu do OSCR (o jogo é remapeado de novo antes de cada operação). `prg_kb` e `chr_kb` são ignorados.
+
+- `DETECT` com `mapper` N: `status` 0 = jogo N achado, com `name` = título que o `getGames` leu, `rom_size` = bancos do cabeçalho × 16 KB e `save_size` = SRAM do cabeçalho; 4 = o jogo existe, mas o checksum do cabeçalho dele não confere (os campos vêm assim mesmo); **5 = o cartucho tem menos jogos** (índice além da lista); 1 = slot vazio. Sem o menu "GB16M" no banco 0 (cartão com um jogo só) o índice 0 é esse jogo. A lista se monta com um `DETECT` por índice, de 0 até o primeiro `status` 5 (as duas CLIs e a GUI fazem isso).
+- `DETECT` com `mapper` 255: `name` `GBSMART`, `rom_size` 4194304, sem save.
+- `DUMP_ROM`: o jogo N (o cabeçalho é o do GB: o PC confere o checksum como no Game Boy) ou, com 255, a flash inteira pelo `readFlash` do OSCR (o mesmo que o `DUMP_ROM` do Game Boy com `mapper` 6). Índice sem jogo: `E_ARGUMENTO`; checksum do cabeçalho errado: `E_CARTUCHO_IO`.
+- `READ_SAVE` e `WRITE_SAVE`: a SRAM do jogo N (`E_SEM_SAVE` se o cabeçalho diz que ele não tem; com 255, sempre `E_SEM_SAVE`). Os jogos dividem a mesma SRAM do cartão: gravar o save de um jogo sobrescreve o que estiver no mesmo lugar para os outros. A conferência da gravação é do PC (relê e compara).
+- Gravar a flash continua no Game Boy: `WRITE_ROM` com o chip `gb-smart` (D189).
+
+**Correção no núcleo (D249):** o `cartOn` do OSCR voltava `gameMenuStartBank` para 2, e o `getGames` chama o `cartOn` a cada página: a segunda página do menu mostrava de novo os seis primeiros jogos. A volta ao banco 2 passou para o começo do `gameMenu`, como no `setup_GBSmart` do OSCR antigo (`GBS.ino`). O `getGames` também não para no fim da lista (depois do último jogo ele lê um banco apagado e devolve uma entrada com tamanho `$FF`): a costura trata a primeira entrada com código de tamanho acima de 8 como o fim. Regras puras em `include/dumper/GbSmartCore.h` (`pc-tests/test_gbs.cpp`); a lista no PC em `host/oscr_host/gbsmart.py` e `GbSmart.kt`.
 
 ### Opções para MSX (D230)
 
@@ -265,7 +278,7 @@ Lê, apaga, identifica e grava flash e EPROM fora de cartucho de console (adapta
 
 ```
 u8  sistema
-u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware, 4 = cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: contato sujo ou ROM de hack; SNES e Game Boy) ou, no Mega Drive, cabeçalho ilegível com o `/CART` (D50, placa v. 1.2) baixo, isto é, há cartucho mas ele não leu
+u8  status          0 = cartucho detectado, 1 = nenhum cartucho, 2 = não suportado, 3 = erro de hardware, 4 = cabeçalho inválido (há dados, mas o checksum do cabeçalho não confere: contato sujo ou ROM de hack; SNES e Game Boy) ou, no Mega Drive, cabeçalho ilegível com o `/CART` (D50, placa v. 1.2) baixo, isto é, há cartucho mas ele não leu; 5 = índice além da lista (GB Smart Card, sistema 33: o cartucho tem menos jogos; D249)
 u32 tamanho_rom     bytes (0 se desconhecido)
 u32 tamanho_save    bytes (0 se não tem)
 u8  tipo_save       0 = nenhum, 1 = SRAM, 2 = FLASH, 3 = EEPROM, 255 = desconhecido
