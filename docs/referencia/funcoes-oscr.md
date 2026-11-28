@@ -20,8 +20,8 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 
 | Função do OSCR | Onde | Estado |
 |---|---|---|
-| Ler ROM (LoROM, HiROM, ExHiROM, SA-1, SuperFX, S-DD1, SPC7110, Cx4...) | firmware | ✅ |
-| Ler e gravar SRAM | firmware | ✅ (conferência no PC) |
+| Ler ROM (LoROM, HiROM, ExHiROM, SA-1, SuperFX, S-DD1, SPC7110, Cx4...) | firmware | ✅; **em hardware (D244, D245):** LoROM (Super Return of the Jedi) e HiROM (Donkey Kong Country 2) conferem com o No-Intro |
+| Ler e gravar SRAM | firmware | ✅ (conferência no PC); ler em hardware: save de 2 KB do DKC2 (D245); gravar nunca rodou no SNES |
 | Usar cabeçalho / 4 MB LoROM / 4 MB HiROM / 6 MB ExROM (configuração de tamanho) | PC (`--prg`) | ✅ |
 | Teste de RAM (Test RAM) | firmware (`eraseSRAM`) + PC (backup e restauração) | ✅ `ram-test` (D178; nunca rodou) |
 | Flash repro: CFI LoROM e HiROM, **1x 2 MB e 1x 4 MB** | firmware (laço) + PC (arquivo, chip) | ✅ `WRITE_ROM` (D79; nunca rodou); conferência por leitura de volta |
@@ -52,12 +52,12 @@ Legenda: ✅ feito (compila, nunca rodou) · 🔧 em andamento · ⬜ a fazer ·
 
 | Função do OSCR | Onde | Estado |
 |---|---|---|
-| Ler ROM (tamanho pelo cabeçalho, forçar tamanho, SSF2) | firmware | ✅ |
-| Ler e gravar SRAM e EEPROM serial (38 checksums do OSCR) | firmware | ✅ |
+| Ler ROM (tamanho pelo cabeçalho, forçar tamanho, SSF2) | firmware | ✅; **em hardware (D243, D245):** Rolling Thunder 2 e Metal Gear (checksum do cabeçalho confere) |
+| Ler e gravar SRAM e EEPROM serial (38 checksums do OSCR) | firmware | ✅; **SRAM lida e gravada em hardware (D245):** save de 32 KB do Metal Gear, gravado alterado e restaurado, os dois conferidos; EEPROM nunca rodou |
 | Sonic & Knuckles lock-on (Sonic 1, 2, 3 ou outro jogo encaixado), SVP (Virtua Racing) | firmware | ✅ o `readROM` do OSCR já trata; `DETECT` soma o jogo encaixado (D180; nunca rodou) |
 | Sega CD RAM (BRAM): ler e gravar | firmware | ✅ `READ_SAVE` e `WRITE_SAVE` com `save_type` 5 (D179; nunca rodou) |
 | Realtec (ler) | firmware | ✅ `DUMP_ROM` chama `readRealtec` quando o `DETECT` acha o mapeador (D179; nunca rodou) |
-| Flash repro: MX29F1610 (2 MB) e S29GL064N (4 MB), apagar e gravar | firmware + PC | ✅ `WRITE_ROM` (D81; nunca rodou); conferência por leitura de volta |
+| Flash repro: MX29F1610 (2 MB) e S29GL064N (4 MB), apagar e gravar | firmware + PC | ✅ `WRITE_ROM` (D81); conferência por leitura de volta. **S29GL064N validado em hardware (D245):** Metal Gear gravado e conferido; MX29F1610 nunca rodou |
 | Flash repro além do OSCR: M29W320/640, MX29LV320/640, SST39VF320x/640x, MX29L3211 (5555h), Intel PA28F400, LH28F320BJE, AM29F800; ROM até 8 MB; limites de tempo | firmware + PC | ✅ `WRITE_ROM` (D86; nunca rodou em chip; testado no PC contra modelo). Não vem do OSCR: o `Flash.cpp` usa o barramento do SNES |
 
 ## Game Boy Advance

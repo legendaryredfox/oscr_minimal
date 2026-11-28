@@ -5,6 +5,7 @@ Versão do protocolo: **1**. Escrito antes da implementação (`CLAUDE.md`, seç
 ## 1. Camada física
 
 - USB serial do Mega (CH340 ou ATmega16U2), 8 bits, sem paridade, 1 stop bit, sem controle de fluxo.
+- **Recepção no AVR (D245):** a fila de recepção da UART tem **1024 bytes** (`-D SERIAL_RX_BUFFER_SIZE=1024` no ambiente `SerialASCII`), maior que o maior quadro (530 bytes). A 1.000.000 baud chega um byte a cada 10 µs (160 ciclos do AVR) e o laço de recepção não acompanha um bloco inteiro: com os 64 bytes padrão, um `DATA` de 512 bytes do PC transbordava e se perdia (achado na bancada, 2026-11-27). O CRC32 da carga é calculado depois do último byte do quadro. Como o PC só manda um quadro depois da resposta do anterior (janela de 1), a fila nunca guarda mais de um quadro.
 - **Baud padrão 1.000.000.** Fallbacks: **500.000** e **115.200** (H-3, D166). O host tenta 1.000.000, manda `INFO`, espera 500 ms; sem resposta, tenta 500.000 e depois 115.200 (`--baud` fixa um só; na GUI o escolhido vai primeiro). O firmware abre a serial em **um** baud, escolhido na compilação (`OSCR_DUMPER_BAUD` em `src/dumper/Dumper.cpp`, padrão 1.000.000); uma compilação com `-DOSCR_DUMPER_BAUD=500000` ou `115200` só é achada pelo fallback correspondente. Os 500.000 bauds são exatos no Mega a 16 MHz; a imagem de `firmware/images/` continua só em 1.000.000.
 - Ordem de bytes: **little-endian** em todos os campos numéricos.
 
@@ -338,7 +339,7 @@ Padrão do modo `MOCK` (para `DUMP_ROM` com sistema 255 ou 0): tamanho 32.768 by
 
 ## 9. `WRITE_ROM` (gravação de ROM em flash, D77)
 
-Fluxo igual ao do `WRITE_SAVE` (`ACK` inicial, blocos `DATA` com `ACK` por bloco, `END` com o CRC32), com uma diferença que importa: **o primeiro `ACK` só sai depois que o firmware conferiu o chip e apagou o que era preciso** (`Backend::rom_prepare`). A UART do AVR guarda 64 bytes e perderia os blocos que chegassem durante um apagamento de segundos, então o PC só manda dados depois do `ACK`. Por isso o host espera até 90 s por esse `ACK` e **nunca reenvia o comando** (reenviar apagaria de novo).
+Fluxo igual ao do `WRITE_SAVE` (`ACK` inicial, blocos `DATA` com `ACK` por bloco, `END` com o CRC32), com uma diferença que importa: **o primeiro `ACK` só sai depois que o firmware conferiu o chip e apagou o que era preciso** (`Backend::rom_prepare`) **e o núcleo do OSCR pediu o primeiro byte** (D245; vale também para o `WRITE_SAVE` dos núcleos do OSCR: entre o apagamento e a primeira leitura o núcleo faz `printLineSync`, que espera a TX esvaziar e dá `delay(25)`). A UART do AVR guarda 64 bytes e perderia os blocos que chegassem durante um apagamento de segundos, então o PC só manda dados depois do `ACK`. Por isso o host espera esse `ACK` por até 90 s (300 s nos acessórios do SNES; **600 s no Mega Drive, no GBA e no N64**, onde apagar e conferir em branco um repro de vários MB leva minutos, D245) e **nunca reenvia o comando** (reenviar apagaria de novo).
 
 Campos: `sistema` (NES = 2 ou Famicom = 3), `tamanho` (bytes do que vai ser enviado), `chip`, `prg_kb`, `chr_kb`. O PC tira o cabeçalho iNES (o arquivo enviado é PRG e depois CHR) e escolhe o chip; `tamanho` tem que ser `(prg_kb + chr_kb) * 1024`.
 

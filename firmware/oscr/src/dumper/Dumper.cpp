@@ -130,6 +130,7 @@ namespace OSCR::Dumper
 
     int ioRead(void *, uint32_t timeoutMs)
     {
+      if (ClockedSerial.available()) return ClockedSerial.read();   // D245: byte já na fila, sem ler o relógio
       uint32_t start = millis();
       for (;;)
       {

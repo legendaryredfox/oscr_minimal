@@ -64,8 +64,14 @@ bool Session::next_frame(uint32_t timeout_ms) {
       if (io_.now_ms(io_.ctx) - start >= timeout_ms) return false;
       continue;
     }
+    // D245: drena o que já chegou sem ler o relógio a cada byte (a 1 Mbaud sobram ~160 ciclos por byte no AVR)
+    bool done = false;
+    while (!(done = dec_.push(uint8_t(b)))) {
+      b = io_.read_byte(io_.ctx, 0);
+      if (b < 0) break;
+    }
     last_byte_ms_ = io_.now_ms(io_.ctx);
-    if (dec_.push(uint8_t(b))) return true;
+    if (done) return true;
   }
 }
 
@@ -374,12 +380,15 @@ void Session::do_stream_read(uint8_t seq, uint8_t kind, uint8_t sys, uint16_t bl
 
 // PC -> dispositivo: o núcleo pede bytes com `read`; o ACK de cada bloco só sai depois que o núcleo consumiu o bloco inteiro,
 // para o PC não mandar o próximo enquanto o cartucho ainda grava (o buffer da UART do AVR tem 64 bytes).
+// O ACK inicial (offset 0, "pode mandar") também só sai no primeiro `fetch` (D245): entre ele e a primeira leitura o núcleo do OSCR
+// faz `printLineSync`, que espera a TX esvaziar e dá `delay(25)`; o bloco 0 chegava nesse meio, transbordava a UART e se perdia.
 struct StreamIn : StreamSource {
-  Session& s; uint8_t seq; uint32_t total, expected = 0, crc = 0; uint16_t cur_len = 0, cur_pos = 0; bool have = false, dead = false, aborted = false; uint32_t last_off = 0;
+  Session& s; uint8_t seq; uint32_t total, expected = 0, crc = 0; uint16_t cur_len = 0, cur_pos = 0; bool have = false, dead = false, aborted = false, go = true; uint32_t last_off = 0;
   StreamIn(Session& se, uint8_t sq, uint32_t size) : s(se), seq(sq), total(size) {}
   uint32_t size() const override { return total; }
   bool failed() const override { return dead; }
   bool fetch() {
+    if (go) { s.send_offset(T_D_ACK, seq, 0); go = false; }   // "pode mandar": só agora o núcleo está lendo a serial
     uint32_t last = s.io_.now_ms(s.io_.ctx);
     while (s.io_.now_ms(s.io_.ctx) - last < 5000) {
       if (!s.next_frame(200)) continue;
@@ -423,13 +432,13 @@ void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t k
     send_stage(seq, STAGE_ERASE, 0, size);
     if (!be_.rom_prepare(sys, size, err)) { send_error(seq, err); return; }   // conferir o chip e apagar: só depois o PC manda os dados
   }
-  send_offset(T_D_ACK, seq, 0);
   send_stage(seq, STAGE_WRITE, 0, size);
-  StreamIn in(*this, seq, size);
+  StreamIn in(*this, seq, size);                         // o ACK inicial sai no primeiro `fetch` (ver StreamIn)
   bool ok = kind == KIND_ROM ? be_.stream_write_rom(sys, in, err) : be_.stream_write(sys, in, err);
   if (in.aborted) { reply_abort(); return; }
   if (in.dead) { send_error(seq, E_REENVIOS, "timeout"); return; }
   if (!ok) { send_error(seq, err); return; }
+  if (in.go) { send_error(seq, E_ARGUMENTO, "sobrou"); return; }   // o núcleo terminou sem ler nada do arquivo
   in.ack();                                              // confirma o último bloco, já consumido
   uint32_t last = io_.now_ms(io_.ctx);
   while (io_.now_ms(io_.ctx) - last < 5000) {

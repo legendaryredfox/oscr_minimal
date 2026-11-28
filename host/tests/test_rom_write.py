@@ -966,3 +966,10 @@ def test_rom_write_fill_kb_no_simulador(tmp_path, capsys):
     f.write_bytes(ines(96, 0, 30))
     code, out = run(capsys, "--simulate", "--json", "rom-write", "-s", "mock", "-i", str(f), "--chip", "nesmaker", "--fill-kb", "512", "--yes")
     assert code == 64 and json.loads(out)["error"]["kind"] == "bad_rom"
+
+
+def test_begin_timeout_cobre_o_apagamento_do_mega_drive():
+    # D245: apagar e conferir em branco um repro de Mega Drive ou GBA de vários MB passa de 90 s antes do primeiro ACK
+    from oscr_host.cli.cmd_rom import begin_timeout_for
+    assert begin_timeout_for("md", "md-flash") == 600.0 and begin_timeout_for("gba", "gba-flash") == 600.0
+    assert begin_timeout_for("n64", "n64-flash") == 600.0 and begin_timeout_for("nes", "a29040b") == 90.0

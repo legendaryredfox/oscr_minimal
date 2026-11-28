@@ -63,6 +63,24 @@ Dá para validar firmware, protocolo, CLIs e GUI com um Mega solto (sem shield, 
 - **Linha de dados da EEPROM (D7, `EEPROM_DATA` do N64):** divide o pull-up R2 (5 V) com o `/IRQ` do SNES; só um cartucho por vez, e na placa só de N64 o R2 pode ser retirado (`boards/completa/README.md`, pendência 5).
 - **Porta que some ao gravar o firmware:** o Mega reinicia; espere um instante e repita o `info`.
 
+## `16_bits` v1.0 com cartuchos (feito em 2026-11-27, D242 a D245)
+
+Placa encomendada sobre Mega CH340, firmware da D241 e depois o da D245. Comandos com `--port /dev/ttyUSB0 --json`.
+
+| Teste | Cartucho | Resultado |
+|---|---|---|
+| `selftest`, `clock-cal`, `hwtest.py nocart` | sem cartucho | limpos depois da limpeza da placa (D242); `detect -s md` com o slot vazio dá falso positivo (D242, correção não feita) |
+| `dump -s snes --twice` | Super Return of the Jedi (LoROM, 2 MB) | CRC32 `4A5F30D8` = No-Intro (USA) (Rev 1) (D244) |
+| `dump -s snes --twice` | Donkey Kong Country 2 (repro regravável, HiROM) | depois de reencaixar: CRC32 `4E2D90F4` = No-Intro (USA) (En,Fr) (Rev 1); antes, bytes parados (D243) |
+| `save-read -s snes` | Donkey Kong Country 2 | 2 KB lidos, CRC32 `95124825` (D245) |
+| `rom-write -s snes --chip snes-hirom` | Donkey Kong Country 2 | erro 11, chip não reconhecido; nada apagado (D245). Falta saber o chip |
+| `dump -s md` | Rolling Thunder 2 | lê estável; fora do No-Intro, roda no BlastEm (D243) |
+| `detect -s md --flash-id`, `dump -s md` | Metal Gear (regravável tipo md rewriter) | `S29GL064N 017E1001`, 8 MB; ROM de 1.825.792 bytes, CRC32 `1CAE3D23`, checksum do cabeçalho confere |
+| `rom-write -s md --chip md-flash` | o mesmo | firmware da D241: apaga e para no 1º bloco (erro 5). Firmware da D245: Metal Gear gravado e lido de volta igual, 3 min 37 s |
+| `save-write -s md` | o mesmo | 32 KB: save alterado (CRC32 `A3C0CFA5`) e o original (`CECE802D`) gravados e conferidos |
+
+**Para repetir a gravação do Mega Drive:** `rom-write -s md -i jogo.md --chip md-flash --yes`. Guarde antes um `dump` e um `save-read`: se a gravação falhar no meio, o chip fica apagado.
+
 ## Gravação em flash de NES (cartucho foxcarts, mapper 30)
 
 Primeira gravação real de `WRITE_ROM` em flash NES (D77, nunca rodou em hardware), junto com o projeto irmão `foxcarts` (`~/development/hardware/foxcarts`, ver `docs/planos/cartuchos-foxcarts.md`). Falha pode ser do gravador, do firmware ou da PCB do cartucho: este roteiro separa os três. Placa do gravador com slot Famicom (`famicom`, `famicom_nes` ou `completa`), cartucho só no slot, **sem outro cartucho** (D2: um por vez).

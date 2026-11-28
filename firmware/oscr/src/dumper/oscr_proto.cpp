@@ -41,7 +41,9 @@ bool Decoder::push(uint8_t b) {
       got_ = 0; st_ = len ? S_PAY : S_C0;
       break;
     case S_PAY:
-      buf_[got_++] = b; crc_ = crc32_update(crc_, &b, 1);
+      // D245: o CRC da carga é calculado só no fim do quadro (S_C3). Calcular por byte custava ~250 ciclos no AVR, mais que os
+      // 160 que cabem num byte a 1 Mbaud: num bloco de 512 bytes o laço ficava para trás e a UART (64 bytes) transbordava.
+      buf_[got_++] = b;
       if (got_ == len) st_ = S_C0;
       break;
     case S_C0: rx_ = b; st_ = S_C1; break;
@@ -49,6 +51,7 @@ bool Decoder::push(uint8_t b) {
     case S_C2: rx_ |= uint32_t(b) << 16; st_ = S_C3; break;
     case S_C3:
       rx_ |= uint32_t(b) << 24; st_ = S_M0;
+      crc_ = crc32_update(crc_, buf_, len);             // a carga (ver S_PAY); o PC só manda outro quadro depois da resposta
       if (rx_ == crc_) return true;
       bad++;
       break;

@@ -15,6 +15,7 @@ Regra: **mudanças mínimas e localizadas**, marcadas com `OSCR_DUMPER` ou com u
 | `include/api/Storage.h`, `src/arch/avr/generic/Storage.cpp` | `File` usa `StreamFile` (arquivo virtual) e `sd` vira `StreamSd`; sem inicialização do SD |
 | `ClockedSerial` (`include/arch/avr/generic/interfaces/`, `src/...`) | `mute` (a UI de texto não escreve) e `rawWrite` (só o protocolo) |
 | `src/ui/interfaces/serial/ascii.cpp` | `_error` marca o erro, `_fatalError` volta ao laço por `longjmp`, `waitButton` não espera |
+| `config.d/81-hardware-envs.ini` | ambiente `SerialASCII`: `-D SERIAL_RX_BUFFER_SIZE=1024` (D245). Com a fila padrão de 64 bytes, um bloco de 512 bytes vindo do PC a 1 Mbaud transbordava |
 | `src/main.cpp` | `setup()` chama `Dumper::setup()`; `loop()` chama `Dumper::loop()` no lugar do menu |
 | `Serial.cpp`, `OSCR.cpp` | sem as chamadas do `Updater` (D207): elas prendiam todos os `menu()` dos núcleos no LTO |
 | `src/apps/Prompts.cpp`, `src/apps/FileBrowser.cpp` | sem usuário: os prompts não esperam; `selectFile` abre o arquivo virtual que o PC manda |

@@ -17,6 +17,7 @@ from .output import emit, progress
 
 
 SNES_ACC_BEGIN_TIMEOUT = 300.0   # SFM: apagar as duas flashes (até 120 s) e conferir 4 MB em branco antes do primeiro ACK
+FLASH_BEGIN_TIMEOUT = 600.0      # Mega Drive e GBA (D245): apagar um repro de 4 a 32 MB (setor a setor, ~0,5 a 1 s cada) e conferir em branco o tamanho da ROM leva minutos
 N64_BEGIN_TIMEOUT = 600.0        # apagar e conferir em branco até 64 MB leva minutos (o apagamento vem antes do primeiro ACK)
 
 
@@ -24,6 +25,17 @@ def _layout_name(img) -> str:
     if img.layout == RI.SNES_GENERIC:
         return "flash de 8 bits de tipo informado"
     return next((k for k, v in RI.SNES_LAYOUTS.items() if v == img.layout), "?")
+
+
+def begin_timeout_for(system: str, chip: str) -> float:
+    """Segundos de espera pelo primeiro ACK do WRITE_ROM: o firmware apaga (e confere em branco) antes dele."""
+    if system == "n64":
+        return N64_BEGIN_TIMEOUT
+    if system in ("md", "gba"):
+        return FLASH_BEGIN_TIMEOUT
+    if chip in RI.SNES_ACCESSORY_CHIPS:
+        return SNES_ACC_BEGIN_TIMEOUT
+    return 90.0
 
 
 def cmd_rom_write(args) -> int:
@@ -124,7 +136,7 @@ def cmd_rom_write(args) -> int:
             raise CliError("refused", tr("rom.md_limit", size=len(img.body) // (1 << 20) if len(img.body) % (1 << 20) == 0 else f"{len(img.body) / (1 << 20):.2f}",
                                          chip=md_chip["chip"], codes=md_chip.get("codes", ""), limit=BOARD_LIMIT_BYTES >> 20), EXIT_REFUSED, tr("rom.md_limit_hint"))
         crc = c.write_rom(system_id(args.system), img.body, RI.chip_code(chip, img), img.flash_kb or img.prg_kb, img.wire_chr or img.chr_kb, args.block or P.DEFAULT_BLOCK,
-                          progress("write-rom", args.progress), args.begin_timeout if args.begin_timeout is not None else (N64_BEGIN_TIMEOUT if args.system == "n64" else SNES_ACC_BEGIN_TIMEOUT if chip in RI.SNES_ACCESSORY_CHIPS else 90.0))
+                          progress("write-rom", args.progress), args.begin_timeout if args.begin_timeout is not None else begin_timeout_for(args.system, chip))
     finally:
         t.close()
     out = {"chip": chip, "prg_kb": img.prg_kb, "chr_kb": img.chr_kb, "bytes": len(img.body), "crc32": f"{crc:08X}"}

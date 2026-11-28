@@ -55,4 +55,13 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 
 ## Só com hardware, cartucho, medição, pessoa ou CI
 
+- **Bancada da `16_bits` v1.0 (D242 a D245), o que ficou aberto:**
+  - `detect -s md` com o slot vazio dá falso positivo (D242). A correção foi proposta e não foi feita.
+  - Chip do DKC2 regravável de SNES: o `rom-write` responde "chip não reconhecido". Falta a marcação do chip, que o usuário vai ler.
+  - Gravar a SRAM no SNES: nunca rodou.
+  - Gravar ROM no MD com chips que não o S29GL064N: nunca rodou.
+  - Gravar no GBA e no N64: nunca rodou, e a `16_bits` não tem esses slots.
+  - O Yu Yu Hakusho lê `FF` (cartucho de funcionamento desconhecido).
+
+
 Validação de tudo (roteiro em `docs/referencia/uso.md` seção 7 e `docs/referencia/teste-de-bancada.md`, na ordem de risco da D191); MD-9, MD-14 e MD-15; o comando `peek` (P6, adiado de propósito na D160: sem placa um valor errado pareceria bom); medir os slots, a direção da etiqueta do SMS, a corrente do U3 com o N64 e os furos de fixação no Mega; `firmware-flash` com o Mega real nos três sistemas operacionais; Controller Pak do N64 (a placa não tem o conector do controle); calibração do Si5351 com frequencímetro; bancada do RP2040 (`docs/planos/placa-v1.3-rp2040.md`); revisão nativa de ru e zh; revisão visual dos layouts no KiCad; montar e testar os adaptadores da F-20; encomendas (ordem na D159: validar a `16_bits` v1.0 já encomendada antes de comprar outra).
