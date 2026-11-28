@@ -16,7 +16,7 @@ val PLANNED_SYSTEMS: List<PlannedSystem> = listOf(
     PlannedSystem("pce", "PC Engine / TurboGrafx-16"), PlannedSystem("pcw", "Pocket Challenge W"),
     PlannedSystem("satellaview", "Satellaview (BS-X)"), PlannedSystem("sfm", "SF Memory"),
     PlannedSystem("supercan", "Super A'can"),
-    PlannedSystem("ti99", "TI-99/4A"), PlannedSystem("trs80", "TRS-80"),
+    PlannedSystem("ti99", "TI-99/4A"),
     PlannedSystem("ws", "WonderSwan"),
     PlannedSystem("gbsmart", "Game Boy Smart Card"), PlannedSystem("gbmem", "Game Boy Memory"),
 )

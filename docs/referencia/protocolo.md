@@ -105,6 +105,7 @@ bit 0: modo `MOCK` ligado (dados sintéticos, sem cartucho); bit 1: Si5351 detec
 | 29 | Pokémon Mini (adaptador de 32 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D227) | `.min` |
 | 30 | V.Smile (adaptador de 48 pinos no slot SNES, **3,3 V**, regulador próprio no adaptador; F-20, D228) | `.bin` |
 | 31 | MSX (adaptador de 50 pinos no slot SNES, 5 V; ROM e SRAM; F-20, D230). Último id dos 32 bits; os ids 32 a 63 vão em `sistemas_ext` (D232) | `.rom` |
+| 32 | TRS-80 Color Computer (adaptador de 40 pinos no slot SNES, 5 V; F-20, D248). Primeiro id de `sistemas_ext` | `.ccc` |
 | 255 | `MOCK` (teste, sem cartucho) | `.bin` |
 
 ### Opções para Atari 2600 (D206)
@@ -164,6 +165,10 @@ Usa o núcleo `BallyAstrocade.cpp` do OSCR, só leitura de ROM. A costura chama 
 ### Opções para Fairchild Channel F (D224)
 
 Usa o núcleo `ChannelF.cpp` do OSCR, só leitura de ROM, pelo protocolo ROMC do F8 (o cartucho não tem barramento de endereço). `mapper` escolhe a função do OSCR: **0** = `readROM` (procura o cabeçalho `$55` seguido de `$08`, `$2B`, `$AA` ou `$BB` e grava `prg_kb` KB dali; a costura liga e desliga o cartucho, que o `readROM` não liga), **1** = `read16K` ("Read 16K" do menu: 16 KB brutos, sem procurar cabeçalho); outro valor dá `ERRO 0x0004`. `prg_kb` vale sempre: 2, 3, 4 ou 6 (índice da tabela `romSizes`; o `read16K` também o usa para pular a BIOS nos de 4 KB); outro valor dá `ERRO 0x0004`. Única mudança no núcleo: os dois `matchCRC` sob `#if !OSCR_DUMPER`. `DETECT` repete a procura do `readROM` (até `$4800` leituras): `status` 0 com cabeçalho, 1 se todos os bytes forem iguais a `$00` ou `$FF` (slot vazio), 4 se há dados sem cabeçalho; `rom_size` é o tamanho do arquivo que o modo e o `prg_kb` do `DETECT` dariam (0 sem tamanho válido). Com `status` 4, `DUMP_ROM` no modo 0 responde `ERRO 0x0007` (o `readROM` não gravaria nada); o modo 1 segue. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. Regras puras em `include/dumper/ChfCore.h`, testadas em `pc-tests/test_chf.cpp`.
+
+### Opções para TRS-80 Color Computer (D248)
+
+Usa o núcleo `TRS80.cpp` do OSCR, só leitura de ROM. A costura chama o `readROM` do OSCR com `romSize` = índice da tabela `romSizes` (o `readROM` pulsa o `/RESET`, lê a partir de `$C000` com o `/CTS` e, nos tamanhos grandes, troca de banco); única mudança no núcleo: o `matchCRC` final sob `#if !OSCR_DUMPER`. Sem `mapper`. `prg_kb` é o **tamanho da ROM em KB** e vale sempre: 2, 4, 8, 10, 16, 32 (Mind-Roll: o segundo chip de 16 KB pelo `/SCS`, lido em `$8000`), 64 ou 128 (Predator e RoboCop: bancos de 16 KB trocados por escrita em `$FF40`); outro valor dá `ERRO 0x0004`. O cartucho não informa o tamanho. `DETECT` lê 32 bytes de `$C000` com o `readData` do núcleo: `status` 1 se todos forem iguais a `$00` ou `$FF` (slot vazio), senão 0; `name` = `TRS80`; `rom_size` é o tamanho que o `prg_kb` do `DETECT` daria (0 sem tamanho válido). O fork não confere assinatura. `READ_SAVE` e `WRITE_SAVE` respondem `ERRO 0x000A`. O sinal E do cartucho (PH1 no núcleo) não chega ao slot SNES: o adaptador o prende em nível alto (`docs/planos/adaptadores.md#adaptador-trs80`). Regras puras em `include/dumper/TrsCore.h`, testadas em `pc-tests/test_trs.cpp`.
 
 ### Opções para MSX (D230)
 

@@ -14,7 +14,7 @@ PLANNED: tuple[tuple[str, str], ...] = (
     ("pce", "PC Engine / TurboGrafx-16"), ("pcw", "Pocket Challenge W"),
     ("satellaview", "Satellaview (BS-X)"), ("sfm", "SF Memory"),
     ("supercan", "Super A'can"),
-    ("ti99", "TI-99/4A"), ("trs80", "TRS-80"),
+    ("ti99", "TI-99/4A"),
     ("ws", "WonderSwan"),
     ("gbsmart", "Game Boy Smart Card"), ("gbmem", "Game Boy Memory"),
 )

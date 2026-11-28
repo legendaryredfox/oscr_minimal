@@ -214,7 +214,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
         system == CartSystem.A8BIT -> Rules.atari8(mapN, prgN)
         system == CartSystem.ODYSSEY2 -> Rules.odyssey2(mapN, prgN)
         system == CartSystem.MSX -> Rules.msx(mapN, prgN)
-        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.VSMILE -> Rules.romSize(system, prgN)
+        system == CartSystem.SNES || system == CartSystem.MD || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.VSMILE || system == CartSystem.TRS80 -> Rules.romSize(system, prgN)
         isGba && read369 -> Rules.gba369(block369.toIntOrNull() ?: 0, size369.toIntOrNull() ?: 0)
         else -> null
     }
@@ -1047,6 +1047,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
             if (stub == null && system == CartSystem.SUPERVISION) Callout(t(S.SUPERVISION_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.POKEMINI) Callout(t(S.POKEMINI_HINT), Tone.WARN)
             if (stub == null && system == CartSystem.VSMILE) Callout(t(S.VSMILE_HINT), Tone.WARN)
+            if (stub == null && system == CartSystem.TRS80) Callout(t(S.TRS80_HINT), Tone.INFO)
             if (stub == null && system == CartSystem.MSX) {
                 Callout(t(S.MSX_HINT), Tone.INFO)
                 LabeledField(t(S.MSX_MAPPER)) {
@@ -1140,7 +1141,7 @@ fun App(fontPercent: Int = 100, onFontPercent: (Int) -> Unit = {}) {
                         supportingText = { Text(t(S.N64_SAVE_HINT)) }, modifier = Modifier.width(260.dp))
                 }
             }
-            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.VSMILE || system == CartSystem.ODYSSEY2)) {
+            if (stub == null && (system == CartSystem.MD || system == CartSystem.SNES || system == CartSystem.SMS || system == CartSystem.GG || system == CartSystem.SG1000 || system == CartSystem.COLECO || system == CartSystem.NGP || system == CartSystem.VECTREX || system == CartSystem.JAGUAR || system == CartSystem.ARCADIA || system == CartSystem.RCA2 || system == CartSystem.PYUUTA || system == CartSystem.SUPERVISION || system == CartSystem.PV1000 || system == CartSystem.ASTROCADE || system == CartSystem.CHANNELF || system == CartSystem.VSMILE || system == CartSystem.TRS80 || system == CartSystem.ODYSSEY2)) {
                 OutlinedTextField(prgKb, { prgKb = it.filter(Char::isDigit).take(5) }, label = { Text(t(S.ROM_SIZE_KB)) }, singleLine = true, isError = problem != null,
                     supportingText = { problem?.let { Text(describeProblem(lang, it)) } }, modifier = Modifier.fillMaxWidth())
             }

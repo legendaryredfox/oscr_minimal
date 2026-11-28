@@ -23,8 +23,8 @@ def test_id_e_extensao():
     assert len(ids) == len(set(ids))
 
 
-def test_cabe_na_mascara_de_32_bits():
-    assert max(v[0] for k, v in P.SYSTEMS.items() if k != "mock") <= 31
+def test_cabe_na_mascara_de_64_bits():
+    assert max(v[0] for k, v in P.SYSTEMS.items() if k != "mock") <= 63   # máscara `systems()` de 64 bits desde a D232
 
 
 def test_saiu_dos_planejados():

@@ -26,6 +26,7 @@ Regras que valem para todos:
 - [Adaptador do Pokémon Mini para o slot SNES (F-20, D227)](#adaptador-pokemini)
 - [Adaptador do V.Smile para o slot SNES (F-20, D228)](#adaptador-vsmile)
 - [Adaptador do MSX para o slot SNES (F-20, D230)](#adaptador-msx)
+- [Adaptador do TRS-80 Color Computer para o slot SNES (F-20, D248)](#adaptador-trs80)
 
 <a id="adaptador-coleco"></a>
 
@@ -990,3 +991,54 @@ Sem ligação: RSV (5 e 16), /WAIT (7, saída do cartucho que o núcleo não lê
 - **Mapper e tamanho:** o cartucho não informa. A base do OSCR (`database/oscr/json/msx.json`) traz o mapper e o índice do tamanho de cada jogo, sem CRC32.
 - **SRAM:** só os mappers ASCII8, ASCII16, Game Master 2, HAL Note, Koei e PAC/FM-PAC têm save; o tamanho também vem do PC. A gravação nunca rodou em hardware: fazer backup do save antes.
 - A sondagem do firmware (`setCS` do núcleo e 32 bytes de $4000) só separa slot vazio de cartucho; o cabeçalho "AB" é só informativo (nome `MSX` ou `MSX (SEM AB)` no `DETECT`).
+
+<a id="adaptador-trs80"></a>
+
+## Adaptador do TRS-80 Color Computer para o slot SNES (F-20, D248)
+
+O núcleo `TRS80.cpp` do OSCR usa o barramento do slot SNES só para leitura (mais uma escrita de troca de banco). O endereço de 16 bits sai por PF (A0 a A7) e PK (A8 a A15); os dados D0 a D7 entram por PC, em ordem normal. **/CTS** (PH3) seleciona a ROM em `$C000-$FFFF`: o `readData` do núcleo o baixa, espera 5 NOP, lê PC e o sobe. **/SCS** (PH4) dá o segundo chip do Mind-Roll (32 KB, lido em `$8000`) e, com **R/W** (PH5) baixo, a escrita do número do banco em `$FF40` no Predator (64 KB) e no RoboCop (128 KB): o latch 74LS175 do cartucho trava D0 a D3. O `readROM` pulsa **/RESET** (PH0) por 100 ms antes de ler (o /RESET zera o latch). `PH6`, `TIME` (PJ0), PL e PA ficam altos e **não chegam ao cartucho**. O cartucho é de 5 V (`setVoltage(k5V)`; o slot SNES é 5 V fixo em todas as placas, sem regulador no adaptador). O adaptador não foi desenhado: falta o PCB (conector de borda de 40 posições, 2,54 mm, duas faces: ímpares em cima, pares embaixo).
+
+### Fonte (conferida)
+
+Pinagem do cartucho: o quadro "Cartridge Pinout, 40P 2.54mm pitch connector" no começo de `firmware/oscr/src/cores/TRS80.cpp` (duas colunas: ímpares à esquerda, pares à direita) e a lista "CONTROL PINS" logo abaixo. Pinos do slot e portas: `boards/16_and_8_bits/docs/pinmap.md` (SNES). `python3 tools/check_adaptador_trs80.py` confere o quadro, a lista de controles, o `readData` do núcleo e o pinmap.
+
+| Sinal | Pino do slot SNES | Porta AVR | Pino do conector (40P) |
+|---|---|---|---|
+| A0 | 17 | PF0 | 19 |
+| A1 | 16 | PF1 | 20 |
+| A2 | 15 | PF2 | 21 |
+| A3 | 14 | PF3 | 22 |
+| A4 | 13 | PF4 | 23 |
+| A5 | 12 | PF5 | 24 |
+| A6 | 11 | PF6 | 25 |
+| A7 | 10 | PF7 | 26 |
+| A8 | 9 | PK0 | 27 |
+| A9 | 8 | PK1 | 28 |
+| A10 | 7 | PK2 | 29 |
+| A11 | 6 | PK3 | 30 |
+| A12 | 37 | PK4 | 31 |
+| A13 | 38 | PK5 | 37 |
+| A14 | 39 | PK6 | 38 |
+| A15 | 40 | PK7 | 39 |
+| D0 | 19 | PC0 | 10 |
+| D1 | 20 | PC1 | 11 |
+| D2 | 21 | PC2 | 12 |
+| D3 | 22 | PC3 | 13 |
+| D4 | 50 | PC4 | 14 |
+| D5 | 51 | PC5 | 15 |
+| D6 | 52 | PC6 | 16 |
+| D7 | 53 | PC7 | 17 |
+| /RESET | 26 | PH0 | 5 |
+| /CTS | 49 | PH3 | 32 |
+| /SCS | 18 | PH4 | 36 |
+| R/W | 54 | PH5 | 18 |
+
+Pinos fixos do conector: +5V no 9 (slot 27 e 58, 5 V fixo), GND no 33 e no 34 (slot 5 e 36).
+
+**E (6): preso ao +5V no adaptador.** A lista do núcleo diz "E(PH1) - SNES CPUCLK", mas nas nossas placas o pino 57 do slot SNES (CPU clock) é o CLK1 do Si5351 e o PH1 não chega ao slot (vai ao Mega Drive B19 e ao GBA). O núcleo segura o E em nível alto o tempo todo (`cartOn`) e só o baixa por um NOP dentro do `bankSwitch`. A ROM não usa o E na leitura (só o /CTS). No latch dos cartuchos com banco, o CP do 74LS175 fica baixo só com R/W baixo, /SCS baixo e E alto: com o E fixo em alto o CP sobe quando o núcleo sobe o /SCS, com o dado ainda no barramento, e o banco trava do mesmo jeito. É uma dedução do código e do comentário do núcleo, como o `/OE` do Vectrex (D205): conferir em bancada com o Predator ou o RoboCop (os quatro bancos têm que sair diferentes). O pino 57 do slot fica sem ligação no adaptador.
+
+### Pontos a conferir com o cartucho na mão
+
+- **Pinos que o núcleo não conduz:** NC (1 e 2), /HALT (3), /NMI (4), Q (7), /CART (8), SND (35) e /SLENB (40). Os cartuchos ligam /CART ao Q (partida automática no console); sem o Q nada muda na leitura. Se algum cartucho depender do Q para o decodificador, o adaptador tem que prendê-lo no nível certo. **PENDENTE**, depende do cartucho.
+- **Tamanho:** o cartucho não informa. A maioria tem de 2 a 16 KB; 32 KB é o Mind-Roll, 64 KB o Predator e 128 KB o RoboCop. Ler a mais repete a ROM (espelho) e o CRC32 não bate com a base.
+- A sondagem do firmware (32 bytes de `$C000` com o `readData` do núcleo) só separa slot vazio de cartucho: a ROM do CoCo não tem assinatura fixa.

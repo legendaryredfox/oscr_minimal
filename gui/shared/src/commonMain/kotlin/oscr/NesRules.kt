@@ -95,6 +95,7 @@ object Rules {
         CartSystem.PV1000 -> if (kb in setOf(8, 16)) null else Problem(S.V_PV1000_SIZE)     // o cartucho não informa o tamanho (PvCore.h)
         CartSystem.ODYSSEY2 -> if (kb in setOf(2, 4, 8, 12, 16)) null else Problem(S.V_ODY2_SIZE)     // o cartucho não informa o tamanho (OdyCore.h)
         CartSystem.VSMILE -> if (kb in setOf(4096, 6144, 8192, 16384)) null else Problem(S.V_VSMILE_SIZE)     // o cartucho não informa o tamanho (VsmCore.h)
+        CartSystem.TRS80 -> if (kb in setOf(2, 4, 8, 10, 16, 32, 64, 128)) null else Problem(S.V_TRS80_SIZE)     // o cartucho não informa o tamanho (TrsCore.h)
         CartSystem.CHANNELF -> if (kb in setOf(2, 3, 4, 6)) null else Problem(S.V_CHANNELF_SIZE)     // o cartucho não informa o tamanho (ChfCore.h)
         CartSystem.ASTROCADE -> if (kb in setOf(2, 4, 8)) null else Problem(S.V_ASTROCADE_SIZE)     // o cartucho não informa o tamanho (BallyCore.h)
         CartSystem.PYUUTA -> if (kb in setOf(8, 16, 32)) null else Problem(S.V_PYUUTA_SIZE)     // o cartucho não informa o tamanho (PyuCore.h)
