@@ -56,10 +56,10 @@ A spec e o plano de 2026-11-14 ("pendências que não precisam de placa", D161) 
 ## Só com hardware, cartucho, medição, pessoa ou CI
 
 - **Bancada da `16_bits` v1.0 (D242 a D245), o que ficou aberto:**
-  - `detect -s md` com o slot vazio dá falso positivo (D242). A correção foi proposta e não foi feita.
+  - `detect -s md` com o slot vazio: corrigido na D246 (sonda de barramento solto), falta rodar com o slot vazio de verdade (`tools/hwtest/hwtest.py nocart --system md`) e com um repro de MD apagado (tem que dar "detectado", 128 KB).
   - Chip do DKC2 regravável de SNES: o `rom-write` responde "chip não reconhecido". Falta a marcação do chip, que o usuário vai ler.
   - Gravar a SRAM no SNES: nunca rodou.
-  - Gravar ROM no MD com chips que não o S29GL064N: nunca rodou.
+  - Gravar ROM no MD com chips que não o S29GL064N: nunca rodou (o S29GL064N rodou nos dois layouts, `017E1001` e `017E1000`, D245 e D246).
   - Gravar no GBA e no N64: nunca rodou, e a `16_bits` não tem esses slots.
   - O Yu Yu Hakusho lê `FF` (cartucho de funcionamento desconhecido).
 

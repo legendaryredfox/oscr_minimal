@@ -41,7 +41,7 @@ Dá para validar firmware, protocolo, CLIs e GUI com um Mega solto (sem shield, 
 |---|---|
 | `dumper info` | firmware 0.2.0, proto 1, 11 sistemas |
 | `hwtest nocart` | 10 reconexões sem falha; `selftest` com **só** `pullup D7` e `clockgen`; `detect` vazio em snes, nes, gba, gb, n64 e sms |
-| `detect -s md` e `-s auto` | **"cartucho detectado" (falso positivo):** o barramento flutuante; ignore no Mega nu (a suíte marca FAIL no md) |
+| `detect -s md` e `-s auto` | até a D245, **"cartucho detectado" (falso positivo)** pelo barramento flutuante (a suíte marcava FAIL no md). Desde a D246 a sonda de barramento solto deve dar "nenhum cartucho"; não conferido no Mega nu |
 | `dump -s md` | 131.072 bytes `FF`, CRC32 `154803CC`, igual em todas as vezes e igual nas duas CLIs: serve de teste de integridade e vazão do protocolo, não de leitura de cartucho |
 | `ABORT` no meio de um dump, **na mesma conexão** | `INFO` e o dump seguinte seguem certos (reabrir a porta reseta o Mega e esconde falhas, por isso teste sem reabrir) |
 | GUI: conectar, Detectar, autoteste, "Ler o estado" do Si5351, placa `16_bits v1.3` | como na CLI; o perfil da placa fica na EEPROM do Mega |
@@ -69,7 +69,7 @@ Placa encomendada sobre Mega CH340, firmware da D241 e depois o da D245. Comando
 
 | Teste | Cartucho | Resultado |
 |---|---|---|
-| `selftest`, `clock-cal`, `hwtest.py nocart` | sem cartucho | limpos depois da limpeza da placa (D242); `detect -s md` com o slot vazio dá falso positivo (D242, correção não feita) |
+| `selftest`, `clock-cal`, `hwtest.py nocart` | sem cartucho | limpos depois da limpeza da placa (D242); `detect -s md` com o slot vazio dava falso positivo (D242): corrigido na D246 pela carga do barramento, ainda sem teste com o slot vazio |
 | `dump -s snes --twice` | Super Return of the Jedi (LoROM, 2 MB) | CRC32 `4A5F30D8` = No-Intro (USA) (Rev 1) (D244) |
 | `dump -s snes --twice` | Donkey Kong Country 2 (repro regravável, HiROM) | depois de reencaixar: CRC32 `4E2D90F4` = No-Intro (USA) (En,Fr) (Rev 1); antes, bytes parados (D243) |
 | `save-read -s snes` | Donkey Kong Country 2 | 2 KB lidos, CRC32 `95124825` (D245) |
@@ -78,6 +78,11 @@ Placa encomendada sobre Mega CH340, firmware da D241 e depois o da D245. Comando
 | `detect -s md --flash-id`, `dump -s md` | Metal Gear (regravável tipo md rewriter) | `S29GL064N 017E1001`, 8 MB; ROM de 1.825.792 bytes, CRC32 `1CAE3D23`, checksum do cabeçalho confere |
 | `rom-write -s md --chip md-flash` | o mesmo | firmware da D241: apaga e para no 1º bloco (erro 5). Firmware da D245: Metal Gear gravado e lido de volta igual, 3 min 37 s |
 | `save-write -s md` | o mesmo | 32 KB: save alterado (CRC32 `A3C0CFA5`) e o original (`CECE802D`) gravados e conferidos |
+| `detect -s md --flash-id`, `dump --twice`, `save-read` | KY Technology regravável (D246) | `S29GL064N 017E1000` (oito setores de 8 KB no começo); nome "GAMETITLE"; ROM igual ao Metal Gear (`1CAE3D23`, duas leituras iguais); save de 32 KB `E459852B` |
+| `rom-write -s md` | o mesmo | Rolling Thunder 2 (1 MB, `39B6EDA9`) gravado e conferido em 148 s; Metal Gear restaurado e conferido em 227 s |
+| `save-write -s md` | o mesmo | save alterado (`8957CAA3`) e o original (`E459852B`) gravados e conferidos |
+| `rom-write -s md` com ROM de 3 MiB | o mesmo | recusado antes de apagar (limite de 2 MiB das placas KY / FlashKit); cartucho intacto |
+| `detect -s md` (firmware da D246) | o mesmo | detectado 3 de 3 vezes com a sonda de barramento solto |
 
 **Para repetir a gravação do Mega Drive:** `rom-write -s md -i jogo.md --chip md-flash --yes`. Guarde antes um `dump` e um `save-read`: se a gravação falhar no meio, o chip fica apagado.
 

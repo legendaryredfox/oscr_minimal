@@ -53,6 +53,10 @@ void Session::send_stage(uint8_t seq, uint8_t stage, uint32_t off, uint32_t tota
   send(T_PROGRESSO, seq, p, 9);
 }
 
+// Quanto o dispositivo espera o próximo quadro de uma escrita (D246). O PC reenvia um bloco sem resposta a cada 10 s (`long_timeout`);
+// com os 5 s de antes, um único bloco corrompido no cabo matava a gravação antes do reenvio. 25 s cobrem dois reenvios.
+static constexpr uint32_t kRxIdleMs = 25000;
+
 bool Session::next_frame(uint32_t timeout_ms) {
   uint32_t start = io_.now_ms(io_.ctx);
   for (;;) {
@@ -284,7 +288,7 @@ void Session::do_write(uint8_t seq, const uint8_t* p, uint16_t len, uint8_t kind
   send_offset(T_D_ACK, seq, 0);
   uint32_t expected = 0, crc = 0;
   uint32_t last = io_.now_ms(io_.ctx);
-  while (io_.now_ms(io_.ctx) - last < 5000) {
+  while (io_.now_ms(io_.ctx) - last < kRxIdleMs) {
     if (!next_frame(200)) continue;
     if (dec_.type == T_ABORT) { be_.write_abort(); send_offset(T_D_ACK, seq, 0); return; }
     if (dec_.seq != seq) continue;
@@ -390,7 +394,7 @@ struct StreamIn : StreamSource {
   bool fetch() {
     if (go) { s.send_offset(T_D_ACK, seq, 0); go = false; }   // "pode mandar": só agora o núcleo está lendo a serial
     uint32_t last = s.io_.now_ms(s.io_.ctx);
-    while (s.io_.now_ms(s.io_.ctx) - last < 5000) {
+    while (s.io_.now_ms(s.io_.ctx) - last < kRxIdleMs) {
       if (!s.next_frame(200)) continue;
       if (s.dec_.type == T_ABORT) { s.abort_seq_ = s.dec_.seq; dead = aborted = true; return false; }
       if (s.dec_.seq != seq) continue;
@@ -441,7 +445,7 @@ void Session::do_stream_write(uint8_t seq, uint8_t sys, uint32_t size, uint8_t k
   if (in.go) { send_error(seq, E_ARGUMENTO, "sobrou"); return; }   // o núcleo terminou sem ler nada do arquivo
   in.ack();                                              // confirma o último bloco, já consumido
   uint32_t last = io_.now_ms(io_.ctx);
-  while (io_.now_ms(io_.ctx) - last < 5000) {
+  while (io_.now_ms(io_.ctx) - last < kRxIdleMs) {
     if (!next_frame(200)) continue;
     if (dec_.type == T_ABORT) { send_offset(T_D_ACK, seq, 0); return; }
     if (dec_.seq != seq) continue;

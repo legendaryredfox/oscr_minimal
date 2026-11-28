@@ -147,6 +147,36 @@ namespace OSCR::Dumper
     uint32_t ioNow(void *) { return millis(); }
 
     /**
+     * Slot do Mega Drive vazio? (D246) Sem cartucho o barramento de dados fica solto e o `dataIn` do OSCR liga os pull-ups: lê FFFF, como
+     * uma flash apagada. Para separar os dois: pré-carrega as linhas de dados em 0 (cartucho desligado do barramento, /CE e /OE altos),
+     * solta sem pull-up e lê com o `readWord` do OSCR; repete pré-carregando em 1. Linha solta guarda a carga (alguns pF, fuga de nA:
+     * nada muda nos ~3 µs da leitura) e segue a pré-carga; linha que um chip dirige dá o mesmo valor nas duas. Vazio = a maioria dos 16
+     * bits seguiu a pré-carga em todas as leituras. Chamado com o cartucho ligado (`cartOn`) e ANTES do `getCartInfo` do OSCR: depois dele o
+     * cartucho KY (S29GL064N) não dirigia mais o barramento e a sonda o dava como vazio (bancada, 2026-11-27). Deixa o `dataIn` do OSCR.
+     */
+    bool mdBusFloating()
+    {
+      uint8_t followed = 0;
+      static constexpr uint8_t kAddr[4] = { 0x80, 0x88, 0xC8, 0xD9 };    // palavras do cabeçalho em $100, $110, $190 e $1B2
+      for (uint8_t i = 0; i < 4; i++)
+      {
+        uint16_t v[2];
+        for (uint8_t pre = 0; pre < 2; pre++)
+        {
+          uint8_t lvl = pre ? 0xFF : 0x00;
+          PORTC = lvl; PORTA = lvl; DDRC = 0xFF; DDRA = 0xFF;      // pré-carga
+          NOP; NOP;
+          DDRC = 0x00; DDRA = 0x00; PORTC = 0x00; PORTA = 0x00;    // entrada sem pull-up
+          v[pre] = OSCR::Cores::MegaDrive::readWord(kAddr[i]);
+        }
+        uint16_t follow = uint16_t(~v[0] & v[1]);                  // bits que leram 0 com pré-carga 0 e 1 com pré-carga 1
+        if (__builtin_popcount(follow) >= 8) followed++;
+      }
+      OSCR::Cores::MegaDrive::dataIn();
+      return followed == 4;
+    }
+
+    /**
      * `/CART` do Mega Drive (B32 -> D50 = PB3, placa 16_bits v. 1.2; D87): o cartucho liga o pino ao GND, então baixo = há cartucho.
      * Alto não diz nada: placas anteriores deixam o pino solto e o pull-up interno lê alto, e com a v. 1.2 alto também é "slot vazio".
      * Por isso só o nível baixo é usado (como prova de que há cartucho). Nenhum núcleo do OSCR usa PB3 neste fork; o estado anterior do pino é restaurado.
@@ -1705,7 +1735,9 @@ namespace OSCR::Dumper
         }
 
         MD::bramSize = 0; MD::realtec = false;                 // o OSCR só liga; cartucho trocado sem reiniciar deixaria o estado do anterior (D179)
-        bool ok = runCore([] { MD::getCartInfo(); MD::cartOff(); });
+        bool floating = false;
+        bool ok = runCore([&floating] { MD::cartOn(); MD::dataIn(); floating = mdBusFloating(); MD::getCartInfo(); MD::cartOff(); });   // a sonda vem antes: depois do `getCartInfo` o cartucho KY deixa de dirigir o barramento
+        if (ok && floating) { out.status = mdCartPinLow() ? 4 : 1; return; }   // D246: barramento solto = slot vazio (sem o /CART a v1.0 dava 128 KB "detectados")
 
         if (ok && OSCR::Dumper::MdExtra::bramSizeValid(MD::bramSize))      // RAM de backup do Sega CD (F-16, D179): não tem ROM de jogo, o save é a RAM
         {
